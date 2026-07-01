@@ -1,0 +1,3 @@
+"""
+Submódulo scholar de core.
+"""

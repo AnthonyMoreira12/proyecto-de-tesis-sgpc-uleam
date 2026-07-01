@@ -1,0 +1,3 @@
+"""
+Módulo administrativo de core.
+"""

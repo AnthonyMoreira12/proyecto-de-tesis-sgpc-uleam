@@ -1,0 +1,285 @@
+/* =========================================================
+   SGPC ULEAM — ACTIVAR USUARIO MODAL
+   Refactorizado para absorber color desde theme.css
+========================================================= */
+
+.modal--activate {
+  --act-card: var(--adm-card);
+  --act-soft: var(--adm-soft);
+  --act-soft-2: var(--adm-soft-2);
+
+  --act-line: var(--adm-line);
+  --act-line-strong: var(--adm-line-strong);
+  --act-line-soft: var(--adm-line-soft);
+
+  --act-text: var(--adm-text);
+  --act-muted: var(--adm-muted);
+
+  --act-primary: var(--adm-primary);
+  --act-primary-soft: var(--adm-primary-soft);
+
+  --act-success: var(--adm-success);
+  --act-warning: var(--adm-warning);
+  --act-danger: var(--adm-danger);
+  --act-info: var(--adm-info);
+
+  --act-success-soft: var(--adm-success-soft);
+  --act-warning-soft: var(--adm-warning-soft);
+  --act-danger-soft: var(--adm-danger-soft);
+  --act-info-soft: var(--adm-info-soft);
+
+  --act-success-border: var(--adm-success-border);
+  --act-warning-border: var(--adm-warning-border);
+  --act-danger-border: var(--adm-danger-border);
+  --act-info-border: var(--adm-info-border);
+
+  --act-success-ink: var(--adm-success-ink);
+  --act-warning-ink: var(--adm-warning-ink);
+  --act-danger-ink: var(--adm-danger-ink);
+  --act-info-ink: var(--adm-info-ink);
+
+  --act-shadow-soft: var(--adm-shadow-soft);
+  --act-ring: var(--adm-ring);
+
+  width: min(720px, 100%);
+}
+
+.activate-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--act-line) 84%, transparent);
+}
+
+.activate-heading {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.activate-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--primary-soft-strong);
+  background: var(--act-primary-soft);
+  color: color-mix(in srgb, var(--act-primary) 82%, var(--act-text));
+  font-family: var(--adm-font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.activate-title {
+  margin: 0;
+  color: var(--act-text);
+  font-family: var(--adm-font-display);
+  font-size: clamp(1.7rem, 2vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+
+.activate-subtitle {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--act-muted);
+  line-height: 1.65;
+}
+
+.activate-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 2px 0 0;
+}
+
+.activate-meta__item {
+  display: grid;
+  gap: 6px;
+  padding: 13px 14px;
+  border: 1px solid var(--act-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--act-card) 92%, var(--act-soft));
+}
+
+.activate-meta__item dt {
+  margin: 0;
+  color: var(--act-muted);
+  font-family: var(--adm-font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.activate-meta__item dd {
+  margin: 0;
+  color: var(--act-text);
+  font-family: var(--adm-font-display);
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.activate-close {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--act-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--act-muted);
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast),
+    border-color var(--t-fast),
+    transform var(--t-fast);
+}
+
+.activate-close:hover:not(:disabled) {
+  background: var(--act-primary-soft);
+  color: var(--act-primary);
+  border-color: color-mix(in srgb, var(--act-primary) 18%, var(--act-line));
+  transform: translateY(-1px);
+}
+
+.activate-body {
+  display: grid;
+  gap: 16px;
+}
+
+.activate-section {
+  display: grid;
+  gap: 16px;
+  padding: 4px 0 0;
+}
+
+.activate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.activate-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.activate-label {
+  color: var(--act-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.activate-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  color: var(--act-text);
+}
+
+.activate-input::placeholder {
+  color: color-mix(in srgb, var(--act-muted) 86%, transparent);
+}
+
+.activate-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--act-info-border);
+  background: var(--act-info-soft);
+  color: var(--act-info-ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.activate-error {
+  margin-top: 2px;
+  border-radius: 14px;
+}
+
+.activate-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--act-line) 84%, transparent);
+}
+
+.activate-cancel,
+.activate-submit {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-family: var(--adm-font-display);
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast),
+    filter var(--t-fast),
+    box-shadow var(--t-fast),
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast);
+}
+
+.activate-cancel {
+  border: 1px solid var(--act-line);
+  background: var(--act-card);
+  color: var(--act-text);
+}
+
+.activate-cancel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--act-line-strong);
+  background: color-mix(in srgb, var(--act-card) 92%, var(--act-soft));
+}
+
+.activate-submit {
+  min-width: 170px;
+  border: 1px solid var(--button-border);
+  background: var(--button-bg);
+  color: var(--button-text);
+  box-shadow: var(--act-shadow-soft);
+}
+
+.activate-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.activate-cancel:disabled,
+.activate-submit:disabled,
+.activate-close:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .activate-meta,
+  .activate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activate-footer {
+    flex-wrap: wrap;
+  }
+
+  .activate-cancel,
+  .activate-submit {
+    width: 100%;
+  }
+}

@@ -1,0 +1,46 @@
+name: CI/CD Pipeline SGPC
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    name: Pruebas y Arquitectura
+    runs-on: ubuntu-latest
+    steps:
+    - name: Descargar el código
+      uses: actions/checkout@v3
+
+    - name: Configurar Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r BACKEND_SGPC_FCVT/requirements.txt
+
+    - name: Ejecutar Suite de Pruebas (pytest)
+      env:
+        DJANGO_SETTINGS_MODULE: BACKEND_SGPC_FCVT.settings
+      run: |
+        cd BACKEND_SGPC_FCVT
+        pytest
+
+  build:
+    name: Construcción de Imagen Docker
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Descargar el código
+      uses: actions/checkout@v3
+
+    - name: Construir imagen
+      run: |
+        cd BACKEND_SGPC_FCVT
+        docker build -t anthonymoreira12/sgpc-backend:latest .

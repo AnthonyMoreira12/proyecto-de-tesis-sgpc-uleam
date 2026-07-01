@@ -1,0 +1,187 @@
+.avn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1700;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  --avn-font-heading: var(--font-heading, Georgia, "Times New Roman", serif);
+  --avn-font-body: var(
+    --font-body,
+    var(--font-heading, Georgia, "Times New Roman", serif)
+  );
+  --avn-font-ui: var(
+    --font-control,
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif
+  );
+
+  --avn-bg: var(--bg-main, #f4f2ed);
+  --avn-surface: var(--bg-card, #ffffff);
+  --avn-surface-2: var(--bg-elevated, #ffffff);
+  --avn-soft: var(--bg-soft, #f5f1eb);
+  --avn-input: var(--bg-input, #ffffff);
+  --avn-navbar: var(--bg-navbar, #17130f);
+  --avn-overlay-color: var(--overlay, rgba(14, 12, 10, 0.72));
+
+  --avn-text: var(--text-primary, #191510);
+  --avn-muted: var(--text-secondary, #6e655d);
+
+  --avn-line: var(--border-color, #d8d0c6);
+  --avn-line-strong: var(--border-strong, #b8ada1);
+
+  --avn-primary: var(
+    --color-primary-effective,
+    var(--color-primary, #111111)
+  );
+  --avn-danger: var(--danger, #a4493f);
+
+  --avn-shadow: var(--shadow-soft, 0 14px 32px rgba(17, 14, 10, 0.08));
+  --avn-shadow-strong: var(--shadow-strong, 0 28px 68px rgba(17, 14, 10, 0.18));
+
+  color: var(--avn-text);
+  font-family: var(--avn-font-body);
+}
+
+.avn-overlay,
+.avn-overlay *,
+.avn-overlay *::before,
+.avn-overlay *::after {
+  box-sizing: border-box;
+}
+
+.avn-overlay__backdrop {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 12% 8%,
+      color-mix(in srgb, var(--avn-primary) 12%, transparent) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 88% 12%,
+      color-mix(in srgb, var(--avn-primary) 8%, transparent) 0%,
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--avn-overlay-color) 100%, transparent) 0%,
+      color-mix(in srgb, var(--avn-overlay-color) 90%, transparent) 100%
+    );
+  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
+}
+
+.avn-overlay__backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 9%,
+      color-mix(in srgb, var(--avn-line) 26%, transparent) 9.1%,
+      transparent 9.4%
+    );
+  background-size: 120px 100%;
+}
+
+.avn-shell {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  width: min(1560px, calc(100vw - 24px));
+  min-height: calc(100dvh - 40px);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  padding: 0 0 24px;
+  margin: auto;
+  color: var(--avn-text);
+  font-family: var(--avn-font-body);
+  animation: avnOverlayEnter 0.34s cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.avn-shell::before {
+  content: "";
+  position: absolute;
+  inset: max(24px, 3vw);
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 36px;
+  background:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--avn-primary) 10%, transparent) 0%,
+      transparent 66%
+    );
+  filter: blur(20px);
+  opacity: 0.7;
+}
+
+@keyframes avnOverlayEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+    filter: blur(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .avn-overlay {
+    align-items: flex-start;
+  }
+
+  .avn-shell {
+    min-height: auto;
+    align-content: start;
+    width: min(100%, calc(100vw - 16px));
+  }
+
+  .avn-shell::before {
+    inset: 12px;
+    border-radius: 26px;
+  }
+}
+
+@media (max-width: 760px) {
+  .avn-overlay {
+    padding: 12px;
+  }
+
+  .avn-shell {
+    width: min(100%, calc(100vw - 8px));
+    padding-bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avn-overlay,
+  .avn-overlay__backdrop,
+  .avn-overlay__backdrop::before,
+  .avn-shell,
+  .avn-shell::before {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

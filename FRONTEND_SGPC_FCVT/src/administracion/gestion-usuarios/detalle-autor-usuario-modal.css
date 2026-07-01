@@ -1,0 +1,343 @@
+/* =========================================================
+   SGPC ULEAM — Detalle usuario/autor modal
+   Compacto y absorbido desde theme.css
+========================================================= */
+
+.modal--author-detail {
+  --ad-card: var(--adm-card, var(--bg-card));
+  --ad-soft: var(--adm-soft, var(--bg-elevated));
+  --ad-line: var(--adm-line, var(--border-color));
+  --ad-line-strong: var(--adm-line-strong, var(--border-strong));
+  --ad-text: var(--adm-text, var(--text-primary));
+  --ad-muted: var(--adm-muted, var(--text-secondary));
+  --ad-primary: var(--adm-primary, var(--color-primary));
+  --ad-success: var(--adm-success, #17803d);
+  --ad-warning: var(--adm-warning, #9a6700);
+  --ad-danger: var(--adm-danger, #b42318);
+
+  width: min(780px, calc(100vw - 28px));
+  max-height: min(86vh, 820px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.modal--author-detail,
+.modal--author-detail * {
+  font-family: inherit;
+}
+
+.authordetail-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--ad-card);
+  border-bottom: 1px solid color-mix(in srgb, var(--ad-line) 84%, transparent);
+}
+
+.authordetail-headcopy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.authordetail-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.authordetail-kicker,
+.authordetail-badge {
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--ad-line);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.authordetail-kicker {
+  border-color: color-mix(in srgb, var(--ad-primary) 34%, var(--ad-line));
+  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
+  color: color-mix(in srgb, var(--ad-primary) 78%, var(--ad-text));
+}
+
+.authordetail-badge {
+  background: color-mix(in srgb, var(--ad-card) 90%, transparent);
+  color: var(--ad-text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.authordetail-title {
+  margin: 0;
+  color: var(--ad-text);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-weight: 760;
+}
+
+.authordetail-subtitle {
+  margin: 0;
+  color: var(--ad-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.authordetail-close {
+  flex: 0 0 auto;
+  border: 1px solid var(--ad-line);
+  background: transparent;
+  color: var(--ad-muted);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.authordetail-close:hover {
+  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
+  color: var(--ad-primary);
+  border-color: color-mix(in srgb, var(--ad-primary) 22%, var(--ad-line));
+  transform: translateY(-1px);
+}
+
+.authordetail-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 16px;
+  padding-right: 4px;
+}
+
+.authordetail-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.authordetail-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ad-muted) 32%, transparent);
+}
+
+.authordetail-section {
+  display: grid;
+  gap: 12px;
+}
+
+.authordetail-sectionrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.authordetail-sectiontitle {
+  margin: 0;
+  color: var(--ad-text);
+  font-size: 1.05rem;
+  font-weight: 760;
+  letter-spacing: -0.018em;
+}
+
+.authordetail-count {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ad-line);
+  background: color-mix(in srgb, var(--ad-card) 88%, transparent);
+  color: var(--ad-muted);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.authordetail-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.authordetail-item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ad-line);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
+  display: grid;
+  gap: 5px;
+}
+
+.authordetail-item--wide {
+  grid-column: span 1;
+}
+
+.authordetail-item span {
+  color: var(--ad-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.authordetail-item strong {
+  min-width: 0;
+  color: var(--ad-text);
+  font-size: 0.92rem;
+  font-weight: 820;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.authordetail-empty {
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--ad-line-strong) 82%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
+  color: var(--ad-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.authordetail-pubs {
+  display: grid;
+  gap: 10px;
+}
+
+.authordetail-pub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid var(--ad-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
+}
+
+.authordetail-pubmain {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.authordetail-pubmain strong {
+  min-width: 0;
+  color: var(--ad-text);
+  font-size: 0.96rem;
+  font-weight: 820;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.authordetail-pubmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--ad-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.authordetail-pill {
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ad-primary) 34%, var(--ad-line));
+  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
+  color: color-mix(in srgb, var(--ad-primary) 78%, var(--ad-text));
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.authordetail-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 15px;
+  background: var(--ad-card);
+  border-top: 1px solid color-mix(in srgb, var(--ad-line) 84%, transparent);
+}
+
+.authordetail-btn {
+  min-height: 42px;
+  min-width: 130px;
+  padding: 0 16px;
+  border: 1px solid var(--ad-line);
+  background: color-mix(in srgb, var(--ad-card) 86%, transparent);
+  color: var(--ad-text);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.authordetail-btn:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--ad-card) 92%, var(--ad-soft));
+  border-color: var(--ad-line-strong);
+  box-shadow: var(--ad-shadow-soft, var(--shadow-soft, 0 16px 38px rgba(0, 0, 0, 0.14)));
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 760px) {
+  .modal--author-detail {
+    width: min(100%, calc(100vw - 18px));
+    max-height: 92vh;
+  }
+
+  .authordetail-header {
+    gap: 12px;
+  }
+
+  .authordetail-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .authordetail-pub {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .authordetail-pill {
+    width: fit-content;
+  }
+
+  .authordetail-footer {
+    justify-content: stretch;
+  }
+
+  .authordetail-btn {
+    width: 100%;
+  }
+}

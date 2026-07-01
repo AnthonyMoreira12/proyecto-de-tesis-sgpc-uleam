@@ -1,0 +1,344 @@
+/* ============================================================
+   TIPOS DE PUBLICACIÓN
+   alineado al theme global
+============================================================ */
+
+:where(.tipos-container) {
+  --tp-bg: var(--bg-main);
+  --tp-card: var(--bg-card);
+  --tp-elev: var(--bg-elevated);
+  --tp-text: var(--text-primary);
+  --tp-muted: var(--text-secondary);
+  --tp-primary: var(--color-primary);
+
+  --tp-line: color-mix(in srgb, var(--border-color) 100%, transparent);
+  --tp-line-strong: color-mix(in srgb, var(--border-strong) 100%, transparent);
+
+  --tp-radius-2xl: 28px;
+  --tp-radius-xl: 22px;
+  --tp-radius-lg: 18px;
+  --tp-radius-pill: 999px;
+
+  --tp-shadow-sm: var(--shadow-soft);
+  --tp-shadow-md: var(--shadow-strong);
+
+  --tp-shell-max: 1380px;
+
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: clip;
+  box-sizing: border-box;
+  padding: clamp(18px, 2vw, 28px) clamp(10px, 1.2vw, 18px) 28px;
+  background:
+    radial-gradient(
+      circle at 14% 12%,
+      color-mix(in srgb, var(--tp-primary) 5%, transparent),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 88% 92%,
+      color-mix(in srgb, var(--tp-primary) 4%, transparent),
+      transparent 24%
+    ),
+    var(--tp-bg);
+  color: var(--tp-text);
+  transition:
+    background var(--t-slow, 0.35s ease),
+    color var(--t-slow, 0.35s ease);
+}
+
+.tipos-shell,
+.tipos-shell * {
+  box-sizing: border-box;
+}
+
+.tipos-shell {
+  width: min(100%, var(--tp-shell-max));
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+/* ============================================================
+   HERO
+============================================================ */
+
+.tipos-hero {
+  display: grid;
+  gap: 8px;
+  padding: clamp(18px, 1.8vw, 24px);
+  border: 1px solid var(--tp-line);
+  border-radius: var(--tp-radius-2xl);
+  background: var(--tp-card);
+  box-shadow: var(--tp-shadow-sm);
+}
+
+.tipos-kicker {
+  margin: 0;
+  color: var(--tp-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tipos-title {
+  margin: 0;
+  color: var(--tp-text);
+  font-family: var(--font-heading);
+  font-size: clamp(1.9rem, 2.8vw, 2.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.tipos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ============================================================
+   CARD
+============================================================ */
+
+.tipo-card {
+  --tipo-accent: var(--pub-otro);
+  --tipo-accent-soft: var(--pub-otro-soft);
+  --tipo-accent-line: var(--pub-otro-line);
+  --tipo-accent-ink: var(--pub-otro-ink);
+  --tipo-accent-2: color-mix(in srgb, var(--tipo-accent) 62%, transparent);
+
+  position: relative;
+  min-width: 0;
+  min-height: 210px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+  padding: 18px;
+  overflow: hidden;
+  border-radius: var(--tp-radius-xl);
+  border: 1px solid var(--tp-line);
+  background:
+    radial-gradient(
+      circle at 100% 100%,
+      color-mix(in srgb, var(--tipo-accent) 8%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tp-card) 98%, transparent),
+      color-mix(in srgb, var(--tp-elev) 100%, transparent)
+    );
+  box-shadow: var(--tp-shadow-sm);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--t-med, 0.28s ease),
+    box-shadow var(--t-med, 0.28s ease),
+    transform var(--t-fast, 0.18s ease),
+    background var(--t-med, 0.28s ease);
+}
+
+.tipo-card:hover,
+.tipo-card:focus-visible {
+  text-decoration: none;
+}
+
+.tipo-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--tipo-accent) 22%, var(--tp-line-strong));
+  box-shadow: var(--tp-shadow-md);
+}
+
+.tipo-card:active {
+  transform: translateY(0);
+}
+
+.tipo-card:focus-visible {
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 3px;
+  box-shadow:
+    var(--ring-primary),
+    var(--tp-shadow-md);
+}
+
+.tipo-card__topline {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--tipo-accent), var(--tipo-accent-2));
+}
+
+.tipo-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.tipo-card__code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--tp-radius-pill);
+  border: 1px solid var(--tipo-accent-line);
+  background: var(--tipo-accent-soft);
+  color: var(--tipo-accent-ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.tipo-card__body {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+
+.tipo-card__title {
+  margin: 0;
+  color: var(--tp-text);
+  font-family: var(--font-heading);
+  font-size: clamp(1.32rem, 1.8vw, 1.7rem);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.tipo-card__cta {
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--tp-line) 86%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tipo-accent-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition:
+    gap var(--t-fast, 0.18s ease),
+    color var(--t-fast, 0.18s ease);
+}
+
+.tipo-card__cta svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  flex: 0 0 auto;
+  transition: transform var(--t-fast, 0.18s ease);
+}
+
+.tipo-card:hover .tipo-card__cta,
+.tipo-card:focus-visible .tipo-card__cta {
+  gap: 10px;
+}
+
+.tipo-card:hover .tipo-card__cta svg,
+.tipo-card:focus-visible .tipo-card__cta svg {
+  transform: translateX(2px);
+}
+
+/* ============================================================
+   COLOR POR TIPO DESDE TOKENS GLOBALES
+============================================================ */
+
+.tipo-card[data-tipo="AAI"] {
+  --tipo-accent: var(--pub-aai);
+  --tipo-accent-soft: var(--pub-aai-soft);
+  --tipo-accent-line: var(--pub-aai-line);
+  --tipo-accent-ink: var(--pub-aai-ink);
+}
+
+.tipo-card[data-tipo="AR"] {
+  --tipo-accent: var(--pub-ar);
+  --tipo-accent-soft: var(--pub-ar-soft);
+  --tipo-accent-line: var(--pub-ar-line);
+  --tipo-accent-ink: var(--pub-ar-ink);
+}
+
+.tipo-card[data-tipo="PON"] {
+  --tipo-accent: var(--pub-pon);
+  --tipo-accent-soft: var(--pub-pon-soft);
+  --tipo-accent-line: var(--pub-pon-line);
+  --tipo-accent-ink: var(--pub-pon-ink);
+}
+
+.tipo-card[data-tipo="LIB"] {
+  --tipo-accent: var(--pub-lib);
+  --tipo-accent-soft: var(--pub-lib-soft);
+  --tipo-accent-line: var(--pub-lib-line);
+  --tipo-accent-ink: var(--pub-lib-ink);
+}
+
+.tipo-card[data-tipo="CAP"] {
+  --tipo-accent: var(--pub-cap);
+  --tipo-accent-soft: var(--pub-cap-soft);
+  --tipo-accent-line: var(--pub-cap-line);
+  --tipo-accent-ink: var(--pub-cap-ink);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .tipos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tipos-container {
+    padding: 16px 10px 20px;
+  }
+
+  .tipos-title {
+    font-size: clamp(1.7rem, 6vw, 2.2rem);
+  }
+
+  .tipos-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .tipo-card {
+    min-height: 188px;
+    padding: 16px;
+  }
+
+  .tipo-card__title {
+    font-size: clamp(1.18rem, 5.4vw, 1.42rem);
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+============================================================ */
+
+.reduced-motion .tipos-container *,
+.reduced-motion .tipos-container *::before,
+.reduced-motion .tipos-container *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tipos-container *,
+  .tipos-container *::before,
+  .tipos-container *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
