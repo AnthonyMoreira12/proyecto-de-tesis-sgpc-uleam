@@ -6,7 +6,7 @@
 from io import BytesIO
 
 from django.apps import apps
-from django.db.models import Count
+from django.db.models import Count, F
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.http import HttpResponse
 from django.utils import timezone
@@ -162,8 +162,7 @@ def _build_base_queryset(params):
 
     qs = Publicacion.objects.select_related(
         "tipo",
-        "facultad",
-        "carrera",
+        "carrera__facultad",
         "area",
         "subarea",
         "pais",
@@ -177,7 +176,7 @@ def _build_base_queryset(params):
     anio_hasta = _safe_int(params.get("anio_hasta"))
 
     if facultad_id:
-        qs = qs.filter(facultad_id=facultad_id)
+        qs = qs.filter(carrera__facultad_id=facultad_id)
 
     if carrera_id:
         qs = qs.filter(carrera_id=carrera_id)
@@ -483,10 +482,13 @@ def _build_top_areas(publicaciones, limit):
 
 def _build_top_facultades(publicaciones, limit):
     rows = (
-        publicaciones.exclude(facultad__isnull=True)
-        .values("facultad_id", "facultad__nombre")
+        publicaciones.exclude(carrera__facultad_id__isnull=True)
+        .values(
+            facultad_id=F("carrera__facultad_id"),
+            facultad_nombre=F("carrera__facultad__nombre"),
+        )
         .annotate(total=Count("id"))
-        .order_by("-total", "facultad__nombre")[:limit]
+        .order_by("-total", "facultad_nombre")[:limit]
     )
 
     return {
@@ -494,7 +496,7 @@ def _build_top_facultades(publicaciones, limit):
         "items": [
             {
                 "facultad_id": row["facultad_id"],
-                "facultad": _label(row["facultad__nombre"]),
+                "facultad": _label(row["facultad_nombre"]),
                 "total": int(row["total"] or 0),
             }
             for row in rows
@@ -658,8 +660,8 @@ def _build_summary(publicaciones):
     )
 
     total_facultades = (
-        publicaciones.values("facultad_id")
-        .exclude(facultad_id__isnull=True)
+        publicaciones.values("carrera__facultad_id")
+        .exclude(carrera__facultad_id__isnull=True)
         .distinct()
         .count()
     )

@@ -1,20 +1,24 @@
 # core/urls.py
 # ============================================================
-# 🌐 SGPC ULEAM — Rutas principales
+# SGPC ULEAM — Rutas principales
 # ============================================================
 
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 # ============================================================
-# 📌 VIEWSETS (CRUD)
+# VIEWSETS (CRUD)
 # ============================================================
 
 # Publicaciones
 from core.publicaciones.views.publicaciones_ponencia_viewsets import PonenciaViewSet
 from core.publicaciones.views.publicaciones_libro_viewsets import LibroViewSet
-from core.publicaciones.views.publicaciones_capitulo_libro_viewsets import CapituloLibroViewSet
-from core.publicaciones.views.publicaciones_archivos_viewsets import PublicacionArchivoViewSet
+from core.publicaciones.views.publicaciones_capitulo_libro_viewsets import (
+    CapituloLibroViewSet,
+)
+from core.publicaciones.views.publicaciones_archivos_viewsets import (
+    PublicacionArchivoViewSet,
+)
 
 # Base
 from core.banners.views.banners_banner_viewsets import BannerViewSet
@@ -32,17 +36,30 @@ from core.admin.views.admin_autores_views import AdminAutorViewSet
 from core.admin.views.admin_publicaciones_views import AdminPublicacionViewSet
 
 # ============================================================
-# 📄 APIViews (consultas / endpoints específicos)
+# APIViews (consultas / endpoints específicos)
 # ============================================================
 
 # Publicaciones
-from core.publicaciones.views.publicaciones_listado_views import PublicacionListAPIView
-from core.publicaciones.views.publicaciones_mis_listados_views import MyPublicacionListAPIView
-from core.publicaciones.views.publicaciones_detalle_views import PublicacionDetailAPIView
-from core.publicaciones.views.publicaciones_articulo_create_views import ArticuloCreateAPIView
+from core.publicaciones.views.publicaciones_listado_views import (
+    PublicacionListAPIView,
+)
+from core.publicaciones.views.publicaciones_mis_listados_views import (
+    MyPublicacionListAPIView,
+)
+from core.publicaciones.views.publicaciones_detalle_views import (
+    PublicacionDetailAPIView,
+)
+from core.publicaciones.views.publicaciones_articulo_create_views import (
+    ArticuloCreateAPIView,
+)
+from core.publicaciones.views.publicaciones_pdf_views import (
+    PublicacionPdfInlineAPIView,
+)
 
 # Reportes
-from core.reportes.views.reportes_publicaciones_views import ExportarPublicacionesExcelView
+from core.reportes.views.reportes_publicaciones_views import (
+    ExportarPublicacionesExcelView,
+)
 
 # Búsqueda
 from core.busqueda.views.busqueda_general_views import BusquedaGeneralAPIView
@@ -81,7 +98,7 @@ from core.auth.views.auth_microsoft_views import (
 )
 
 # ============================================================
-# 🚦 ROUTER — ViewSets automáticos
+# ROUTER — ViewSets automáticos
 # ============================================================
 
 router = DefaultRouter()
@@ -113,7 +130,7 @@ router.register(
 )
 
 # ============================================================
-# 🌐 URLPATTERNS — Rutas finales
+# URLPATTERNS — Rutas finales
 # ============================================================
 
 urlpatterns = [
@@ -136,9 +153,21 @@ urlpatterns = [
         PasswordResetConfirmView.as_view(),
         name="auth-password-reset-confirm",
     ),
-    path("auth/microsoft/login/", MicrosoftLoginView.as_view(), name="ms-login"),
-    path("auth/microsoft/callback/", MicrosoftCallbackView.as_view(), name="ms-callback"),
-    path("auth/microsoft/exchange/", MicrosoftExchangeView.as_view(), name="ms-exchange"),
+    path(
+        "auth/microsoft/login/",
+        MicrosoftLoginView.as_view(),
+        name="ms-login",
+    ),
+    path(
+        "auth/microsoft/callback/",
+        MicrosoftCallbackView.as_view(),
+        name="ms-callback",
+    ),
+    path(
+        "auth/microsoft/exchange/",
+        MicrosoftExchangeView.as_view(),
+        name="ms-exchange",
+    ),
 
     # ----------------------------
     # Catálogos
@@ -182,14 +211,19 @@ urlpatterns = [
         name="publicaciones-mias",
     ),
     path(
-        "publicaciones/<int:id>/",
-        PublicacionDetailAPIView.as_view(),
-        name="publicacion-detalle",
-    ),
-    path(
         "publicaciones/articulos/crear/",
         ArticuloCreateAPIView.as_view(),
         name="articulo-crear",
+    ),
+    path(
+        "publicaciones/<int:id>/pdf/",
+        PublicacionPdfInlineAPIView.as_view(),
+        name="publicacion-pdf-inline",
+    ),
+    path(
+        "publicaciones/<int:id>/",
+        PublicacionDetailAPIView.as_view(),
+        name="publicacion-detalle",
     ),
 
     # ----------------------------

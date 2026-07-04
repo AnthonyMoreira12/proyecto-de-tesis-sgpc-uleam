@@ -1,38 +1,36 @@
-:where(.pub-edit) {
-  --pub-bg: var(--bg-main, #f4f2ed);
-  --pub-card: var(--bg-card, #ffffff);
-  --pub-elev: var(--bg-elevated, #ffffff);
-  --pub-soft: color-mix(in srgb, var(--bg-card, #ffffff) 92%, var(--bg-main, #f4f2ed));
-  --pub-soft-2: color-mix(in srgb, var(--bg-card, #ffffff) 84%, var(--bg-main, #f4f2ed));
-  --pub-input-bg: var(--bg-input, var(--pub-card));
+:where(.pub-edit, .pub-modalOverlay) {
+  --pub-bg: var(--bg-main);
+  --pub-card: var(--bg-card);
+  --pub-elev: var(--bg-elevated);
+  --pub-soft: var(--surface-2);
+  --pub-soft-2: var(--surface-3);
+  --pub-input-bg: var(--bg-input);
 
-  --pub-text: var(--text-primary, #111111);
-  --pub-muted: var(--text-secondary, #5f5a53);
+  --pub-text: var(--text-primary);
+  --pub-muted: var(--text-secondary);
 
-  --pub-line: color-mix(in srgb, var(--border-color, rgba(17, 17, 17, 0.1)) 100%, transparent);
-  --pub-line-strong: color-mix(
-    in srgb,
-    var(--border-strong, rgba(17, 17, 17, 0.16)) 100%,
-    transparent
-  );
+  --pub-line: var(--border-color);
+  --pub-line-strong: var(--border-strong);
 
-  --pub-primary: var(--color-primary, #111111);
-  --pub-primary-soft: color-mix(in srgb, var(--pub-primary) 8%, transparent);
-  --pub-primary-line: color-mix(in srgb, var(--pub-primary) 24%, transparent);
+  --pub-primary: var(--color-primary);
+  --pub-primary-soft: var(--primary-soft);
+  --pub-primary-line: var(--primary-soft-strong);
 
-  --pub-success: var(--success, #496753);
-  --pub-warning: var(--warning, #8a6d33);
-  --pub-danger: var(--danger, #8f4740);
-  --pub-info: var(--info, #556c77);
+  --pub-success: var(--success);
+  --pub-warning: var(--warning);
+  --pub-danger: var(--danger);
+  --pub-danger-solid: #b91c1c;
+  --pub-info: var(--info);
 
-  --pub-radius-2xl: 24px;
-  --pub-radius-xl: 18px;
-  --pub-radius-lg: 14px;
-  --pub-radius-md: 12px;
-  --pub-radius-pill: 999px;
+  --pub-radius-2xl: var(--radius-2xl);
+  --pub-radius-xl: var(--radius-xl);
+  --pub-radius-lg: var(--radius-lg);
+  --pub-radius-md: var(--radius-md);
+  --pub-radius-pill: var(--radius-pill);
 
-  --pub-shadow-sm: var(--shadow-soft, 0 8px 22px rgba(17, 17, 17, 0.035));
-  --pub-ring: 0 0 0 3px color-mix(in srgb, var(--pub-primary) 18%, transparent);
+  --pub-shadow-sm: var(--shadow-soft);
+  --pub-shadow-modal: var(--shadow-strong);
+  --pub-ring: var(--ring-primary);
 
   --pub-gap: clamp(14px, 1.25vw, 18px);
   --pub-gap-lg: clamp(18px, 1.8vw, 24px);
@@ -43,25 +41,29 @@
   display: grid;
   gap: var(--pub-gap);
   color: var(--pub-text);
-  font: inherit;
-  font-family: inherit;
+  font-family: var(--font-body);
   min-width: 0;
   align-content: start;
 }
 
 .pub-edit *,
 .pub-edit *::before,
-.pub-edit *::after {
+.pub-edit *::after,
+.pub-modalOverlay *,
+.pub-modalOverlay *::before,
+.pub-modalOverlay *::after {
   box-sizing: border-box;
+  font-family: var(--font-body) !important;
 }
 
-.pub-edit :where(
-  h1, h2, h3, h4, h5, h6,
-  p, span, strong, small,
-  button, a, input, select, textarea,
-  label, li, div, section, article, header, aside
-) {
-  font-family: inherit;
+.pub-edit :where(h1, h2, h3, h4, h5, h6),
+.pub-modalOverlay :where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading) !important;
+}
+
+.pub-edit :where(button, input, select, textarea, option),
+.pub-modalOverlay :where(button, input, select, textarea, option) {
+  font-family: var(--font-control) !important;
 }
 
 /* =========================================================
@@ -73,8 +75,6 @@
   padding: 13px 14px;
   border-radius: var(--pub-radius-lg);
   border: 1px solid transparent;
-  font: inherit;
-  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.55;
@@ -82,21 +82,21 @@
 }
 
 .pub-msg.info {
-  background: color-mix(in srgb, var(--pub-info) 8%, transparent);
-  border-color: color-mix(in srgb, var(--pub-info) 18%, transparent);
-  color: color-mix(in srgb, var(--pub-info) 84%, var(--pub-text));
+  background: var(--info-soft);
+  border-color: var(--info-line);
+  color: color-mix(in srgb, var(--pub-info) 86%, var(--pub-text));
 }
 
 .pub-msg.success {
-  background: color-mix(in srgb, var(--pub-success) 8%, transparent);
-  border-color: color-mix(in srgb, var(--pub-success) 18%, transparent);
-  color: color-mix(in srgb, var(--pub-success) 84%, var(--pub-text));
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: color-mix(in srgb, var(--pub-success) 86%, var(--pub-text));
 }
 
 .pub-msg.error {
-  background: color-mix(in srgb, var(--pub-danger) 8%, transparent);
-  border-color: color-mix(in srgb, var(--pub-danger) 18%, transparent);
-  color: color-mix(in srgb, var(--pub-danger) 84%, var(--pub-text));
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: color-mix(in srgb, var(--pub-danger) 86%, var(--pub-text));
 }
 
 /* =========================================================
@@ -153,7 +153,7 @@
 .pub-kicker {
   margin: 0 0 4px;
   color: var(--pub-primary);
-  font-family: inherit;
+  font-family: var(--font-heading) !important;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -163,7 +163,7 @@
 .pub-h2 {
   margin: 0;
   color: var(--pub-text);
-  font-family: inherit;
+  font-family: var(--font-heading) !important;
   font-size: clamp(1.08rem, 1.3vw, 1.34rem);
   line-height: 1.05;
   font-weight: 700;
@@ -173,7 +173,6 @@
 .pub-section__text {
   margin: 6px 0 0;
   color: var(--pub-muted);
-  font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.6;
   max-width: 78ch;
@@ -188,8 +187,7 @@
   border: 1px solid var(--pub-line);
   background: var(--pub-soft);
   color: var(--pub-text);
-  font: inherit;
-  font-family: inherit;
+  font-family: var(--font-control) !important;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -218,14 +216,6 @@
   background: transparent;
 }
 
-.pub-embed :where(.dg, .autsel, .autor-selector, .as) {
-  font-family: inherit;
-}
-
-.pub-embed :where(.dg *, .autsel *, .autor-selector *, .as *) {
-  font-family: inherit;
-}
-
 /* =========================================================
    FORM GRID
 ========================================================= */
@@ -250,7 +240,7 @@
 .pub-label {
   margin: 0;
   color: var(--pub-text);
-  font-family: inherit;
+  font-family: var(--font-label) !important;
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -264,24 +254,23 @@
 
 .pub-input {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-height-md);
   padding: 0 13px;
-  border-radius: var(--pub-radius-md);
+  border-radius: var(--input-radius);
   border: 1px solid var(--pub-line) !important;
   background: var(--pub-input-bg) !important;
   color: var(--pub-text) !important;
-  font: inherit;
-  font-family: inherit;
+  font-family: var(--font-control) !important;
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.2;
   outline: none;
   box-shadow: none;
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease);
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    background var(--t-fast),
+    color var(--t-fast);
 }
 
 .pub-input:hover {
@@ -290,9 +279,8 @@
 
 .pub-input:focus,
 .pub-input:focus-visible {
-  border-color: color-mix(in srgb, var(--pub-primary) 26%, var(--pub-line)) !important;
+  border-color: var(--pub-primary) !important;
   box-shadow: var(--pub-ring) !important;
-  background: color-mix(in srgb, var(--pub-input-bg) 96%, white 4%) !important;
 }
 
 .pub-input:focus:not(:focus-visible) {
@@ -300,14 +288,14 @@
 }
 
 .pub-input:disabled {
-  opacity: 0.78;
+  opacity: 0.65;
   cursor: not-allowed;
-  background: color-mix(in srgb, var(--pub-soft) 82%, transparent) !important;
-  color: color-mix(in srgb, var(--pub-text) 62%, transparent) !important;
+  color: var(--text-disabled) !important;
 }
 
 .pub-input::placeholder {
-  color: color-mix(in srgb, var(--pub-muted) 78%, transparent);
+  color: var(--pub-muted);
+  opacity: 0.8;
 }
 
 .pub-help,
@@ -316,7 +304,6 @@
 .pub-filePanel__text {
   margin: 0;
   color: var(--pub-muted);
-  font-family: inherit;
   font-size: 0.82rem;
   line-height: 1.55;
 }
@@ -325,9 +312,9 @@
   grid-column: span 12;
   padding: 12px 13px;
   border-radius: var(--pub-radius-md);
-  border: 1px solid color-mix(in srgb, var(--pub-warning) 20%, var(--pub-line));
-  background: color-mix(in srgb, var(--pub-warning) 8%, transparent);
-  color: color-mix(in srgb, var(--pub-warning) 84%, var(--pub-text));
+  border: 1px solid var(--warning-line);
+  background: var(--warning-soft);
+  color: color-mix(in srgb, var(--pub-warning) 86%, var(--pub-text));
   font-weight: 600;
 }
 
@@ -354,7 +341,7 @@
 
 .pub-filePanel__eyebrow {
   color: var(--pub-muted);
-  font-family: inherit;
+  font-family: var(--font-label) !important;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -364,7 +351,7 @@
 .pub-filePanel__name {
   margin: 0;
   color: var(--pub-text);
-  font-family: inherit;
+  font-family: var(--font-heading) !important;
   font-size: 1.02rem;
   font-weight: 700;
   line-height: 1.2;
@@ -385,14 +372,13 @@
 
 .pub-btn {
   appearance: none;
-  min-height: 40px;
+  min-height: var(--control-height-sm);
   padding: 0 14px;
   border-radius: var(--pub-radius-pill);
   border: 1px solid var(--pub-line);
-  background: var(--pub-card);
-  color: var(--pub-text);
-  font: inherit;
-  font-family: inherit;
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  font-family: var(--font-control) !important;
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1;
@@ -403,18 +389,18 @@
   gap: 8px;
   cursor: pointer;
   transition:
-    transform var(--t-fast, 0.18s ease),
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    opacity var(--t-fast, 0.18s ease);
+    transform var(--t-fast),
+    border-color var(--t-fast),
+    background var(--t-fast),
+    color var(--t-fast),
+    box-shadow var(--t-fast),
+    opacity var(--t-fast);
 }
 
 .pub-btn:hover {
   transform: translateY(-1px);
   border-color: var(--pub-line-strong);
-  background: color-mix(in srgb, var(--pub-card) 94%, var(--hover, rgba(17, 17, 17, 0.035)));
+  background: color-mix(in srgb, var(--button-secondary-bg) 95%, var(--hover));
 }
 
 .pub-btn:focus-visible {
@@ -428,17 +414,33 @@
 }
 
 .pub-btn--primary {
-  background: var(--button-bg, var(--pub-primary));
-  color: var(--button-text, #ffffff);
-  border-color: color-mix(in srgb, var(--button-bg, var(--pub-primary)) 72%, transparent);
+  background: var(--button-bg);
+  color: var(--button-text);
+  border-color: var(--button-border);
 }
 
-.pub-btn--primary:hover {
-  background: color-mix(in srgb, var(--button-bg, var(--pub-primary)) 92%, white 8%);
+.pub-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--button-bg) 92%, var(--bg-card) 8%);
 }
 
 .pub-btn--ghost {
   background: transparent;
+}
+
+.pub-btn--danger {
+  background: var(--pub-danger-solid);
+  color: #ffffff;
+  border-color: var(--pub-danger-solid);
+}
+
+.pub-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pub-danger-solid) 86%, #000000 14%);
+  border-color: color-mix(in srgb, var(--pub-danger-solid) 86%, #000000 14%);
+  color: #ffffff;
+}
+
+.pub-btn--danger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pub-danger-solid) 22%, transparent);
 }
 
 /* =========================================================
@@ -455,36 +457,330 @@
 }
 
 /* =========================================================
+   MODAL PDF
+========================================================= */
+
+.pub-modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--overlay);
+  backdrop-filter: blur(5px);
+  color: var(--pub-text);
+  font-family: var(--font-body) !important;
+  font-size: var(--font-base);
+}
+
+.pub-modal {
+  width: min(500px, calc(100vw - 32px));
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 26px;
+  border: 1px solid var(--pub-line);
+  border-radius: var(--radius-2xl);
+  background: var(--pub-card);
+  color: var(--pub-text);
+  box-shadow: var(--shadow-strong);
+}
+
+.pub-modal__icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+  border-radius: var(--radius-lg);
+  background: var(--danger-soft);
+  color: var(--pub-danger-solid);
+  font-family: var(--font-heading) !important;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.pub-modal__body {
+  min-width: 0;
+  text-align: left;
+}
+
+.pub-modal__eyebrow {
+  margin: 0 0 6px;
+  color: var(--pub-danger-solid);
+  font-family: var(--font-heading) !important;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.pub-modal__title {
+  margin: 0;
+  color: var(--pub-text);
+  font-family: var(--font-heading) !important;
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.pub-modal__text {
+  margin: 12px 0 0;
+  max-width: 42ch;
+  color: var(--pub-muted);
+  font-family: var(--font-body) !important;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.pub-modal__warning {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--warning-line);
+  border-radius: var(--radius-lg);
+  background: var(--warning-soft);
+  color: color-mix(in srgb, var(--pub-warning) 86%, var(--pub-text));
+  font-family: var(--font-body) !important;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.pub-modal__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 2px;
+}
+
+.pub-modal__actions .pub-btn {
+  min-height: var(--control-height-sm);
+  padding: 0 17px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.pub-modal__actions .pub-btn--danger {
+  padding-inline: 20px;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--pub-danger-solid) 18%, transparent);
+}
+
+.pub-modal__actions .pub-btn--danger:hover:not(:disabled) {
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--pub-danger-solid) 22%, transparent);
+}
+
+/* =========================================================
+   ALINEACIÓN TOTAL DE COMPONENTES HIJOS AL TEMA GLOBAL
+   DatosGenerales, AutoresSelector, uploader y controles internos
+========================================================= */
+
+.pub-edit :where(
+  .dg,
+  .dg *,
+  .datos-generales,
+  .datos-generales *,
+  .autsel,
+  .autsel *,
+  .autor-selector,
+  .autor-selector *,
+  .as,
+  .as *,
+  .sgpc-upload,
+  .sgpc-upload *,
+  .sgpc-file-list,
+  .sgpc-file-list *
+) {
+  font-family: var(--font-body) !important;
+}
+
+.pub-edit :where(
+  .dg h1,
+  .dg h2,
+  .dg h3,
+  .dg h4,
+  .datos-generales h1,
+  .datos-generales h2,
+  .datos-generales h3,
+  .datos-generales h4,
+  .autsel h1,
+  .autsel h2,
+  .autsel h3,
+  .autsel h4,
+  .autor-selector h1,
+  .autor-selector h2,
+  .autor-selector h3,
+  .autor-selector h4,
+  .as h1,
+  .as h2,
+  .as h3,
+  .as h4,
+  .sgpc-upload__title
+) {
+  font-family: var(--font-heading) !important;
+  color: var(--text-primary) !important;
+}
+
+.pub-edit :where(
+  .dg label,
+  .datos-generales label,
+  .autsel label,
+  .autor-selector label,
+  .as label,
+  .dg-label,
+  .autsel-label,
+  .autor-label,
+  .as-label,
+  .sgpc-upload__eyebrow
+) {
+  font-family: var(--font-label) !important;
+  color: var(--text-primary) !important;
+}
+
+.pub-edit :where(
+  .dg button,
+  .dg input,
+  .dg select,
+  .dg textarea,
+  .datos-generales button,
+  .datos-generales input,
+  .datos-generales select,
+  .datos-generales textarea,
+  .autsel button,
+  .autsel input,
+  .autsel select,
+  .autsel textarea,
+  .autor-selector button,
+  .autor-selector input,
+  .autor-selector select,
+  .autor-selector textarea,
+  .as button,
+  .as input,
+  .as select,
+  .as textarea,
+  .sgpc-upload button,
+  .sgpc-upload input,
+  .sgpc-upload select,
+  .sgpc-upload textarea
+) {
+  font-family: var(--font-control) !important;
+}
+
+.pub-edit :where(
+  input,
+  select,
+  textarea,
+  .pub-input,
+  .dg-input,
+  .dg-select,
+  .dg-control,
+  .select-control,
+  .form-control
+) {
+  min-height: var(--control-height-md) !important;
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--input-radius) !important;
+  box-shadow: none !important;
+}
+
+.pub-edit :where(
+  input:hover,
+  select:hover,
+  textarea:hover,
+  .pub-input:hover,
+  .dg-input:hover,
+  .dg-select:hover,
+  .dg-control:hover,
+  .select-control:hover,
+  .form-control:hover
+) {
+  border-color: var(--border-strong) !important;
+}
+
+.pub-edit :where(
+  input:focus,
+  select:focus,
+  textarea:focus,
+  .pub-input:focus,
+  .dg-input:focus,
+  .dg-select:focus,
+  .dg-control:focus,
+  .select-control:focus,
+  .form-control:focus
+) {
+  border-color: var(--color-primary) !important;
+  box-shadow: var(--ring-primary) !important;
+  outline: none !important;
+}
+
+.pub-edit :where(
+  .dg-card,
+  .dg-panel,
+  .dg-box,
+  .dg-section,
+  .datos-card,
+  .datos-panel,
+  .autsel-card,
+  .autor-card,
+  .as-card,
+  .author-card,
+  .panel,
+  .box,
+  .item,
+  .row
+) {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.pub-edit :where(
+  .muted,
+  .text-muted,
+  .help,
+  .hint,
+  .description,
+  .desc,
+  .meta,
+  .subtitle,
+  .sgpc-upload__desc,
+  .sgpc-upload__hint,
+  .sgpc-file-chip__meta
+) {
+  color: var(--text-secondary) !important;
+}
+
+.pub-edit :where(
+  .badge,
+  .chip,
+  .pill,
+  .tag,
+  .pub-chip
+) {
+  font-family: var(--font-control) !important;
+  background: var(--surface-2) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* =========================================================
    ESTADO GUARDANDO
 ========================================================= */
 
 .pub-edit.is-saving {
   pointer-events: auto;
-}
-
-/* =========================================================
-   AJUSTE PARA UPLOADER INSTITUCIONAL
-========================================================= */
-
-.pub-section :where(.sgpc-upload) {
-  margin-top: 0;
-}
-
-.pub-section :where(.sgpc-upload, .sgpc-file-list, .sgpc-alert) {
-  font-family: inherit;
-}
-
-.pub-section :where(.sgpc-upload__title) {
-  font-family: inherit;
-}
-
-.pub-section :where(.sgpc-upload__desc,
-.pub-section .sgpc-upload__hint,
-.pub-section .sgpc-upload__warning,
-.pub-section .sgpc-upload__error,
-.pub-section .sgpc-file-chip__meta,
-.pub-section .sgpc-hint) {
-  font-family: inherit;
 }
 
 /* =========================================================
@@ -524,13 +820,53 @@
   }
 }
 
+@media (max-width: 560px) {
+  .pub-modalOverlay {
+    padding: 18px;
+  }
+
+  .pub-modal {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 22px;
+    border-radius: var(--radius-xl);
+  }
+
+  .pub-modal__icon {
+    width: 48px;
+    height: 48px;
+    margin-top: 0;
+  }
+
+  .pub-modal__title {
+    font-size: 1.18rem;
+  }
+
+  .pub-modal__text {
+    max-width: none;
+    font-size: 0.96rem;
+  }
+
+  .pub-modal__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .pub-modal__actions .pub-btn {
+    width: 100%;
+  }
+}
+
 /* =========================================================
    REDUCED MOTION
 ========================================================= */
 
 .reduced-motion .pub-edit *,
 .reduced-motion .pub-edit *::before,
-.reduced-motion .pub-edit *::after {
+.reduced-motion .pub-edit *::after,
+.reduced-motion .pub-modalOverlay *,
+.reduced-motion .pub-modalOverlay *::before,
+.reduced-motion .pub-modalOverlay *::after {
   animation: none !important;
   transition: none !important;
 }
@@ -538,7 +874,10 @@
 @media (prefers-reduced-motion: reduce) {
   .pub-edit *,
   .pub-edit *::before,
-  .pub-edit *::after {
+  .pub-edit *::after,
+  .pub-modalOverlay *,
+  .pub-modalOverlay *::before,
+  .pub-modalOverlay *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;

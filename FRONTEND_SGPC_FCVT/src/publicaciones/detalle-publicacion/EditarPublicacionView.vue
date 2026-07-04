@@ -38,7 +38,7 @@
             type="date"
             v-model="form.fecha_publicacion"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
           <p v-if="form.fecha_publicacion" class="pub-help">
             {{ formatFecha(form.fecha_publicacion) }}
@@ -68,7 +68,7 @@
             class="pub-input"
             v-model.trim="form.nombre_evento"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -81,7 +81,7 @@
             class="pub-input"
             v-model.trim="form.nombre_ponencia"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -90,7 +90,7 @@
           <input
             class="pub-input"
             v-model.trim="form.codigo_issn_isbn"
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
       </div>
@@ -105,7 +105,7 @@
             class="pub-input"
             v-model.trim="form.nombre_articulo"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -118,7 +118,7 @@
             class="pub-input"
             v-model.trim="form.base_datos_indexada"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -131,7 +131,7 @@
             class="pub-input"
             v-model.trim="form.nombre_revista"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -144,7 +144,7 @@
             class="pub-input"
             v-model.trim="form.codigo_doi"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -157,7 +157,7 @@
             class="pub-input"
             v-model.trim="form.codigo_issn"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -168,7 +168,7 @@
             v-model.trim="form.link_publicacion"
             type="url"
             placeholder="https://..."
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -180,7 +180,7 @@
               v-model.trim="form.link_revista"
               type="url"
               placeholder="https://..."
-              :disabled="savingLocal"
+              :disabled="savingLocal || removingPdf"
             />
           </div>
 
@@ -190,7 +190,7 @@
               <input
                 class="pub-input"
                 v-model.trim="form.factor_impacto"
-                :disabled="savingLocal"
+                :disabled="savingLocal || removingPdf"
               />
             </div>
 
@@ -200,7 +200,7 @@
                 class="pub-input"
                 v-model.trim="form.cuartil"
                 placeholder="Ej. Q1, Q2"
-                :disabled="savingLocal"
+                :disabled="savingLocal || removingPdf"
               />
             </div>
 
@@ -209,7 +209,7 @@
               <input
                 class="pub-input"
                 v-model.trim="form.sjr"
-                :disabled="savingLocal"
+                :disabled="savingLocal || removingPdf"
               />
             </div>
 
@@ -218,7 +218,7 @@
               <input
                 class="pub-input"
                 v-model.trim="form.numero_revista"
-                :disabled="savingLocal"
+                :disabled="savingLocal || removingPdf"
               />
             </div>
           </template>
@@ -239,7 +239,7 @@
             class="pub-input"
             v-model.trim="form.nombre_capitulo"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -252,7 +252,7 @@
             class="pub-input"
             v-model.trim="form.nombre_libro"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -265,7 +265,7 @@
             class="pub-input"
             v-model.trim="form.codigo_isbn"
             required
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -274,7 +274,7 @@
           <input
             class="pub-input"
             v-model.trim="form.editor_compilador"
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
 
@@ -285,7 +285,7 @@
             v-model.trim="form.link_capitulo"
             type="url"
             placeholder="https://..."
-            :disabled="savingLocal"
+            :disabled="savingLocal || removingPdf"
           />
         </div>
       </div>
@@ -312,7 +312,7 @@
         <div>
           <h3 class="pub-h2">Archivo PDF</h3>
           <p class="pub-section__text">
-            Mantiene la misma experiencia de carga utilizada en las demás interfaces.
+            Desde esta sección puedes consultar, reemplazar o quitar el PDF de la publicación.
           </p>
         </div>
       </div>
@@ -324,19 +324,38 @@
             {{ currentPdfName }}
           </h4>
           <p class="pub-filePanel__text">
-            Puedes conservar este archivo o reemplazarlo por uno nuevo.
+            Puedes conservar este archivo, reemplazarlo por uno nuevo o quitarlo del registro.
           </p>
         </div>
 
         <div class="pub-filePanel__actions">
-          <a
+          <button
             class="pub-btn pub-btn--ghost"
-            :href="currentPdfHref"
-            target="_blank"
-            rel="noopener noreferrer"
+            type="button"
+            @click="openCurrentPdf"
+            :disabled="savingLocal || removingPdf"
           >
             Ver PDF actual
-          </a>
+          </button>
+
+          <button
+            class="pub-btn pub-btn--ghost"
+            type="button"
+            @click="downloadCurrentPdf"
+            :disabled="savingLocal || removingPdf"
+          >
+            Descargar PDF actual
+          </button>
+
+          <button
+            v-if="canEdit"
+            class="pub-btn pub-btn--danger"
+            type="button"
+            @click="requestRemovePdf"
+            :disabled="savingLocal || removingPdf"
+          >
+            {{ removingPdf ? "Quitando..." : "Quitar PDF" }}
+          </button>
         </div>
       </div>
 
@@ -357,7 +376,7 @@
         class="pub-btn pub-btn--primary"
         type="button"
         @click="guardar"
-        :disabled="savingLocal"
+        :disabled="savingLocal || removingPdf"
       >
         {{ savingLocal ? "Guardando..." : "Guardar cambios" }}
       </button>
@@ -366,12 +385,68 @@
         class="pub-btn pub-btn--ghost"
         type="button"
         @click="$emit('cancel')"
-        :disabled="savingLocal"
+        :disabled="savingLocal || removingPdf"
       >
-        Cancelar
+        Volver al detalle
       </button>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="showRemovePdfModal"
+      class="pub-modalOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pub-remove-pdf-title"
+      @click.self="cancelRemovePdf"
+    >
+      <section class="pub-modal">
+        <div class="pub-modal__icon">
+          PDF
+        </div>
+
+        <div class="pub-modal__body">
+          <p class="pub-modal__eyebrow">
+            Confirmación requerida
+          </p>
+
+          <h2 id="pub-remove-pdf-title" class="pub-modal__title">
+            Quitar archivo PDF
+          </h2>
+
+          <p class="pub-modal__text">
+            Estás por quitar el PDF asociado a esta publicación. Esta acción
+            eliminará el documento actual del registro académico.
+          </p>
+
+          <p class="pub-modal__warning">
+            Si necesitas conservar una copia, descarga el archivo antes de continuar.
+          </p>
+        </div>
+
+        <div class="pub-modal__actions">
+          <button
+            class="pub-btn pub-btn--ghost"
+            type="button"
+            :disabled="removingPdf"
+            @click="cancelRemovePdf"
+          >
+            Cancelar
+          </button>
+
+          <button
+            class="pub-btn pub-btn--danger"
+            type="button"
+            :disabled="removingPdf"
+            @click="removeCurrentPdf"
+          >
+            {{ removingPdf ? "Quitando..." : "Sí, quitar PDF" }}
+          </button>
+        </div>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -398,6 +473,9 @@ const editMsg = ref("");
 const editMsgType = ref("");
 const fileError = ref("");
 const pdfUploadItems = ref([]);
+const removingPdf = ref(false);
+const showRemovePdfModal = ref(false);
+const preserveFeedbackOnNextDetalle = ref(false);
 
 const savingLocal = computed({
   get: () => props.saving,
@@ -514,7 +592,13 @@ const currentPdfValue = computed(() =>
     props.detalle?.archivo_pdf_url,
     props.detalle?.archivo_pdf,
     props.detalle?.pdf,
-    props.detalle?.archivo
+    props.detalle?.archivo,
+    props.detalle?.archivos?.[0]?.url,
+    props.detalle?.archivos?.[0]?.archivo,
+    props.detalle?.archivos?.[0]?.archivo_url,
+    props.detalle?.adjuntos?.[0]?.url,
+    props.detalle?.adjuntos?.[0]?.archivo,
+    props.detalle?.adjuntos?.[0]?.archivo_url
   )
 );
 
@@ -642,8 +726,14 @@ watch(
 
     pdfUploadItems.value = [];
     fileError.value = "";
-    editMsg.value = "";
-    editMsgType.value = "";
+
+    if (preserveFeedbackOnNextDetalle.value) {
+      preserveFeedbackOnNextDetalle.value = false;
+    } else {
+      editMsg.value = "";
+      editMsgType.value = "";
+    }
+
     mapDetalleToForm(detalle);
   },
   { immediate: true }
@@ -794,6 +884,159 @@ const validarEdicion = () => {
   return "";
 };
 
+const openCurrentPdf = async () => {
+  if (!currentId.value) return;
+
+  const previewWindow = window.open("", "_blank");
+
+  if (!previewWindow) {
+    alert(
+      "El navegador bloqueó la ventana emergente. Permite ventanas emergentes para ver el PDF."
+    );
+    return;
+  }
+
+  previewWindow.document.write(`
+    <html>
+      <head>
+        <title>Cargando PDF...</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <p>Cargando PDF...</p>
+      </body>
+    </html>
+  `);
+
+  try {
+    const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/pdf",
+    });
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    previewWindow.location.href = blobUrl;
+
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 120000);
+  } catch (err) {
+    console.error(err);
+
+    previewWindow.document.body.innerHTML = `
+      <p>No se pudo abrir el PDF.</p>
+      <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+    `;
+  }
+};
+
+const downloadCurrentPdf = async () => {
+  if (!currentId.value) return;
+
+  try {
+    const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/pdf",
+    });
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = currentPdfName.value || "publicacion.pdf";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+  } catch (err) {
+    console.error(err);
+    alert("No se pudo descargar el PDF.");
+  }
+};
+
+const requestRemovePdf = () => {
+  if (!canEdit.value || !hasCurrentPdf.value || savingLocal.value || removingPdf.value) {
+    return;
+  }
+
+  showRemovePdfModal.value = true;
+};
+
+const cancelRemovePdf = () => {
+  if (removingPdf.value) return;
+  showRemovePdfModal.value = false;
+};
+
+const removeCurrentPdf = async () => {
+  if (!canEdit.value || !hasCurrentPdf.value || savingLocal.value || removingPdf.value) {
+    return;
+  }
+
+  removingPdf.value = true;
+  editMsg.value = "";
+  editMsgType.value = "";
+  fileError.value = "";
+
+  try {
+    if (!currentId.value) {
+      editMsg.value = "No se pudo determinar el identificador de la publicación.";
+      editMsgType.value = "error";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("quitar_pdf_actual", "true");
+
+    await api.patch(`/publicaciones/${currentId.value}/`, formData);
+
+    pdfUploadItems.value = [];
+    showRemovePdfModal.value = false;
+    editMsg.value = "PDF quitado correctamente.";
+    editMsgType.value = "success";
+
+    preserveFeedbackOnNextDetalle.value = true;
+    emit("updated");
+  } catch (err) {
+    console.error(err);
+
+    const data = err?.response?.data;
+
+    if (data && typeof data === "object") {
+      const errores = Object.entries(data)
+        .map(([campo, detalle]) => `• ${campo}: ${prettyError(detalle)}`)
+        .join("\n");
+
+      editMsg.value = `Error al quitar el PDF:\n${errores}`;
+    } else {
+      editMsg.value =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "No se pudo quitar el PDF de la publicación.";
+    }
+
+    editMsgType.value = "error";
+  } finally {
+    removingPdf.value = false;
+  }
+};
+
 const guardar = async () => {
   savingLocal.value = true;
   editMsg.value = "";
@@ -831,6 +1074,8 @@ const guardar = async () => {
 
     editMsg.value = "Cambios guardados correctamente.";
     editMsgType.value = "success";
+
+    preserveFeedbackOnNextDetalle.value = true;
     emit("updated");
   } catch (err) {
     console.error(err);
@@ -859,3 +1104,4 @@ const guardar = async () => {
 
 <style src="../componentes/sgpc-fcvt.css"></style>
 <style src="./editar-publicacion.css"></style>
+

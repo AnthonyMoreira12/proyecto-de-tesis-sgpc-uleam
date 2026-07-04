@@ -41,7 +41,7 @@ def admin_publicaciones_base_queryset():
             "tipo",
             "usuario_creador",
             "admin_registrador",
-            "facultad",
+            "carrera__facultad",
             "carrera",
             "proyecto",
             "area",
@@ -119,7 +119,7 @@ def filter_admin_publicaciones_queryset(
         qs = qs.filter(admin_registrador_id=admin_registrador_id)
 
     if facultad_id:
-        qs = qs.filter(facultad_id=facultad_id)
+        qs = qs.filter(carrera__facultad_id=facultad_id)
 
     if carrera_id:
         qs = qs.filter(carrera_id=carrera_id)
@@ -163,7 +163,7 @@ def filter_admin_publicaciones_queryset(
             | Q(tipo__codigo__icontains=q)
             | Q(titulo_admin__icontains=q)
             | Q(proyecto__nombre__icontains=q)
-            | Q(facultad__nombre__icontains=q)
+            | Q(carrera__facultad__nombre__icontains=q)
             | Q(carrera__nombre__icontains=q)
             | Q(area__nombre__icontains=q)
             | Q(subarea__nombre__icontains=q)

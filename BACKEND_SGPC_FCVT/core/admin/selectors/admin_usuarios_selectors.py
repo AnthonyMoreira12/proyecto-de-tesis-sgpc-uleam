@@ -6,6 +6,7 @@
 Selectors administrativos para consultas de usuarios.
 Centraliza querysets y filtros reutilizables del módulo admin.
 """
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Prefetch
 
@@ -30,7 +31,7 @@ def admin_users_base_queryset():
 
     return (
         User.objects
-        .select_related("facultad", "carrera", "autor")
+        .select_related("carrera__facultad", "carrera", "autor")
         .prefetch_related(
             Prefetch(
                 "autor__participaciones",
@@ -80,7 +81,7 @@ def filter_admin_users_queryset(qs, *, q="", scope="", incompletos=False):
             | Q(apellidos__icontains=q)
             | Q(email__icontains=q)
             | Q(identificacion__icontains=q)
-            | Q(facultad__nombre__icontains=q)
+            | Q(carrera__facultad__nombre__icontains=q)
             | Q(carrera__nombre__icontains=q)
             | Q(autor__nombres__icontains=q)
             | Q(autor__apellidos__icontains=q)

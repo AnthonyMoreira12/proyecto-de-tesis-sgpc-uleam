@@ -43,7 +43,7 @@ def _get_usuario_by_id(usuario_id):
         return None
 
     usuario = (
-        User.objects.select_related("facultad", "carrera")
+        User.objects.select_related("carrera__facultad", "carrera")
         .filter(pk=usuario_id)
         .first()
     )
@@ -281,7 +281,10 @@ def _normalize_autores_for_admin(*, autores_payload, autor_objetivo):
     autores_existentes = set(
         Autor.objects.filter(id__in=ordered_ids).values_list("id", flat=True)
     )
-    faltantes = [autor_id for autor_id in ordered_ids if autor_id not in autores_existentes]
+    faltantes = [
+        autor_id for autor_id in ordered_ids
+        if autor_id not in autores_existentes
+    ]
 
     if faltantes:
         raise AdminPublicacionesServiceError(

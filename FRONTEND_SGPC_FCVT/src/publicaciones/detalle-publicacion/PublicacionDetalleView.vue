@@ -389,17 +389,22 @@ const toPositiveInt = (value) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-const uniqueNumbers = (values = []) => [...new Set(values.map(toPositiveInt).filter(Boolean))];
+const uniqueNumbers = (values = []) => [
+  ...new Set(values.map(toPositiveInt).filter(Boolean)),
+];
 
-const uniqueStrings = (values = []) =>
-  [...new Set(values.map((v) => toStr(v)).filter(Boolean))];
+const uniqueStrings = (values = []) => [
+  ...new Set(values.map((v) => toStr(v)).filter(Boolean)),
+];
 
 const readLocalUser = () => {
   if (typeof window === "undefined") return {};
 
   try {
     const parsed = JSON.parse(localStorage.getItem("user") || "{}");
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
   } catch {
     return {};
   }
@@ -607,9 +612,11 @@ const normalizeAuthors = (authors) => {
         autor?.tipo_participacion,
         autor?.rol
       );
+
       const rolNorm = stripAccents(rolRaw).toLowerCase();
 
       let rol = "Autor";
+
       if (rolNorm.includes("principal")) rol = "Autor principal";
       else if (rolNorm.includes("coautor")) rol = "Coautor";
       else if (rolRaw) rol = rolRaw;
@@ -685,6 +692,21 @@ const detalleNormalizado = computed(() => {
   const pais = firstFilled(d.pais, d.pais_nombre);
   const ciudad = firstFilled(d.ciudad, d.ciudad_nombre);
 
+  const archivoPdfUrl = resolvePdfUrl(
+    firstFilled(
+      d.archivo_pdf_url,
+      d.archivo_pdf,
+      d.pdf,
+      d.archivo,
+      d.archivos?.[0]?.url,
+      d.archivos?.[0]?.archivo,
+      d.archivos?.[0]?.archivo_url,
+      d.adjuntos?.[0]?.url,
+      d.adjuntos?.[0]?.archivo,
+      d.adjuntos?.[0]?.archivo_url
+    )
+  );
+
   return {
     raw: d,
     titulo,
@@ -699,15 +721,14 @@ const detalleNormalizado = computed(() => {
     pais,
     ciudad,
     ubicacion: [pais, ciudad].filter(Boolean).join(", "),
-    archivoPdfUrl: resolvePdfUrl(
-      firstFilled(d.archivo_pdf_url, d.archivo_pdf, d.pdf, d.archivo)
-    ),
+    archivoPdfUrl,
     autores: normalizeAuthors(d.autores),
   };
 });
 
 const userOwnsPublication = computed(() => {
   const authors = detalleNormalizado.value.autores || [];
+
   if (!authors.length) return false;
 
   const myAuthorIds = currentAuthorIds.value;
@@ -904,7 +925,7 @@ const bloquePrincipal = computed(() => {
       nombreLibro && nombreLibro !== titulo
         ? buildField("Título del libro", nombreLibro, { span: 12 })
         : null,
-      buildField("Editorial", firstFilled(d.editorial), { span: 4 }),
+      buildField("Editorial", firstFilled(d.editorial, d.editorial_compilador), { span: 4 }),
       buildField("Edición", firstFilled(d.edicion), { span: 4 }),
       buildField("Fecha de publicación", formatFecha(d.fecha_publicacion), { span: 4 }),
       buildField("Enlace", firstFilled(d.link_libro), {
@@ -955,31 +976,104 @@ const openEditMode = () => {
   editMode.value = true;
 };
 
-const openPdf = () => {
-  const url = detalleNormalizado.value.archivoPdfUrl;
-  if (!url) return;
+const openPdf = async () => {
+  const id = route.params.id;
 
-  window.open(url, "_blank", "noopener,noreferrer");
+  if (!id) return;
+
+  const previewWindow = window.open("", "_blank");
+
+  if (!previewWindow) {
+    alert(
+      "El navegador bloqueó la ventana emergente. Permite ventanas emergentes para ver el PDF."
+    );
+    return;
+  }
+
+  previewWindow.document.write(`
+    <html>
+      <head>
+        <title>Cargando PDF...</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <p>Cargando PDF...</p>
+      </body>
+    </html>
+  `);
+
+  try {
+    const response = await api.get(`/publicaciones/${id}/pdf/`, {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/pdf",
+    });
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    previewWindow.location.href = blobUrl;
+
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 120000);
+  } catch (err) {
+    console.error(err);
+
+    previewWindow.document.body.innerHTML = `
+      <p>No se pudo abrir el PDF.</p>
+      <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+    `;
+  }
 };
 
-const downloadPdf = () => {
-  const url = detalleNormalizado.value.archivoPdfUrl;
-  if (!url) return;
+const downloadPdf = async () => {
+  const id = route.params.id;
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.download = fileNameFromUrl(url);
+  if (!id) return;
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    const response = await api.get(`/publicaciones/${id}/pdf/`, {
+      responseType: "blob",
+      headers: {
+        Accept: "application/pdf",
+      },
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/pdf",
+    });
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    const filename =
+      fileNameFromUrl(detalleNormalizado.value.archivoPdfUrl) || "publicacion.pdf";
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+  } catch (err) {
+    console.error(err);
+    alert("No se pudo descargar el PDF.");
+  }
 };
 
-const cargarDetalle = async (forcedId = route.params.id) => {
+const cargarDetalle = async (forcedId = route.params.id, options = {}) => {
   const id = toStr(forcedId);
   const requestId = ++requestSeq;
+  const keepEditMode = !!options.keepEditMode;
+  const silent = !!options.silent;
 
   if (!id) {
     detalle.value = null;
@@ -988,14 +1082,21 @@ const cargarDetalle = async (forcedId = route.params.id) => {
     return;
   }
 
-  loading.value = true;
+  if (!silent) {
+    loading.value = true;
+  }
+
   error.value = "";
-  editMode.value = false;
+
+  if (!keepEditMode) {
+    editMode.value = false;
+  }
 
   try {
     const response = await api.get(`/publicaciones/${id}/`);
 
     if (requestId !== requestSeq) return;
+
     detalle.value = response.data;
   } catch (err) {
     if (requestId !== requestSeq) return;
@@ -1007,15 +1108,19 @@ const cargarDetalle = async (forcedId = route.params.id) => {
       err?.response?.data?.message ||
       "Ocurrió un problema al obtener el detalle de la publicación.";
   } finally {
-    if (requestId === requestSeq) {
+    if (requestId === requestSeq && !silent) {
       loading.value = false;
     }
   }
 };
 
 const onUpdated = async () => {
-  await cargarDetalle(route.params.id);
-  editMode.value = false;
+  await cargarDetalle(route.params.id, {
+    keepEditMode: true,
+    silent: true,
+  });
+
+  editMode.value = true;
 };
 
 watch(

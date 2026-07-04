@@ -1,5 +1,6 @@
 """
 Servicio para construir el detalle completo de una publicación según su tipo.
+Incluye PDF principal y archivos adjuntos asociados.
 """
 
 from core.models import (
@@ -37,7 +38,25 @@ def _safe_file_url(file_field):
     try:
         if not file_field:
             return None
+
+        if not getattr(file_field, "name", None):
+            return None
+
         return file_field.url
+    except Exception:
+        return None
+
+
+def _safe_file_name(file_field):
+    try:
+        if not file_field:
+            return None
+
+        name = getattr(file_field, "name", None)
+        if not name:
+            return None
+
+        return name.split("/")[-1]
     except Exception:
         return None
 
@@ -49,6 +68,90 @@ def _to_str(value):
 def _to_lower(value):
     value = _to_str(value)
     return value.lower() if value else ""
+
+
+def _get_facultad_desde_publicacion(pub):
+    """
+    La publicación ya no tiene facultad directa.
+    La facultad se obtiene mediante:
+    Publicacion -> Carrera -> Facultad
+    """
+    carrera = _safe_related(pub, "carrera")
+
+    if not carrera:
+        return None
+
+    return _safe_related(carrera, "facultad")
+
+
+def _build_archivos_payload(pub):
+    """
+    Devuelve todos los archivos PDF asociados a una publicación.
+
+    Incluye:
+    - PDF principal: Publicacion.archivo_pdf
+    - Adjuntos: PublicacionArchivo mediante related_name='archivos'
+    """
+    archivos = []
+
+    pdf_principal_url = _safe_file_url(pub.archivo_pdf)
+
+    if pdf_principal_url:
+        archivos.append(
+            {
+                "id": None,
+                "tipo": "principal",
+                "nombre": _safe_file_name(pub.archivo_pdf) or "PDF principal",
+                "archivo": pdf_principal_url,
+                "url": pdf_principal_url,
+                "orden": 0,
+                "es_principal": True,
+            }
+        )
+
+    try:
+        adjuntos_qs = pub.archivos.all().order_by("orden", "id")
+    except Exception:
+        adjuntos_qs = []
+
+    for adjunto in adjuntos_qs:
+        adjunto_url = _safe_file_url(adjunto.archivo)
+
+        if not adjunto_url:
+            continue
+
+        archivos.append(
+            {
+                "id": adjunto.id,
+                "tipo": "adjunto",
+                "nombre": adjunto.nombre or _safe_file_name(adjunto.archivo) or "Adjunto",
+                "archivo": adjunto_url,
+                "url": adjunto_url,
+                "orden": adjunto.orden,
+                "es_principal": False,
+            }
+        )
+
+    return archivos
+
+
+def _get_archivo_pdf_principal_o_adjunto(pub, archivos):
+    """
+    Mantiene compatibilidad con el frontend:
+    si Publicacion.archivo_pdf existe, usa ese.
+    si no existe, usa el primer adjunto disponible.
+    """
+    pdf_principal_url = _safe_file_url(pub.archivo_pdf)
+
+    if pdf_principal_url:
+        return pdf_principal_url
+
+    for archivo in archivos:
+        url = archivo.get("url") or archivo.get("archivo")
+        if url:
+            return url
+
+    return None
 
 
 def _get_articulo_payload(articulo):
@@ -106,7 +209,7 @@ def construir_detalle_publicacion(*, publicacion_id: int):
         annotate_tipo_publicacion_final(
             Publicacion.objects.select_related(
                 "usuario_creador",
-                "facultad",
+                "carrera__facultad",
                 "carrera",
                 "proyecto",
                 "area",
@@ -119,6 +222,7 @@ def construir_detalle_publicacion(*, publicacion_id: int):
                 "libro",
                 "capitulo_libro",
             )
+            .prefetch_related("archivos")
         )
         .get(id=publicacion_id)
     )
@@ -130,6 +234,7 @@ def construir_detalle_publicacion(*, publicacion_id: int):
     )
 
     autores = []
+
     for pa in autores_rel:
         autores.append(
             {
@@ -152,36 +257,56 @@ def construir_detalle_publicacion(*, publicacion_id: int):
     origen_tipo = str(pub.origen_tipo or "ninguno").strip().lower()
     origen_grado = pub.origen_grado if origen_tipo == "tic" else None
 
+    facultad = _get_facultad_desde_publicacion(pub)
+
+    archivos = _build_archivos_payload(pub)
+    archivo_pdf_url = _get_archivo_pdf_principal_o_adjunto(pub, archivos)
+
     data = {
         "id": pub.id,
         "tipo": getattr(tipo, "nombre", None),
         "tipo_codigo": getattr(tipo, "codigo", None),
         "tipo_publicacion_final": tipo_final,
         "tipo_publicacion_final_label": tipo_publicacion_label(tipo_final),
+
         "proyecto": pub.proyecto.nombre if pub.proyecto else None,
-        "facultad": pub.facultad.nombre if pub.facultad else None,
+        "facultad": facultad.nombre if facultad else None,
         "carrera": pub.carrera.nombre if pub.carrera else None,
         "area": pub.area.nombre if pub.area else None,
         "subarea": pub.subarea.nombre if pub.subarea else None,
         "pais": pub.pais.nombre if (codigo == "ponencia" and pub.pais) else None,
         "ciudad": pub.ciudad.nombre if (codigo == "ponencia" and pub.ciudad) else None,
+
         "proyecto_id": pub.proyecto_id,
-        "facultad_id": pub.facultad_id,
+        "facultad_id": facultad.id if facultad else None,
         "carrera_id": pub.carrera_id,
         "area_id": pub.area_id,
         "subarea_id": pub.subarea_id,
         "pais_id": pub.pais_id if codigo == "ponencia" else None,
         "ciudad_id": pub.ciudad_id if codigo == "ponencia" else None,
+
         "fecha_publicacion": _fecha_a_str(pub.fecha_publicacion),
         "anio_publicacion": pub.anio_publicacion,
         "origen_tipo": origen_tipo,
         "origen_grado": origen_grado,
-        "archivo_pdf": _safe_file_url(pub.archivo_pdf),
+
+        # Compatibilidad con frontend actual.
+        # Si no hay PDF principal, usa el primer adjunto disponible.
+        "archivo_pdf": archivo_pdf_url,
+        "archivo_pdf_url": archivo_pdf_url,
+
+        # Lista completa de archivos asociados.
+        "archivos": archivos,
+
         "autores": autores,
     }
 
     if codigo == "ponencia":
-        pon = _safe_related(pub, "ponencia") or Ponencia.objects.filter(publicacion=pub).first()
+        pon = (
+            _safe_related(pub, "ponencia")
+            or Ponencia.objects.filter(publicacion=pub).first()
+        )
+
         if pon:
             data.update(
                 {
@@ -189,17 +314,26 @@ def construir_detalle_publicacion(*, publicacion_id: int):
                     "nombre_ponencia": pon.nombre_ponencia,
                     "codigo_issn_isbn": pon.codigo_issn_isbn,
                     "tipo_presentacion": pon.tipo_presentacion,
+                    "tipo_presentacion_otro": getattr(pon, "tipo_presentacion_otro", None),
                     "link_evento": pon.link_evento,
                 }
             )
 
     elif codigo in ARTICULOS:
-        art = _safe_related(pub, "articulo") or Articulo.objects.filter(publicacion=pub).first()
+        art = (
+            _safe_related(pub, "articulo")
+            or Articulo.objects.filter(publicacion=pub).first()
+        )
+
         if art:
             data.update(_get_articulo_payload(art))
 
     elif codigo == "libro":
-        lib = _safe_related(pub, "libro") or Libro.objects.filter(publicacion=pub).first()
+        lib = (
+            _safe_related(pub, "libro")
+            or Libro.objects.filter(publicacion=pub).first()
+        )
+
         if lib:
             data.update(
                 {
@@ -212,7 +346,11 @@ def construir_detalle_publicacion(*, publicacion_id: int):
             )
 
     elif codigo in CAPITULOS:
-        cap = _safe_related(pub, "capitulo_libro") or CapituloLibro.objects.filter(publicacion=pub).first()
+        cap = (
+            _safe_related(pub, "capitulo_libro")
+            or CapituloLibro.objects.filter(publicacion=pub).first()
+        )
+
         if cap:
             data.update(
                 {

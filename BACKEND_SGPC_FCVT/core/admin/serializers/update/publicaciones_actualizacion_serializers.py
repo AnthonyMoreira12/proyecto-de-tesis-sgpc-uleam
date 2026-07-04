@@ -20,7 +20,6 @@ from core.models import (
     CapituloLibro,
     Carrera,
     Ciudad,
-    Facultad,
     Libro,
     Pais,
     Ponencia,
@@ -50,9 +49,13 @@ class AutorActualizacionItemSerializer(serializers.Serializer):
 
 
 class PublicacionActualizacionSerializer(serializers.Serializer):
-    facultad = serializers.PrimaryKeyRelatedField(
-        queryset=Facultad.objects.all(),
+    # Campo de compatibilidad: el frontend puede seguir enviando "facultad",
+    # pero ya no se guarda como columna directa de Publicacion.
+    # La facultad real se obtiene desde carrera.facultad.
+    facultad = serializers.IntegerField(
         required=False,
+        allow_null=True,
+        write_only=True,
     )
     carrera = serializers.PrimaryKeyRelatedField(
         queryset=Carrera.objects.all(),
@@ -330,16 +333,23 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
     def _validate_relaciones_generales(self, attrs):
         instance = self.instance
 
+        # Publicacion ya no debe guardar facultad directa.
+        # Si el frontend todavía envía "facultad", se usa solo para validar
+        # que coincida con la facultad asociada a la carrera seleccionada.
+        facultad_payload_id = attrs.pop("facultad", None)
+
         final_carrera = attrs.get("carrera", getattr(instance, "carrera", None))
-        final_facultad = attrs.get("facultad", getattr(instance, "facultad", None))
         final_proyecto = attrs.get("proyecto", getattr(instance, "proyecto", None))
 
-        if "carrera" in attrs and "facultad" not in attrs and final_carrera is not None:
-            attrs["facultad"] = final_carrera.facultad
-            final_facultad = final_carrera.facultad
+        if facultad_payload_id and final_carrera:
+            try:
+                facultad_payload_id = int(facultad_payload_id)
+            except Exception:
+                raise ValidationError(
+                    {"facultad": ["La facultad seleccionada no es válida."]}
+                )
 
-        if final_carrera and final_facultad:
-            if getattr(final_carrera, "facultad_id", None) != getattr(final_facultad, "id", None):
+            if getattr(final_carrera, "facultad_id", None) != facultad_payload_id:
                 raise ValidationError(
                     {"carrera": ["La carrera seleccionada no pertenece a la facultad indicada."]}
                 )
@@ -802,7 +812,6 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
         fecha_changed = False
 
         for field in [
-            "facultad",
             "carrera",
             "proyecto",
             "area",
@@ -816,12 +825,6 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
 
                 if field == "fecha_publicacion":
                     fecha_changed = True
-
-        if instance.carrera and (
-            not instance.facultad
-            or getattr(instance.carrera, "facultad_id", None) != getattr(instance.facultad, "id", None)
-        ):
-            instance.facultad = instance.carrera.facultad
 
         if codigo == "ponencia":
             if "pais" in validated_data:

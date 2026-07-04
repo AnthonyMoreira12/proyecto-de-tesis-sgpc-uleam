@@ -1,9 +1,11 @@
 """
 View para consultar y actualizar el detalle de una publicación.
+Permite actualizar con JSON, form-data y multipart/form-data.
 """
 
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -31,6 +33,8 @@ class PublicacionDetailAPIView(
     PublicacionesMultiPartMixin,
     APIView,
 ):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
     def _get_pub_or_404(self, publicacion_id):
         return (
             Publicacion.objects
@@ -114,4 +118,5 @@ class PublicacionDetailAPIView(
 
         publicacion = serializer.save()
         data = construir_detalle_publicacion(publicacion_id=publicacion.id)
+
         return Response(data, status=status.HTTP_200_OK)

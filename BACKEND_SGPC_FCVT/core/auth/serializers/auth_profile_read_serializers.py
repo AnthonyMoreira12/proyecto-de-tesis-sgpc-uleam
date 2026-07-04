@@ -15,7 +15,7 @@ User = get_user_model()
 
 class ProfileSerializer(serializers.ModelSerializer):
     facultad = serializers.CharField(
-        source="facultad.nombre",
+        source="carrera.facultad.nombre",
         read_only=True,
         allow_null=True,
     )
@@ -26,7 +26,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     )
 
     facultad_id = serializers.IntegerField(
-        source="facultad.id",
+        source="carrera.facultad_id",
         read_only=True,
         allow_null=True,
     )
