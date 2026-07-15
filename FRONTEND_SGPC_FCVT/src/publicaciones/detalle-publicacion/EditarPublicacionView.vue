@@ -590,6 +590,7 @@ const resolveFileUrl = (value) => {
 const currentPdfValue = computed(() =>
   firstFilled(
     props.detalle?.archivo_pdf_url,
+    props.detalle?.pdf_url,
     props.detalle?.archivo_pdf,
     props.detalle?.pdf,
     props.detalle?.archivo,
@@ -602,9 +603,32 @@ const currentPdfValue = computed(() =>
   )
 );
 
+const hasPdfInPayload = (payload = {}) => {
+  if (!payload || typeof payload !== "object") return false;
+
+  return Boolean(
+    payload.tiene_pdf ||
+      payload.has_pdf ||
+      payload.tienePdf ||
+      payload.hasPdf ||
+      payload.archivo_pdf_url ||
+      payload.pdf_url ||
+      payload.archivo_pdf ||
+      payload.pdf ||
+      payload.archivo ||
+      payload.archivos?.length ||
+      payload.adjuntos?.length
+  );
+};
+
 const currentPdfHref = computed(() => resolveFileUrl(currentPdfValue.value));
-const hasCurrentPdf = computed(() => Boolean(currentPdfHref.value));
-const currentPdfName = computed(() => fileNameFromValue(currentPdfValue.value));
+const hasCurrentPdf = computed(() =>
+  Boolean(currentPdfHref.value || hasPdfInPayload(props.detalle || {}))
+);
+const currentPdfName = computed(() => {
+  const name = fileNameFromValue(currentPdfValue.value);
+  return name && name !== "archivo.pdf" ? name : "publicacion.pdf";
+});
 
 const selectedPdfItem = computed(() => {
   const items = Array.isArray(pdfUploadItems.value) ? pdfUploadItems.value : [];
@@ -884,10 +908,103 @@ const validarEdicion = () => {
   return "";
 };
 
+const writePdfLoading = (targetWindow) => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Cargando PDF...</title>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <p>Cargando PDF...</p>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const writePdfError = (targetWindow, message = "No se pudo abrir el PDF.") => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>No se pudo abrir el PDF</title>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <h2>${message}</h2>
+        <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const writePdfViewer = (targetWindow, blobUrl) => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Vista previa del PDF</title>
+        <meta charset="utf-8" />
+        <style>
+          html,
+          body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #111827;
+          }
+
+          iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #ffffff;
+          }
+        </style>
+      </head>
+      <body>
+        <iframe src="${blobUrl}" title="Vista previa del PDF"></iframe>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const fetchCurrentPdfBlob = async () => {
+  if (!currentId.value) {
+    throw new Error("No se pudo determinar el identificador de la publicación.");
+  }
+
+  const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  });
+
+  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+
+  if (contentType && !contentType.includes("application/pdf")) {
+    throw new Error("La respuesta recibida no es un PDF.");
+  }
+
+  return new Blob([response.data], {
+    type: "application/pdf",
+  });
+};
+
 const openCurrentPdf = async () => {
   if (!currentId.value) return;
 
-  const previewWindow = window.open("", "_blank");
+  const previewWindow = window.open("about:blank", "_blank");
 
   if (!previewWindow) {
     alert(
@@ -896,43 +1013,20 @@ const openCurrentPdf = async () => {
     return;
   }
 
-  previewWindow.document.write(`
-    <html>
-      <head>
-        <title>Cargando PDF...</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
-        <p>Cargando PDF...</p>
-      </body>
-    </html>
-  `);
+  writePdfLoading(previewWindow);
 
   try {
-    const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
-      responseType: "blob",
-      headers: {
-        Accept: "application/pdf",
-      },
-    });
-
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
+    const blob = await fetchCurrentPdfBlob();
     const blobUrl = URL.createObjectURL(blob);
 
-    previewWindow.location.href = blobUrl;
+    writePdfViewer(previewWindow, blobUrl);
 
     setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
-    }, 120000);
+    }, 180000);
   } catch (err) {
     console.error(err);
-
-    previewWindow.document.body.innerHTML = `
-      <p>No se pudo abrir el PDF.</p>
-      <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
-    `;
+    writePdfError(previewWindow);
   }
 };
 
@@ -940,17 +1034,7 @@ const downloadCurrentPdf = async () => {
   if (!currentId.value) return;
 
   try {
-    const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
-      responseType: "blob",
-      headers: {
-        Accept: "application/pdf",
-      },
-    });
-
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
+    const blob = await fetchCurrentPdfBlob();
     const blobUrl = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
@@ -1000,10 +1084,17 @@ const removeCurrentPdf = async () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("quitar_pdf_actual", "true");
-
-    await api.patch(`/publicaciones/${currentId.value}/`, formData);
+    await api.patch(
+      `/publicaciones/${currentId.value}/`,
+      {
+        quitar_pdf_actual: true,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     pdfUploadItems.value = [];
     showRemovePdfModal.value = false;
@@ -1104,4 +1195,3 @@ const guardar = async () => {
 
 <style src="../componentes/sgpc-fcvt.css"></style>
 <style src="./editar-publicacion.css"></style>
-

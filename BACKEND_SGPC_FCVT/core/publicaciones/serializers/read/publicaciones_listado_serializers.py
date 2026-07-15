@@ -76,6 +76,12 @@ class PublicacionListadoSerializer(serializers.ModelSerializer):
     tipo_publicacion_final = serializers.SerializerMethodField()
     tipo_publicacion_final_label = serializers.SerializerMethodField()
 
+    tiene_pdf = serializers.SerializerMethodField()
+    has_pdf = serializers.SerializerMethodField()
+    hasPdf = serializers.SerializerMethodField()
+    archivo_pdf_url = serializers.SerializerMethodField()
+    pdf_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Publicacion
         fields = [
@@ -91,6 +97,11 @@ class PublicacionListadoSerializer(serializers.ModelSerializer):
             "tipo_codigo",
             "tipo_publicacion_final",
             "tipo_publicacion_final_label",
+            "tiene_pdf",
+            "has_pdf",
+            "hasPdf",
+            "archivo_pdf_url",
+            "pdf_url",
         ]
         read_only_fields = fields
 
@@ -111,6 +122,59 @@ class PublicacionListadoSerializer(serializers.ModelSerializer):
             .filter(publicacion=obj)
             .order_by("orden", "id")
         )
+
+    def _get_facultad_obj(self, obj):
+        carrera = getattr(obj, "carrera", None)
+        if not carrera:
+            return None
+        return getattr(carrera, "facultad", None)
+
+    def _build_file_url(self, file_field):
+        try:
+            if not file_field:
+                return None
+            url = file_field.url
+        except Exception:
+            return None
+
+        request = self.context.get("request")
+        if request:
+            try:
+                return request.build_absolute_uri(url)
+            except Exception:
+                return url
+
+        return url
+
+    def _get_pdf_file(self, obj):
+        archivo_pdf = getattr(obj, "archivo_pdf", None)
+
+        if archivo_pdf and getattr(archivo_pdf, "name", None):
+            return archivo_pdf
+
+        prefetched = getattr(obj, "_prefetched_objects_cache", {})
+
+        if "archivos" in prefetched:
+            for adjunto in prefetched["archivos"]:
+                archivo = getattr(adjunto, "archivo", None)
+                if archivo and getattr(archivo, "name", None):
+                    return archivo
+            return None
+
+        try:
+            adjunto = (
+                obj.archivos.filter(archivo__isnull=False)
+                .exclude(archivo="")
+                .order_by("orden", "id")
+                .first()
+            )
+        except Exception:
+            return None
+
+        if adjunto and adjunto.archivo and getattr(adjunto.archivo, "name", None):
+            return adjunto.archivo
+
+        return None
 
     def get_titulo(self, obj):
         articulo = getattr(obj, "articulo", None)
@@ -151,7 +215,8 @@ class PublicacionListadoSerializer(serializers.ModelSerializer):
         return _to_str(getattr(getattr(obj, "proyecto", None), "nombre", None))
 
     def get_facultad(self, obj):
-        return _to_str(getattr(getattr(obj, "facultad", None), "nombre", None))
+        facultad = self._get_facultad_obj(obj)
+        return _to_str(getattr(facultad, "nombre", None))
 
     def get_carrera(self, obj):
         return _to_str(getattr(getattr(obj, "carrera", None), "nombre", None))
@@ -167,3 +232,18 @@ class PublicacionListadoSerializer(serializers.ModelSerializer):
 
     def get_tipo_publicacion_final_label(self, obj):
         return _resolve_tipo_final_label(obj)
+
+    def get_tiene_pdf(self, obj):
+        return bool(self._get_pdf_file(obj))
+
+    def get_has_pdf(self, obj):
+        return self.get_tiene_pdf(obj)
+
+    def get_hasPdf(self, obj):
+        return self.get_tiene_pdf(obj)
+
+    def get_archivo_pdf_url(self, obj):
+        return self._build_file_url(self._get_pdf_file(obj))
+
+    def get_pdf_url(self, obj):
+        return self.get_archivo_pdf_url(obj)

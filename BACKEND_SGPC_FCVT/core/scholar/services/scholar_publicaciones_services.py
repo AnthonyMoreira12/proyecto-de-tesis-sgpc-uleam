@@ -2,9 +2,9 @@
 Servicio para buscar publicaciones con filtros, orden y facetas para la vista tipo Scholar.
 """
 
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 
-from core.models import Publicacion, PublicacionAutor
+from core.models import Publicacion, PublicacionArchivo, PublicacionAutor
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     TIPOS_PUBLICACION_FINALES,
     annotate_tipo_publicacion_final,
@@ -31,6 +31,95 @@ def parsear_anio(year_str: str):
             return (int(start), int(end))
 
     return None
+
+
+def _is_truthy(value):
+    return str(value or "").strip().lower() in {
+        "1",
+        "true",
+        "t",
+        "yes",
+        "y",
+        "si",
+        "sí",
+        "on",
+    }
+
+
+def _build_absolute_url(request, file_field):
+    try:
+        if not file_field:
+            return None
+        url = file_field.url
+    except Exception:
+        return None
+
+    if request:
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            return url
+
+    return url
+
+
+def _get_pdf_file(pub):
+    archivo_pdf = getattr(pub, "archivo_pdf", None)
+
+    if archivo_pdf and getattr(archivo_pdf, "name", None):
+        return archivo_pdf
+
+    prefetched = getattr(pub, "_prefetched_objects_cache", {})
+
+    if "archivos" in prefetched:
+        for adjunto in prefetched["archivos"]:
+            archivo = getattr(adjunto, "archivo", None)
+            if archivo and getattr(archivo, "name", None):
+                return archivo
+        return None
+
+    try:
+        adjunto = (
+            pub.archivos.filter(archivo__isnull=False)
+            .exclude(archivo="")
+            .order_by("orden", "id")
+            .first()
+        )
+    except Exception:
+        return None
+
+    if adjunto and adjunto.archivo and getattr(adjunto.archivo, "name", None):
+        return adjunto.archivo
+
+    return None
+
+
+def _pub_has_pdf(pub):
+    annotated = getattr(pub, "tiene_adjuntos_pdf", None)
+
+    archivo_pdf = getattr(pub, "archivo_pdf", None)
+    has_main_pdf = bool(archivo_pdf and getattr(archivo_pdf, "name", None))
+
+    if annotated is not None:
+        return bool(has_main_pdf or annotated)
+
+    return bool(_get_pdf_file(pub))
+
+
+def _pub_pdf_url(request, pub):
+    return _build_absolute_url(request, _get_pdf_file(pub))
+
+
+def _with_pdf_annotation(qs):
+    adjuntos_pdf = (
+        PublicacionArchivo.objects.filter(
+            publicacion_id=OuterRef("pk"),
+            archivo__isnull=False,
+        )
+        .exclude(archivo="")
+    )
+
+    return qs.annotate(tiene_adjuntos_pdf=Exists(adjuntos_pdf))
 
 
 class PublicacionesScholarServicio:
@@ -102,6 +191,13 @@ class PublicacionesScholarServicio:
                 | Q(participaciones__autor__nombres__icontains=q_norm)
                 | Q(participaciones__autor__apellidos__icontains=q_norm)
                 | Q(participaciones__autor__correo__icontains=q_norm)
+                | Q(articulo__nombre_articulo__icontains=q_norm)
+                | Q(articulo__nombre_revista__icontains=q_norm)
+                | Q(ponencia__nombre_ponencia__icontains=q_norm)
+                | Q(ponencia__nombre_evento__icontains=q_norm)
+                | Q(libro__nombre_libro__icontains=q_norm)
+                | Q(capitulo_libro__nombre_capitulo__icontains=q_norm)
+                | Q(capitulo_libro__nombre_libro__icontains=q_norm)
             )
             .distinct()
         )
@@ -138,6 +234,16 @@ class PublicacionesScholarServicio:
         return qs
 
     @staticmethod
+    def _aplicar_filtro_pdf(qs, solo_con_pdf: bool):
+        if not solo_con_pdf:
+            return qs
+
+        return qs.filter(
+            Q(archivo_pdf__isnull=False) & ~Q(archivo_pdf="")
+            | Q(tiene_adjuntos_pdf=True)
+        ).distinct()
+
+    @staticmethod
     def _aplicar_orden(qs, sort: str):
         sort = (sort or "relevance").strip()
 
@@ -158,18 +264,31 @@ class PublicacionesScholarServicio:
         sort = (params.get("sort") or "relevance").strip()
         facets = (params.get("facets") or "1").strip()
 
+        solo_con_pdf = _is_truthy(
+            params.get("solo_con_pdf")
+            or params.get("solo_pdf")
+            or params.get("con_pdf")
+            or params.get("has_pdf")
+            or params.get("hasPdf")
+        )
+
         qs = (
             Publicacion.objects
             .select_related(
                 "tipo",
                 "proyecto",
                 "usuario_creador",
+                "carrera",
+                "carrera__facultad",
                 "articulo",
                 "ponencia",
                 "libro",
                 "capitulo_libro",
             )
+            .prefetch_related("archivos")
         )
+
+        qs = _with_pdf_annotation(qs)
 
         qs = annotate_tipo_publicacion_final(qs).exclude(
             tipo_publicacion_final="sin_clasificar"
@@ -177,6 +296,7 @@ class PublicacionesScholarServicio:
         qs = PublicacionesScholarServicio._aplicar_filtro_q(qs, q_norm)
         qs, year_range = PublicacionesScholarServicio._aplicar_filtro_anio(qs, year)
         qs = PublicacionesScholarServicio._aplicar_filtro_tipo(qs, tipo)
+        qs = PublicacionesScholarServicio._aplicar_filtro_pdf(qs, solo_con_pdf)
         qs = PublicacionesScholarServicio._aplicar_orden(qs, sort)
 
         results = []
@@ -184,14 +304,19 @@ class PublicacionesScholarServicio:
             title, venue = PublicacionesScholarServicio._construir_titulo_y_sede(pub)
             authors = PublicacionesScholarServicio._cadena_autores(pub.id)
             tipo_final = getattr(pub, "tipo_publicacion_final", "sin_clasificar")
+            has_pdf = _pub_has_pdf(pub)
+            pdf_url = _pub_pdf_url(request, pub)
 
             results.append(
                 {
                     "id": pub.id,
                     "title": title,
+                    "titulo": title,
                     "authors": authors,
+                    "autor": authors,
                     "venue": venue,
                     "year": pub.anio_publicacion,
+                    "anio_publicacion": pub.anio_publicacion,
                     "type": {
                         "id": pub.tipo_id,
                         "nombre": pub.tipo.nombre if pub.tipo else None,
@@ -201,10 +326,11 @@ class PublicacionesScholarServicio:
                     else None,
                     "tipo_publicacion_final": tipo_final,
                     "tipo_publicacion_final_label": tipo_publicacion_label(tipo_final),
-                    "hasPdf": bool(getattr(pub, "archivo_pdf", None)),
-                    "pdf_url": request.build_absolute_uri(pub.archivo_pdf.url)
-                    if getattr(pub, "archivo_pdf", None)
-                    else None,
+                    "hasPdf": has_pdf,
+                    "has_pdf": has_pdf,
+                    "tiene_pdf": has_pdf,
+                    "pdf_url": pdf_url,
+                    "archivo_pdf_url": pdf_url,
                     "citedBy": 0,
                 }
             )
@@ -221,20 +347,29 @@ class PublicacionesScholarServicio:
                     "tipo",
                     "proyecto",
                     "usuario_creador",
+                    "carrera",
+                    "carrera__facultad",
                     "articulo",
                     "ponencia",
                     "libro",
                     "capitulo_libro",
                 )
             )
+
+            base = _with_pdf_annotation(base)
+
             base = annotate_tipo_publicacion_final(base).exclude(
                 tipo_publicacion_final="sin_clasificar"
             )
             base = PublicacionesScholarServicio._aplicar_filtro_q(base, q_norm)
+            base = PublicacionesScholarServicio._aplicar_filtro_pdf(base, solo_con_pdf)
 
             base_years = base
             if tipo:
-                base_years = PublicacionesScholarServicio._aplicar_filtro_tipo(base_years, tipo)
+                base_years = PublicacionesScholarServicio._aplicar_filtro_tipo(
+                    base_years,
+                    tipo,
+                )
 
             years_qs = (
                 base_years.exclude(anio_publicacion__isnull=True)

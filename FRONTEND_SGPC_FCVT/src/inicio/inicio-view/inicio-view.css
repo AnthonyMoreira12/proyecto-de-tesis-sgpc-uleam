@@ -1,87 +1,99 @@
+/* =========================================================
+   SGPC ULEAM — Dashboard institucional
+   Archivo: inicio-view.css
+   Versión limpia con ayudas contextuales
+========================================================= */
+
+/* =========================================================
+   CONTENEDOR GENERAL
+========================================================= */
+
 .ivbi-page {
-  /* 1. TIPOGRAFÍA CORREGIDA: Se elimina la fuente Serif para un look más moderno */
   --ivbi-font-ui: var(
-    --font-control,
-    "IBM Plex Sans",
+    --font-ui,
+    var(--font-control, "Inter", "Segoe UI", system-ui, -apple-system, sans-serif)
+  );
+  --ivbi-font-body: var(
+    --font-body,
+    "Inter",
+    "Segoe UI",
     system-ui,
     -apple-system,
-    "Segoe UI",
     sans-serif
   );
-  --ivbi-font-heading: var(--ivbi-font-ui);
-  --ivbi-font-body: var(--ivbi-font-ui);
+  --ivbi-font-heading: var(
+    --font-heading,
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif
+  );
 
   --ivbi-bg: var(--bg-main, #f4f2ed);
   --ivbi-surface: var(--bg-card, #ffffff);
   --ivbi-surface-soft: var(--bg-elevated, #ffffff);
   --ivbi-input: var(--bg-input, #ffffff);
 
-  --ivbi-text: var(--text-primary, #191510);
-  --ivbi-text-soft: var(--text-secondary, #6e655d);
-  --ivbi-text-muted: color-mix(in srgb, var(--ivbi-text-soft) 76%, transparent);
+  --ivbi-text: var(--text-primary, #111111);
+  --ivbi-text-soft: var(--text-secondary, #5f5a53);
+  --ivbi-text-muted: color-mix(in srgb, var(--ivbi-text-soft) 72%, transparent);
 
-  --ivbi-line: color-mix(in srgb, var(--border-color, #d8d0c6) 86%, transparent);
-  --ivbi-line-soft: color-mix(in srgb, var(--border-color, #d8d0c6) 54%, transparent);
-  --ivbi-line-strong: color-mix(in srgb, var(--border-strong, #b8ada1) 76%, transparent);
+  --ivbi-line: var(--border-color, rgba(17, 17, 17, 0.1));
+  --ivbi-line-strong: var(--border-strong, rgba(17, 17, 17, 0.16));
 
-  --ivbi-accent: var(
-    --color-primary-effective,
-    var(--color-primary, #111111)
-  );
+  --ivbi-accent: var(--color-primary, #234cc4);
+  --ivbi-accent-contrast: var(--accent-contrast, #ffffff);
+  --ivbi-accent-soft: color-mix(in srgb, var(--ivbi-accent) 9%, var(--ivbi-surface));
 
-  --ivbi-board-glow: color-mix(in srgb, var(--ivbi-accent) 16%, transparent);
+  --ivbi-chart-1: var(--pub-aai, #315fc9);
+  --ivbi-chart-2: var(--pub-ar, #4f7a57);
+  --ivbi-chart-3: var(--pub-pon, #7b58b7);
+  --ivbi-chart-4: var(--pub-cap, #b96839);
+  --ivbi-chart-5: var(--pub-lib, #2f6f6a);
+  --ivbi-chart-6: var(--pub-otro, #5f5a53);
+  --ivbi-chart-7: color-mix(in srgb, var(--ivbi-chart-1) 68%, white 32%);
+  --ivbi-chart-8: color-mix(in srgb, var(--ivbi-chart-2) 68%, white 32%);
 
-  --ivbi-shadow-card: 0 14px 32px rgba(17, 14, 10, 0.08);
-  --ivbi-shadow-card-hover: 0 18px 42px rgba(17, 14, 10, 0.12);
-  --ivbi-shadow-panel: 0 24px 60px rgba(17, 14, 10, 0.14);
+  --ivbi-success: var(--success, #496753);
+  --ivbi-warning: var(--warning, #8a6d33);
+  --ivbi-danger: var(--danger, #8f4740);
+  --ivbi-info: var(--info, #556c77);
 
-  --ivbi-focus: var(--focus-ring, rgba(58, 112, 214, 0.2));
-  --ivbi-hover: var(--hover, rgba(17, 17, 17, 0.035));
+  --ivbi-radius-sm: var(--radius-sm, 10px);
+  --ivbi-radius-md: var(--radius-md, 12px);
+  --ivbi-radius-lg: var(--radius-lg, 16px);
+  --ivbi-radius-xl: var(--radius-xl, 20px);
+  --ivbi-radius-2xl: var(--radius-2xl, 24px);
+  --ivbi-radius-pill: var(--radius-pill, 999px);
 
-  /* 2. ARMONÍA DE COLOR: Paleta ajustada a tonos Cyan/Emerald/Mint */
-  --ivbi-chart-1: #2dd4bf;
-  --ivbi-chart-2: #38bdf8;
-  --ivbi-chart-3: #818cf8;
-  --ivbi-chart-4: #34d399;
-  --ivbi-chart-5: #10b981;
-  --ivbi-chart-6: #06b6d4;
-  --ivbi-chart-7: #6366f1;
-  --ivbi-chart-8: #14b8a6;
+  --ivbi-shadow-soft: var(--shadow-soft, 0 8px 22px rgba(17, 17, 17, 0.035));
+  --ivbi-shadow-card: var(--shadow-strong, 0 18px 42px rgba(17, 17, 17, 0.07));
+  --ivbi-shadow-hover: var(--shadow-hover, 0 14px 32px rgba(17, 17, 17, 0.06));
 
-  --ivbi-radius-board: 30px;
-  --ivbi-radius-card: 18px;
-  --ivbi-radius-soft: 14px;
+  --ivbi-topbar-height: var(--sgpc-nav-offset, 66px);
 
-  --ivbi-motion-fast: calc(0.18s * var(--animate-speed, 1));
-  --ivbi-motion-med: calc(0.3s * var(--animate-speed, 1));
-  --ivbi-motion-slow: calc(0.48s * var(--animate-speed, 1));
-  --ivbi-ease: var(--ease-standard, cubic-bezier(0.2, 0.9, 0.24, 1));
-
-  --ivbi-card-h: clamp(220px, 26vh, 300px);
-  --ivbi-card-h-tall: clamp(315px, 41vh, 445px);
-
-  position: relative;
-  isolation: isolate;
   width: 100%;
-  min-height: 100%;
-  padding: 14px;
+  max-width: 100%;
+  min-height: calc(100vh - var(--ivbi-topbar-height));
+  margin-left: 0;
+  padding: 24px clamp(18px, 2vw, 34px) 34px;
+
+  box-sizing: border-box;
+  overflow-x: hidden;
   color: var(--ivbi-text);
   font-family: var(--ivbi-font-body);
+
   background:
     radial-gradient(
-      circle at 12% 8%,
-      color-mix(in srgb, var(--ivbi-accent) 11%, transparent) 0,
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 88% 12%,
-      color-mix(in srgb, var(--ivbi-accent) 8%, transparent) 0,
-      transparent 30%
+      circle at 18% 0%,
+      color-mix(in srgb, var(--ivbi-accent) 5%, transparent),
+      transparent 34%
     ),
     linear-gradient(
       180deg,
-      var(--ivbi-bg) 0%,
-      color-mix(in srgb, var(--ivbi-bg) 92%, var(--ivbi-surface) 8%) 100%
+      color-mix(in srgb, var(--ivbi-bg) 96%, var(--ivbi-surface) 4%),
+      var(--ivbi-bg)
     );
 }
 
@@ -92,66 +104,23 @@
 }
 
 .ivbi-shell {
-  width: min(1660px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
 }
-
-/* =========================================================
-   BOARD GENERAL
-========================================================= */
 
 .ivbi-board {
   position: relative;
-  overflow: hidden;
-  border-radius: var(--ivbi-radius-board);
-  padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 15%, var(--ivbi-line));
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--ivbi-accent) 18%, var(--ivbi-bg) 82%) 0%,
-      color-mix(in srgb, var(--ivbi-accent) 8%, var(--ivbi-bg) 92%) 46%,
-      color-mix(in srgb, var(--ivbi-accent) 14%, var(--ivbi-bg) 86%) 100%
-    );
-  box-shadow: var(--ivbi-shadow-panel);
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.ivbi-board::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.34;
-  background:
-    radial-gradient(circle at 0 0, var(--ivbi-board-glow), transparent 34%),
-    radial-gradient(circle at 100% 0, var(--ivbi-board-glow), transparent 32%),
-    linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 9%,
-      color-mix(in srgb, var(--ivbi-line) 36%, transparent) 9.1%,
-      transparent 9.4%
-    );
-  background-size: auto, auto, 120px 100%;
-}
-
+.ivbi-board::before,
 .ivbi-board::after {
-  content: "";
-  position: absolute;
-  inset: 10px;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: calc(var(--ivbi-radius-board) - 8px);
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 18%, transparent);
-}
-
-.ivbi-board.is-refreshing .ivbi-dashboard {
-  opacity: 0.72;
-}
-
-.ivbi-board.is-refreshing::before {
-  opacity: 0.5;
+  display: none;
 }
 
 .ivbi-dashboard,
@@ -162,13 +131,26 @@
 
 .ivbi-dashboard {
   display: grid;
-  gap: 14px;
+  gap: 22px;
 }
+
+.ivbi-view-shell {
+  display: grid;
+  gap: 22px;
+}
+
+.ivbi-board.is-refreshing .ivbi-dashboard {
+  opacity: 0.72;
+}
+
+/* =========================================================
+   ANIMACIONES
+========================================================= */
 
 .ivbi-dashboard > * {
   opacity: 0;
-  transform: translateY(10px);
-  animation: ivbiFadeUp var(--ivbi-motion-med) var(--ivbi-ease) forwards;
+  transform: translateY(8px);
+  animation: ivbiFadeUp 0.28s var(--ease-soft, ease) forwards;
 }
 
 .ivbi-dashboard > *:nth-child(1) {
@@ -176,488 +158,739 @@
 }
 
 .ivbi-dashboard > *:nth-child(2) {
-  animation-delay: 70ms;
+  animation-delay: 50ms;
 }
 
 .ivbi-dashboard > *:nth-child(3) {
-  animation-delay: 130ms;
+  animation-delay: 90ms;
 }
 
-.ivbi-view-shell {
-  display: grid;
-  gap: 14px;
+@keyframes ivbiFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ivbiBarUp {
+  from {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ivbiRankGrow {
+  from {
+    transform: scaleX(0.25);
+    opacity: 0.55;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ivbiSkeleton {
+  to {
+    background-position: -220% 0;
+  }
 }
 
 /* =========================================================
-   HEADER TIPO BI
+   HEADER / FILTROS
 ========================================================= */
 
 .ivbi-header {
   display: grid;
-  grid-template-columns: minmax(260px, 0.85fr) auto minmax(320px, 1.35fr);
-  grid-template-areas: "brand tabs filters";
   gap: 14px;
-  align-items: start;
-  padding: 4px 2px 2px;
+}
+
+.ivbi-header__top,
+.ivbi-header__navigation,
+.ivbi-filterbar,
+.ivbi-kpi-card,
+.ivbi-card,
+.ivbi-alert,
+.ivbi-empty {
+  border: 1px solid color-mix(in srgb, var(--ivbi-line) 92%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ivbi-surface) 99%, transparent),
+      color-mix(in srgb, var(--ivbi-surface-soft) 94%, var(--ivbi-surface) 6%)
+    );
+  box-shadow: var(--ivbi-shadow-soft);
+}
+
+.ivbi-header__top {
+  min-height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(22px, 2.4vw, 32px);
+  border-radius: var(--ivbi-radius-2xl);
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--ivbi-accent) 8%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ivbi-surface) 99%, transparent),
+      color-mix(in srgb, var(--ivbi-accent) 2.5%, var(--ivbi-surface))
+    );
 }
 
 .ivbi-header__titlebox {
-  grid-area: brand;
-  min-height: 86px;
+  min-width: 0;
   display: grid;
-  align-content: center;
-  gap: 5px;
-  padding: 14px 16px;
-  border-radius: 22px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--ivbi-surface) 92%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 80%, transparent) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 70%, var(--ivbi-line));
-  box-shadow: 0 12px 26px rgba(17, 14, 10, 0.08);
-  backdrop-filter: blur(10px);
+  gap: 9px;
 }
 
 .ivbi-header__kicker,
 .ivbi-card__eyebrow,
 .ivbi-field > span,
 .ivbi-kpi-card__label,
-.ivbi-mini-stat > span {
+.ivbi-filterbar__eyebrow {
   font-family: var(--ivbi-font-ui);
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   line-height: 1;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.095em;
   text-transform: uppercase;
   font-weight: 800;
-  color: var(--ivbi-text-soft);
+  color: color-mix(in srgb, var(--ivbi-accent) 66%, var(--ivbi-text-soft) 34%);
 }
 
 .ivbi-header__title,
 .ivbi-card__title,
 .ivbi-kpi-card__value,
 .ivbi-rank__label,
-.ivbi-donut__center strong,
-.ivbi-mini-stat > strong {
+.ivbi-donut__center strong {
   margin: 0;
   font-family: var(--ivbi-font-heading);
   color: var(--ivbi-text);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
 }
 
 .ivbi-header__title {
-  font-size: clamp(1.45rem, 1.7vw, 2.1rem);
+  max-width: 760px;
+  font-size: clamp(2rem, 3vw, 2.8rem);
   line-height: 1.02;
+  font-weight: 760;
+  letter-spacing: -0.052em;
+  text-wrap: balance;
 }
 
 .ivbi-header__meta {
+  max-width: 760px;
   margin: 0;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.82rem;
   color: var(--ivbi-text-soft);
-  line-height: 1.36;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  font-weight: 520;
 }
 
-/* =========================================================
-   SEGMENTED
-========================================================= */
+.ivbi-header__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ivbi-header__navigation {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 9px 12px;
+  border-radius: var(--ivbi-radius-xl);
+}
+
+.ivbi-header__view-help {
+  min-width: 0;
+  margin: 0;
+  color: var(--ivbi-text-soft);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.ivbi-header__view-help strong {
+  color: var(--ivbi-text);
+  font-weight: 720;
+}
 
 .ivbi-segmented {
-  grid-area: tabs;
-  align-self: start;
-  display: inline-grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  display: inline-flex;
+  align-items: center;
   gap: 5px;
-  width: fit-content;
-  max-width: 100%;
-  padding: 5px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 64%, var(--ivbi-line));
-  background: color-mix(in srgb, var(--ivbi-surface) 88%, transparent);
-  box-shadow: 0 10px 24px rgba(17, 14, 10, 0.08);
-  backdrop-filter: blur(10px);
+  flex: 0 0 auto;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-line) 92%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--ivbi-surface-soft) 86%, var(--ivbi-surface) 14%);
 }
 
 .ivbi-segmented__btn {
-  appearance: none;
-  border: 1px solid transparent;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
   background: transparent;
   color: var(--ivbi-text-soft);
-  min-height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font: inherit;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.82rem;
-  font-weight: 800;
   cursor: pointer;
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.77rem;
+  font-weight: 720;
   transition:
-    transform var(--ivbi-motion-fast) ease,
-    background var(--ivbi-motion-fast) ease,
-    color var(--ivbi-motion-fast) ease,
-    border-color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease;
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .ivbi-segmented__btn:hover {
   color: var(--ivbi-text);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 84%, var(--ivbi-hover) 16%);
+  background: color-mix(in srgb, var(--ivbi-accent) 5%, var(--ivbi-surface));
 }
 
 .ivbi-segmented__btn.is-active {
-  color: #ffffff;
-  background: color-mix(in srgb, var(--ivbi-accent) 92%, #ffffff 8%);
-  border-color: color-mix(in srgb, var(--ivbi-accent) 46%, transparent);
-  box-shadow: 0 10px 18px color-mix(in srgb, var(--ivbi-accent) 20%, transparent);
+  color: var(--ivbi-accent);
+  background: var(--ivbi-surface);
+  box-shadow:
+    0 5px 14px rgba(15, 23, 42, 0.08),
+    inset 0 0 0 1px color-mix(in srgb, var(--ivbi-accent) 24%, var(--ivbi-line));
 }
 
-/* =========================================================
-   FILTER BAR
-========================================================= */
-
 .ivbi-filterbar {
-  grid-area: filters;
+  min-width: 0;
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 68%, var(--ivbi-line));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ivbi-surface) 94%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 84%, transparent) 100%
-    );
-  box-shadow: 0 12px 28px rgba(17, 14, 10, 0.08);
-  backdrop-filter: blur(10px);
+  gap: 15px;
+  padding: 18px;
+  border-radius: var(--ivbi-radius-xl);
+}
+
+.ivbi-filterbar__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ivbi-filterbar__head > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.ivbi-filterbar__head h2 {
+  margin: 0;
+  color: var(--ivbi-text);
+  font-family: var(--ivbi-font-heading);
+  font-size: 1.02rem;
+  line-height: 1.2;
+  font-weight: 720;
+  letter-spacing: -0.025em;
+}
+
+.ivbi-filterbar__status {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-success) 24%, var(--ivbi-line));
+  border-radius: var(--ivbi-radius-pill);
+  background: color-mix(in srgb, var(--ivbi-success) 7%, var(--ivbi-surface));
+  color: color-mix(in srgb, var(--ivbi-success) 84%, var(--ivbi-text));
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ivbi-filterbar__content {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
 }
 
 .ivbi-filterbar__fields {
+  width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(118px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 11px;
   align-items: end;
 }
 
 .ivbi-filterbar__actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ivbi-field {
+  min-width: 0;
   display: grid;
   gap: 7px;
 }
 
-.ivbi-field select {
-  appearance: none;
+.ivbi-field select,
+.ivbi-field input {
   width: 100%;
-  height: 38px;
+  height: 43px;
+  min-height: 43px;
   border-radius: 12px;
-  border: 1px solid var(--ivbi-line);
-  background:
-    linear-gradient(45deg, transparent 50%, var(--ivbi-text-soft) 50%),
-    linear-gradient(135deg, var(--ivbi-text-soft) 50%, transparent 50%),
-    var(--ivbi-input);
-  background-position:
-    calc(100% - 17px) calc(50% - 3px),
-    calc(100% - 11px) calc(50% - 3px),
-    0 0;
-  background-size:
-    6px 6px,
-    6px 6px,
-    auto;
-  background-repeat: no-repeat;
+  border: 1px solid color-mix(in srgb, var(--ivbi-line-strong) 90%, transparent);
+  background: var(--ivbi-input);
   color: var(--ivbi-text);
-  font: inherit;
+  padding: 0 34px 0 12px;
   font-family: var(--ivbi-font-ui);
-  font-size: 0.82rem;
-  padding: 0 36px 0 12px;
-  transition:
-    border-color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease,
-    background var(--ivbi-motion-fast) ease;
-}
-
-.ivbi-field select:hover {
-  border-color: var(--ivbi-line-strong);
-}
-
-.ivbi-field select:focus-visible,
-.ivbi-segmented__btn:focus-visible,
-.ivbi-btn:focus-visible,
-.ivbi-legend__item:focus-visible,
-.ivbi-vbars__col.is-interactive:focus-visible {
+  font-size: 0.8rem;
+  font-weight: 560;
   outline: none;
-  box-shadow: 0 0 0 4px var(--ivbi-focus);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.ivbi-field select:hover,
+.ivbi-field input:hover {
+  border-color: color-mix(in srgb, var(--ivbi-accent) 24%, var(--ivbi-line-strong));
+}
+
+.ivbi-field select:focus,
+.ivbi-field input:focus {
+  border-color: var(--ivbi-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ivbi-accent) 17%, transparent);
 }
 
 .ivbi-btn {
-  appearance: none;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  min-height: 36px;
-  padding: 0 13px;
-  font: inherit;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.8rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    transform var(--ivbi-motion-fast) ease,
-    background var(--ivbi-motion-fast) ease,
-    border-color var(--ivbi-motion-fast) ease,
-    color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease;
-}
-
-.ivbi-btn:hover {
-  transform: translateY(-1px);
-}
-
-.ivbi-btn--ghost {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-line-strong) 92%, transparent);
+  background: var(--ivbi-surface);
   color: var(--ivbi-text);
-  background: color-mix(in srgb, var(--ivbi-surface) 86%, var(--ivbi-surface-soft) 14%);
-  border-color: var(--ivbi-line);
+  cursor: pointer;
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.76rem;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.ivbi-btn--ghost:hover {
-  border-color: var(--ivbi-line-strong);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 80%, var(--ivbi-hover) 20%);
+.ivbi-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--ivbi-primary-line, color-mix(in srgb, var(--ivbi-accent) 24%, var(--ivbi-line)));
+  box-shadow: var(--ivbi-shadow-hover);
+}
+
+.ivbi-btn:focus-visible,
+.ivbi-segmented__btn:focus-visible,
+.ivbi-info-tip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ivbi-accent) 18%, transparent);
+}
+
+.ivbi-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
+.ivbi-btn svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
 }
 
 .ivbi-btn--primary {
-  color: #ffffff;
-  background: color-mix(in srgb, var(--ivbi-accent) 92%, white 8%);
-  border-color: color-mix(in srgb, var(--ivbi-accent) 60%, transparent);
+  color: var(--ivbi-accent-contrast);
+  border-color: var(--ivbi-accent);
+  background: var(--ivbi-accent);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--ivbi-accent) 22%, transparent);
 }
 
-.ivbi-btn--primary:hover {
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--ivbi-accent) 20%, transparent);
+.ivbi-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.ivbi-btn--secondary:hover:not(:disabled),
+.ivbi-btn--ghost:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ivbi-accent) 24%, var(--ivbi-line));
+  background: var(--ivbi-accent-soft);
+  color: var(--ivbi-accent);
+}
+
+.ivbi-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ivbi-text-soft);
+}
+
+.ivbi-btn--download {
+  min-width: 178px;
+}
+
+.ivbi-btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, #ffffff 42%, transparent);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: ivbiSpin 700ms linear infinite;
+}
+
+@keyframes ivbiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ivbi-card__head-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ivbi-insight-pill {
+  min-height: 29px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 22%, var(--ivbi-line));
+  border-radius: var(--ivbi-radius-pill);
+  background: var(--ivbi-accent-soft);
+  color: color-mix(in srgb, var(--ivbi-accent) 82%, var(--ivbi-text));
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.67rem;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.ivbi-info-tip {
+  position: relative;
+  width: 29px;
+  height: 29px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 22%, var(--ivbi-line));
+  border-radius: 50%;
+  background: var(--ivbi-accent-soft);
+  color: var(--ivbi-accent);
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: help;
+}
+
+.ivbi-info-tip__content {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 80;
+  width: min(245px, 78vw);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 20%, var(--ivbi-line));
+  border-radius: 13px;
+  background: var(--ivbi-surface);
+  color: var(--ivbi-text-soft);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+  font-size: 0.72rem;
+  line-height: 1.42;
+  font-weight: 560;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition:
+    opacity 0.16s ease,
+    visibility 0.16s ease,
+    transform 0.16s ease;
+}
+
+.ivbi-info-tip:hover .ivbi-info-tip__content,
+.ivbi-info-tip:focus .ivbi-info-tip__content,
+.ivbi-info-tip:focus-within .ivbi-info-tip__content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 /* =========================================================
-   STATES
+   ALERTAS / VACÍOS
 ========================================================= */
 
 .ivbi-alert {
-  border-radius: 16px;
-  padding: 12px 14px;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.9rem;
-  line-height: 1.45;
-  box-shadow: 0 12px 26px rgba(17, 14, 10, 0.06);
+  padding: 14px 16px;
+  border-radius: var(--ivbi-radius-xl);
+  color: var(--ivbi-text-soft);
 }
 
 .ivbi-alert--error {
-  border: 1px solid var(--danger-line, rgba(176, 62, 62, 0.2));
-  background: var(--danger-soft, rgba(176, 62, 62, 0.08));
-  color: color-mix(in srgb, var(--danger, #8f4740) 88%, var(--ivbi-text));
+  border-color: color-mix(in srgb, var(--ivbi-danger) 26%, var(--ivbi-line));
+  background: color-mix(in srgb, var(--ivbi-danger) 8%, var(--ivbi-surface));
+  color: color-mix(in srgb, var(--ivbi-danger) 86%, var(--ivbi-text) 14%);
 }
 
 .ivbi-empty {
-  min-height: 96px;
-  border-radius: var(--ivbi-radius-soft);
-  border: 1px dashed var(--ivbi-line-strong);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 70%, var(--ivbi-surface) 30%);
+  min-height: 124px;
   display: grid;
   place-items: center;
-  padding: 16px;
-  text-align: center;
+  padding: 18px;
+  border-radius: var(--ivbi-radius-xl);
   color: var(--ivbi-text-soft);
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
+  font-weight: 780;
+  text-align: center;
 }
 
 .ivbi-empty--state {
-  min-height: 180px;
-  background: color-mix(in srgb, var(--ivbi-surface) 88%, transparent);
-  backdrop-filter: blur(8px);
+  min-height: 280px;
 }
 
 /* =========================================================
-   KPI STRIP
+   KPIS
 ========================================================= */
 
 .ivbi-kpi-strip {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .ivbi-kpi-card {
+  --ivbi-kpi-color: var(--ivbi-chart-1);
+
   position: relative;
-  min-height: 92px;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 70%, var(--ivbi-line));
-  padding: 14px 14px 12px 62px;
+  min-height: 104px;
   display: grid;
-  gap: 5px;
   align-content: center;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ivbi-surface) 96%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 90%, transparent) 100%
-    );
-  box-shadow: var(--ivbi-shadow-card);
+  gap: 7px;
+  padding: 17px 16px 17px 62px;
+  overflow: hidden;
+  border-radius: var(--ivbi-radius-xl);
   transition:
-    transform var(--ivbi-motion-fast) ease,
-    border-color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease;
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .ivbi-kpi-card::before {
   content: "";
   position: absolute;
-  left: 14px;
+  left: 16px;
   top: 50%;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-kpi-color) 25%, var(--ivbi-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ivbi-kpi-color) 11%, var(--ivbi-surface));
   transform: translateY(-50%);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--ivbi-accent) 16%, var(--ivbi-surface) 84%),
-      color-mix(in srgb, var(--ivbi-accent) 8%, var(--ivbi-surface-soft) 92%)
-    );
-  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 18%, var(--ivbi-line));
 }
 
 .ivbi-kpi-card::after {
+  content: "";
   position: absolute;
-  left: 22px;
+  left: 27px;
   top: 50%;
-  transform: translateY(-51%);
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  color: color-mix(in srgb, var(--ivbi-accent) 82%, var(--ivbi-text));
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.95rem;
-  font-weight: 900;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--ivbi-kpi-color);
+  box-shadow:
+    7px 0 0 color-mix(in srgb, var(--ivbi-kpi-color) 44%, transparent),
+    0 7px 0 color-mix(in srgb, var(--ivbi-kpi-color) 26%, transparent);
+  transform: translateY(-50%);
 }
 
-.ivbi-kpi-card:nth-child(1)::after {
-  content: "▣";
-}
-
-.ivbi-kpi-card:nth-child(2)::after {
-  content: "◉";
-}
-
-.ivbi-kpi-card:nth-child(3)::after {
-  content: "▥";
-}
-
-.ivbi-kpi-card:nth-child(4)::after {
-  content: "▤";
-}
-
-.ivbi-kpi-card:nth-child(5)::after {
-  content: "◇";
-}
-
-.ivbi-kpi-card:nth-child(6)::after {
-  content: "★";
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card {
-  opacity: 0;
-  transform: translateY(12px) scale(0.985);
-  animation: ivbiCardEnter 0.48s var(--ivbi-ease) forwards;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(1) {
-  animation-delay: 30ms;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(2) {
-  animation-delay: 70ms;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(3) {
-  animation-delay: 110ms;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(4) {
-  animation-delay: 150ms;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(5) {
-  animation-delay: 190ms;
-}
-
-.ivbi-kpi-strip > .ivbi-kpi-card:nth-child(6) {
-  animation-delay: 230ms;
+.ivbi-kpi-card::selection {
+  background: transparent;
 }
 
 .ivbi-kpi-card:hover {
   transform: translateY(-2px);
-  border-color: var(--ivbi-line-strong);
-  box-shadow: var(--ivbi-shadow-card-hover);
+  border-color: color-mix(in srgb, var(--ivbi-kpi-color) 24%, var(--ivbi-line));
+  box-shadow: var(--ivbi-shadow-hover);
+}
+
+.ivbi-kpi-card.is-primary {
+  border-color: color-mix(in srgb, var(--ivbi-kpi-color) 24%, var(--ivbi-line));
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--ivbi-kpi-color) 9%, transparent),
+      transparent 42%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ivbi-surface) 99%, transparent),
+      color-mix(in srgb, var(--ivbi-kpi-color) 4%, var(--ivbi-surface))
+    );
+}
+
+.ivbi-kpi-card.is-coverage {
+  background: color-mix(in srgb, var(--ivbi-surface) 95%, var(--ivbi-bg) 5%);
+}
+
+.ivbi-kpi-card--publicaciones {
+  --ivbi-kpi-color: var(--ivbi-chart-1);
+}
+
+.ivbi-kpi-card--autores {
+  --ivbi-kpi-color: var(--ivbi-chart-2);
+}
+
+.ivbi-kpi-card--facultades {
+  --ivbi-kpi-color: var(--ivbi-chart-6);
+}
+
+.ivbi-kpi-card--carreras {
+  --ivbi-kpi-color: var(--ivbi-chart-4);
+}
+
+.ivbi-kpi-card--proyectos {
+  --ivbi-kpi-color: var(--ivbi-chart-5);
+}
+
+.ivbi-kpi-card--alto-impacto {
+  --ivbi-kpi-color: var(--ivbi-chart-3);
 }
 
 .ivbi-kpi-card__label {
+  line-height: 1.15;
   color: var(--ivbi-text-soft);
 }
 
 .ivbi-kpi-card__value {
-  font-family: var(--ivbi-font-ui);
-  font-size: clamp(1.2rem, 1.5vw, 1.55rem);
-  font-weight: 900;
+  margin-top: 1px;
+  font-size: clamp(1.42rem, 1.8vw, 1.82rem);
   line-height: 1;
+  font-weight: 780;
 }
 
 .ivbi-kpi-card__hint {
-  display: block;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.74rem;
-  color: var(--ivbi-text-soft);
-  line-height: 1.22;
-  white-space: nowrap;
   overflow: hidden;
+  color: var(--ivbi-text-soft);
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  font-weight: 520;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* =========================================================
-   GRIDS
+   GRIDS PRINCIPALES
 ========================================================= */
 
 .ivbi-summary-grid,
 .ivbi-trend-grid,
 .ivbi-rankings-grid {
   display: grid;
-  gap: 14px;
-  align-items: stretch;
+  gap: 22px;
 }
 
 .ivbi-summary-grid {
-  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.74fr);
   grid-template-areas:
-    "distribution comparison"
+    "comparison distribution"
     "facultades autores";
 }
 
 .ivbi-trend-grid {
-  grid-template-columns: minmax(340px, 0.92fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.76fr);
   grid-template-areas:
-    "historica comparativa"
-    "mensual mensual";
+    "historica mensual"
+    "comparativa comparativa";
 }
 
 .ivbi-rankings-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-areas:
     "facultades-rank carreras-rank autores-rank"
-    "revistas revistas proyectos";
+    "coautores-rank revistas proyectos";
+}
+
+.ivbi-card--distribution {
+  grid-area: distribution;
+}
+
+.ivbi-card--comparison {
+  grid-area: comparison;
+}
+
+.ivbi-card--facultades {
+  grid-area: facultades;
+}
+
+.ivbi-card--autores {
+  grid-area: autores;
+}
+
+.ivbi-card--historica {
+  grid-area: historica;
+}
+
+.ivbi-card--comparativa {
+  grid-area: comparativa;
+}
+
+.ivbi-card--mensual {
+  grid-area: mensual;
+}
+
+.ivbi-card--facultades-rank {
+  grid-area: facultades-rank;
+}
+
+.ivbi-card--carreras-rank {
+  grid-area: carreras-rank;
+}
+
+.ivbi-card--autores-rank {
+  grid-area: autores-rank;
+}
+
+.ivbi-card--coautores-rank {
+  grid-area: coautores-rank;
+}
+
+.ivbi-card--revistas {
+  grid-area: revistas;
+}
+
+.ivbi-card--proyectos {
+  grid-area: proyectos;
 }
 
 /* =========================================================
@@ -665,723 +898,524 @@
 ========================================================= */
 
 .ivbi-card {
-  min-height: 0;
-  height: 100%;
-  border-radius: var(--ivbi-radius-card);
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 68%, var(--ivbi-line));
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ivbi-surface) 97%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 90%, transparent) 100%
-    );
-  box-shadow: var(--ivbi-shadow-card);
+  min-height: 280px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: var(--ivbi-radius-2xl);
+  overflow: visible;
   transition:
-    transform var(--ivbi-motion-fast) ease,
-    border-color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease,
-    background var(--ivbi-motion-fast) ease;
+    transform var(--t-fast, 0.18s ease),
+    border-color var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease);
 }
 
 .ivbi-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--ivbi-line-strong);
-  box-shadow: var(--ivbi-shadow-card-hover);
-}
-
-.ivbi-summary-grid > .ivbi-card,
-.ivbi-trend-grid > .ivbi-card,
-.ivbi-rankings-grid > .ivbi-card {
-  opacity: 0;
-  transform: translateY(12px) scale(0.985);
-  animation: ivbiCardEnter 0.5s var(--ivbi-ease) forwards;
-}
-
-.ivbi-summary-grid > .ivbi-card:nth-child(1),
-.ivbi-trend-grid > .ivbi-card:nth-child(1),
-.ivbi-rankings-grid > .ivbi-card:nth-child(1) {
-  animation-delay: 70ms;
-}
-
-.ivbi-summary-grid > .ivbi-card:nth-child(2),
-.ivbi-trend-grid > .ivbi-card:nth-child(2),
-.ivbi-rankings-grid > .ivbi-card:nth-child(2) {
-  animation-delay: 120ms;
-}
-
-.ivbi-summary-grid > .ivbi-card:nth-child(3),
-.ivbi-trend-grid > .ivbi-card:nth-child(3),
-.ivbi-rankings-grid > .ivbi-card:nth-child(3) {
-  animation-delay: 170ms;
-}
-
-.ivbi-summary-grid > .ivbi-card:nth-child(4),
-.ivbi-trend-grid > .ivbi-card:nth-child(4),
-.ivbi-rankings-grid > .ivbi-card:nth-child(4) {
-  animation-delay: 220ms;
-}
-
-.ivbi-rankings-grid > .ivbi-card:nth-child(5) {
-  animation-delay: 270ms;
-}
-
-.ivbi-card--distribution {
-  grid-area: distribution;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--comparison {
-  grid-area: comparison;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--facultades {
-  grid-area: facultades;
-  min-height: var(--ivbi-card-h);
-}
-
-.ivbi-card--autores {
-  grid-area: autores;
-  min-height: var(--ivbi-card-h);
-}
-
-.ivbi-card--historica {
-  grid-area: historica;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--comparativa {
-  grid-area: comparativa;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--mensual {
-  grid-area: mensual;
-  min-height: var(--ivbi-card-h);
-}
-
-.ivbi-card--facultades-rank {
-  grid-area: facultades-rank;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--carreras-rank {
-  grid-area: carreras-rank;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--autores-rank {
-  grid-area: autores-rank;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-.ivbi-card--revistas {
-  grid-area: revistas;
-  min-height: var(--ivbi-card-h);
-}
-
-.ivbi-card--proyectos {
-  grid-area: proyectos;
-  min-height: var(--ivbi-card-h);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--ivbi-accent) 16%, var(--ivbi-line));
+  box-shadow: var(--ivbi-shadow-hover);
 }
 
 .ivbi-card__head {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--ivbi-line-soft);
 }
 
 .ivbi-card__head-main {
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
 .ivbi-card__title {
-  font-size: 1.02rem;
-  line-height: 1.14;
-}
-
-.ivbi-card__total {
-  min-width: 54px;
-  min-height: 32px;
-  padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 16%, var(--ivbi-line));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--ivbi-accent) 7%, var(--ivbi-surface-soft));
-  color: color-mix(in srgb, var(--ivbi-accent) 78%, var(--ivbi-text));
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.8rem;
+  display: inline;
+  font-size: clamp(1rem, 1.04vw, 1.18rem);
+  line-height: 1.1;
   font-weight: 900;
 }
 
-.ivbi-card > .ivbi-vbars,
-.ivbi-card > .ivbi-grouped-wrap,
-.ivbi-card > .ivbi-rank,
-.ivbi-card > .ivbi-donut-panel,
-.ivbi-card > .ivbi-empty {
-  flex: 1 1 auto;
-  min-height: 0;
+.ivbi-card__total {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border-radius: var(--ivbi-radius-pill);
+  border: 1px solid color-mix(in srgb, var(--ivbi-line) 90%, transparent);
+  background: color-mix(in srgb, var(--ivbi-accent) 7%, var(--ivbi-surface) 93%);
+  color: var(--ivbi-text);
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 /* =========================================================
-   DONUT
+   DONUT / DISTRIBUCIÓN
 ========================================================= */
 
+.ivbi-card--distribution {
+  min-height: 405px;
+}
+
 .ivbi-donut-panel {
+  width: 100%;
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-content: start;
+  gap: 18px;
 }
 
 .ivbi-donut {
-  width: 190px;
-  height: 190px;
-  border-radius: 50%;
+  position: relative;
+  width: 180px;
+  height: 180px;
   display: grid;
   place-items: center;
-  margin: 0 auto;
-  position: relative;
+  border-radius: 50%;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ivbi-line) 72%, transparent),
-    0 10px 20px rgba(17, 14, 10, 0.08);
-  transition:
-    transform var(--ivbi-motion-fast) ease,
-    filter var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease;
-}
-
-.ivbi-donut:hover,
-.ivbi-donut.is-focused {
-  transform: scale(1.025);
-  filter: saturate(1.06);
+    inset 0 0 0 1px color-mix(in srgb, var(--ivbi-line) 90%, transparent),
+    0 16px 32px rgba(17, 17, 17, 0.07);
 }
 
 .ivbi-donut::after {
   content: "";
   position: absolute;
-  inset: 31px;
+  inset: 32px;
   border-radius: 50%;
-  background:
-    radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--ivbi-surface) 96%, var(--ivbi-surface-soft) 4%) 0%,
-      var(--ivbi-surface) 100%
-    );
-  border: 1px solid var(--ivbi-line-soft);
-  box-shadow: inset 0 0 18px rgba(17, 14, 10, 0.04);
+  background: var(--ivbi-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ivbi-line) 80%, transparent);
 }
 
 .ivbi-donut__center {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 4px;
+  gap: 3px;
   text-align: center;
-  max-width: 110px;
 }
 
 .ivbi-donut__center strong {
-  font-size: 1.78rem;
+  font-size: 1.55rem;
   line-height: 1;
+  font-weight: 900;
 }
 
-.ivbi-donut__center span {
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.82rem;
-  color: var(--ivbi-text);
-  line-height: 1.1;
-  font-weight: 800;
-}
-
+.ivbi-donut__center span,
 .ivbi-donut__center small {
-  display: block;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.7rem;
   color: var(--ivbi-text-soft);
-  line-height: 1.25;
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.74rem;
+  font-weight: 850;
 }
 
 .ivbi-legend {
+  width: 100%;
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .ivbi-legend__item {
-  appearance: none;
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 8px 10px;
-  margin: 0;
-  border-radius: 14px;
+  width: 100%;
   display: grid;
   grid-template-columns: 12px minmax(0, 1fr);
+  align-items: center;
   gap: 10px;
-  align-items: start;
-  text-align: left;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
   cursor: pointer;
+  text-align: left;
   transition:
-    transform var(--ivbi-motion-fast) ease,
-    opacity var(--ivbi-motion-fast) ease,
-    background var(--ivbi-motion-fast) ease,
-    border-color var(--ivbi-motion-fast) ease;
+    background var(--t-fast, 0.18s ease),
+    border-color var(--t-fast, 0.18s ease),
+    opacity var(--t-fast, 0.18s ease);
 }
 
-.ivbi-legend__item:hover {
-  transform: translateX(4px);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 76%, var(--ivbi-surface) 24%);
+.ivbi-legend__item:hover,
+.ivbi-legend__item.is-active,
+.ivbi-legend__item.is-selected {
+  background: var(--hover, rgba(17, 17, 17, 0.035));
+  border-color: color-mix(in srgb, var(--ivbi-accent) 14%, transparent);
 }
 
 .ivbi-legend__item.is-muted {
-  opacity: 0.42;
-}
-
-.ivbi-legend__item.is-active {
-  transform: translateX(6px);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 82%, var(--ivbi-surface) 18%);
-}
-
-.ivbi-legend__item.is-selected {
-  border-color: color-mix(in srgb, var(--ivbi-accent) 28%, var(--ivbi-line));
-  background: color-mix(in srgb, var(--ivbi-accent) 6%, var(--ivbi-surface-soft));
+  opacity: 0.52;
 }
 
 .ivbi-legend__swatch,
-.ivbi-series-legend__swatch {
-  border-radius: 999px;
-  display: inline-block;
-}
-
-.ivbi-legend__swatch {
-  width: 12px;
-  height: 12px;
-  margin-top: 4px;
+.ivbi-legend__dot {
+  width: 10px;
+  height: 10px;
+  display: block;
+  border-radius: var(--ivbi-radius-pill);
 }
 
 .ivbi-legend__text {
+  min-width: 0;
   display: grid;
   gap: 2px;
 }
 
 .ivbi-legend__label {
   display: block;
-  font-family: var(--ivbi-font-heading);
-  font-weight: 700;
+  overflow: hidden;
   color: var(--ivbi-text);
-  line-height: 1.2;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ivbi-legend__meta {
   display: block;
+  overflow: hidden;
   color: var(--ivbi-text-soft);
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.78rem;
-}
-
-.ivbi-mini-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: auto;
-}
-
-.ivbi-mini-stat {
-  min-height: 58px;
-  border-radius: 14px;
-  border: 1px solid var(--ivbi-line-soft);
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 78%, var(--ivbi-surface) 22%);
-  padding: 10px 12px;
-  display: grid;
-  gap: 5px;
-  align-content: center;
-}
-
-.ivbi-mini-stat > strong {
-  font-size: 0.92rem;
-  line-height: 1.12;
-  font-family: var(--ivbi-font-ui);
-  font-weight: 800;
-  letter-spacing: 0;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* =========================================================
-   VERTICAL BARS
+   INSIGHTS Y AYUDAS
 ========================================================= */
 
-.ivbi-vbars {
-  min-height: 220px;
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
-  gap: 10px;
-  align-items: stretch;
+.ivbi-mini-stats,
+.ivbi-mini-stat {
+  display: none;
 }
 
+/* =========================================================
+   BARRAS VERTICALES
+========================================================= */
+
+.ivbi-vbars,
 .ivbi-vbars--tall {
-  min-height: 275px;
+  width: 100%;
+  min-height: 230px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(52px, 1fr);
+  gap: 14px;
+  align-items: end;
+  padding: 8px 4px 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ivbi-vbars__col {
-  min-height: 0;
-  height: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-rows: auto minmax(150px, 1fr) auto;
+  grid-template-rows: 18px 170px 20px;
+  justify-items: center;
+  align-items: end;
   gap: 8px;
-  align-items: stretch;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 
 button.ivbi-vbars__col {
-  appearance: none;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
+  cursor: pointer;
 }
 
 .ivbi-vbars__col.is-interactive {
-  cursor: pointer;
-  border-radius: 16px;
-  transition:
-    transform var(--ivbi-motion-fast) ease,
-    opacity var(--ivbi-motion-fast) ease;
+  border-radius: 14px;
+  transition: background var(--t-fast, 0.18s ease);
 }
 
-.ivbi-vbars__col.is-interactive:hover {
-  transform: translateY(-2px);
-}
-
-.ivbi-vbars__col.is-interactive.is-selected .ivbi-vbars__track {
-  border-color: color-mix(in srgb, var(--ivbi-accent) 32%, var(--ivbi-line));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ivbi-accent) 11%, transparent);
-}
-
-.ivbi-vbars__value {
-  text-align: center;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
-  font-weight: 800;
-  color: var(--ivbi-text-soft);
+.ivbi-vbars__col.is-interactive:hover,
+.ivbi-vbars__col.is-selected {
+  background: var(--hover, rgba(17, 17, 17, 0.035));
 }
 
 .ivbi-vbars__track {
-  position: relative;
-  min-height: 150px;
-  height: 100%;
-  align-self: stretch;
+  width: 14px;
+  height: 170px;
+  min-height: 170px;
   display: flex;
-  align-items: flex-end;
+  align-items: end;
   justify-content: center;
-  padding: 10px 4px 0;
-  border-radius: 14px 14px 10px 10px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ivbi-surface-soft) 78%, var(--ivbi-surface) 22%) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 92%, var(--ivbi-surface) 8%) 100%
-    );
-  border: 1px solid var(--ivbi-line-soft);
-  overflow: hidden;
-  transition:
-    border-color var(--ivbi-motion-fast) ease,
-    box-shadow var(--ivbi-motion-fast) ease;
-}
-
-.ivbi-vbars__track::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to top,
-    transparent 0,
-    transparent 27px,
-    color-mix(in srgb, var(--ivbi-line-soft) 58%, transparent) 28px
-  );
-  pointer-events: none;
+  padding: 0;
+  border-radius: var(--ivbi-radius-pill);
+  background: color-mix(in srgb, var(--ivbi-accent) 7%, var(--ivbi-surface-soft) 93%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ivbi-line) 78%, transparent);
 }
 
 .ivbi-vbars__bar {
-  position: relative;
-  z-index: 1;
   width: 100%;
-  max-width: 28px;
   min-height: 0;
   height: var(--bar-h, 0%);
-  border-radius: 10px 10px 6px 6px;
-  box-shadow:
-    inset 0 -6px 9px rgba(0, 0, 0, 0.1),
-    0 5px 9px rgba(17, 14, 10, 0.08);
-  transform-origin: bottom center;
-  will-change: height, transform;
-  transition:
-    height 0.72s var(--ivbi-ease),
-    filter var(--ivbi-motion-fast) ease,
-    transform var(--ivbi-motion-fast) ease;
-  transition-delay: var(--bar-delay, 0ms);
+  border-radius: var(--ivbi-radius-pill);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ivbi-chart-1) 92%, #ffffff 8%),
+      color-mix(in srgb, var(--ivbi-chart-1) 82%, #000000 18%)
+    );
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--ivbi-chart-1) 18%, transparent);
+  transform-origin: bottom;
+  animation: ivbiBarUp 0.45s ease forwards;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
-.ivbi-vbars__bar:hover {
-  filter: brightness(1.06) saturate(1.06);
-  transform: translateY(-2px);
+.ivbi-vbars__value,
+.ivbi-vbars__label {
+  color: var(--ivbi-text-soft);
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ivbi-vbars__value {
+  color: var(--ivbi-text);
 }
 
 .ivbi-vbars__label {
+  max-width: 64px;
+  overflow: hidden;
   text-align: center;
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.7rem;
-  color: var(--ivbi-text);
-  line-height: 1.15;
-  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivbi-card--mensual .ivbi-vbars {
+  grid-auto-columns: 36px;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.ivbi-card--mensual .ivbi-vbars__col {
+  grid-template-rows: 18px 145px 20px;
+}
+
+.ivbi-card--mensual .ivbi-vbars__track {
+  width: 9px;
+  height: 145px;
+  min-height: 145px;
+}
+
+.ivbi-vbars::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ivbi-vbars::-webkit-scrollbar-thumb {
+  border-radius: var(--ivbi-radius-pill);
+  background: color-mix(in srgb, var(--ivbi-accent) 22%, transparent);
 }
 
 /* =========================================================
-   GROUPED BARS
+   BARRAS AGRUPADAS POR AÑO
 ========================================================= */
 
 .ivbi-grouped-wrap {
-  overflow-x: auto;
-  padding-bottom: 2px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  align-content: start;
 }
 
-/* 3. CENTRADO DE BARRAS: Si hay pocas (como 2 años) se verán centradas en lugar de al borde izquierdo */
 .ivbi-grouped {
-  min-width: max-content;
-  min-height: 225px;
-  flex: 1 1 auto;
-  display: flex;
+  min-height: 250px;
+  display: grid;
   gap: 16px;
-  align-items: stretch;
-  justify-content: center;
-  width: 100%;
+  align-content: center;
 }
 
 .ivbi-grouped__group {
-  min-height: 100%;
+  width: 100%;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 8px;
-  justify-items: center;
-  align-items: end;
+  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-areas: "label bars";
+  align-items: center;
+  gap: 16px;
+}
+
+.ivbi-grouped__label {
+  grid-area: label;
+  color: var(--ivbi-text-soft);
+  font-family: var(--ivbi-font-ui);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .ivbi-grouped__bars {
-  height: 100%;
-  min-height: 175px;
+  grid-area: bars;
+  width: 100%;
+  min-width: 0;
+  height: 86px;
+  min-height: 86px;
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  padding: 8px 8px 0;
-  border-radius: 16px 16px 12px 12px;
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 78%, var(--ivbi-surface) 22%);
-  border: 1px solid var(--ivbi-line-soft);
+  align-items: end;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ivbi-accent) 5%, var(--ivbi-surface-soft) 95%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ivbi-line) 78%, transparent);
 }
 
 .ivbi-grouped__barbox {
-  width: 16px;
-  height: 100%;
+  width: 28px;
+  min-width: 28px;
+  height: 58px;
   display: flex;
-  align-items: flex-end;
+  align-items: end;
 }
 
 .ivbi-grouped__bar {
   width: 100%;
+  height: var(--grouped-h, var(--bar-h, 0%));
   min-height: 0;
-  height: var(--grouped-h, 0%);
-  border-radius: 10px 10px 6px 6px;
-  box-shadow:
-    inset 0 -6px 9px rgba(0, 0, 0, 0.1),
-    0 4px 8px rgba(17, 14, 10, 0.07);
-  transform-origin: bottom center;
-  will-change: height, transform;
-  transition:
-    height 0.72s var(--ivbi-ease),
-    filter var(--ivbi-motion-fast) ease,
-    transform var(--ivbi-motion-fast) ease;
-  transition-delay: var(--grouped-delay, 0ms);
-}
-
-.ivbi-grouped__bar:hover {
-  filter: brightness(1.06) saturate(1.05);
-  transform: translateY(-2px);
-}
-
-.ivbi-grouped__label {
-  font-family: var(--ivbi-font-ui);
-  font-size: 0.72rem;
-  color: var(--ivbi-text);
-  font-weight: 800;
+  max-height: 100%;
+  border-radius: 999px 999px 7px 7px;
+  box-shadow: 0 8px 16px rgba(17, 17, 17, 0.10);
+  transform-origin: bottom;
+  animation: ivbiBarUp 0.45s ease forwards;
+  animation-delay: var(--grouped-delay, 0ms);
 }
 
 .ivbi-series-legend {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 12px;
-  padding-top: 2px;
+  gap: 8px 16px;
+  align-items: center;
 }
 
 .ivbi-series-legend__item {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--ivbi-text);
+  gap: 8px;
+  color: var(--ivbi-text-soft);
   font-family: var(--ivbi-font-ui);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 850;
 }
 
-.ivbi-series-legend__swatch {
+.ivbi-series-legend__swatch,
+.ivbi-series-legend__dot {
   width: 10px;
   height: 10px;
+  display: block;
+  flex: 0 0 auto;
+  border-radius: var(--ivbi-radius-pill);
 }
 
 /* =========================================================
    RANKINGS
 ========================================================= */
 
+.ivbi-card--facultades,
+.ivbi-card--autores,
+.ivbi-card--facultades-rank,
+.ivbi-card--carreras-rank,
+.ivbi-card--autores-rank,
+.ivbi-card--coautores-rank,
+.ivbi-card--revistas,
+.ivbi-card--proyectos {
+  align-content: start;
+}
+
 .ivbi-rank {
+  width: 100%;
   display: grid;
-  gap: 11px;
+  gap: 15px;
   align-content: start;
 }
 
 .ivbi-rank__row {
+  width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(110px, 1.1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(140px, 1fr);
+  gap: 14px;
   align-items: center;
 }
 
 .ivbi-rank__meta {
+  min-width: 0;
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
 }
 
 .ivbi-rank__index {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--ivbi-accent) 12%, var(--ivbi-surface) 88%),
-      color-mix(in srgb, var(--ivbi-surface-soft) 90%, var(--ivbi-accent) 10%)
-    );
-  border: 1px solid color-mix(in srgb, var(--ivbi-accent) 16%, var(--ivbi-line));
-  color: var(--ivbi-text);
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ivbi-chart-1) 20%, var(--ivbi-line));
+  background: color-mix(in srgb, var(--ivbi-chart-1) 10%, var(--ivbi-surface));
+  color: var(--ivbi-chart-1);
   font-family: var(--ivbi-font-ui);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 900;
 }
 
-/* 4. RANKING TEXT: Menos peso, y con fuente UI (sans-serif) para mejor legibilidad y no verse tan "apretado" */
 .ivbi-rank__label {
-  min-width: 0;
-  font-size: 0.88rem;
-  font-weight: 500;
-  font-family: var(--ivbi-font-ui);
-  line-height: 1.18;
-  white-space: nowrap;
+  display: block;
+  max-width: 100%;
   overflow: hidden;
+  font-size: 0.86rem;
+  line-height: 1.18;
+  font-weight: 900;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 5. RANKING BAR: Más delgada (14px) para no competir visualmente con el nombre del autor/facultad */
 .ivbi-rank__track {
+  position: relative;
   width: 100%;
-  height: 14px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 78%, var(--ivbi-surface) 22%);
-  border: 1px solid var(--ivbi-line-soft);
+  height: 13px;
   overflow: hidden;
+  border-radius: var(--ivbi-radius-pill);
+  background: color-mix(in srgb, var(--ivbi-accent) 7%, var(--ivbi-surface-soft) 93%);
 }
 
 .ivbi-rank__bar {
-  min-width: 42px;
   width: var(--rank-w, 0%);
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
-  min-height: 14px;
-  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 7px;
-  box-shadow:
-    inset 0 -5px 8px rgba(0, 0, 0, 0.12),
-    0 3px 7px rgba(17, 14, 10, 0.06);
-  transform-origin: left center;
-  will-change: width, transform;
-  transition:
-    width 0.68s var(--ivbi-ease),
-    filter var(--ivbi-motion-fast) ease,
-    transform var(--ivbi-motion-fast) ease;
-  transition-delay: var(--rank-delay, 0ms);
-}
-
-.ivbi-rank__bar:hover {
-  filter: brightness(1.06) saturate(1.05);
-  transform: translateY(-1px);
+  padding-right: 6px;
+  border-radius: var(--ivbi-radius-pill);
+  color: #ffffff;
+  transform-origin: left;
+  animation: ivbiRankGrow 0.45s ease forwards;
+  animation-delay: var(--rank-delay, 0ms);
 }
 
 .ivbi-rank__bar span {
-  color: #ffffff;
   font-family: var(--ivbi-font-ui);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
+  line-height: 1;
   font-weight: 900;
 }
 
-/* =========================================================
-   TRANSITIONS
-========================================================= */
-
-.ivbi-list-move,
-.ivbi-list-enter-active,
-.ivbi-list-leave-active {
-  transition:
-    transform 0.42s var(--ivbi-ease),
-    opacity 0.28s ease;
-}
-
-.ivbi-list-enter-from,
-.ivbi-list-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.ivbi-view-enter-active,
-.ivbi-view-leave-active {
-  transition:
-    opacity 0.26s ease,
-    transform 0.32s var(--ivbi-ease);
-}
-
-.ivbi-view-enter-from {
-  opacity: 0;
-  transform: translateY(12px) scale(0.992);
-}
-
-.ivbi-view-leave-to {
-  opacity: 0;
-  transform: translateY(-8px) scale(0.996);
+.ivbi-card--autores .ivbi-rank__row,
+.ivbi-card--autores-rank .ivbi-rank__row,
+.ivbi-card--coautores-rank .ivbi-rank__row,
+.ivbi-card--revistas .ivbi-rank__row,
+.ivbi-card--proyectos .ivbi-rank__row {
+  grid-template-columns: 1fr;
+  gap: 9px;
 }
 
 /* =========================================================
@@ -1390,137 +1424,155 @@ button.ivbi-vbars__col {
 
 .ivbi-skeleton-shell {
   display: grid;
-  gap: 12px;
+  gap: 18px;
+}
+
+.ivbi-sk-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "hero tabs"
+    "filters filters";
+  gap: 14px;
 }
 
 .ivbi-skeleton-block,
 .ivbi-sk-card,
 .ivbi-sk-pill,
-.ivbi-sk-field {
-  border: 1px solid color-mix(in srgb, var(--ivbi-surface) 68%, var(--ivbi-line));
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ivbi-surface) 94%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 86%, transparent) 100%
-    );
-  box-shadow: var(--ivbi-shadow-card);
-}
-
-.ivbi-skeleton-block,
-.ivbi-sk-card {
-  border-radius: var(--ivbi-radius-card);
-  padding: 14px;
+.ivbi-sk-field,
+.ivbi-sk-line {
   position: relative;
   overflow: hidden;
+  border-radius: var(--ivbi-radius-xl);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ivbi-surface) 70%, var(--ivbi-bg) 30%),
+      color-mix(in srgb, var(--ivbi-surface) 96%, var(--ivbi-bg) 4%),
+      color-mix(in srgb, var(--ivbi-surface) 70%, var(--ivbi-bg) 30%)
+    );
+  background-size: 220% 100%;
+  animation: ivbiSkeleton 1.2s ease-in-out infinite;
 }
 
-.ivbi-sk-header {
+.ivbi-skeleton-block--hero {
+  grid-area: hero;
+  min-height: 128px;
   display: grid;
+  align-content: center;
   gap: 12px;
+  padding: 24px;
+  border-radius: var(--ivbi-radius-2xl);
+}
+
+.ivbi-sk-line--kicker {
+  width: 120px;
+  height: 11px;
+}
+
+.ivbi-sk-line--title {
+  width: 62%;
+  height: 30px;
+}
+
+.ivbi-sk-line--meta {
+  width: 74%;
+  height: 13px;
 }
 
 .ivbi-sk-tabs {
+  grid-area: tabs;
+  min-width: 350px;
   display: grid;
-  grid-template-columns: repeat(3, 120px);
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--ivbi-radius-xl);
+  background: color-mix(in srgb, var(--ivbi-surface) 96%, transparent);
+}
+
+.ivbi-sk-pill {
+  height: 40px;
+  border-radius: 11px;
 }
 
 .ivbi-sk-filters {
+  grid-area: filters;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 11px;
+  padding: 18px;
+  border-radius: var(--ivbi-radius-xl);
+  background: color-mix(in srgb, var(--ivbi-surface) 96%, transparent);
+}
+
+.ivbi-sk-field {
+  height: 43px;
+  border-radius: 12px;
 }
 
 .ivbi-sk-kpis {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
+}
+
+.ivbi-sk-card--kpi {
+  min-height: 104px;
 }
 
 .ivbi-sk-grid {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .ivbi-sk-grid--summary {
-  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(330px, 0.74fr);
   grid-template-areas:
-    "distribution comparison"
+    "comparison distribution"
     "facultades autores";
 }
 
 .ivbi-sk-card--distribution {
   grid-area: distribution;
-  min-height: var(--ivbi-card-h-tall);
+  min-height: 385px;
 }
 
 .ivbi-sk-card--comparison {
   grid-area: comparison;
-  min-height: var(--ivbi-card-h-tall);
+  min-height: 270px;
 }
 
 .ivbi-sk-card--facultades {
   grid-area: facultades;
-  min-height: var(--ivbi-card-h);
+  min-height: 270px;
 }
 
 .ivbi-sk-card--autores {
   grid-area: autores;
-  min-height: var(--ivbi-card-h);
+  min-height: 270px;
 }
 
-.ivbi-sk-card--kpi {
-  min-height: 92px;
+/* =========================================================
+   TRANSICIONES VUE
+========================================================= */
+
+.ivbi-list-enter-active,
+.ivbi-list-leave-active,
+.ivbi-view-enter-active,
+.ivbi-view-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
-.ivbi-sk-pill,
-.ivbi-sk-field {
-  min-height: 40px;
-  border-radius: 14px;
-  position: relative;
-  overflow: hidden;
-}
-
-.ivbi-sk-line {
-  height: 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ivbi-surface-soft) 76%, var(--ivbi-surface) 24%);
-  position: relative;
-  overflow: hidden;
-}
-
-.ivbi-sk-line--kicker {
-  width: 122px;
-  height: 10px;
-}
-
-.ivbi-sk-line--title {
-  width: min(360px, 100%);
-  height: 26px;
-}
-
-.ivbi-sk-line--meta {
-  width: min(420px, 100%);
-  height: 12px;
-}
-
-.ivbi-sk-line::after,
-.ivbi-sk-card::after,
-.ivbi-sk-pill::after,
-.ivbi-sk-field::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.38) 50%,
-      transparent 100%
-    );
-  animation: ivbiShimmer 1.25s linear infinite;
+.ivbi-list-enter-from,
+.ivbi-list-leave-to,
+.ivbi-view-enter-from,
+.ivbi-view-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 /* =========================================================
@@ -1528,536 +1580,163 @@ button.ivbi-vbars__col {
 ========================================================= */
 
 :root.dark .ivbi-page,
+html.dark .ivbi-page,
+body.dark .ivbi-page,
+.dark .ivbi-page,
 [data-theme="dark"] .ivbi-page {
-  /* 6. CONTRASTE TEXTO SECUNDARIO: Aclarado en modo oscuro para que sea legible y cumpla con la accesibilidad */
-  --ivbi-text-soft: #a1a1aa;
-  
-  --ivbi-shadow-card: 0 14px 34px rgba(0, 0, 0, 0.28);
-  --ivbi-shadow-card-hover: 0 18px 46px rgba(0, 0, 0, 0.34);
-  --ivbi-shadow-panel: 0 28px 70px rgba(0, 0, 0, 0.38);
-}
+  --ivbi-bg: var(--bg-main, #1c1917);
+  --ivbi-surface: var(--bg-card, #26221f);
+  --ivbi-surface-soft: var(--bg-elevated, #2a2522);
+  --ivbi-input: var(--bg-input, #2e2926);
 
-:root.dark .ivbi-board,
-[data-theme="dark"] .ivbi-board {
+  --ivbi-text: var(--text-primary, #f3ede5);
+  --ivbi-text-soft: var(--text-secondary, #d0c6ba);
+  --ivbi-line: var(--border-color, rgba(255, 255, 255, 0.1));
+  --ivbi-line-strong: var(--border-strong, rgba(255, 255, 255, 0.16));
+
   background:
     radial-gradient(
-      circle at top left,
-      color-mix(in srgb, var(--ivbi-accent) 18%, transparent) 0%,
+      circle at 18% 0%,
+      color-mix(in srgb, var(--ivbi-accent) 7%, transparent),
       transparent 34%
     ),
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--ivbi-accent) 12%, transparent) 0%,
-      transparent 32%
-    ),
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--ivbi-accent) 15%, var(--bg-main, #0d1117) 85%) 0%,
-      color-mix(in srgb, var(--bg-main, #0d1117) 94%, var(--ivbi-accent) 6%) 100%
-    );
-}
-
-:root.dark .ivbi-header__titlebox,
-:root.dark .ivbi-filterbar,
-:root.dark .ivbi-segmented,
-:root.dark .ivbi-card,
-:root.dark .ivbi-kpi-card,
-[data-theme="dark"] .ivbi-header__titlebox,
-[data-theme="dark"] .ivbi-filterbar,
-[data-theme="dark"] .ivbi-segmented,
-[data-theme="dark"] .ivbi-card,
-[data-theme="dark"] .ivbi-kpi-card {
-  background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--ivbi-surface) 92%, transparent) 0%,
-      color-mix(in srgb, var(--ivbi-surface-soft) 84%, transparent) 100%
+      color-mix(in srgb, var(--ivbi-bg) 96%, black 4%),
+      var(--ivbi-bg)
     );
 }
 
-/* =========================================================
-   ANIMATIONS
-========================================================= */
-
-@keyframes ivbiFadeUp {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 12px, 0);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes ivbiCardEnter {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes ivbiShimmer {
-  100% {
-    transform: translateX(100%);
-  }
+:root.dark .ivbi-donut::after,
+html.dark .ivbi-donut::after,
+body.dark .ivbi-donut::after,
+.dark .ivbi-donut::after,
+[data-theme="dark"] .ivbi-donut::after {
+  background: var(--ivbi-surface);
 }
 
 /* =========================================================
    RESPONSIVE
 ========================================================= */
 
-@media (max-width: 1500px) {
-  .ivbi-header {
-    grid-template-columns: minmax(260px, 0.95fr) auto;
-    grid-template-areas:
-      "brand tabs"
-      "filters filters";
-  }
-
-  .ivbi-filterbar__fields,
-  .ivbi-sk-filters {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1320px) {
+@media (max-width: 1380px) {
   .ivbi-kpi-strip,
   .ivbi-sk-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .ivbi-filterbar__fields,
-  .ivbi-sk-filters {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .ivbi-filterbar__content {
+    grid-template-columns: 1fr;
+  }
+
+  .ivbi-filterbar__actions {
+    justify-content: flex-start;
+  }
+
+  .ivbi-summary-grid,
+  .ivbi-sk-grid--summary {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.78fr);
+  }
+
+  .ivbi-trend-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.78fr);
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1120px) {
+  .ivbi-header__top {
+    align-items: flex-start;
+  }
+
+  .ivbi-header__navigation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ivbi-header__view-help {
+    text-align: left;
+  }
+
   .ivbi-summary-grid,
   .ivbi-sk-grid--summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "distribution distribution"
-      "comparison comparison"
-      "facultades autores";
+      "comparison"
+      "distribution"
+      "facultades"
+      "autores";
   }
 
   .ivbi-trend-grid {
     grid-template-columns: 1fr;
     grid-template-areas:
       "historica"
-      "comparativa"
-      "mensual";
+      "mensual"
+      "comparativa";
+  }
+
+  .ivbi-card--distribution {
+    min-height: auto;
+  }
+
+  .ivbi-donut-panel {
+    grid-template-columns: 190px minmax(0, 1fr);
+    justify-items: stretch;
   }
 
   .ivbi-rankings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "facultades-rank carreras-rank"
-      "autores-rank autores-rank"
-      "coautores-rank coautores-rank"
-      "revistas revistas"
-      "proyectos proyectos";
+      "autores-rank coautores-rank"
+      "revistas proyectos";
   }
 
-  .ivbi-card--distribution,
-  .ivbi-card--comparison,
-  .ivbi-card--facultades-rank,
-  .ivbi-card--carreras-rank,
-  .ivbi-card--autores-rank,
-  .ivbi-card--coautores-rank,
-  .ivbi-sk-card--distribution,
-  .ivbi-sk-card--comparison {
-    min-height: auto;
-  }
-
-  .ivbi-donut-panel {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 920px) {
-  .ivbi-page {
-    padding: 10px;
-  }
-
-  .ivbi-board {
-    padding: 12px;
-    border-radius: 24px;
-  }
-
-  .ivbi-header {
+  .ivbi-sk-header {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "brand"
+      "hero"
       "tabs"
       "filters";
   }
 
-  .ivbi-segmented {
-    width: 100%;
+  .ivbi-sk-tabs {
+    min-width: 0;
+  }
+
+  .ivbi-sk-filters {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ivbi-filterbar__fields,
-  .ivbi-sk-filters,
-  .ivbi-kpi-strip,
-  .ivbi-sk-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ivbi-filterbar__actions {
-    justify-content: stretch;
-  }
-
-  .ivbi-filterbar__actions .ivbi-btn {
-    flex: 1 1 auto;
-  }
-
-  .ivbi-summary-grid,
-  .ivbi-trend-grid,
-  .ivbi-rankings-grid,
-  .ivbi-sk-grid--summary {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "distribution"
-      "comparison"
-      "facultades"
-      "autores";
-  }
-
-  .ivbi-trend-grid {
-    grid-template-areas:
-      "historica"
-      "comparativa"
-      "mensual";
-  }
-
-  .ivbi-rankings-grid {
-    grid-template-areas:
-      "facultades-rank"
-      "carreras-rank"
-      "autores-rank"
-      "coautores-rank"
-      "revistas"
-      "proyectos";
-  }
-
-  .ivbi-card--distribution,
-  .ivbi-card--comparison,
-  .ivbi-card--facultades,
-  .ivbi-card--autores,
-  .ivbi-card--historica,
-  .ivbi-card--comparativa,
-  .ivbi-card--mensual,
-  .ivbi-card--facultades-rank,
-  .ivbi-card--carreras-rank,
-  .ivbi-card--autores-rank,
-  .ivbi-card--coautores-rank,
-  .ivbi-card--revistas,
-  .ivbi-card--proyectos,
-  .ivbi-sk-card--distribution,
-  .ivbi-sk-card--comparison,
-  .ivbi-sk-card--facultades,
-  .ivbi-sk-card--autores {
-    min-height: auto;
-  }
-
-  .ivbi-vbars,
-  .ivbi-vbars--tall {
-    min-height: 240px;
-    height: 240px;
-  }
-
-  .ivbi-rank__row {
-    grid-template-columns: 1fr;
-    gap: 7px;
-  }
-
-  .ivbi-rank__track {
-    height: 14px;
-  }
-  
-  .ivbi-rank__bar {
-    min-height: 14px;
-  }
-
-  .ivbi-mini-stats {
-    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 900px) {
   .ivbi-page {
-    --ivbi-radius-board: 0;
-    --ivbi-radius-card: 22px;
-    --ivbi-radius-soft: 16px;
-    --ivbi-card-h: auto;
-    --ivbi-card-h-tall: auto;
-
-    min-height: 100dvh;
-    padding: 0;
-    background:
-      radial-gradient(
-        circle at 16% 0%,
-        color-mix(in srgb, var(--ivbi-accent) 12%, transparent),
-        transparent 34%
-      ),
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ivbi-bg) 92%, var(--ivbi-surface) 8%) 0%,
-        var(--ivbi-bg) 100%
-      );
+    width: 100%;
+    max-width: 100vw;
+    min-height: calc(100vh - var(--ivbi-topbar-height));
+    margin-left: 0;
+    padding: 16px 14px 26px;
   }
 
   .ivbi-shell {
-    width: 100%;
-  }
-
-  .ivbi-board {
-    padding: 14px;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-    overflow: visible;
-  }
-
-  .ivbi-board::before,
-  .ivbi-board::after {
-    display: none;
-  }
-
-  .ivbi-dashboard {
-    gap: 14px;
-  }
-
-  /* =======================================================
-     HEADER MOBILE
-  ======================================================= */
-
-  .ivbi-header {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "brand"
-      "tabs"
-      "filters";
-    gap: 14px;
-    padding: 0;
-  }
-
-  .ivbi-header__titlebox {
-    min-height: auto;
-    padding: 22px 20px;
-    border-radius: 24px;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--ivbi-surface) 96%, transparent),
-        color-mix(in srgb, var(--ivbi-surface-soft) 88%, var(--ivbi-accent) 12%)
-      );
-    border: 1px solid color-mix(in srgb, var(--ivbi-line) 86%, transparent);
-    box-shadow: 0 12px 28px rgba(17, 14, 10, 0.07);
-  }
-
-  .ivbi-header__kicker {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
-  }
-
-  .ivbi-header__title {
     max-width: 100%;
-    font-size: clamp(1.65rem, 7.2vw, 2.25rem);
-    line-height: 1.02;
-    letter-spacing: -0.045em;
   }
 
-  .ivbi-header__meta {
-    max-width: 100%;
-    font-size: 0.92rem;
-    line-height: 1.45;
-  }
-
-  /* =======================================================
-     TABS MOBILE
-  ======================================================= */
-
-  .ivbi-segmented {
-    width: 100%;
+  .ivbi-header__top {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: 6px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--ivbi-surface) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ivbi-line) 84%, transparent);
-    box-shadow: 0 10px 24px rgba(17, 14, 10, 0.08);
-    overflow: hidden;
+    gap: 18px;
   }
 
-  .ivbi-segmented__btn {
-    min-height: 46px;
-    padding: 0 10px;
-    border-radius: 999px;
-    font-size: 0.88rem;
-    white-space: nowrap;
-  }
-
-  .ivbi-segmented__btn.is-active {
-    box-shadow: 0 10px 22px color-mix(in srgb, var(--ivbi-accent) 24%, transparent);
-  }
-
-  /* =======================================================
-     FILTROS MOBILE
-  ======================================================= */
-
-  .ivbi-filterbar {
-    grid-area: filters;
-    display: grid;
-    gap: 16px;
-    padding: 18px;
-    border-radius: 24px;
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ivbi-surface) 96%, transparent),
-        color-mix(in srgb, var(--ivbi-surface-soft) 92%, transparent)
-      );
-    border: 1px solid color-mix(in srgb, var(--ivbi-line) 84%, transparent);
-    box-shadow: 0 12px 28px rgba(17, 14, 10, 0.07);
+  .ivbi-header__actions {
+    justify-content: flex-start;
   }
 
   .ivbi-filterbar__fields {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .ivbi-field {
-    gap: 8px;
-  }
-
-  .ivbi-field > span {
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-  }
-
-  .ivbi-field select {
-    width: 100%;
-    min-height: 52px;
-    height: 52px;
-    padding: 0 38px 0 14px;
-    border-radius: 15px;
-    font-size: 0.94rem;
-    background-color: var(--ivbi-input);
-  }
-
-  .ivbi-filterbar__actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .ivbi-filterbar__actions .ivbi-btn {
-    width: 100%;
-    min-height: 52px;
-    justify-content: center;
-    border-radius: 999px;
-    font-size: 0.94rem;
-  }
-
-  .ivbi-btn--primary {
-    box-shadow: 0 12px 24px color-mix(in srgb, var(--ivbi-accent) 22%, transparent);
-  }
-
-  /* =======================================================
-     KPIS MOBILE
-  ======================================================= */
-
-  .ivbi-kpi-strip,
-  .ivbi-sk-kpis {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .ivbi-kpi-card {
-    min-height: 132px;
-    padding: 20px 18px 18px 76px;
-    border-radius: 22px;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--ivbi-surface) 96%, transparent),
-        color-mix(in srgb, var(--ivbi-surface-soft) 86%, var(--ivbi-accent) 14%)
-      );
-    box-shadow: 0 12px 28px rgba(17, 14, 10, 0.07);
-  }
-
-  .ivbi-kpi-card::before {
-    left: 18px;
-    top: 32px;
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    transform: none;
-  }
-
-  .ivbi-kpi-card::after {
-    left: 30px;
-    top: 53px;
-    font-size: 1rem;
-    transform: translateY(-50%);
-  }
-
-  .ivbi-kpi-card__label {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
-  }
-
-  .ivbi-kpi-card__value {
-    margin-top: 8px;
-    font-size: clamp(1.45rem, 7vw, 2rem);
-  }
-
-  .ivbi-kpi-card__hint {
-    margin-top: 6px;
-    font-size: 0.86rem;
-    line-height: 1.35;
-    white-space: normal;
-  }
-
-  /* =======================================================
-     GRIDS MOBILE
-  ======================================================= */
-
-  .ivbi-summary-grid,
-  .ivbi-trend-grid,
-  .ivbi-rankings-grid,
-  .ivbi-sk-grid--summary {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .ivbi-summary-grid {
-    grid-template-areas:
-      "distribution"
-      "comparison"
-      "facultades"
-      "autores";
-  }
-
-  .ivbi-trend-grid {
-    grid-template-areas:
-      "historica"
-      "comparativa"
-      "mensual";
   }
 
   .ivbi-rankings-grid {
+    grid-template-columns: 1fr;
     grid-template-areas:
       "facultades-rank"
       "carreras-rank"
@@ -2069,636 +1748,165 @@ button.ivbi-vbars__col {
 
   .ivbi-card {
     min-height: auto;
-    padding: 20px;
-    border-radius: 24px;
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ivbi-surface) 97%, transparent),
-        color-mix(in srgb, var(--ivbi-surface-soft) 92%, transparent)
-      );
-    box-shadow: 0 12px 28px rgba(17, 14, 10, 0.07);
+  }
+}
+
+@media (max-width: 720px) {
+  .ivbi-page {
+    padding: 12px 10px 20px;
   }
 
-  .ivbi-card:hover,
-  .ivbi-kpi-card:hover {
-    transform: none;
-  }
-
-  .ivbi-card__head {
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid color-mix(in srgb, var(--ivbi-line) 70%, transparent);
-  }
-
-  .ivbi-card__eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
-  }
-
-  .ivbi-card__title {
-    font-size: clamp(1.2rem, 5.4vw, 1.55rem);
-    line-height: 1.1;
-  }
-
-  .ivbi-card__total {
-    min-width: 42px;
-    height: 34px;
-    border-radius: 999px;
-    font-size: 0.86rem;
-  }
-
-  /* =======================================================
-     DONUT MOBILE
-  ======================================================= */
-
-  .ivbi-donut-panel {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    align-items: center;
-    justify-items: center;
-  }
-
-  .ivbi-donut {
-    width: min(68vw, 250px);
-    height: min(68vw, 250px);
-    margin: 0 auto;
-  }
-
-  .ivbi-donut::after {
-    inset: 15%;
-  }
-
-  .ivbi-donut__center {
-    width: 48%;
-    height: 48%;
-    max-width: none;
-    place-items: center;
-  }
-
-  .ivbi-donut__center strong {
-    font-size: clamp(1.6rem, 7vw, 2.05rem);
-  }
-
-  .ivbi-donut__center span {
-    font-size: 0.92rem;
-  }
-
-  .ivbi-donut__center small {
-    max-width: 90px;
-    font-size: 0.72rem;
-    line-height: 1.2;
-  }
-
-  .ivbi-legend {
-    width: 100%;
-    display: grid;
-    gap: 10px;
-  }
-
-  .ivbi-legend__item {
-    width: 100%;
-    min-height: 58px;
-    padding: 12px 14px;
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--ivbi-surface) 94%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ivbi-line) 76%, transparent);
-  }
-
-  .ivbi-legend__item:hover,
-  .ivbi-legend__item.is-active {
-    transform: none;
-  }
-
-  .ivbi-legend__label {
-    font-size: 1rem;
-    line-height: 1.25;
-  }
-
-  .ivbi-legend__meta {
-    margin-top: 4px;
-    font-size: 0.9rem;
-  }
-
-  .ivbi-mini-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
-  }
-
-  .ivbi-mini-stat {
-    min-height: 72px;
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .ivbi-mini-stat > span {
-    font-size: 0.68rem;
-  }
-
-  .ivbi-mini-stat > strong {
-    margin-top: 8px;
-    font-size: 1.3rem;
-  }
-
-  /* =======================================================
-     COMPARATIVA ANUAL MOBILE
-     Convierte el gráfico agrupado en barras horizontales.
-  ======================================================= */
-
-  .ivbi-grouped-wrap {
-    display: grid;
-    gap: 16px;
-    overflow: visible;
-  }
-
-  .ivbi-grouped {
-    display: grid;
-    gap: 18px;
-    min-width: 0;
-    min-height: auto;
-    padding: 2px 0;
-  }
-
-  .ivbi-grouped__group {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    min-height: auto;
-  }
-
-  .ivbi-grouped__label {
-    order: 1;
-    font-size: 0.95rem;
-    font-weight: 900;
-    color: var(--ivbi-text);
-  }
-
-  .ivbi-grouped__bars {
-    order: 2;
-    display: grid;
-    gap: 8px;
-    width: 100%;
-    height: auto;
-    min-height: auto;
-    padding: 0;
-    background: transparent;
-    border: 0;
-  }
-
-  .ivbi-grouped__barbox {
-    width: 100%;
-    height: 12px;
-    min-height: 12px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--ivbi-line) 56%, transparent);
-    overflow: hidden;
-  }
-
-  .ivbi-grouped__bar {
-    width: var(--grouped-h);
-    height: 100%;
-    min-width: 8px;
-    border-radius: inherit;
-    transform-origin: left center;
-  }
-
-  .ivbi-series-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 14px;
-    padding-top: 2px;
-  }
-
-  .ivbi-series-legend__item {
-    font-size: 0.9rem;
-    line-height: 1.25;
-  }
-
-  /* =======================================================
-     BARRAS VERTICALES MOBILE
-  ======================================================= */
-
-  .ivbi-vbars,
-  .ivbi-vbars--tall {
-    min-height: 260px;
-    height: 260px;
-    padding: 4px 0 0;
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-  }
-
-  .ivbi-vbars__col {
-    min-width: 46px;
-    width: 46px;
-    scroll-snap-align: start;
-    grid-template-rows: auto minmax(180px, 1fr) auto;
-  }
-
-  .ivbi-vbars__track {
-    width: 18px;
-    min-height: 180px;
-    border-radius: 999px;
-    margin: 0 auto;
-  }
-
-  .ivbi-vbars__bar {
-    border-radius: 999px;
-  }
-
-  .ivbi-vbars__value {
-    font-size: 0.82rem;
-  }
-
-  .ivbi-vbars__label {
-    font-size: 0.78rem;
-  }
-
-  /* =======================================================
-     RANKINGS MOBILE
-  ======================================================= */
-
-  .ivbi-rank {
-    display: grid;
-    gap: 14px;
-  }
-
-  .ivbi-rank__row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 0;
-  }
-
-  .ivbi-rank__meta {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-  }
-
-  .ivbi-rank__index {
-    width: 38px;
-    height: 38px;
-    border-radius: 999px;
-    font-size: 0.95rem;
-  }
-
-  .ivbi-rank__label {
-    font-size: 1rem;
-    line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .ivbi-rank__track {
-    width: 100%;
-    height: 14px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--ivbi-line) 42%, transparent);
-  }
-
-  .ivbi-rank__bar {
-    min-height: 14px;
-    border-radius: 999px;
-  }
-
-  .ivbi-rank__bar span {
-    font-size: 0.78rem;
-    padding-right: 8px;
-  }
-
-  /* =======================================================
-     ALERTAS / EMPTY / SKELETON MOBILE
-  ======================================================= */
-
-  .ivbi-alert,
-  .ivbi-empty {
-    border-radius: 20px;
-    padding: 18px;
-    font-size: 0.95rem;
-  }
-
-  .ivbi-empty--state {
-    min-height: 180px;
-  }
-
+  .ivbi-dashboard,
+  .ivbi-view-shell,
+  .ivbi-summary-grid,
+  .ivbi-trend-grid,
+  .ivbi-rankings-grid,
   .ivbi-skeleton-shell {
     gap: 14px;
   }
 
-  .ivbi-sk-header {
-    display: grid;
-    gap: 14px;
-  }
-
-  .ivbi-sk-tabs {
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ivbi-sk-filters {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .ivbi-sk-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ivbi-sk-grid--summary {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "distribution"
-      "comparison"
-      "facultades"
-      "autores";
-  }
-
-  .ivbi-sk-card {
-    border-radius: 22px;
-  }
-}
-
-/* =========================================================
-   MÓVIL PEQUEÑO
-========================================================= */
-
-@media (max-width: 430px) {
-  .ivbi-board {
-    padding: 12px;
-  }
-
-  .ivbi-dashboard {
-    gap: 12px;
-  }
-
-  .ivbi-header {
-    gap: 12px;
-  }
-
-  .ivbi-header__titlebox,
+  .ivbi-header__top,
+  .ivbi-header__navigation,
   .ivbi-filterbar,
-  .ivbi-card {
-    border-radius: 22px;
+  .ivbi-card,
+  .ivbi-kpi-card {
+    border-radius: var(--ivbi-radius-xl);
   }
 
-  .ivbi-header__titlebox {
-    padding: 20px 18px;
+  .ivbi-header__top {
+    min-height: auto;
+    padding: 19px;
   }
 
   .ivbi-header__title {
-    font-size: clamp(1.55rem, 8vw, 2rem);
+    font-size: clamp(1.75rem, 8vw, 2.2rem);
   }
 
   .ivbi-header__meta {
-    font-size: 0.88rem;
+    font-size: 0.78rem;
   }
 
   .ivbi-segmented {
-    padding: 5px;
+    width: 100%;
   }
 
   .ivbi-segmented__btn {
-    min-height: 42px;
-    font-size: 0.82rem;
+    flex: 1 1 0;
+    padding-inline: 9px;
   }
 
-  .ivbi-filterbar {
-    padding: 16px;
+  .ivbi-filterbar__head {
+    display: grid;
   }
 
-  .ivbi-filterbar__fields {
-    gap: 12px;
+  .ivbi-filterbar__status {
+    width: fit-content;
   }
 
-  .ivbi-field select {
-    min-height: 50px;
-    height: 50px;
-    font-size: 0.9rem;
-  }
-
-  .ivbi-filterbar__actions .ivbi-btn {
-    min-height: 50px;
-    font-size: 0.9rem;
-  }
-
+  .ivbi-filterbar__fields,
   .ivbi-kpi-strip,
-  .ivbi-sk-kpis {
-    gap: 10px;
+  .ivbi-sk-kpis,
+  .ivbi-sk-filters {
+    grid-template-columns: 1fr;
   }
 
-  .ivbi-kpi-card {
-    min-height: 122px;
-    padding: 18px 14px 16px 66px;
-    border-radius: 20px;
+  .ivbi-filterbar__actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
-  .ivbi-kpi-card::before {
-    left: 14px;
-    top: 28px;
-    width: 38px;
-    height: 38px;
-    border-radius: 13px;
-  }
-
-  .ivbi-kpi-card::after {
-    left: 25px;
-    top: 47px;
-    font-size: 0.92rem;
-  }
-
-  .ivbi-kpi-card__label {
-    font-size: 0.66rem;
-  }
-
-  .ivbi-kpi-card__value {
-    font-size: clamp(1.35rem, 7vw, 1.8rem);
-  }
-
-  .ivbi-kpi-card__hint {
-    font-size: 0.78rem;
+  .ivbi-btn {
+    width: 100%;
   }
 
   .ivbi-card {
     padding: 18px;
   }
 
-  .ivbi-card__title {
-    font-size: 1.2rem;
+  .ivbi-card__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ivbi-card__head-tools {
+    justify-content: flex-start;
+  }
+
+  .ivbi-card__total {
+    width: fit-content;
+  }
+
+  .ivbi-donut-panel {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   .ivbi-donut {
-    width: min(72vw, 230px);
-    height: min(72vw, 230px);
-  }
-
-  .ivbi-mini-stats {
-    grid-template-columns: 1fr;
+    width: min(72vw, 182px);
+    height: min(72vw, 182px);
   }
 
   .ivbi-grouped__group {
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .ivbi-series-legend__item {
-    font-size: 0.84rem;
-  }
-
-  .ivbi-rank__label {
-    font-size: 0.95rem;
-  }
-}
-
-/* =========================================================
-   MÓVIL MUY ESTRECHO
-========================================================= */
-
-@media (max-width: 360px) {
-  .ivbi-board {
-    padding: 10px;
-  }
-
-  .ivbi-filterbar__fields {
     grid-template-columns: 1fr;
-  }
-
-  .ivbi-kpi-strip,
-  .ivbi-sk-kpis {
-    grid-template-columns: 1fr;
-  }
-
-  .ivbi-kpi-card {
-    min-height: 112px;
-  }
-
-  .ivbi-header__title {
-    font-size: 1.55rem;
-  }
-
-  .ivbi-segmented__btn {
-    padding: 0 8px;
-    font-size: 0.78rem;
-  }
-}
-
-/* =========================================================
-   LANDSCAPE / ALTURA BAJA
-========================================================= */
-
-@media (max-width: 900px) and (max-height: 560px) and (orientation: landscape) {
-  .ivbi-page {
-    padding: 10px;
-  }
-
-  .ivbi-board {
-    padding: 10px;
-    border-radius: 22px;
-    background: color-mix(in srgb, var(--ivbi-accent) 8%, var(--ivbi-bg));
-  }
-
-  .ivbi-header {
-    grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1.1fr);
     grid-template-areas:
-      "brand tabs"
-      "filters filters";
+      "label"
+      "bars";
+    gap: 8px;
   }
 
-  .ivbi-header__titlebox {
-    padding: 14px 16px;
+  .ivbi-grouped__bars {
+    height: 74px;
+    min-height: 74px;
+  }
+
+  .ivbi-rank__row {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .ivbi-vbars,
+  .ivbi-vbars--tall {
+    grid-auto-columns: 42px;
+  }
+
+  .ivbi-info-tip__content {
+    right: auto;
+    left: 0;
+  }
+}
+
+@media (max-width: 440px) {
+  .ivbi-page {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 
   .ivbi-header__title {
-    font-size: 1.35rem;
+    font-size: 1.6rem;
   }
 
-  .ivbi-header__meta {
-    font-size: 0.78rem;
+  .ivbi-header__navigation {
+    padding: 8px;
   }
 
   .ivbi-segmented__btn {
-    min-height: 38px;
-  }
-
-  .ivbi-filterbar__fields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ivbi-filterbar__actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ivbi-kpi-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-height: 44px;
+    font-size: 0.7rem;
   }
 
   .ivbi-kpi-card {
-    min-height: 96px;
-    padding-top: 14px;
-    padding-bottom: 14px;
+    padding-left: 58px;
+  }
+
+  .ivbi-field select,
+  .ivbi-field input,
+  .ivbi-btn {
+    min-height: 42px;
   }
 }
 
 /* =========================================================
-   DARK MODE MOBILE
-========================================================= */
-
-@media (max-width: 620px) {
-  :root.dark .ivbi-page,
-  html.dark .ivbi-page,
-  body.dark .ivbi-page,
-  .dark .ivbi-page,
-  [data-theme="dark"] .ivbi-page {
-    background:
-      radial-gradient(
-        circle at 18% 0%,
-        color-mix(in srgb, var(--ivbi-accent) 12%, transparent),
-        transparent 34%
-      ),
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ivbi-bg) 96%, black 4%),
-        var(--ivbi-bg)
-      );
-  }
-
-  :root.dark .ivbi-card,
-  :root.dark .ivbi-header__titlebox,
-  :root.dark .ivbi-filterbar,
-  :root.dark .ivbi-kpi-card,
-  html.dark .ivbi-card,
-  html.dark .ivbi-header__titlebox,
-  html.dark .ivbi-filterbar,
-  html.dark .ivbi-kpi-card,
-  body.dark .ivbi-card,
-  body.dark .ivbi-header__titlebox,
-  body.dark .ivbi-filterbar,
-  body.dark .ivbi-kpi-card,
-  .dark .ivbi-card,
-  .dark .ivbi-header__titlebox,
-  .dark .ivbi-filterbar,
-  .dark .ivbi-kpi-card,
-  [data-theme="dark"] .ivbi-card,
-  [data-theme="dark"] .ivbi-header__titlebox,
-  [data-theme="dark"] .ivbi-filterbar,
-  [data-theme="dark"] .ivbi-kpi-card {
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
-  }
-}
-
-/* =========================================================
-   REDUCED MOTION
+   ACCESIBILIDAD
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2710,83 +1918,8 @@ button.ivbi-vbars__col {
     scroll-behavior: auto !important;
   }
 
-  .ivbi-dashboard > *,
-  .ivbi-summary-grid > .ivbi-card,
-  .ivbi-trend-grid > .ivbi-card,
-  .ivbi-rankings-grid > .ivbi-card,
-  .ivbi-kpi-strip > .ivbi-kpi-card {
+  .ivbi-dashboard > * {
     opacity: 1 !important;
     transform: none !important;
-  }
-}
-
-/* =========================================================
-   RANKINGS — Autores principales y coautores
-========================================================= */
-
-.ivbi-card--coautores-rank {
-  grid-area: coautores-rank;
-  min-height: var(--ivbi-card-h-tall);
-}
-
-/* Vista rankings en escritorio */
-.ivbi-rankings-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-areas:
-    "facultades-rank carreras-rank"
-    "autores-rank coautores-rank"
-    "revistas proyectos";
-}
-
-/* Ajuste intermedio */
-@media (max-width: 1180px) {
-  .ivbi-rankings-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "facultades-rank carreras-rank"
-      "autores-rank autores-rank"
-      "coautores-rank coautores-rank"
-      "revistas revistas"
-      "proyectos proyectos";
-  }
-
-  .ivbi-card--coautores-rank {
-    min-height: auto;
-  }
-}
-
-/* Ajuste móvil */
-@media (max-width: 920px) {
-  .ivbi-rankings-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "facultades-rank"
-      "carreras-rank"
-      "autores-rank"
-      "coautores-rank"
-      "revistas"
-      "proyectos";
-  }
-
-  .ivbi-card--coautores-rank {
-    min-height: auto;
-  }
-}
-
-/* Ajuste móvil pequeño */
-@media (max-width: 620px) {
-  .ivbi-rankings-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "facultades-rank"
-      "carreras-rank"
-      "autores-rank"
-      "coautores-rank"
-      "revistas"
-      "proyectos";
-  }
-
-  .ivbi-card--coautores-rank {
-    min-height: auto;
   }
 }

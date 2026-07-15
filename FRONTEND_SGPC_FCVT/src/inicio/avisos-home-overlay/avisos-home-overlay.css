@@ -1,187 +1,303 @@
+/* ============================================================
+   SGPC ULEAM — Overlay global de avisos
+============================================================ */
+
+.avn-overlay,
+.avn-overlay * {
+  box-sizing: border-box;
+}
+
 .avn-overlay {
+  --avn-overlay-bg: rgba(15, 23, 42, 0.54);
+
+  --avn-overlay-line:
+    color-mix(
+      in srgb,
+      #ffffff 18%,
+      transparent
+    );
+
   position: fixed;
   inset: 0;
   z-index: 1700;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
+
+  display: grid;
+  place-items: center;
+
+  min-width: 0;
+  padding: 22px;
+
   overflow-x: hidden;
+  overflow-y: auto;
 
-  --avn-font-heading: var(--font-heading, Georgia, "Times New Roman", serif);
-  --avn-font-body: var(
-    --font-body,
-    var(--font-heading, Georgia, "Times New Roman", serif)
-  );
-  --avn-font-ui: var(
-    --font-control,
-    "IBM Plex Sans",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif
+  color: var(
+    --text-primary,
+    #172033
   );
 
-  --avn-bg: var(--bg-main, #f4f2ed);
-  --avn-surface: var(--bg-card, #ffffff);
-  --avn-surface-2: var(--bg-elevated, #ffffff);
-  --avn-soft: var(--bg-soft, #f5f1eb);
-  --avn-input: var(--bg-input, #ffffff);
-  --avn-navbar: var(--bg-navbar, #17130f);
-  --avn-overlay-color: var(--overlay, rgba(14, 12, 10, 0.72));
+  font-family:
+    var(
+      --font-body,
+      var(
+        --font-ui,
+        Inter,
+        "Segoe UI",
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif
+      )
+    );
 
-  --avn-text: var(--text-primary, #191510);
-  --avn-muted: var(--text-secondary, #6e655d);
+  background: var(--avn-overlay-bg);
 
-  --avn-line: var(--border-color, #d8d0c6);
-  --avn-line-strong: var(--border-strong, #b8ada1);
-
-  --avn-primary: var(
-    --color-primary-effective,
-    var(--color-primary, #111111)
-  );
-  --avn-danger: var(--danger, #a4493f);
-
-  --avn-shadow: var(--shadow-soft, 0 14px 32px rgba(17, 14, 10, 0.08));
-  --avn-shadow-strong: var(--shadow-strong, 0 28px 68px rgba(17, 14, 10, 0.18));
-
-  color: var(--avn-text);
-  font-family: var(--avn-font-body);
+  isolation: isolate;
+  overscroll-behavior: contain;
 }
 
-.avn-overlay,
-.avn-overlay *,
-.avn-overlay *::before,
-.avn-overlay *::after {
-  box-sizing: border-box;
+.avn-overlay::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+
+  background:
+    radial-gradient(
+      circle at 18% 10%,
+      color-mix(
+        in srgb,
+        var(--color-primary, #315fcb)
+          16%,
+        transparent
+      ),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 86% 90%,
+      color-mix(
+        in srgb,
+        #7c8db5 12%,
+        transparent
+      ),
+      transparent 32%
+    );
+
+  pointer-events: none;
 }
+
+/* ============================================================
+   BACKDROP
+============================================================ */
 
 .avn-overlay__backdrop {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(
-      circle at 12% 8%,
-      color-mix(in srgb, var(--avn-primary) 12%, transparent) 0%,
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 88% 12%,
-      color-mix(in srgb, var(--avn-primary) 8%, transparent) 0%,
-      transparent 32%
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--avn-overlay-color) 100%, transparent) 0%,
-      color-mix(in srgb, var(--avn-overlay-color) 90%, transparent) 100%
-    );
-  backdrop-filter: blur(10px) saturate(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
+  z-index: -1;
+
+  width: 100%;
+  height: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  cursor: default;
+
+  backdrop-filter:
+    blur(8px)
+    saturate(108%);
+
+  -webkit-backdrop-filter:
+    blur(8px)
+    saturate(108%);
 }
 
-.avn-overlay__backdrop::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.3;
-  background:
-    linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 9%,
-      color-mix(in srgb, var(--avn-line) 26%, transparent) 9.1%,
-      transparent 9.4%
-    );
-  background-size: 120px 100%;
-}
+/* ============================================================
+   CONTENEDOR
+============================================================ */
 
 .avn-shell {
   position: relative;
   z-index: 1;
-  isolation: isolate;
-  width: min(1560px, calc(100vw - 24px));
-  min-height: calc(100dvh - 40px);
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 14px;
-  padding: 0 0 24px;
+
+  width:
+    min(
+      1120px,
+      calc(100vw - 44px)
+    );
+
+  max-width: 100%;
+  min-width: 0;
+
   margin: auto;
-  color: var(--avn-text);
-  font-family: var(--avn-font-body);
-  animation: avnOverlayEnter 0.34s cubic-bezier(0.2, 0.9, 0.24, 1) both;
+
+  outline: none;
 }
 
 .avn-shell::before {
   content: "";
+
   position: absolute;
-  inset: max(24px, 3vw);
+  inset: -8px;
   z-index: -1;
+
+  border:
+    1px solid
+    var(--avn-overlay-line);
+
+  border-radius: 28px;
+
   pointer-events: none;
-  border-radius: 36px;
-  background:
-    radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--avn-primary) 10%, transparent) 0%,
-      transparent 66%
+}
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+.avn-sr-only {
+  position: absolute !important;
+
+  width: 1px !important;
+  height: 1px !important;
+
+  padding: 0 !important;
+  margin: -1px !important;
+
+  overflow: hidden !important;
+
+  clip: rect(
+    0,
+    0,
+    0,
+    0
+  ) !important;
+
+  white-space: nowrap !important;
+
+  border: 0 !important;
+}
+
+/* ============================================================
+   TRANSICIÓN
+============================================================ */
+
+.avh-overlay-enter-active,
+.avh-overlay-leave-active {
+  transition:
+    opacity 180ms ease;
+}
+
+.avh-overlay-enter-active
+  .avn-shell,
+.avh-overlay-leave-active
+  .avn-shell {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.avh-overlay-enter-from,
+.avh-overlay-leave-to,
+.avh-overlay-enter-from
+  .avn-shell,
+.avh-overlay-leave-to
+  .avn-shell {
+  opacity: 0;
+}
+
+.avh-overlay-enter-from
+  .avn-shell,
+.avh-overlay-leave-to
+  .avn-shell {
+  transform:
+    translateY(10px)
+    scale(0.985);
+}
+
+/* ============================================================
+   MODO OSCURO
+============================================================ */
+
+html.dark .avn-overlay,
+body.dark .avn-overlay,
+.dark .avn-overlay,
+[data-theme="dark"]
+  .avn-overlay {
+  --avn-overlay-bg:
+    rgba(2, 6, 23, 0.7);
+
+  --avn-overlay-line:
+    color-mix(
+      in srgb,
+      #ffffff 12%,
+      transparent
     );
-  filter: blur(20px);
-  opacity: 0.7;
 }
 
-@keyframes avnOverlayEnter {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.985);
-    filter: blur(3px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
+/* ============================================================
+   TABLET
+============================================================ */
 
 @media (max-width: 980px) {
   .avn-overlay {
-    align-items: flex-start;
+    place-items: start center;
+
+    padding: 14px;
   }
 
   .avn-shell {
-    min-height: auto;
-    align-content: start;
-    width: min(100%, calc(100vw - 16px));
+    width:
+      min(
+        100%,
+        calc(100vw - 28px)
+      );
   }
 
   .avn-shell::before {
-    inset: 12px;
-    border-radius: 26px;
+    inset: -5px;
+
+    border-radius: 23px;
   }
 }
 
-@media (max-width: 760px) {
+/* ============================================================
+   MÓVIL
+============================================================ */
+
+@media (max-width: 640px) {
   .avn-overlay {
-    padding: 12px;
+    padding: 8px;
   }
 
   .avn-shell {
-    width: min(100%, calc(100vw - 8px));
-    padding-bottom: 12px;
+    width: 100%;
+  }
+
+  .avn-shell::before {
+    display: none;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* ============================================================
+   MOVIMIENTO REDUCIDO
+============================================================ */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
   .avn-overlay,
-  .avn-overlay__backdrop,
-  .avn-overlay__backdrop::before,
-  .avn-shell,
-  .avn-shell::before {
-    transition: none !important;
+  .avn-overlay *,
+  .avn-overlay *::before,
+  .avn-overlay *::after {
     animation: none !important;
-    transform: none !important;
-    filter: none !important;
+
+    transition: none !important;
+
+    scroll-behavior:
+      auto !important;
   }
 }

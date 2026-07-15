@@ -1,294 +1,528 @@
 <template>
   <div class="sgpc-config-page">
     <div class="config-shell">
-      <header class="config-hero page-stage page-hero page-stage-1">
-        <div class="config-hero__top">
-          <span class="config-kicker">Preferencias</span>
-          <h1 class="config-title">Preferencias de interfaz</h1>
+      <!-- =====================================================
+           ENCABEZADO
+      ====================================================== -->
+      <header
+        class="config-hero page-stage page-hero page-stage-1"
+        aria-labelledby="preferences-title"
+      >
+        <div class="config-hero__copy">
+          <h1
+            id="preferences-title"
+            class="config-title"
+          >
+            Preferencias de interfaz
+          </h1>
+
           <p class="config-lead">
-            Ajuste apariencia, lectura y movimiento desde una sola vista.
+            Personalice la apariencia, el tamaño del texto y el movimiento del
+            sistema.
           </p>
         </div>
 
-        <div class="config-hero__meta" aria-label="Resumen actual">
-          <span class="config-chip">{{ uiDarkMode ? "Oscuro" : "Claro" }}</span>
-          <span class="config-chip">{{ currentProfileLabel }}</span>
-          <span class="config-chip">
-            {{ showUnifiedDarkStyles ? currentUnifiedDarkStyleLabel : currentSurfaceLabel }}
+        <div
+          class="config-autosave"
+          role="status"
+          aria-label="Los cambios se guardan automáticamente"
+        >
+          <span
+            class="config-autosave__icon"
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              focusable="false"
+            >
+              <path
+                d="m7.5 12.5 3 3 6-7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+            </svg>
           </span>
-          <span class="config-chip">{{ currentColorLabel }}</span>
-          <span class="config-chip">{{ currentFontLabel }}</span>
-          <span class="config-chip">{{ currentAnimationsLabel }}</span>
+
+          <span>Guardado automático</span>
         </div>
       </header>
 
+      <!-- =====================================================
+           CONTENIDO
+      ====================================================== -->
       <main class="config-layout page-stage page-content page-stage-2">
         <section
           class="config-primary page-stage page-main page-stage-3"
-          aria-label="Preferencias de interfaz"
+          aria-label="Configuración de la interfaz"
         >
+          <!-- =================================================
+               APARIENCIA
+          ================================================== -->
           <article class="config-card config-card--appearance">
-            <div class="section-head">
+            <header class="section-head">
               <div class="section-head__copy">
-                <span class="section-label">Apariencia</span>
-                <h2 class="card-title">Tema, estilo y acento</h2>
+                <span class="section-label">
+                  Apariencia
+                </span>
+
+                <h2 class="card-title">
+                  Estilo visual
+                </h2>
+
+                <p class="section-description">
+                  Seleccione la identidad visual y el tema que desea utilizar.
+                </p>
               </div>
+            </header>
 
-              <span class="section-note">
-                {{ uiDarkMode ? "Modo oscuro" : "Modo claro" }}
-              </span>
-            </div>
-
-            <div class="appearance-grid">
-              <section class="editor-block">
+            <div class="config-sections">
+              <!-- Perfil visual -->
+              <section
+                class="editor-block"
+                aria-labelledby="profile-title"
+              >
                 <div class="editor-block__head">
-                  <h3 class="editor-block__title">Perfil visual</h3>
+                  <h3
+                    id="profile-title"
+                    class="editor-block__title"
+                  >
+                    Perfil
+                  </h3>
+
+                  <p class="editor-block__description">
+                    Define el estilo general de la interfaz.
+                  </p>
                 </div>
 
-                <div class="profile-options" role="list">
+                <div class="profile-options">
                   <button
                     v-for="profile in visualProfiles"
                     :key="profile.value"
                     class="profile-option"
                     :class="[
                       `profile-option--${profile.value}`,
-                      { active: uiThemeProfile === profile.value }
+                      {
+                        active:
+                          uiThemeProfile === profile.value,
+                      },
                     ]"
                     type="button"
-                    role="listitem"
-                    @click="uiThemeProfile = profile.value"
-                    :aria-label="`Seleccionar perfil ${profile.label}`"
+                    :aria-pressed="
+                      uiThemeProfile === profile.value
+                    "
+                    @click="
+                      uiThemeProfile = profile.value
+                    "
                   >
-                    <span class="profile-option__preview" aria-hidden="true">
+                    <span
+                      class="profile-option__preview"
+                      aria-hidden="true"
+                    >
                       <span class="profile-option__preview-top"></span>
-                      <span class="profile-option__preview-body">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+
+                      <span class="profile-option__preview-layout">
+                        <span class="profile-option__preview-sidebar"></span>
+
+                        <span class="profile-option__preview-content">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </span>
                       </span>
                     </span>
 
                     <span class="profile-option__copy">
-                      <span class="profile-option__title">{{ profile.label }}</span>
-                      <span class="profile-option__desc">{{ profile.desc }}</span>
+                      <span class="profile-option__title">
+                        {{ profile.label }}
+                      </span>
+
+                      <span class="profile-option__desc">
+                        {{ profile.desc }}
+                      </span>
+                    </span>
+
+                    <span
+                      class="option-check"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        focusable="false"
+                      >
+                        <path
+                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
                     </span>
                   </button>
                 </div>
               </section>
 
-              <section class="editor-block">
+              <!-- Tema -->
+              <section
+                class="editor-block"
+                aria-labelledby="theme-title"
+              >
                 <div class="editor-block__head">
-                  <h3 class="editor-block__title">Modo base</h3>
+                  <h3
+                    id="theme-title"
+                    class="editor-block__title"
+                  >
+                    Tema
+                  </h3>
+
+                  <p class="editor-block__description">
+                    Cambie entre una interfaz clara u oscura.
+                  </p>
                 </div>
 
                 <div class="mode-row">
                   <div class="mode-state">
-                    <strong>{{ uiDarkMode ? "Oscuro" : "Claro" }}</strong>
-                    <span>{{ currentModeDetail }}</span>
+                    <span
+                      class="mode-state__icon"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        v-if="uiDarkMode"
+                        viewBox="0 0 24 24"
+                        focusable="false"
+                      >
+                        <path
+                          d="M20 15.4A8 8 0 0 1 8.6 4a8.2 8.2 0 1 0 11.4 11.4Z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+
+                      <svg
+                        v-else
+                        viewBox="0 0 24 24"
+                        focusable="false"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                        />
+
+                        <path
+                          d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </span>
+
+                    <span class="mode-state__copy">
+                      <strong>
+                        {{ currentModeLabel }}
+                      </strong>
+
+                      <span>
+                        {{
+                          uiDarkMode
+                            ? "Reduce el brillo y utiliza superficies oscuras."
+                            : "Utiliza fondos claros y mayor luminosidad."
+                        }}
+                      </span>
+                    </span>
                   </div>
 
-                  <label class="toggle toggle--large" aria-label="Modo oscuro">
-                    <input type="checkbox" v-model="uiDarkMode" />
-                    <span class="track" aria-hidden="true">
-                      <span class="thumb" />
+                  <label class="toggle toggle--large">
+                    <span class="sr-only">
+                      Activar modo oscuro
+                    </span>
+
+                    <input
+                      v-model="uiDarkMode"
+                      type="checkbox"
+                    />
+
+                    <span
+                      class="track"
+                      aria-hidden="true"
+                    >
+                      <span class="thumb"></span>
                     </span>
                   </label>
                 </div>
               </section>
 
-              <template v-if="isEditorialProfile">
-                <section v-if="!uiDarkMode" class="editor-block">
-                  <div class="editor-block__head">
-                    <h3 class="editor-block__title">Superficies claras</h3>
-                  </div>
+              <!-- Variante editorial -->
+              <section
+                v-if="isEditorialProfile"
+                class="editor-block"
+                aria-labelledby="variant-title"
+              >
+                <div class="editor-block__head">
+                  <h3
+                    id="variant-title"
+                    class="editor-block__title"
+                  >
+                    Variante visual
+                  </h3>
 
-                  <div class="surface-options" role="list">
-                    <button
-                      v-for="surface in surfaceOptions"
-                      :key="surface.value"
-                      class="surface-option"
-                      type="button"
-                      role="listitem"
-                      :class="{ active: uiSurfacePreset === surface.value }"
-                      :style="{
-                        '--surface-bg': surface.preview.bg,
-                        '--surface-card': surface.preview.card,
-                        '--surface-line': surface.preview.line
-                      }"
-                      @click="changeSurfacePreset(surface.value)"
-                      :aria-label="`Seleccionar superficie ${surface.label}`"
+                  <p class="editor-block__description">
+                    Seleccione la combinación de superficies que mejor se
+                    adapte a su lectura.
+                  </p>
+                </div>
+
+                <div class="surface-options">
+                  <button
+                    v-for="variant in variantOptions"
+                    :key="variant.value"
+                    class="surface-option"
+                    type="button"
+                    :class="{
+                      active:
+                        currentVariantValue === variant.value,
+                    }"
+                    :aria-pressed="
+                      currentVariantValue === variant.value
+                    "
+                    :style="{
+                      '--surface-bg': variant.preview.bg,
+                      '--surface-card': variant.preview.card,
+                      '--surface-line': variant.preview.line,
+                    }"
+                    @click="changeVariant(variant.value)"
+                  >
+                    <span
+                      class="surface-option__preview"
+                      aria-hidden="true"
                     >
-                      <span class="surface-option__preview" aria-hidden="true">
-                        <span class="surface-option__preview-shell">
-                          <span
-                            class="surface-option__preview-card surface-option__preview-card--lg"
-                          ></span>
-                          <span class="surface-option__preview-row">
+                      <span class="surface-option__preview-shell">
+                        <span class="surface-option__preview-top"></span>
+
+                        <span class="surface-option__preview-layout">
+                          <span class="surface-option__preview-sidebar"></span>
+
+                          <span class="surface-option__preview-body">
                             <span class="surface-option__preview-card"></span>
-                            <span class="surface-option__preview-card"></span>
+
+                            <span class="surface-option__preview-row">
+                              <span></span>
+                              <span></span>
+                            </span>
                           </span>
                         </span>
-                      </span>
-
-                      <span class="surface-option__copy">
-                        <span class="surface-option__title">{{ surface.label }}</span>
-                        <span class="surface-option__desc">{{ surface.desc }}</span>
-                      </span>
-                    </button>
-                  </div>
-                </section>
-
-                <section v-else class="editor-block">
-                  <div class="editor-block__head">
-                    <h3 class="editor-block__title">Combinaciones oscuras</h3>
-                  </div>
-
-                  <div class="surface-options" role="list">
-                    <button
-                      v-for="style in unifiedDarkStyleOptions"
-                      :key="style.value"
-                      class="surface-option"
-                      type="button"
-                      role="listitem"
-                      :class="{ active: currentUnifiedDarkStyle === style.value }"
-                      :style="{
-                        '--surface-bg': style.preview.bg,
-                        '--surface-card': style.preview.card,
-                        '--surface-line': style.preview.line
-                      }"
-                      @click="changeUnifiedDarkStyle(style.value)"
-                      :aria-label="`Seleccionar combinación ${style.label}`"
-                    >
-                      <span class="surface-option__preview" aria-hidden="true">
-                        <span class="surface-option__preview-shell">
-                          <span
-                            class="surface-option__preview-card surface-option__preview-card--lg"
-                          ></span>
-                          <span class="surface-option__preview-row">
-                            <span class="surface-option__preview-card"></span>
-                            <span class="surface-option__preview-card"></span>
-                          </span>
-                        </span>
-                      </span>
-
-                      <span class="surface-option__copy">
-                        <span class="surface-option__title">{{ style.label }}</span>
-                        <span class="surface-option__desc">{{ style.desc }}</span>
-                      </span>
-                    </button>
-                  </div>
-                </section>
-
-                <section class="editor-block">
-                  <div class="editor-block__head">
-                    <h3 class="editor-block__title">Acento editorial</h3>
-                  </div>
-
-                  <div class="color-options" role="list">
-                    <button
-                      v-for="color in editorialAccentOptions"
-                      :key="color.value"
-                      class="color-option"
-                      type="button"
-                      role="listitem"
-                      :class="{ active: isEditorialAccentActive }"
-                      :style="{ '--chip-color': color.value }"
-                      @click="changeTheme(color.value)"
-                      :aria-label="`Seleccionar acento ${color.label}`"
-                    >
-                      <span class="color-option__left">
-                        <span class="color-option__swatch" aria-hidden="true"></span>
-
-                        <span class="color-option__copy">
-                          <span class="color-option__title">{{ color.label }}</span>
-                          <span class="color-option__desc">{{ color.desc }}</span>
-                        </span>
-                      </span>
-                    </button>
-                  </div>
-                </section>
-              </template>
-
-              <template v-else>
-                <section class="editor-block">
-                  <div class="editor-block__head">
-                    <h3 class="editor-block__title">Perfil estándar</h3>
-                  </div>
-
-                  <div class="institutional-mode">
-                    <span class="institutional-mode__preview" aria-hidden="true">
-                      <span class="institutional-mode__preview-top"></span>
-                      <span class="institutional-mode__preview-body">
-                        <span></span>
-                        <span></span>
-                        <span></span>
                       </span>
                     </span>
 
-                    <div class="institutional-mode__copy">
-                      <strong>
-                        {{ uiDarkMode ? "Oscuro institucional" : "Claro institucional" }}
-                      </strong>
-                      <span>
-                        {{
-                          uiDarkMode
-                            ? "Usa la base institucional oscura con acento azul estándar."
-                            : "Usa la base institucional clara con acento azul estándar."
-                        }}
+                    <span class="surface-option__copy">
+                      <span class="surface-option__title">
+                        {{ variant.label }}
                       </span>
-                    </div>
-                  </div>
-                </section>
-              </template>
+
+                      <span class="surface-option__desc">
+                        {{ variant.desc }}
+                      </span>
+                    </span>
+
+                    <span
+                      class="option-check"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        focusable="false"
+                      >
+                        <path
+                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+              </section>
             </div>
           </article>
 
-          <article class="config-card config-card--reading">
-            <div class="section-head">
+          <!-- =================================================
+               ACCESIBILIDAD
+          ================================================== -->
+          <article class="config-card config-card--accessibility">
+            <header class="section-head">
               <div class="section-head__copy">
-                <span class="section-label">Lectura</span>
-                <h2 class="card-title">Fuente y movimiento</h2>
+                <span class="section-label">
+                  Accesibilidad
+                </span>
+
+                <h2 class="card-title">
+                  Texto y movimiento
+                </h2>
+
+                <p class="section-description">
+                  Ajuste la lectura y reduzca los efectos visuales cuando sea
+                  necesario.
+                </p>
               </div>
+            </header>
 
-              <span class="section-note">{{ currentFontLabel }}</span>
-            </div>
-
-            <div class="reading-grid">
-              <section class="editor-block">
+            <div class="config-sections">
+              <!-- Tamaño del texto -->
+              <section
+                class="editor-block"
+                aria-labelledby="font-title"
+              >
                 <div class="editor-block__head">
-                  <h3 class="editor-block__title">Tamaño tipográfico</h3>
+                  <h3
+                    id="font-title"
+                    class="editor-block__title"
+                  >
+                    Tamaño del texto
+                  </h3>
+
+                  <p class="editor-block__description">
+                    El cambio se aplicará en las principales interfaces del
+                    sistema.
+                  </p>
                 </div>
 
-                <div class="font-options" role="list">
+                <div class="font-options">
                   <button
                     v-for="option in fontOptions"
                     :key="option.value"
                     type="button"
-                    role="listitem"
                     class="font-option"
-                    :class="{ active: uiFontSize === option.value }"
-                    @click="uiFontSize = option.value"
-                    :aria-label="`Seleccionar tamaño ${option.label}`"
+                    :class="{
+                      active:
+                        uiFontSize === option.value,
+                    }"
+                    :aria-pressed="
+                      uiFontSize === option.value
+                    "
+                    @click="
+                      uiFontSize = option.value
+                    "
                   >
-                    <span class="font-option__label">{{ option.label }}</span>
-                    <span class="font-option__value">{{ option.value }}</span>
+                    <span class="font-option__sample">
+                      Aa
+                    </span>
+
+                    <span class="font-option__copy">
+                      <span class="font-option__label">
+                        {{ option.label }}
+                      </span>
+
+                      <span class="font-option__value">
+                        {{ option.value }}
+                      </span>
+                    </span>
+
+                    <span
+                      class="option-check"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        focusable="false"
+                      >
+                        <path
+                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
                   </button>
                 </div>
               </section>
 
-              <section class="editor-block">
+              <!-- Movimiento -->
+              <section
+                class="editor-block"
+                aria-labelledby="motion-title"
+              >
                 <div class="motion-row">
-                  <div class="motion-row__copy">
-                    <h3 class="editor-block__title">Movimiento</h3>
+                  <div class="motion-row__content">
+                    <span
+                      class="motion-row__icon"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        focusable="false"
+                      >
+                        <path
+                          d="M4 12h16M15 7l5 5-5 5M9 17l-5-5 5-5"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
+
+                    <span class="motion-row__copy">
+                      <h3
+                        id="motion-title"
+                        class="editor-block__title"
+                      >
+                        Reducir movimiento
+                      </h3>
+
+                      <span>
+                        Limita animaciones y transiciones decorativas.
+                      </span>
+                    </span>
                   </div>
 
                   <div class="motion-row__action">
-                    <span class="motion-row__state">{{ currentAnimationsLabel }}</span>
+                    <span class="motion-row__state">
+                      {{ currentMotionLabel }}
+                    </span>
 
-                    <label class="toggle" aria-label="Animaciones">
-                      <input type="checkbox" v-model="uiAnimations" />
-                      <span class="track" aria-hidden="true">
-                        <span class="thumb" />
+                    <label class="toggle">
+                      <span class="sr-only">
+                        Reducir movimiento
+                      </span>
+
+                      <input
+                        v-model="uiReduceMotion"
+                        type="checkbox"
+                      />
+
+                      <span
+                        class="track"
+                        aria-hidden="true"
+                      >
+                        <span class="thumb"></span>
                       </span>
                     </label>
                   </div>
@@ -298,75 +532,150 @@
           </article>
         </section>
 
+        <!-- =================================================
+             VISTA PREVIA Y RESTABLECIMIENTO
+        ================================================== -->
         <aside
           class="config-sidebar page-stage page-sidebar page-stage-4"
-          aria-label="Estado actual"
+          aria-label="Vista previa de preferencias"
         >
-          <article class="config-card config-card--summary">
-            <div class="section-head">
+          <article class="config-card config-card--preview">
+            <header class="section-head">
               <div class="section-head__copy">
-                <span class="section-label">Estado actual</span>
-                <h2 class="card-title">Resumen</h2>
+                <span class="section-label">
+                  Vista previa
+                </span>
+
+                <h2 class="card-title">
+                  Resultado aproximado
+                </h2>
+              </div>
+            </header>
+
+            <div
+              class="interface-preview"
+              :class="{
+                'is-dark': uiDarkMode,
+                'is-editorial': isEditorialProfile,
+              }"
+              :style="previewStyle"
+              aria-hidden="true"
+            >
+              <div class="preview-app">
+                <div class="preview-app__sidebar">
+                  <div class="preview-app__brand">
+                    <span></span>
+                    <strong>SGPC</strong>
+                  </div>
+
+                  <div class="preview-app__menu">
+                    <span class="is-active"></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+
+                <div class="preview-app__main">
+                  <div class="preview-app__topbar">
+                    <span class="preview-app__topbar-title"></span>
+
+                    <span class="preview-app__avatar"></span>
+                  </div>
+
+                  <div class="preview-app__content">
+                    <div class="preview-app__heading">
+                      <strong class="preview-app__title">
+                        Producción científica
+                      </strong>
+
+                      <span class="preview-app__subtitle">
+                        Resumen institucional
+                      </span>
+                    </div>
+
+                    <div class="preview-app__cards">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+
+                    <div class="preview-app__panel">
+                      <span class="preview-app__panel-line"></span>
+                      <span class="preview-app__panel-line is-short"></span>
+
+                      <span class="preview-app__button">
+                        Acción principal
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <dl class="config-review__list">
-              <div>
-                <dt>Perfil</dt>
-                <dd>{{ currentProfileLabel }}</dd>
-              </div>
+            <p class="preview-help">
+              La vista previa representa los cambios principales. Algunas
+              pantallas pueden presentar variaciones.
+            </p>
 
-              <div>
-                <dt>Tema</dt>
-                <dd>{{ uiDarkMode ? "Oscuro" : "Claro" }}</dd>
-              </div>
+            <div class="preview-current">
+              <span>
+                {{ currentProfileLabel }}
+              </span>
 
-              <div v-if="showUnifiedDarkStyles">
-                <dt>Combinación</dt>
-                <dd>{{ currentUnifiedDarkStyleLabel }}</dd>
-              </div>
+              <span aria-hidden="true">•</span>
 
-              <template v-else>
-                <div>
-                  <dt>Superficie</dt>
-                  <dd>{{ currentSurfaceLabel }}</dd>
-                </div>
+              <span>
+                {{ currentModeLabel }}
+              </span>
 
-                <div>
-                  <dt>Estilo</dt>
-                  <dd>{{ currentModeDetail }}</dd>
-                </div>
-              </template>
+              <span aria-hidden="true">•</span>
 
-              <div>
-                <dt>Acento</dt>
-                <dd>{{ currentColorLabel }}</dd>
-              </div>
-
-              <div>
-                <dt>Fuente</dt>
-                <dd>{{ currentFontLabel }}</dd>
-              </div>
-
-              <div>
-                <dt>Movimiento</dt>
-                <dd>{{ currentAnimationsLabel }}</dd>
-              </div>
-            </dl>
+              <span>
+                {{ currentFontLabel }}
+              </span>
+            </div>
           </article>
 
-          <article class="config-card config-card--reset">
-            <div class="section-head">
-              <div class="section-head__copy">
-                <span class="section-label">Preferencias</span>
-                <h2 class="card-title">Restablecer</h2>
-              </div>
+          <section
+            class="config-reset-panel"
+            aria-labelledby="reset-title"
+          >
+            <div class="config-reset-panel__copy">
+              <h2 id="reset-title">
+                Restaurar preferencias
+              </h2>
+
+              <p>
+                Recupera la apariencia y configuración inicial del sistema.
+              </p>
             </div>
 
-            <button class="btn-reset" type="button" @click="resetConfig">
-              Restaurar preferencias iniciales
+            <button
+              class="btn-reset"
+              type="button"
+              @click="resetConfig"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M4 4v6h6M4.7 9.5A8 8 0 1 1 6 17.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+              <span>
+                Restaurar valores predeterminados
+              </span>
             </button>
-          </article>
+          </section>
         </aside>
       </main>
     </div>
@@ -376,6 +685,7 @@
 <script setup>
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
+
 import {
   useThemeStore,
   SURFACE_PRESETS_LIGHT,
@@ -390,153 +700,293 @@ const {
   primaryColor,
   fontSize,
   animations,
-  hasCustomPrimary,
   surfacePresetLight,
 } = storeToRefs(themeStore);
+
+/* =========================================================
+   OPCIONES
+========================================================= */
 
 const visualProfiles = [
   {
     value: "institutional",
     label: "Institucional",
-    desc: "Base sobria con acento azul estándar",
+    desc: "Diseño administrativo con acento azul y alta claridad visual.",
   },
   {
     value: "editorial",
     label: "Editorial",
-    desc: "Modo claro sobrio y combinaciones oscuras definidas",
+    desc: "Diseño sobrio con superficies suaves y mayor contraste tipográfico.",
   },
 ];
 
 const fontOptions = [
-  { value: "16px", label: "Estándar" },
-  { value: "17px", label: "Cómoda" },
-  { value: "18px", label: "Amplia" },
-  { value: "20px", label: "Lectura" },
-  { value: "22px", label: "Visible" },
-  { value: "24px", label: "Extra visible" },
+  {
+    value: "16px",
+    label: "Compacto",
+  },
+  {
+    value: "17px",
+    label: "Estándar",
+  },
+  {
+    value: "20px",
+    label: "Grande",
+  },
+  {
+    value: "22px",
+    label: "Muy grande",
+  },
 ];
+
+/* =========================================================
+   MODELOS
+========================================================= */
 
 const uiDarkMode = computed({
   get: () => darkMode.value,
-  set: (v) => themeStore.setDark(v),
+
+  set: (value) => {
+    themeStore.setDark(value);
+  },
 });
 
 const uiThemeProfile = computed({
   get: () => themeProfile.value,
-  set: (v) => themeStore.setThemeProfile(v),
+
+  set: (value) => {
+    themeStore.setThemeProfile(value);
+  },
 });
 
 const uiSurfacePreset = computed({
   get: () => surfacePresetLight.value,
-  set: (v) => themeStore.setSurfacePreset(v),
+
+  set: (value) => {
+    themeStore.setSurfacePreset(value);
+  },
 });
 
 const uiFontSize = computed({
   get: () => fontSize.value,
-  set: (v) => themeStore.setFontSize(v),
+
+  set: (value) => {
+    themeStore.setFontSize(value);
+  },
 });
 
-const uiAnimations = computed({
-  get: () => animations.value,
-  set: (v) => themeStore.setAnimations(v),
+const uiReduceMotion = computed({
+  get: () => !animations.value,
+
+  set: (value) => {
+    themeStore.setAnimations(!value);
+  },
 });
 
-const isInstitutionalProfile = computed(() => uiThemeProfile.value === "institutional");
-const isEditorialProfile = computed(() => uiThemeProfile.value === "editorial");
-const showUnifiedDarkStyles = computed(() => isEditorialProfile.value && uiDarkMode.value);
+/* =========================================================
+   PERFIL Y VARIANTES
+========================================================= */
 
-const surfaceOptions = computed(() => SURFACE_PRESETS_LIGHT);
-const unifiedDarkStyleOptions = computed(() => UNIFIED_DARK_STYLE_PRESETS);
+const isInstitutionalProfile = computed(() => {
+  return uiThemeProfile.value === "institutional";
+});
 
-const currentUnifiedDarkStyle = computed(() => themeStore.currentUnifiedDarkStyle);
+const isEditorialProfile = computed(() => {
+  return uiThemeProfile.value === "editorial";
+});
 
-const currentUnifiedDarkStyleMeta = computed(() => {
+const surfaceOptions = computed(() => {
+  return SURFACE_PRESETS_LIGHT;
+});
+
+const unifiedDarkStyleOptions = computed(() => {
+  return UNIFIED_DARK_STYLE_PRESETS;
+});
+
+const currentUnifiedDarkStyle = computed(() => {
+  return themeStore.currentUnifiedDarkStyle;
+});
+
+const variantOptions = computed(() => {
+  if (!isEditorialProfile.value) {
+    return [];
+  }
+
+  return uiDarkMode.value
+    ? unifiedDarkStyleOptions.value
+    : surfaceOptions.value;
+});
+
+const currentVariantValue = computed(() => {
+  if (uiDarkMode.value) {
+    return currentUnifiedDarkStyle.value;
+  }
+
+  return uiSurfacePreset.value;
+});
+
+const currentVariantMeta = computed(() => {
   return (
-    unifiedDarkStyleOptions.value.find(
-      (item) => item.value === currentUnifiedDarkStyle.value
-    ) || unifiedDarkStyleOptions.value[0]
+    variantOptions.value.find(
+      (item) =>
+        item.value === currentVariantValue.value
+    ) ||
+    variantOptions.value[0] ||
+    null
   );
 });
 
-const currentUnifiedDarkStyleLabel = computed(() => {
-  return currentUnifiedDarkStyleMeta.value?.label || "Obsidian + Sage";
-});
+const changeVariant = (value) => {
+  if (uiDarkMode.value) {
+    themeStore.setUnifiedDarkStyle(value);
+    return;
+  }
+
+  themeStore.setSurfacePreset(value);
+};
+
+/* =========================================================
+   ETIQUETAS
+========================================================= */
 
 const currentProfileLabel = computed(() => {
-  return isInstitutionalProfile.value ? "Institucional" : "Editorial";
+  return isInstitutionalProfile.value
+    ? "Institucional"
+    : "Editorial";
 });
 
-const currentSurfaceLabel = computed(() => {
-  if (isInstitutionalProfile.value) {
-    return uiDarkMode.value ? "Institucional oscura" : "Institucional clara";
-  }
-
-  return (
-    surfaceOptions.value.find((item) => item.value === uiSurfacePreset.value)?.label ||
-    "Editorial"
-  );
-});
-
-const currentModeDetail = computed(() => {
-  if (isInstitutionalProfile.value) {
-    return uiDarkMode.value ? "Oscuro institucional" : "Claro institucional";
-  }
-
-  if (uiDarkMode.value) {
-    return currentUnifiedDarkStyleLabel.value;
-  }
-
-  return "Base clara editorial";
-});
-
-const editorialAccentValue = computed(() => "#111111");
-
-const editorialAccentOptions = computed(() => [
-  {
-    value: editorialAccentValue.value,
-    label: "Editorial",
-    desc: "Negro sobrio combinable con cualquier modo",
-  },
-]);
-
-const themeColor = computed(() => String(primaryColor.value || "").toLowerCase());
-
-const isEditorialAccentActive = computed(() => {
-  if (!isEditorialProfile.value) return false;
-
-  if (!uiDarkMode.value && !hasCustomPrimary.value) {
-    return true;
-  }
-
-  return hasCustomPrimary.value && themeColor.value === editorialAccentValue.value;
-});
-
-const currentColorLabel = computed(() => {
-  if (isInstitutionalProfile.value) {
-    return "Azul institucional";
-  }
-
-  if (uiDarkMode.value) {
-    return hasCustomPrimary.value
-      ? "Editorial"
-      : currentUnifiedDarkStyleMeta.value?.accentLabel || "Sage";
-  }
-
-  return "Editorial";
+const currentModeLabel = computed(() => {
+  return uiDarkMode.value
+    ? "Modo oscuro"
+    : "Modo claro";
 });
 
 const currentFontLabel = computed(() => {
-  return fontOptions.find((option) => option.value === uiFontSize.value)?.label || "Cómoda";
+  return (
+    fontOptions.find(
+      (option) =>
+        option.value === uiFontSize.value
+    )?.label ||
+    "Personalizado"
+  );
 });
 
-const currentAnimationsLabel = computed(() => {
-  return uiAnimations.value ? "Activo" : "Reducido";
+const currentMotionLabel = computed(() => {
+  return uiReduceMotion.value
+    ? "Reducido"
+    : "Activo";
 });
 
-const changeTheme = (color) => themeStore.setPrimaryColor(color);
-const changeSurfacePreset = (value) => themeStore.setSurfacePreset(value);
-const changeUnifiedDarkStyle = (value) => themeStore.setUnifiedDarkStyle(value);
-const resetConfig = () => themeStore.reset();
+/* =========================================================
+   VISTA PREVIA
+========================================================= */
+
+const previewAccent = computed(() => {
+  const selectedColor = String(
+    primaryColor.value || ""
+  ).trim();
+
+  if (selectedColor) {
+    return selectedColor;
+  }
+
+  if (isInstitutionalProfile.value) {
+    return "#315fcb";
+  }
+
+  return uiDarkMode.value
+    ? "#98a98d"
+    : "#111111";
+});
+
+const previewSurface = computed(() => {
+  if (isInstitutionalProfile.value) {
+    if (uiDarkMode.value) {
+      return {
+        bg: "#0f1728",
+        card: "#18243a",
+        line: "rgba(255, 255, 255, 0.12)",
+      };
+    }
+
+    return {
+      bg: "#f3f6fb",
+      card: "#ffffff",
+      line: "rgba(23, 32, 51, 0.12)",
+    };
+  }
+
+  const preview =
+    currentVariantMeta.value?.preview;
+
+  if (preview) {
+    return preview;
+  }
+
+  if (uiDarkMode.value) {
+    return {
+      bg: "#111827",
+      card: "#1f2937",
+      line: "rgba(255, 255, 255, 0.12)",
+    };
+  }
+
+  return {
+    bg: "#f4f2ed",
+    card: "#ffffff",
+    line: "rgba(17, 17, 17, 0.12)",
+  };
+});
+
+const previewStyle = computed(() => {
+  return {
+    "--preview-bg":
+      previewSurface.value.bg,
+
+    "--preview-card":
+      previewSurface.value.card,
+
+    "--preview-line":
+      previewSurface.value.line,
+
+    "--preview-accent":
+      previewAccent.value,
+
+    "--preview-font-size":
+      uiFontSize.value,
+
+    "--preview-ink":
+      uiDarkMode.value
+        ? "#f4f7fc"
+        : "#172033",
+
+    "--preview-muted":
+      uiDarkMode.value
+        ? "#aeb8ca"
+        : "#667085",
+  };
+});
+
+/* =========================================================
+   RESTABLECER
+========================================================= */
+
+const resetConfig = () => {
+  const accepted =
+    typeof window === "undefined" ||
+    window.confirm(
+      "¿Desea restaurar las preferencias iniciales de la interfaz?"
+    );
+
+  if (!accepted) {
+    return;
+  }
+
+  themeStore.reset();
+};
 </script>
 
-<style scoped src="./preferencias-interfaz.css"></style>
+<style
+  scoped
+  src="./preferencias-interfaz.css"
+></style>

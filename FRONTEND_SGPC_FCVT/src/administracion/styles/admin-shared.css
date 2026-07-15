@@ -1,73 +1,163 @@
 /* ============================================================
    SGPC ULEAM — ADMIN SHARED CSS
-   Base compartida para interfaces administrativas
-   Refactorizado para absorber color directamente desde theme.css
+   Base visual compartida para interfaces administrativas
 ============================================================ */
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) {
+  /* Radios */
   --adm-radius-2xl: 24px;
   --adm-radius-xl: 20px;
   --adm-radius-lg: 16px;
-  --adm-radius-md: 12px;
+  --adm-radius-md: 13px;
   --adm-radius-sm: 10px;
   --adm-radius-pill: 999px;
 
-  --adm-bg: var(--bg-main);
-  --adm-card: var(--bg-card);
-  --adm-elev: var(--bg-elevated);
-  --adm-soft: var(--surface-3);
-  --adm-soft-2: var(--surface-4);
-  --adm-input: var(--bg-input);
+  /* Superficies */
+  --adm-bg: var(--bg-main, #f3f6fb);
+  --adm-card: var(--bg-card, #ffffff);
+  --adm-elev: var(--bg-elevated, #f8fafc);
+  --adm-soft: var(--surface-3, var(--bg-elevated, #f5f7fb));
+  --adm-soft-2: var(--surface-4, var(--bg-input, #eef2f7));
+  --adm-input: var(--bg-input, #ffffff);
 
-  --adm-text: var(--text-primary);
-  --adm-muted: var(--text-secondary);
-  --adm-text-inverse: var(--text-inverse);
+  /* Textos */
+  --adm-text: var(--text-primary, #172033);
+  --adm-muted: var(--text-secondary, #667085);
+  --adm-text-inverse: var(--text-inverse, #ffffff);
 
-  --adm-line: var(--border-color);
-  --adm-line-strong: var(--border-strong);
-  --adm-line-soft: var(--line-soft);
+  /* Líneas */
+  --adm-line: var(--border-color, rgba(23, 32, 51, 0.1));
+  --adm-line-strong: var(
+    --border-strong,
+    rgba(23, 32, 51, 0.16)
+  );
+  --adm-line-soft: var(
+    --line-soft,
+    color-mix(in srgb, var(--adm-line) 72%, transparent)
+  );
 
-  --adm-primary: var(--color-primary);
-  --adm-success: var(--success);
-  --adm-warning: var(--warning);
-  --adm-danger: var(--danger);
-  --adm-info: var(--info);
+  /* Colores semánticos */
+  --adm-primary: var(--color-primary, #315fcb);
+  --adm-success: var(--success, #17803d);
+  --adm-warning: var(--warning, #9a6700);
+  --adm-danger: var(--danger, #b42318);
+  --adm-info: var(--info, var(--adm-primary));
 
-  --adm-primary-soft: var(--primary-soft);
-  --adm-success-soft: var(--success-soft);
-  --adm-warning-soft: var(--warning-soft);
-  --adm-danger-soft: var(--danger-soft);
-  --adm-info-soft: var(--info-soft);
+  /* Fondos semánticos */
+  --adm-primary-soft: var(
+    --primary-soft,
+    color-mix(in srgb, var(--adm-primary) 10%, transparent)
+  );
 
-  --adm-success-border: var(--success-border);
-  --adm-warning-border: var(--warning-border);
-  --adm-danger-border: var(--danger-border);
-  --adm-info-border: var(--info-border);
+  --adm-success-soft: var(
+    --success-soft,
+    color-mix(in srgb, var(--adm-success) 10%, transparent)
+  );
 
-  --adm-success-ink: var(--success-ink);
-  --adm-warning-ink: var(--warning-ink);
-  --adm-danger-ink: var(--danger-ink);
-  --adm-info-ink: var(--info-ink);
+  --adm-warning-soft: var(
+    --warning-soft,
+    color-mix(in srgb, var(--adm-warning) 10%, transparent)
+  );
 
-  --adm-shadow-soft: var(--shadow-soft);
-  --adm-shadow-hover: var(--shadow-hover);
-  --adm-shadow-modal: var(--shadow-modal);
-  --adm-ring: var(--ring-primary);
+  --adm-danger-soft: var(
+    --danger-soft,
+    color-mix(in srgb, var(--adm-danger) 9%, transparent)
+  );
 
-  --adm-overlay: var(--overlay);
-  --adm-overlay-blur: 0px;
+  --adm-info-soft: var(
+    --info-soft,
+    color-mix(in srgb, var(--adm-info) 10%, transparent)
+  );
 
+  /* Bordes semánticos */
+  --adm-success-border: var(
+    --success-border,
+    color-mix(in srgb, var(--adm-success) 30%, var(--adm-line))
+  );
+
+  --adm-warning-border: var(
+    --warning-border,
+    color-mix(in srgb, var(--adm-warning) 30%, var(--adm-line))
+  );
+
+  --adm-danger-border: var(
+    --danger-border,
+    color-mix(in srgb, var(--adm-danger) 30%, var(--adm-line))
+  );
+
+  --adm-info-border: var(
+    --info-border,
+    color-mix(in srgb, var(--adm-info) 30%, var(--adm-line))
+  );
+
+  /* Textos semánticos */
+  --adm-success-ink: var(
+    --success-ink,
+    color-mix(in srgb, var(--adm-success) 88%, var(--adm-text))
+  );
+
+  --adm-warning-ink: var(
+    --warning-ink,
+    color-mix(in srgb, var(--adm-warning) 88%, var(--adm-text))
+  );
+
+  --adm-danger-ink: var(
+    --danger-ink,
+    color-mix(in srgb, var(--adm-danger) 88%, var(--adm-text))
+  );
+
+  --adm-info-ink: var(
+    --info-ink,
+    color-mix(in srgb, var(--adm-info) 86%, var(--adm-text))
+  );
+
+  /* Sombras */
+  --adm-shadow-soft: var(
+    --shadow-soft,
+    0 10px 30px rgba(15, 23, 42, 0.06)
+  );
+
+  --adm-shadow-hover: var(
+    --shadow-hover,
+    0 14px 34px rgba(15, 23, 42, 0.09)
+  );
+
+  --adm-shadow-modal: var(
+    --shadow-modal,
+    0 24px 70px rgba(15, 23, 42, 0.22)
+  );
+
+  --adm-ring: var(
+    --ring-primary,
+    0 0 0 3px color-mix(in srgb, var(--adm-primary) 18%, transparent)
+  );
+
+  /* Overlay */
+  --adm-overlay: var(--overlay, rgba(15, 23, 42, 0.58));
+  --adm-overlay-blur: 2px;
+
+  /* Tipografía */
   --adm-font-ui: var(
     --font-ui,
-    "IBM Plex Sans",
+    Inter,
+    "Segoe UI",
     system-ui,
     -apple-system,
-    "Segoe UI",
-    Roboto,
-    Arial,
+    BlinkMacSystemFont,
     sans-serif
   );
-  --adm-font-display: var(--font-serif, Georgia, "Times New Roman", serif);
+
+  --adm-font-body: var(
+    --font-body,
+    var(--adm-font-ui)
+  );
+
+  --adm-font-heading: var(
+    --font-heading,
+    var(--adm-font-ui)
+  );
+
+  font-family: var(--adm-font-body);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal),
@@ -80,53 +170,86 @@
 /* =========================================================
    PÁGINAS
 ========================================================= */
+
 .sgpc-admin-page {
-  min-height: 100vh;
-  padding: 28px 28px 72px;
-  background: var(--adm-bg);
+  width: 100%;
+  min-height: 100%;
+  padding: 26px 28px 72px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--adm-primary) 4%, transparent),
+      transparent 30rem
+    ),
+    var(--adm-bg);
   color: var(--adm-text);
+  font-family: var(--adm-font-body);
 }
 
 .sgpc-config-page {
-  min-height: calc(100vh - 64px);
-  padding: 24px 16px 52px;
-  background: var(--adm-bg);
+  width: 100%;
+  min-height: 100%;
+  padding: 24px 20px 56px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--adm-primary) 4%, transparent),
+      transparent 28rem
+    ),
+    var(--adm-bg);
   color: var(--adm-text);
+  font-family: var(--adm-font-body);
 }
 
 /* =========================================================
    SUPERFICIES
 ========================================================= */
+
 .sgpc-admin-page .adm-surface,
 .sgpc-config-page .adm-surface,
 .sgpc-admin-modal .adm-surface,
 .sgpc-admin-modal .modal,
-.sgpc-admin-page .adm-toolbar {
+:where(.sgpc-admin-page, .sgpc-config-page) .adm-toolbar {
   border: 1px solid var(--adm-line-soft);
   border-radius: var(--adm-radius-2xl);
   background: var(--adm-card);
   box-shadow: var(--adm-shadow-soft);
   transition:
-    border-color calc(140ms * var(--animate-speed, 1)) ease,
-    box-shadow calc(140ms * var(--animate-speed, 1)) ease,
-    background calc(140ms * var(--animate-speed, 1)) ease,
-    transform calc(140ms * var(--animate-speed, 1)) ease;
+    border-color calc(150ms * var(--animate-speed, 1)) ease,
+    box-shadow calc(150ms * var(--animate-speed, 1)) ease,
+    background calc(150ms * var(--animate-speed, 1)) ease,
+    transform calc(150ms * var(--animate-speed, 1)) ease;
 }
 
-.sgpc-admin-page .adm-surface:hover,
-.sgpc-config-page .adm-surface:hover,
-.sgpc-admin-page .adm-toolbar:hover {
-  border-color: color-mix(in srgb, var(--adm-primary) 14%, var(--adm-line));
+/*
+  El hover solo se aplica cuando la superficie fue marcada
+  explícitamente como interactiva.
+*/
+:where(.sgpc-admin-page, .sgpc-config-page)
+  .adm-surface--interactive:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 18%,
+    var(--adm-line)
+  );
+  box-shadow: var(--adm-shadow-hover);
 }
 
-.sgpc-admin-page .adm-hero,
-.sgpc-config-page .adm-hero {
+:where(.sgpc-admin-page, .sgpc-config-page) .adm-toolbar:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 12%,
+    var(--adm-line)
+  );
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page) .adm-hero {
   position: relative;
   overflow: hidden;
 }
 
-.sgpc-admin-page .adm-hero::after,
-.sgpc-config-page .adm-hero::after {
+:where(.sgpc-admin-page, .sgpc-config-page) .adm-hero::after {
   content: "";
   position: absolute;
   inset: 0 auto auto 0;
@@ -134,7 +257,7 @@
   height: 1px;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--adm-primary) 22%, transparent),
+    color-mix(in srgb, var(--adm-primary) 24%, transparent),
     transparent 72%
   );
   pointer-events: none;
@@ -143,121 +266,165 @@
 /* =========================================================
    TIPOGRAFÍA
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-kicker {
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 28px;
+  gap: 7px;
   width: fit-content;
+  min-height: 28px;
   padding: 0 10px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-primary) 22%,
+    var(--adm-line)
+  );
   border-radius: var(--adm-radius-pill);
   background: var(--adm-primary-soft);
-  border: 1px solid var(--primary-soft-strong);
-  color: var(--primary-ink-soft);
+  color: color-mix(
+    in srgb,
+    var(--adm-primary) 84%,
+    var(--adm-text)
+  );
   font-family: var(--adm-font-ui);
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-title {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-title {
   margin: 0;
   color: var(--adm-text);
-  font-family: var(--adm-font-display);
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  line-height: 0.98;
-  font-size: clamp(1.95rem, 1.25rem + 1.55vw, 2.85rem);
+  font-family: var(--adm-font-heading);
+  font-size: clamp(1.75rem, 1.35rem + 1.25vw, 2.45rem);
+  font-weight: 740;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-subtitle {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-subtitle {
+  max-width: 72ch;
   margin: 8px 0 0;
   color: var(--adm-muted);
-  line-height: 1.68;
-  max-width: 72ch;
-  font-size: 0.97rem;
+  font-family: var(--adm-font-body);
+  font-size: 0.95rem;
+  line-height: 1.62;
 }
 
 /* =========================================================
-   CHIPS / BADGES
+   CHIPS Y BADGES
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chips {
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip,
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .badge {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-chip, .badge) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 33px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 88%,
+    transparent
+  );
   border-radius: var(--adm-radius-pill);
-  border: 1px solid color-mix(in srgb, var(--adm-line) 88%, transparent);
-  background: color-mix(in srgb, var(--adm-card) 92%, var(--adm-soft));
+  background: color-mix(
+    in srgb,
+    var(--adm-card) 92%,
+    var(--adm-soft)
+  );
   color: var(--adm-muted);
   font-family: var(--adm-font-ui);
-  font-size: 12.25px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-chip, .badge)
+  strong {
+  color: var(--adm-text);
   font-weight: 700;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip strong,
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .badge strong {
-  color: var(--adm-text);
-}
-
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip--info {
-  background: var(--adm-info-soft);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-chip--info {
   border-color: var(--adm-info-border);
+  background: var(--adm-info-soft);
   color: var(--adm-info-ink);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip--warn {
-  background: var(--adm-warning-soft);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-chip--warn {
   border-color: var(--adm-warning-border);
+  background: var(--adm-warning-soft);
   color: var(--adm-warning-ink);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip--ok {
-  background: var(--adm-success-soft);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-chip--ok {
   border-color: var(--adm-success-border);
+  background: var(--adm-success-soft);
   color: var(--adm-success-ink);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-chip--danger {
-  background: var(--adm-danger-soft);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-chip--danger {
   border-color: var(--adm-danger-border);
+  background: var(--adm-danger-soft);
   color: var(--adm-danger-ink);
 }
 
 /* =========================================================
-   TABS
+   PESTAÑAS
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tabs {
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-tabs {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 7px;
+  gap: 6px;
   width: fit-content;
   max-width: 100%;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--adm-line) 88%, transparent);
-  background: color-mix(in srgb, var(--adm-card) 88%, var(--adm-soft));
+  padding: 6px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 88%,
+    transparent
+  );
+  border-radius: var(--adm-radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--adm-card) 88%,
+    var(--adm-soft)
+  );
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tab {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-tab {
+  min-height: 40px;
+  padding: 0 14px;
   border: 1px solid transparent;
+  border-radius: 12px;
   background: transparent;
   color: var(--adm-muted);
-  padding: 10px 14px;
-  border-radius: var(--adm-radius-pill);
   font-family: var(--adm-font-ui);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0;
   cursor: pointer;
   transition:
     background calc(140ms * var(--animate-speed, 1)) ease,
@@ -267,28 +434,53 @@
     transform calc(140ms * var(--animate-speed, 1)) ease;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tab:hover:not(:disabled) {
-  transform: translateY(calc(-1px * var(--animate-speed, 1)));
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-tab:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 14%,
+    var(--adm-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 6%,
+    var(--adm-card)
+  );
   color: var(--adm-text);
-  border-color: color-mix(in srgb, var(--adm-primary) 16%, var(--adm-line));
-  background: var(--adm-primary-soft);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tab.active {
-  color: var(--adm-text);
-  border-color: color-mix(in srgb, var(--adm-primary) 22%, var(--adm-line));
-  background: color-mix(in srgb, var(--adm-primary) 8%, var(--adm-card));
-  box-shadow: var(--adm-shadow-soft);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-tab.active {
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 22%,
+    var(--adm-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 10%,
+    var(--adm-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--adm-primary) 88%,
+    var(--adm-text)
+  );
+  box-shadow: 0 1px 3px
+    color-mix(in srgb, var(--adm-primary) 10%, transparent);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tab:disabled {
-  opacity: 0.65;
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-tab:disabled {
+  opacity: 0.58;
   cursor: not-allowed;
 }
 
 /* =========================================================
    BOTONES
 ========================================================= */
+
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(
     .btn-soft,
@@ -305,10 +497,12 @@
   ) {
   min-height: 42px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: var(--adm-radius-md);
   font-family: var(--adm-font-ui);
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
   transition:
     transform calc(140ms * var(--animate-speed, 1)) ease,
     box-shadow calc(140ms * var(--animate-speed, 1)) ease,
@@ -319,50 +513,108 @@
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
-  :is(.btn-soft, .btn-secundario, .btn-cerrar, .panel-quick__btn) {
-  border: 1px solid color-mix(in srgb, var(--adm-line) 90%, transparent);
-  background: color-mix(in srgb, var(--adm-card) 92%, var(--adm-soft));
+  :is(
+    .btn-soft,
+    .btn-secundario,
+    .btn-cerrar,
+    .btn-toggle,
+    .panel-quick__btn
+  ) {
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 92%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--adm-card) 93%,
+    var(--adm-soft)
+  );
   color: var(--adm-text);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
-  :is(.btn-soft, .btn-secundario, .btn-cerrar, .panel-quick__btn):hover:not(:disabled) {
-  transform: translateY(calc(-1px * var(--animate-speed, 1)));
-  border-color: color-mix(in srgb, var(--adm-primary) 16%, var(--adm-line));
+  :is(
+    .btn-soft,
+    .btn-secundario,
+    .btn-cerrar,
+    .btn-toggle,
+    .panel-quick__btn
+  ):hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 18%,
+    var(--adm-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 5%,
+    var(--adm-card)
+  );
   box-shadow: var(--adm-shadow-soft);
-  background: color-mix(in srgb, var(--adm-card) 88%, var(--adm-soft));
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
-  :is(.btn-primary, .btn-crear, .btn-buscar) {
-  border: 1px solid var(--button-border);
-  background: var(--button-bg);
-  color: var(--button-text);
-  box-shadow: var(--adm-shadow-soft);
+  :is(.btn-primary, .btn-crear, .btn-buscar, .btn-guardar) {
+  border: 1px solid var(
+    --button-border,
+    color-mix(in srgb, var(--adm-primary) 78%, #000000)
+  );
+  background: var(--button-bg, var(--adm-primary));
+  color: var(--button-text, #ffffff);
+  box-shadow:
+    0 6px 14px
+      color-mix(in srgb, var(--adm-primary) 18%, transparent),
+    var(--adm-shadow-soft);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
-  :is(.btn-primary, .btn-crear, .btn-buscar):hover:not(:disabled) {
-  transform: translateY(calc(-1px * var(--animate-speed, 1)));
-  filter: brightness(1.02);
+  :is(.btn-primary, .btn-crear, .btn-buscar, .btn-guardar):hover:not(
+    :disabled
+  ) {
+  transform: translateY(-1px);
+  filter: brightness(1.025);
+  box-shadow:
+    0 8px 18px
+      color-mix(in srgb, var(--adm-primary) 22%, transparent),
+    var(--adm-shadow-soft);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .btn-guardar {
-  border: 1px solid var(--adm-success-border);
-  background: var(--action-success-bg);
-  color: var(--action-solid-text);
-}
-
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .btn-editar {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .btn-editar {
   border: 1px solid var(--adm-warning-border);
-  background: var(--action-warning-bg);
-  color: var(--action-solid-text);
+  background: var(--adm-warning-soft);
+  color: var(--adm-warning-ink);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .btn-eliminar {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .btn-editar:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(
+    in srgb,
+    var(--adm-warning) 14%,
+    var(--adm-card)
+  );
+  box-shadow: var(--adm-shadow-soft);
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .btn-eliminar {
   border: 1px solid var(--adm-danger-border);
-  background: var(--action-danger-bg);
-  color: var(--action-solid-text);
+  background: var(--adm-danger-soft);
+  color: var(--adm-danger-ink);
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .btn-eliminar:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(
+    in srgb,
+    var(--adm-danger) 14%,
+    var(--adm-card)
+  );
+  box-shadow: var(--adm-shadow-soft);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -376,26 +628,48 @@
     .btn-editar,
     .btn-eliminar,
     .btn-cerrar,
-    .btn-toggle
+    .btn-toggle,
+    .panel-quick__btn
   ):disabled {
-  opacity: 0.65;
+  opacity: 0.58;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  filter: none;
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(
+    .btn-soft,
+    .btn-primary,
+    .btn-secundario,
+    .btn-crear,
+    .btn-buscar,
+    .btn-guardar,
+    .btn-editar,
+    .btn-eliminar,
+    .btn-cerrar,
+    .btn-toggle,
+    .panel-quick__btn,
+    .adm-tab
+  ):focus-visible {
+  outline: none;
+  box-shadow: var(--adm-ring);
 }
 
 :where(.sgpc-admin-page, .sgpc-admin-modal) .btn-mini {
   min-height: 34px;
   padding: 0 10px;
-  border-radius: 12px;
-  font-size: 12.5px;
+  border-radius: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 /* =========================================================
-   TOOLBAR / SEARCH / CONTROLES
+   TOOLBAR, BÚSQUEDA Y CONTROLES
 ========================================================= */
-.sgpc-admin-page .adm-toolbar {
+
+:where(.sgpc-admin-page, .sgpc-config-page) .adm-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -403,39 +677,51 @@
   padding: 12px;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-search {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-search__icon {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search__icon {
   position: absolute;
-  left: 12px;
   top: 50%;
-  transform: translateY(-50%);
+  left: 13px;
+  z-index: 1;
   color: var(--adm-muted);
   font-size: 14px;
   pointer-events: none;
+  transform: translateY(-50%);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.adm-search__input, .field-control, .select) {
   width: 100%;
+  min-width: 0;
   outline: none;
-  color: var(--adm-text);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 92%,
+    transparent
+  );
+  border-radius: var(--adm-radius-md);
   background: var(--adm-input);
-  border: 1px solid color-mix(in srgb, var(--adm-line) 88%, transparent);
-  border-radius: 13px;
+  color: var(--adm-text);
+  font-family: var(--adm-font-body);
+  font-size: 14px;
   transition:
     border-color calc(140ms * var(--animate-speed, 1)) ease,
     box-shadow calc(140ms * var(--animate-speed, 1)) ease,
-    background calc(140ms * var(--animate-speed, 1)) ease;
+    background calc(140ms * var(--animate-speed, 1)) ease,
+    color calc(140ms * var(--animate-speed, 1)) ease;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-search__input {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search__input {
   min-height: 44px;
-  padding: 0 42px 0 38px;
+  padding: 0 42px 0 39px;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -445,18 +731,66 @@
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
-  :is(.adm-search__input, .field-control, .select):focus {
-  border-color: color-mix(in srgb, var(--adm-primary) 28%, var(--adm-line));
+  textarea.field-control {
+  min-height: 112px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-search__input, .field-control, .select)::placeholder {
+  color: color-mix(
+    in srgb,
+    var(--adm-muted) 78%,
+    transparent
+  );
+  opacity: 1;
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-search__input, .field-control, .select):hover:not(
+    :disabled
+  ) {
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 14%,
+    var(--adm-line)
+  );
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-search__input, .field-control, .select):focus,
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-search__input, .field-control, .select):focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--adm-primary) 42%,
+    var(--adm-line)
+  );
   box-shadow: var(--adm-ring);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-search__clear {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-search__input, .field-control, .select):disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  background: color-mix(
+    in srgb,
+    var(--adm-soft) 82%,
+    var(--adm-card)
+  );
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search__clear {
   position: absolute;
-  right: 8px;
   top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
+  right: 8px;
+  width: 29px;
+  height: 29px;
+  padding: 0;
   border: 0;
   border-radius: var(--adm-radius-pill);
   background: transparent;
@@ -464,279 +798,469 @@
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-search__clear:hover {
-  background: color-mix(in srgb, var(--adm-line) 22%, transparent);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search__clear:hover {
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 8%,
+    transparent
+  );
   color: var(--adm-text);
 }
 
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-search__clear:focus-visible {
+  outline: none;
+  box-shadow: var(--adm-ring);
+}
+
 /* =========================================================
-   SECTION HEADS
+   ENCABEZADOS DE SECCIÓN
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .section-head {
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .section-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.section-title, .card-title) {
   margin: 0;
   color: var(--adm-text);
-  font-family: var(--adm-font-display);
+  font-family: var(--adm-font-heading);
   font-size: 1.08rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.08;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.section-sub, .card-desc, .field-help, .help) {
   color: var(--adm-muted);
+  font-family: var(--adm-font-body);
   line-height: 1.58;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .section-sub {
-  margin: 6px 0 0;
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .section-sub {
+  margin: 5px 0 0;
   font-size: 13px;
 }
 
 /* =========================================================
    TABLAS GENÉRICAS
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table-wrap {
-  border: 1px solid color-mix(in srgb, var(--adm-line) 74%, transparent);
-  border-radius: 18px;
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table-wrap {
   overflow: hidden;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 80%,
+    transparent
+  );
+  border-radius: 18px;
   background: var(--adm-card);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table-scroll {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table-scroll {
+  width: 100%;
   overflow: auto;
+  overscroll-behavior-inline: contain;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  color: var(--adm-text);
   background: var(--adm-card);
+  color: var(--adm-text);
+  font-family: var(--adm-font-body);
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table thead tr {
-  background: var(--table-head-bg);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  thead
+  tr {
+  background: var(
+    --table-head-bg,
+    color-mix(in srgb, var(--adm-soft) 72%, var(--adm-card))
+  );
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table th,
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table td {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  :is(th, td) {
   padding: 13px 12px;
   text-align: left;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table th {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  th {
+  color: var(--adm-muted);
   font-family: var(--adm-font-ui);
-  font-size: 12.2px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  color: var(--adm-text);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.045em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table td {
-  border-top: 1px solid color-mix(in srgb, var(--adm-line) 74%, transparent);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  td {
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 76%,
+    transparent
+  );
+  color: var(--adm-text);
+  font-size: 13.5px;
+  line-height: 1.5;
   vertical-align: middle;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table tbody tr {
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  tbody
+  tr {
   transition: background calc(120ms * var(--animate-speed, 1)) ease;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-table tbody tr:hover {
-  background: color-mix(in srgb, var(--adm-primary) 3%, transparent);
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .adm-table
+  tbody
+  tr:hover {
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 4%,
+    transparent
+  );
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .empty-row {
-  text-align: center;
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  .empty-row {
+  padding: 24px 12px;
   color: var(--adm-muted);
-  padding: 22px 12px;
+  text-align: center;
 }
 
 /* =========================================================
    ALERTAS
 ========================================================= */
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-alert,
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .alerta {
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-alert, .alerta) {
   margin: 0;
   padding: 12px 14px;
+  border: 1px solid var(--adm-info-border);
   border-radius: 14px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  border: 1px solid color-mix(in srgb, var(--adm-info) 22%, var(--adm-line));
   background: var(--adm-info-soft);
-  color: var(--adm-text);
+  color: var(--adm-info-ink);
+  font-family: var(--adm-font-body);
+  font-size: 13.5px;
+  line-height: 1.52;
 }
 
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-alert--error,
-:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .alerta.error {
-  color: var(--adm-danger-ink);
-  border-color: color-mix(in srgb, var(--adm-danger) 24%, var(--adm-line));
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-alert--success, .alerta.success) {
+  border-color: var(--adm-success-border);
+  background: var(--adm-success-soft);
+  color: var(--adm-success-ink);
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-alert--warning, .alerta.warning) {
+  border-color: var(--adm-warning-border);
+  background: var(--adm-warning-soft);
+  color: var(--adm-warning-ink);
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(.adm-alert--error, .alerta.error) {
+  border-color: var(--adm-danger-border);
   background: var(--adm-danger-soft);
+  color: var(--adm-danger-ink);
 }
 
 /* =========================================================
    MODALES
 ========================================================= */
+
 .sgpc-admin-modal {
   position: fixed;
   inset: 0;
   z-index: 300;
   display: grid;
   place-items: center;
-  padding: clamp(14px, 2vw, 24px);
+  width: 100%;
+  min-height: 100dvh;
+  padding: clamp(12px, 2vw, 24px);
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .sgpc-admin-modal::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: var(--adm-overlay);
+  backdrop-filter: blur(var(--adm-overlay-blur));
+  -webkit-backdrop-filter: blur(var(--adm-overlay-blur));
 }
 
 .sgpc-admin-modal .modal {
   position: relative;
   z-index: 1;
-  width: min(920px, 100%);
-  max-height: min(92vh, 860px);
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  width: min(920px, 100%);
+  max-height: min(92dvh, 860px);
   margin: auto;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 92%,
+    transparent
+  );
+  border-radius: var(--adm-radius-2xl);
   background: var(--adm-card);
   color: var(--adm-text);
-  border: 1px solid color-mix(in srgb, var(--adm-line) 90%, transparent);
-  border-radius: var(--adm-radius-2xl);
   box-shadow: var(--adm-shadow-modal);
-  padding: 22px;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  filter: none !important;
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 .sgpc-admin-modal .modal__header {
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--adm-line) 76%, transparent);
   margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 78%,
+    transparent
+  );
 }
 
 .sgpc-admin-modal .modal__body {
   display: grid;
-  gap: 16px;
-  overflow: auto;
   min-height: 0;
-  padding-right: 2px;
+  gap: 16px;
+  padding-right: 3px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .sgpc-admin-modal .modal__titlewrap {
   display: grid;
+  min-width: 0;
   gap: 6px;
 }
 
 .sgpc-admin-modal .modal__title {
   margin: 0;
   color: var(--adm-text);
-  font-family: var(--adm-font-display);
-  font-size: clamp(1.35rem, 1rem + 0.7vw, 1.8rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1.04;
+  font-family: var(--adm-font-heading);
+  font-size: clamp(1.35rem, 1.15rem + 0.6vw, 1.75rem);
+  font-weight: 740;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
 }
 
 .sgpc-admin-modal .modal__subtitle {
+  max-width: 72ch;
   margin: 0;
+  color: var(--adm-muted);
+  font-family: var(--adm-font-body);
   font-size: 13.5px;
   line-height: 1.58;
-  color: var(--adm-muted);
-  max-width: 72ch;
 }
 
 .sgpc-admin-modal .modal__section {
   display: grid;
   gap: 12px;
   padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--adm-line) 90%, transparent);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 90%,
+    transparent
+  );
   border-radius: var(--adm-radius-xl);
-  background: color-mix(in srgb, var(--adm-card) 96%, var(--adm-soft));
+  background: color-mix(
+    in srgb,
+    var(--adm-card) 96%,
+    var(--adm-soft)
+  );
 }
 
 .sgpc-admin-modal .modal__footer {
   display: flex;
+  flex: 0 0 auto;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 8px;
   padding-top: 14px;
-  border-top: 1px solid color-mix(in srgb, var(--adm-line) 76%, transparent);
-  margin-top: 6px;
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--adm-line) 78%,
+    transparent
+  );
 }
 
 .sgpc-admin-modal .modal__close {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* =========================================================
+   MODO OSCURO
+========================================================= */
+
+html.dark
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal),
+body.dark
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal),
+[data-theme="dark"]
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) {
+  color-scheme: dark;
 }
 
 /* =========================================================
    RESPONSIVE
 ========================================================= */
-@media (max-width: 760px) {
+
+@media (max-width: 960px) {
   .sgpc-admin-page {
-    padding: 18px 14px 60px;
+    padding-right: 22px;
+    padding-left: 22px;
   }
 
   .sgpc-config-page {
-    padding: 20px 14px 42px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sgpc-admin-page {
+    padding: 18px 14px 56px;
   }
 
-  .sgpc-admin-page :is(.adm-toolbar, .section-head),
+  .sgpc-config-page {
+    padding: 18px 14px 44px;
+  }
+
+  :where(.sgpc-admin-page, .sgpc-config-page)
+    :is(.adm-toolbar, .section-head),
   .sgpc-admin-modal :is(.modal__footer, .section-head) {
     flex-direction: column;
     align-items: stretch;
   }
 
-  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tabs {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    .adm-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
-  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .adm-tab {
-    flex: 1 1 100%;
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    .adm-tab {
     width: 100%;
+    padding-right: 10px;
+    padding-left: 10px;
     text-align: center;
   }
 
   .sgpc-admin-modal {
-    padding: 12px;
     align-items: center;
+    padding: 10px;
   }
 
   .sgpc-admin-modal .modal {
-    width: min(100%, 100%);
-    max-height: 90vh;
+    width: 100%;
+    max-height: calc(100dvh - 20px);
     padding: 18px;
     border-radius: 20px;
   }
 
   .sgpc-admin-modal .modal__section {
     padding: 12px;
+    border-radius: 16px;
   }
-} 
+
+  .sgpc-admin-modal .modal__footer {
+    width: 100%;
+  }
+
+  .sgpc-admin-modal .modal__footer > button {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 520px) {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    .adm-title {
+    font-size: clamp(1.55rem, 8vw, 1.9rem);
+  }
+
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    .adm-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-admin-modal .modal {
+    padding: 16px 14px;
+  }
+
+  .sgpc-admin-modal .modal__header {
+    gap: 10px;
+  }
+
+  .sgpc-admin-modal .modal__footer {
+    gap: 8px;
+  }
+
+  .sgpc-admin-modal .modal__footer > button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   MOVIMIENTO REDUCIDO
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal),
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) *,
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    *::before,
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

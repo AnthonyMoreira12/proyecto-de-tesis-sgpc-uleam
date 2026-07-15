@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap");
+
 :root {
   color-scheme: light;
 
@@ -100,19 +102,31 @@
 
   /* ============================================================
      TYPOGRAPHY
+     Fuente recomendada para interfaz web institucional:
+     Geist para pantalla; serif solo para documentos formales/PDF.
   ============================================================ */
   --font-serif: Georgia, "Times New Roman", Times, serif;
-  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-ui:
+    "Geist",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
 
   /* Aliases globales */
-  --font-body: var(--font-serif);
-  --font-heading: var(--font-serif);
-  --font-control: var(--font-serif);
-  --font-label: var(--font-serif);
-  --font-nav: var(--font-serif);
-  --font-sans: var(--font-body);
+  --font-body: var(--font-ui);
+  --font-heading: var(--font-ui);
+  --font-control: var(--font-ui);
+  --font-label: var(--font-ui);
+  --font-nav: var(--font-ui);
+  --font-sans: var(--font-ui);
+  --font-document: var(--font-serif);
 
-  --font-base: 16px;
+  --font-base: 15px;
 
   /* ============================================================
      BACKGROUNDS / SURFACES
@@ -572,6 +586,8 @@ body {
   background: var(--bg-main);
   color: var(--text-primary);
   font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
   transition:
     background var(--t-slow),
     color var(--t-slow);
@@ -600,8 +616,8 @@ h5,
 h6 {
   color: var(--text-primary);
   font-family: var(--font-heading);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   line-height: 1.08;
   margin-block: 0 0.5em;
 }
@@ -620,6 +636,15 @@ small,
 label {
   color: var(--text-primary);
   font-family: var(--font-label);
+}
+
+/* Para contenido imprimible/formal: reportes, certificados, anexos o PDF */
+.documento-formal,
+.reporte-pdf,
+.contenido-academico,
+.print-document,
+.pdf-document {
+  font-family: var(--font-document);
 }
 
 span {

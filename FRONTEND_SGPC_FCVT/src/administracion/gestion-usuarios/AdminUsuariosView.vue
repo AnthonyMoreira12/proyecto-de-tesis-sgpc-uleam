@@ -1,38 +1,45 @@
 <template>
-  <div class="sgpc-admin-page admin-container">
+  <div class="sgpc-admin-page">
     <div class="users-admin">
+      <!-- =====================================================
+           ENCABEZADO
+      ====================================================== -->
       <header
-        class="users-admin__head adm-surface"
-        aria-label="Gestión de usuarios"
+        class="users-admin__head adm-surface adm-hero"
+        aria-labelledby="users-admin-title"
       >
         <div class="users-admin__head-main">
           <div class="users-admin__copy">
-            <span class="adm-kicker">Usuarios</span>
+            <span class="adm-kicker">Administración</span>
 
-            <h1 class="users-admin__title">Gestión de usuarios</h1>
+            <h1 id="users-admin-title" class="users-admin__title">
+              Gestión de usuarios
+            </h1>
 
             <p class="users-admin__subtitle">
-              Administre cuentas externas, revise usuarios institucionales y controle el acceso
-              al sistema desde una vista directa.
+              Administre cuentas externas, revise usuarios institucionales y
+              controle el acceso al sistema desde una sola interfaz.
             </p>
           </div>
 
           <div class="users-admin__head-actions">
             <button
-              class="users-btn users-btn--ghost"
+              class="users-btn users-btn--secondary"
               type="button"
-              @click="refrescarVista"
               :disabled="loading"
+              @click="refrescarVista"
             >
+              <span aria-hidden="true">↻</span>
               {{ loading ? "Actualizando..." : "Refrescar" }}
             </button>
 
             <button
               class="users-btn users-btn--primary"
               type="button"
-              @click="openCreateExterno"
               :disabled="loading"
+              @click="openCreateExterno"
             >
+              <span aria-hidden="true">＋</span>
               Nuevo usuario externo
             </button>
           </div>
@@ -41,118 +48,201 @@
         <div
           class="users-tabs"
           role="tablist"
-          aria-label="Filtros de usuarios"
+          aria-label="Clasificación de usuarios"
         >
           <button
-            v-for="t in tabs"
-            :key="t.key"
+            v-for="tab in tabs"
+            :id="`users-tab-${tab.key}`"
+            :key="tab.key"
             class="users-tab"
-            :class="{ active: activeTab === t.key }"
+            :class="{ active: activeTab === tab.key }"
             type="button"
             role="tab"
-            :aria-selected="activeTab === t.key ? 'true' : 'false'"
-            @click="setTab(t.key)"
+            :aria-selected="activeTab === tab.key"
+            aria-controls="users-list-panel"
+            :tabindex="activeTab === tab.key ? 0 : -1"
             :disabled="loading"
+            @click="setTab(tab.key)"
+            @keydown.left.prevent="moveTabFocus(tab.key, -1)"
+            @keydown.right.prevent="moveTabFocus(tab.key, 1)"
+            @keydown.home.prevent="focusBoundaryTab('first')"
+            @keydown.end.prevent="focusBoundaryTab('last')"
           >
-            <span>{{ t.label }}</span>
+            <span>{{ tab.label }}</span>
 
-            <span class="users-tab__count">
-              {{ tabCount(t.key) }}
+            <span class="users-tab__count" aria-hidden="true">
+              {{ tabCount(tab.key) }}
+            </span>
+
+            <span class="users-sr-only">
+              {{ tabCount(tab.key) }} usuarios
             </span>
           </button>
         </div>
       </header>
 
+      <!-- =====================================================
+           BÚSQUEDA
+      ====================================================== -->
       <section
         class="users-admin__toolbar adm-surface"
-        role="region"
-        aria-label="Búsqueda de usuarios"
+        role="search"
+        aria-label="Buscar usuarios"
       >
         <div class="users-admin__search">
+          <label for="users-admin-search" class="users-sr-only">
+            Buscar usuarios
+          </label>
+
           <span class="users-admin__search-icon" aria-hidden="true">
-            ⌕
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="m20.7 19.3-4.2-4.2a7.5 7.5 0 1 0-1.4 1.4l4.2 4.2a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"
+              />
+            </svg>
           </span>
 
           <input
+            id="users-admin-search"
             v-model="busqueda"
             class="users-admin__search-input"
-            placeholder="Buscar por nombre, correo, identificación, facultad, carrera o publicación..."
-            @keyup.enter="cargarUsuarios"
-            :disabled="loading"
             type="search"
             autocomplete="off"
+            :disabled="loading"
+            placeholder="Buscar por nombre, correo, identificación, facultad, carrera o publicación"
+            @keyup.enter="cargarUsuarios"
           />
 
           <button
             v-if="busquedaTrim"
             class="users-admin__search-clear"
             type="button"
-            @click="clearSearch"
             :disabled="loading"
-            aria-label="Limpiar búsqueda"
+            aria-label="Limpiar búsqueda y mostrar todos los usuarios"
             title="Limpiar búsqueda"
+            @click="clearSearchAndReload"
           >
             ×
           </button>
         </div>
 
-        <div class="users-admin__toolbar-actions">
-          <button
-            class="users-btn users-btn--primary"
-            type="button"
-            @click="cargarUsuarios"
-            :disabled="loading"
-          >
-            {{ loading ? "Buscando..." : "Buscar" }}
-          </button>
-
-          <button
-            class="users-btn users-btn--ghost"
-            type="button"
-            @click="clearSearchAndReload"
-            :disabled="loading || !busquedaTrim"
-          >
-            Limpiar
-          </button>
-        </div>
+        <button
+          class="users-btn users-btn--primary users-admin__search-button"
+          type="button"
+          :disabled="loading"
+          @click="cargarUsuarios"
+        >
+          {{ loading ? "Buscando..." : "Buscar" }}
+        </button>
       </section>
 
-      <div v-if="errorCarga" class="users-alert users-alert--error">
-        {{ errorCarga }}
+      <!-- =====================================================
+           ERROR
+      ====================================================== -->
+      <div
+        v-if="errorCarga"
+        class="users-alert users-alert--error"
+        role="alert"
+        aria-live="assertive"
+      >
+        <span class="users-alert__icon" aria-hidden="true">!</span>
+
+        <div>
+          <strong>No se pudo cargar la información</strong>
+          <p>{{ errorCarga }}</p>
+        </div>
       </div>
 
-      <section class="users-admin__tablecard adm-surface">
+      <!-- =====================================================
+           LISTADO
+      ====================================================== -->
+      <section
+        id="users-list-panel"
+        class="users-admin__tablecard adm-surface"
+        role="tabpanel"
+        :aria-labelledby="`users-tab-${activeTab}`"
+        :aria-busy="loading"
+      >
         <div class="users-admin__sectionhead">
-          <div>
-            <h2 class="users-admin__section-title">Listado</h2>
+          <div class="users-admin__sectioncopy">
+            <h2 class="users-admin__section-title">
+              Listado de usuarios
+            </h2>
+
             <p class="users-admin__section-sub">
               {{ tableSubtitle }}
             </p>
           </div>
 
-          <span class="users-admin__badge">
-            {{ filteredUsuarios.length }} visible(s)
+          <span
+            class="users-admin__badge"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {{ filteredUsuarios.length }}
+            {{ filteredUsuarios.length === 1 ? "usuario visible" : "usuarios visibles" }}
           </span>
         </div>
 
         <div
-          v-if="!filteredUsuarios.length && !loading"
+          v-if="loading"
+          class="users-admin__progress"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="users-admin__spinner" aria-hidden="true"></span>
+          Actualizando listado de usuarios...
+        </div>
+
+        <!-- Estado inicial de carga -->
+        <div
+          v-if="loading && !usuarios.length"
+          class="users-admin__loading-state"
+          aria-hidden="true"
+        >
+          <div
+            v-for="index in 5"
+            :key="index"
+            class="users-skeleton-row"
+          >
+            <span class="users-skeleton users-skeleton--name"></span>
+            <span class="users-skeleton users-skeleton--email"></span>
+            <span class="users-skeleton users-skeleton--short"></span>
+            <span class="users-skeleton users-skeleton--status"></span>
+          </div>
+        </div>
+
+        <!-- Estado vacío -->
+        <div
+          v-else-if="!filteredUsuarios.length"
           class="users-admin__empty"
         >
-          <p class="users-admin__empty-title">Sin resultados</p>
+          <div class="users-admin__empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
+              />
+            </svg>
+          </div>
+
+          <h3 class="users-admin__empty-title">
+            Sin usuarios para mostrar
+          </h3>
 
           <p class="users-admin__empty-text">
             {{
               busquedaTrim
-                ? `No se encontraron usuarios para “${busquedaTrim}”.`
-                : "No hay usuarios para mostrar con el filtro actual."
+                ? `No se encontraron coincidencias para “${busquedaTrim}”.`
+                : "No existen usuarios dentro de la clasificación seleccionada."
             }}
           </p>
 
           <div class="users-admin__empty-actions">
             <button
               v-if="busquedaTrim"
-              class="users-btn users-btn--ghost"
+              class="users-btn users-btn--secondary"
               type="button"
               @click="clearSearchAndReload"
             >
@@ -169,76 +259,99 @@
           </div>
         </div>
 
+        <!-- Tabla -->
         <div v-else class="users-admin__table-wrap">
           <table class="users-admin__table">
+            <caption class="users-sr-only">
+              Usuarios registrados en el Sistema de Gestión de Producción
+              Científica de la ULEAM
+            </caption>
+
             <thead>
               <tr>
-                <th>Usuario</th>
-                <th>Correo</th>
-                <th>Identificación</th>
-                <th>Tipo</th>
-                <th>Facultad</th>
-                <th>Carrera</th>
-                <th>Estado</th>
-                <th class="users-admin__th-actions">Acciones</th>
+                <th scope="col">Usuario</th>
+                <th scope="col">Correo</th>
+                <th scope="col">Identificación</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Facultad</th>
+                <th scope="col">Carrera</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="users-admin__th-actions">
+                  Acciones
+                </th>
               </tr>
             </thead>
 
             <tbody>
-              <tr v-for="u in filteredUsuarios" :key="u.id">
+              <tr v-for="usuario in filteredUsuarios" :key="usuario.id">
                 <td class="users-admin__cell-user">
                   <div class="users-user">
                     <strong class="users-user__name">
-                      {{ fullName(u) }}
+                      {{ fullName(usuario) }}
                     </strong>
 
                     <div class="users-user__meta">
                       <span
                         class="users-pill users-pill--mini"
-                        :class="{ 'users-pill--muted': !u.tiene_autor }"
+                        :class="{
+                          'users-pill--muted': !usuario.tiene_autor,
+                        }"
                       >
-                        {{ u.tiene_autor ? "Autor vinculado" : "Sin autor" }}
+                        {{
+                          usuario.tiene_autor
+                            ? "Autor vinculado"
+                            : "Sin autor"
+                        }}
                       </span>
 
                       <span
-                        v-if="u.es_admin || u.is_staff || u.is_superuser"
+                        v-if="
+                          usuario.es_admin ||
+                          usuario.is_staff ||
+                          usuario.is_superuser
+                        "
                         class="users-pill users-pill--mini users-pill--admin"
                       >
-                        Admin
+                        Administrador
                       </span>
 
                       <span class="users-pill users-pill--mini">
-                        {{ u.total_publicaciones || 0 }} pub.
+                        {{ usuario.total_publicaciones || 0 }}
+                        {{
+                          Number(usuario.total_publicaciones || 0) === 1
+                            ? "publicación"
+                            : "publicaciones"
+                        }}
                       </span>
                     </div>
                   </div>
                 </td>
 
-                <td class="users-admin__cell-muted">
-                  {{ u.email || "-" }}
+                <td class="users-admin__cell-muted users-admin__cell-email">
+                  {{ usuario.email || "No registrado" }}
                 </td>
 
                 <td class="users-admin__cell-muted">
-                  {{ u.identificacion || "-" }}
+                  {{ usuario.identificacion || "No registrada" }}
                 </td>
 
                 <td>
                   <span class="users-pill">
-                    {{ tipoLabelHuman(u) }}
+                    {{ tipoLabelHuman(usuario) }}
                   </span>
                 </td>
 
                 <td class="users-admin__cell-muted">
-                  {{ u.facultad_nombre || "-" }}
+                  {{ usuario.facultad_nombre || "Sin asignar" }}
                 </td>
 
                 <td class="users-admin__cell-muted">
-                  {{ u.carrera_nombre || "-" }}
+                  {{ usuario.carrera_nombre || "Sin asignar" }}
                 </td>
 
                 <td>
                   <span
-                    v-if="isPendiente(u)"
+                    v-if="isPendiente(usuario)"
                     class="users-pill users-pill--pending"
                   >
                     Pendiente
@@ -247,55 +360,70 @@
                   <span
                     v-else
                     class="users-pill"
-                    :class="u.is_active ? 'users-pill--ok' : 'users-pill--off'"
+                    :class="
+                      usuario.is_active
+                        ? 'users-pill--ok'
+                        : 'users-pill--off'
+                    "
                   >
-                    {{ u.is_active ? "Activo" : "Inactivo" }}
+                    {{ usuario.is_active ? "Activo" : "Inactivo" }}
                   </span>
                 </td>
 
                 <td class="users-admin__td-actions">
                   <div class="users-actions" @click.stop>
                     <button
-                      class="users-btn users-btn--ghost users-btn--sm"
+                      class="users-btn users-btn--secondary users-btn--sm"
                       type="button"
-                      @click="openDetalle(u)"
                       :disabled="loading"
+                      :aria-label="`Ver detalle de ${fullName(usuario)}`"
+                      @click="openDetalle(usuario)"
                     >
                       Detalle
                     </button>
 
                     <button
-                      class="users-btn users-btn--ghost users-btn--sm"
+                      class="users-btn users-btn--secondary users-btn--sm"
                       type="button"
-                      @click="openEdit(u)"
                       :disabled="loading"
+                      :aria-label="`Editar ${fullName(usuario)}`"
+                      @click="openEdit(usuario)"
                     >
                       Editar
                     </button>
 
                     <div class="users-more">
                       <button
-                        class="users-btn users-btn--ghost users-btn--sm"
+                        :id="`users-more-trigger-${usuario.id}`"
+                        class="users-btn users-btn--secondary users-btn--sm users-btn--more"
                         type="button"
-                        @click="toggleActionsMenu(u)"
                         :disabled="loading"
-                        :aria-expanded="isActionsMenuOpen(u) ? 'true' : 'false'"
+                        :aria-label="`Más acciones para ${fullName(usuario)}`"
+                        :aria-expanded="isActionsMenuOpen(usuario)"
+                        :aria-controls="`users-more-menu-${usuario.id}`"
                         aria-haspopup="menu"
+                        @click="toggleActionsMenu(usuario)"
                       >
                         Más
+                        <span aria-hidden="true">⌄</span>
                       </button>
 
                       <div
-                        v-if="isActionsMenuOpen(u)"
+                        v-if="isActionsMenuOpen(usuario)"
+                        :id="`users-more-menu-${usuario.id}`"
                         class="users-more__menu"
                         role="menu"
+                        :aria-labelledby="`users-more-trigger-${usuario.id}`"
+                        @keydown.esc.stop.prevent="
+                          closeActionMenuAndFocus(usuario)
+                        "
                       >
                         <button
-                          v-if="isPendiente(u)"
+                          v-if="isPendiente(usuario)"
                           class="users-more__item users-more__item--primary"
                           type="button"
                           role="menuitem"
-                          @click="openActivateFromMenu(u)"
+                          @click="openActivateFromMenu(usuario)"
                         >
                           Activar cuenta
                         </button>
@@ -303,19 +431,32 @@
                         <button
                           v-else
                           class="users-more__item"
-                          :class="u.is_active ? 'users-more__item--danger' : 'users-more__item--success'"
+                          :class="
+                            usuario.is_active
+                              ? 'users-more__item--danger'
+                              : 'users-more__item--success'
+                          "
                           type="button"
                           role="menuitem"
-                          @click="toggleActivoFromMenu(u)"
+                          @click="toggleActivoFromMenu(usuario)"
                         >
-                          {{ u.is_active ? "Desactivar cuenta" : "Activar cuenta" }}
+                          {{
+                            usuario.is_active
+                              ? "Desactivar cuenta"
+                              : "Activar cuenta"
+                          }}
                         </button>
+
+                        <div
+                          class="users-more__separator"
+                          role="separator"
+                        ></div>
 
                         <button
                           class="users-more__item users-more__item--danger"
                           type="button"
                           role="menuitem"
-                          @click="eliminarFromMenu(u)"
+                          @click="eliminarFromMenu(usuario)"
                         >
                           Eliminar usuario
                         </button>
@@ -324,17 +465,14 @@
                   </div>
                 </td>
               </tr>
-
-              <tr v-if="loading && !filteredUsuarios.length">
-                <td colspan="8" class="users-admin__empty-row">
-                  Cargando usuarios...
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
       </section>
 
+      <!-- =====================================================
+           MODALES
+      ====================================================== -->
       <UsuarioModal
         v-if="modal.open"
         :mode="modal.mode"
@@ -356,22 +494,32 @@
         @close="closeDetailModal"
       />
 
-      <NoticeDialog :modelValue="notice" @close="closeNotice" />
+      <NoticeDialog
+        :model-value="notice"
+        @close="closeNotice"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { adminApi } from "../../scripts/api/adminApi";
 import { useNotice } from "../../scripts/composables/useNotice";
 
-import UsuarioModal from "./UsuarioModal.vue";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
 import ActivarUsuarioModal from "./ActivarUsuarioModal.vue";
 import DetalleAutorUsuarioModal from "./DetalleAutorUsuarioModal.vue";
-import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
+import UsuarioModal from "./UsuarioModal.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -409,23 +557,9 @@ const tabs = [
   { key: "externos", label: "Externos" },
 ];
 
-const busquedaTrim = computed(() => String(busqueda.value || "").trim());
-
-const tableSubtitle = computed(() => {
-  const current = tabLabel(activeTab.value);
-
-  if (busquedaTrim.value) {
-    return `${current}. Búsqueda aplicada: “${busquedaTrim.value}”.`;
-  }
-
-  return `Gestión general de cuentas. Filtro actual: ${current}.`;
-});
-
-const deferNotice = (payload) => {
-  window.setTimeout(() => {
-    openNotice(payload);
-  }, 0);
-};
+const busquedaTrim = computed(() =>
+  String(busqueda.value || "").trim()
+);
 
 const normalize = (value) =>
   String(value ?? "")
@@ -434,84 +568,124 @@ const normalize = (value) =>
     .replace(/\p{Diacritic}/gu, "")
     .trim();
 
-const fullName = (u) => {
-  const nombres = String(u?.nombres || "").trim();
-  const apellidos = String(u?.apellidos || "").trim();
+const fullName = (usuario) => {
+  const nombres = String(usuario?.nombres || "").trim();
+  const apellidos = String(usuario?.apellidos || "").trim();
+
   return `${nombres} ${apellidos}`.trim() || "Usuario";
 };
 
-const isExterno = (u) =>
-  String(u?.auth_source || "").toLowerCase() === "local" &&
-  String(u?.rol || "").toLowerCase() === "autor_externo";
+const isExterno = (usuario) =>
+  String(usuario?.auth_source || "").toLowerCase() === "local" &&
+  String(usuario?.rol || "").toLowerCase() === "autor_externo";
 
-const isInstitucional = (u) =>
-  String(u?.auth_source || "").toLowerCase() === "microsoft";
+const isInstitucional = (usuario) =>
+  String(usuario?.auth_source || "").toLowerCase() === "microsoft";
 
-const isPendiente = (u) => isExterno(u) && !u?.is_active;
+const isPendiente = (usuario) =>
+  isExterno(usuario) && !usuario?.is_active;
 
-const tipoLabelHuman = (u) => {
-  if (isInstitucional(u)) return "Institucional";
-  if (isExterno(u)) return "Externo";
+const tipoLabelHuman = (usuario) => {
+  if (isInstitucional(usuario)) return "Institucional";
+  if (isExterno(usuario)) return "Externo";
+
   return "Usuario";
 };
 
-const passesSearch = (u, q) => {
-  if (!q) return true;
+const tabLabel = (key) =>
+  tabs.find((tab) => tab.key === key)?.label || "Todos";
 
-  const publicacionesTexto = (u?.publicaciones_relacionadas || [])
-    .map((p) => `${p?.label || ""} ${p?.rol_label || ""} ${p?.tipo || ""}`)
+const passesSearch = (usuario, query) => {
+  if (!query) return true;
+
+  const publicacionesTexto = (
+    usuario?.publicaciones_relacionadas || []
+  )
+    .map(
+      (publicacion) =>
+        `${publicacion?.label || ""} ` +
+        `${publicacion?.rol_label || ""} ` +
+        `${publicacion?.tipo || ""}`
+    )
     .join(" ");
 
   return [
-    fullName(u),
-    u?.email,
-    u?.identificacion,
-    u?.facultad_nombre,
-    u?.carrera_nombre,
-    u?.autor_nombre,
+    fullName(usuario),
+    usuario?.email,
+    usuario?.identificacion,
+    usuario?.facultad_nombre,
+    usuario?.carrera_nombre,
+    usuario?.autor_nombre,
     publicacionesTexto,
-  ].some((item) => normalize(item).includes(q));
+  ].some((value) => normalize(value).includes(query));
 };
 
 const filteredUsuarios = computed(() => {
-  const q = normalize(busquedaTrim.value);
-  const list = (usuarios.value || []).filter((u) => passesSearch(u, q));
+  const query = normalize(busquedaTrim.value);
+
+  const list = (usuarios.value || []).filter((usuario) =>
+    passesSearch(usuario, query)
+  );
 
   switch (activeTab.value) {
     case "pendientes":
-      return list.filter((u) => isPendiente(u));
+      return list.filter((usuario) => isPendiente(usuario));
+
     case "activos":
-      return list.filter((u) => !!u?.is_active);
+      return list.filter((usuario) => Boolean(usuario?.is_active));
+
     case "institucionales":
-      return list.filter((u) => isInstitucional(u));
+      return list.filter((usuario) => isInstitucional(usuario));
+
     case "externos":
-      return list.filter((u) => isExterno(u));
+      return list.filter((usuario) => isExterno(usuario));
+
     default:
       return list;
   }
 });
 
-const tabLabel = (key) => tabs.find((item) => item.key === key)?.label || "Todos";
+const tableSubtitle = computed(() => {
+  const currentTab = tabLabel(activeTab.value);
+
+  if (busquedaTrim.value) {
+    return `${currentTab}. Búsqueda aplicada: “${busquedaTrim.value}”.`;
+  }
+
+  return `Clasificación actual: ${currentTab}.`;
+});
 
 const tabCount = (key) => {
   const list = usuarios.value || [];
 
   switch (key) {
     case "pendientes":
-      return list.filter((u) => isPendiente(u)).length;
+      return list.filter((usuario) => isPendiente(usuario)).length;
+
     case "activos":
-      return list.filter((u) => !!u?.is_active).length;
+      return list.filter((usuario) => Boolean(usuario?.is_active))
+        .length;
+
     case "institucionales":
-      return list.filter((u) => isInstitucional(u)).length;
+      return list.filter((usuario) => isInstitucional(usuario))
+        .length;
+
     case "externos":
-      return list.filter((u) => isExterno(u)).length;
+      return list.filter((usuario) => isExterno(usuario)).length;
+
     default:
       return list.length;
   }
 };
 
+const deferNotice = (payload) => {
+  window.setTimeout(() => {
+    openNotice(payload);
+  }, 0);
+};
+
 const setTab = (key) => {
-  if (!tabs.some((item) => item.key === key)) return;
+  if (!tabs.some((tab) => tab.key === key)) return;
 
   activeTab.value = key;
   actionMenuId.value = null;
@@ -524,6 +698,36 @@ const setTab = (key) => {
   });
 };
 
+const focusTab = (key) => {
+  window.requestAnimationFrame(() => {
+    document.getElementById(`users-tab-${key}`)?.focus();
+  });
+};
+
+const moveTabFocus = (currentKey, offset) => {
+  const currentIndex = tabs.findIndex(
+    (tab) => tab.key === currentKey
+  );
+
+  if (currentIndex < 0) return;
+
+  const nextIndex =
+    (currentIndex + offset + tabs.length) % tabs.length;
+
+  const nextKey = tabs[nextIndex].key;
+
+  setTab(nextKey);
+  focusTab(nextKey);
+};
+
+const focusBoundaryTab = (position) => {
+  const nextTab =
+    position === "last" ? tabs[tabs.length - 1] : tabs[0];
+
+  setTab(nextTab.key);
+  focusTab(nextTab.key);
+};
+
 const cargarUsuarios = async () => {
   loading.value = true;
   errorCarga.value = "";
@@ -531,10 +735,14 @@ const cargarUsuarios = async () => {
 
   try {
     const data = await adminApi.usuarios(busquedaTrim.value);
+
     usuarios.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error cargando usuarios:", error);
-    errorCarga.value = "No se pudo cargar la lista de usuarios. Intente nuevamente.";
+
+    errorCarga.value =
+      error?.response?.data?.detail ||
+      "No se pudo cargar la lista de usuarios. Intente nuevamente.";
   } finally {
     loading.value = false;
   }
@@ -542,10 +750,6 @@ const cargarUsuarios = async () => {
 
 const refrescarVista = async () => {
   await cargarUsuarios();
-};
-
-const clearSearch = () => {
-  busqueda.value = "";
 };
 
 const clearSearchAndReload = async () => {
@@ -560,11 +764,11 @@ const openCreateExterno = () => {
   modal.usuario = null;
 };
 
-const openEdit = (u) => {
+const openEdit = (usuario) => {
   actionMenuId.value = null;
   modal.open = true;
   modal.mode = "edit";
-  modal.usuario = u;
+  modal.usuario = usuario;
 };
 
 const closeModal = () => {
@@ -572,10 +776,10 @@ const closeModal = () => {
   modal.usuario = null;
 };
 
-const openActivate = (u) => {
+const openActivate = (usuario) => {
   actionMenuId.value = null;
   activateModal.open = true;
-  activateModal.usuario = u;
+  activateModal.usuario = usuario;
 };
 
 const closeActivateModal = () => {
@@ -583,10 +787,10 @@ const closeActivateModal = () => {
   activateModal.usuario = null;
 };
 
-const openDetalle = (u) => {
+const openDetalle = (usuario) => {
   actionMenuId.value = null;
   detailModal.open = true;
-  detailModal.usuario = u;
+  detailModal.usuario = usuario;
 };
 
 const closeDetailModal = () => {
@@ -600,7 +804,9 @@ const handleUsuarioDone = async (payload) => {
 
   openNotice({
     title: payload?.title || "Cambios guardados",
-    message: payload?.message || "La información del usuario se actualizó correctamente.",
+    message:
+      payload?.message ||
+      "La información del usuario se actualizó correctamente.",
   });
 };
 
@@ -610,35 +816,48 @@ const handleActivated = async (payload) => {
 
   openNotice({
     title: payload?.title || "Cuenta activada",
-    message: payload?.message || "Listo. El usuario ya puede iniciar sesión.",
+    message:
+      payload?.message ||
+      "El usuario ya puede iniciar sesión en el sistema.",
   });
 };
 
-const isActionsMenuOpen = (u) => {
-  return actionMenuId.value === String(u?.id);
+const isActionsMenuOpen = (usuario) =>
+  actionMenuId.value === String(usuario?.id);
+
+const toggleActionsMenu = (usuario) => {
+  const id = String(usuario?.id || "");
+
+  actionMenuId.value =
+    actionMenuId.value === id ? null : id;
 };
 
-const toggleActionsMenu = (u) => {
-  const id = String(u?.id || "");
-  actionMenuId.value = actionMenuId.value === id ? null : id;
-};
-
-const openActivateFromMenu = (u) => {
+const closeActionMenuAndFocus = (usuario) => {
   actionMenuId.value = null;
-  openActivate(u);
+
+  window.requestAnimationFrame(() => {
+    document
+      .getElementById(`users-more-trigger-${usuario?.id}`)
+      ?.focus();
+  });
 };
 
-const toggleActivoFromMenu = async (u) => {
+const openActivateFromMenu = (usuario) => {
   actionMenuId.value = null;
-  await toggleActivo(u);
+  openActivate(usuario);
 };
 
-const eliminarFromMenu = async (u) => {
+const toggleActivoFromMenu = async (usuario) => {
   actionMenuId.value = null;
-  await eliminar(u);
+  await toggleActivo(usuario);
 };
 
-const eliminar = async (u) => {
+const eliminarFromMenu = async (usuario) => {
+  actionMenuId.value = null;
+  await eliminar(usuario);
+};
+
+const eliminar = async (usuario) => {
   openNotice({
     title: "Confirmar eliminación",
     message:
@@ -648,44 +867,53 @@ const eliminar = async (u) => {
     confirmText: "Sí, eliminar",
     onConfirm: async () => {
       try {
-        await adminApi.eliminarUsuario(u.id);
+        await adminApi.eliminarUsuario(usuario.id);
         await cargarUsuarios();
 
         deferNotice({
-          title: "Eliminado",
-          message: "Usuario eliminado correctamente.",
+          title: "Usuario eliminado",
+          message: "El usuario se eliminó correctamente.",
         });
       } catch (error) {
         const data = error?.response?.data;
 
         deferNotice({
           title: "No se pudo eliminar",
-          message: data?.detail || "No se pudo eliminar el usuario. Intente nuevamente.",
+          message:
+            data?.detail ||
+            "No se pudo eliminar el usuario. Intente nuevamente.",
         });
       }
     },
   });
 };
 
-const toggleActivo = async (u) => {
-  const msg = u.is_active
-    ? "¿Desea desactivar este usuario? No podrá iniciar sesión."
-    : "¿Desea activar este usuario? Podrá iniciar sesión.";
+const toggleActivo = async (usuario) => {
+  const desactivar = Boolean(usuario?.is_active);
 
   openNotice({
-    title: u.is_active ? "Confirmar desactivación" : "Confirmar activación",
-    message: msg,
+    title: desactivar
+      ? "Confirmar desactivación"
+      : "Confirmar activación",
+    message: desactivar
+      ? "¿Desea desactivar este usuario? No podrá iniciar sesión."
+      : "¿Desea activar este usuario? Podrá iniciar sesión.",
     confirm: true,
     cancelText: "Cancelar",
-    confirmText: u.is_active ? "Sí, desactivar" : "Sí, activar",
+    confirmText: desactivar
+      ? "Sí, desactivar"
+      : "Sí, activar",
     onConfirm: async () => {
       try {
-        const data = await adminApi.toggleActivo(u.id);
-        u.is_active = !!data?.is_active;
+        const data = await adminApi.toggleActivo(usuario.id);
+
+        usuario.is_active = Boolean(data?.is_active);
 
         deferNotice({
-          title: "Actualizado",
-          message: `Usuario ${u.is_active ? "activado" : "desactivado"} correctamente.`,
+          title: "Estado actualizado",
+          message: `El usuario fue ${
+            usuario.is_active ? "activado" : "desactivado"
+          } correctamente.`,
         });
       } catch (error) {
         const data = error?.response?.data;
@@ -693,7 +921,8 @@ const toggleActivo = async (u) => {
         deferNotice({
           title: "No se pudo actualizar",
           message:
-            data?.detail || "No se pudo cambiar el estado del usuario. Intente nuevamente.",
+            data?.detail ||
+            "No se pudo cambiar el estado del usuario. Intente nuevamente.",
         });
       }
     },
@@ -704,15 +933,32 @@ const closeActionMenuOnDocumentClick = () => {
   actionMenuId.value = null;
 };
 
-onMounted(async () => {
-  const qtab = String(route.query?.tab || "");
+const closeActionMenuOnEscape = (event) => {
+  if (event.key === "Escape") {
+    actionMenuId.value = null;
+  }
+};
 
-  if (tabs.some((item) => item.key === qtab)) {
-    activeTab.value = qtab;
+watch(
+  () => route.query?.tab,
+  (value) => {
+    const key = String(value || "");
+
+    if (tabs.some((tab) => tab.key === key)) {
+      activeTab.value = key;
+    }
+  }
+);
+
+onMounted(async () => {
+  const queryTab = String(route.query?.tab || "");
+
+  if (tabs.some((tab) => tab.key === queryTab)) {
+    activeTab.value = queryTab;
   } else {
     activeTab.value = "activos";
 
-    router.replace({
+    await router.replace({
       query: {
         ...route.query,
         tab: "activos",
@@ -720,13 +966,29 @@ onMounted(async () => {
     });
   }
 
-  document.addEventListener("click", closeActionMenuOnDocumentClick);
+  document.addEventListener(
+    "click",
+    closeActionMenuOnDocumentClick
+  );
+
+  document.addEventListener(
+    "keydown",
+    closeActionMenuOnEscape
+  );
 
   await cargarUsuarios();
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", closeActionMenuOnDocumentClick);
+  document.removeEventListener(
+    "click",
+    closeActionMenuOnDocumentClick
+  );
+
+  document.removeEventListener(
+    "keydown",
+    closeActionMenuOnEscape
+  );
 });
 </script>
 

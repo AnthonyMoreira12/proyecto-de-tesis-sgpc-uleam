@@ -1,128 +1,342 @@
 <template>
-  <section class="art-campos">
+  <section
+    class="art-campos"
+    aria-label="Información del artículo científico"
+  >
+    <!-- =====================================================
+         INFORMACIÓN PRINCIPAL
+    ====================================================== -->
+
     <article class="art-card art-card--main">
       <header class="art-card__head">
         <div>
-          <p class="art-card__kicker">Artículo científico</p>
-          <h3 class="art-card__title">Datos del artículo</h3>
+          <p class="art-card__kicker">
+            Artículo científico
+          </p>
+
+          <h3 class="art-card__title">
+            Datos del artículo
+          </h3>
+
           <p class="art-card__desc">
-            Complete la información base del artículo, la revista y los enlaces de consulta.
+            Complete la información base del artículo, la revista y los enlaces
+            de consulta.
           </p>
         </div>
 
-        <span class="art-card__badge" :data-tipo="tipoVisual">
+        <span
+          class="art-card__badge"
+          :data-tipo="tipoVisual"
+        >
           {{ tipoLabel }}
         </span>
       </header>
 
       <div class="art-grid">
-        <label class="art-field art-field--span-12">
-          <span class="art-label">Título del artículo</span>
+        <!-- Título -->
+        <label
+          class="art-field art-field--span-12"
+          :class="{
+            'art-field--invalid': hasFieldError('nombre_articulo'),
+          }"
+        >
+          <span class="art-label">
+            Título del artículo
+            <span class="req" aria-hidden="true">*</span>
+          </span>
+
           <input
-            :value="form.nombre_articulo"
+            :value="form.nombre_articulo || ''"
             class="art-input"
             type="text"
             placeholder="Ej. Evaluación de la producción científica..."
             :disabled="disabled"
-            @input="updateField('nombre_articulo', $event.target.value)"
+            :aria-invalid="hasFieldError('nombre_articulo')"
+            :aria-describedby="
+              hasFieldError('nombre_articulo')
+                ? fieldErrorId('nombre_articulo')
+                : undefined
+            "
+            required
+            @input="
+              updateField(
+                'nombre_articulo',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('nombre_articulo')" class="art-error">
+
+          <small
+            v-if="hasFieldError('nombre_articulo')"
+            :id="fieldErrorId('nombre_articulo')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("nombre_articulo") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-6">
-          <span class="art-label">Nombre de la revista</span>
+        <!-- Revista -->
+        <label
+          class="art-field art-field--span-6"
+          :class="{
+            'art-field--invalid': hasFieldError('nombre_revista'),
+          }"
+        >
+          <span class="art-label">
+            Nombre de la revista
+            <span class="req" aria-hidden="true">*</span>
+          </span>
+
           <input
-            :value="form.nombre_revista"
+            :value="form.nombre_revista || ''"
             class="art-input"
             type="text"
             placeholder="Nombre oficial de la revista"
             :disabled="disabled"
-            @input="updateField('nombre_revista', $event.target.value)"
+            :aria-invalid="hasFieldError('nombre_revista')"
+            :aria-describedby="
+              hasFieldError('nombre_revista')
+                ? fieldErrorId('nombre_revista')
+                : undefined
+            "
+            required
+            @input="
+              updateField(
+                'nombre_revista',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('nombre_revista')" class="art-error">
+
+          <small
+            v-if="hasFieldError('nombre_revista')"
+            :id="fieldErrorId('nombre_revista')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("nombre_revista") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-3">
-          <span class="art-label">ISSN</span>
+        <!-- ISSN -->
+        <label
+          class="art-field art-field--span-3"
+          :class="{
+            'art-field--invalid': hasFieldError('codigo_issn'),
+          }"
+        >
+          <span class="art-label">
+            ISSN
+            <span class="req" aria-hidden="true">*</span>
+          </span>
+
           <input
-            :value="form.codigo_issn"
+            :value="form.codigo_issn || ''"
             class="art-input"
             type="text"
+            inputmode="text"
             placeholder="0000-0000"
             :disabled="disabled"
-            @input="updateField('codigo_issn', $event.target.value)"
+            :aria-invalid="hasFieldError('codigo_issn')"
+            :aria-describedby="
+              hasFieldError('codigo_issn')
+                ? fieldErrorId('codigo_issn')
+                : undefined
+            "
+            required
+            @input="
+              updateField(
+                'codigo_issn',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('codigo_issn')" class="art-error">
+
+          <small
+            v-if="hasFieldError('codigo_issn')"
+            :id="fieldErrorId('codigo_issn')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("codigo_issn") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-3">
-          <span class="art-label">N.º revista</span>
+        <!-- Número de revista -->
+        <label
+          class="art-field art-field--span-3"
+          :class="{
+            'art-field--invalid': hasFieldError('numero_revista'),
+          }"
+        >
+          <span class="art-label">
+            N.º de revista
+          </span>
+
           <input
-            :value="form.numero_revista"
+            :value="form.numero_revista ?? ''"
             class="art-input"
             type="number"
             min="1"
+            step="1"
+            inputmode="numeric"
             placeholder="Opcional"
             :disabled="disabled"
-            @input="updateField('numero_revista', $event.target.value)"
+            :aria-invalid="hasFieldError('numero_revista')"
+            :aria-describedby="
+              hasFieldError('numero_revista')
+                ? fieldErrorId('numero_revista')
+                : undefined
+            "
+            @input="
+              updateField(
+                'numero_revista',
+                normalizeOptionalNumber($event.target.value)
+              )
+            "
           />
-          <small v-if="fieldError('numero_revista')" class="art-error">
+
+          <small
+            v-if="hasFieldError('numero_revista')"
+            :id="fieldErrorId('numero_revista')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("numero_revista") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-4">
-          <span class="art-label">DOI</span>
+        <!-- DOI -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('codigo_doi'),
+          }"
+        >
+          <span class="art-label">
+            DOI
+          </span>
+
           <input
-            :value="form.codigo_doi"
+            :value="form.codigo_doi || ''"
             class="art-input"
             type="text"
             placeholder="10.xxxx/xxxxx"
             :disabled="disabled"
-            @input="updateField('codigo_doi', $event.target.value)"
+            :aria-invalid="hasFieldError('codigo_doi')"
+            :aria-describedby="
+              hasFieldError('codigo_doi')
+                ? fieldErrorId('codigo_doi')
+                : undefined
+            "
+            @input="
+              updateField(
+                'codigo_doi',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('codigo_doi')" class="art-error">
+
+          <small
+            v-if="hasFieldError('codigo_doi')"
+            :id="fieldErrorId('codigo_doi')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("codigo_doi") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-4">
-          <span class="art-label">Link de la revista</span>
+        <!-- Link de revista -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('link_revista'),
+          }"
+        >
+          <span class="art-label">
+            Link de la revista
+          </span>
+
           <input
-            :value="form.link_revista"
+            :value="form.link_revista || ''"
             class="art-input"
             type="url"
+            inputmode="url"
             placeholder="https://..."
             :disabled="disabled"
-            @input="updateField('link_revista', $event.target.value)"
+            :aria-invalid="hasFieldError('link_revista')"
+            :aria-describedby="
+              hasFieldError('link_revista')
+                ? fieldErrorId('link_revista')
+                : undefined
+            "
+            @input="
+              updateField(
+                'link_revista',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('link_revista')" class="art-error">
+
+          <small
+            v-if="hasFieldError('link_revista')"
+            :id="fieldErrorId('link_revista')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("link_revista") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-4">
-          <span class="art-label">Link de publicación</span>
+        <!-- Link de publicación -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('link_publicacion'),
+          }"
+        >
+          <span class="art-label">
+            Link de publicación
+          </span>
+
           <input
-            :value="form.link_publicacion"
+            :value="form.link_publicacion || ''"
             class="art-input"
             type="url"
+            inputmode="url"
             placeholder="https://..."
             :disabled="disabled"
-            @input="updateField('link_publicacion', $event.target.value)"
+            :aria-invalid="hasFieldError('link_publicacion')"
+            :aria-describedby="
+              hasFieldError('link_publicacion')
+                ? fieldErrorId('link_publicacion')
+                : undefined
+            "
+            @input="
+              updateField(
+                'link_publicacion',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('link_publicacion')" class="art-error">
+
+          <small
+            v-if="hasFieldError('link_publicacion')"
+            :id="fieldErrorId('link_publicacion')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("link_publicacion") }}
           </small>
         </label>
       </div>
     </article>
+
+    <!-- =====================================================
+         ARTÍCULO REGIONAL
+    ====================================================== -->
 
     <article
       v-if="esRegional"
@@ -130,8 +344,14 @@
     >
       <header class="art-card__head">
         <div>
-          <p class="art-card__kicker">Indexación regional</p>
-          <h3 class="art-card__title">Base de datos / indexación</h3>
+          <p class="art-card__kicker">
+            Indexación regional
+          </p>
+
+          <h3 class="art-card__title">
+            Base de datos / indexación
+          </h3>
+
           <p class="art-card__desc">
             Esta sección aplica únicamente para artículos regionales.
           </p>
@@ -139,15 +359,42 @@
       </header>
 
       <div class="art-grid">
-        <label class="art-field art-field--span-6">
-          <span class="art-label">Base indexada</span>
+        <!-- Base indexada -->
+        <label
+          class="art-field art-field--span-6"
+          :class="{
+            'art-field--invalid': hasFieldError(
+              'base_datos_indexada'
+            ),
+          }"
+        >
+          <span class="art-label">
+            Base indexada
+            <span class="req" aria-hidden="true">*</span>
+          </span>
+
           <select
-            :value="form.base_datos_indexada"
+            :value="form.base_datos_indexada || ''"
             class="art-input art-select"
             :disabled="disabled"
-            @change="updateField('base_datos_indexada', $event.target.value)"
+            :aria-invalid="hasFieldError('base_datos_indexada')"
+            :aria-describedby="
+              hasFieldError('base_datos_indexada')
+                ? fieldErrorId('base_datos_indexada')
+                : undefined
+            "
+            required
+            @change="
+              updateField(
+                'base_datos_indexada',
+                $event.target.value
+              )
+            "
           >
-            <option value="">Seleccione una base</option>
+            <option value="">
+              Seleccione una base
+            </option>
+
             <option
               v-for="base in basesRegional"
               :key="base.value"
@@ -156,30 +403,66 @@
               {{ base.label }}
             </option>
           </select>
-          <small v-if="fieldError('base_datos_indexada')" class="art-error">
+
+          <small
+            v-if="hasFieldError('base_datos_indexada')"
+            :id="fieldErrorId('base_datos_indexada')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("base_datos_indexada") }}
           </small>
         </label>
 
+        <!-- Otra base -->
         <label
           v-if="form.base_datos_indexada === 'otra'"
           class="art-field art-field--span-6"
+          :class="{
+            'art-field--invalid': hasFieldError('base_datos_otra'),
+          }"
         >
-          <span class="art-label">Especifique la base</span>
+          <span class="art-label">
+            Especifique la base
+            <span class="req" aria-hidden="true">*</span>
+          </span>
+
           <input
-            :value="form.base_datos_otra"
+            :value="form.base_datos_otra || ''"
             class="art-input"
             type="text"
             placeholder="Nombre de la base o índice"
             :disabled="disabled"
-            @input="updateField('base_datos_otra', $event.target.value)"
+            :aria-invalid="hasFieldError('base_datos_otra')"
+            :aria-describedby="
+              hasFieldError('base_datos_otra')
+                ? fieldErrorId('base_datos_otra')
+                : undefined
+            "
+            required
+            @input="
+              updateField(
+                'base_datos_otra',
+                $event.target.value
+              )
+            "
           />
-          <small v-if="fieldError('base_datos_otra')" class="art-error">
+
+          <small
+            v-if="hasFieldError('base_datos_otra')"
+            :id="fieldErrorId('base_datos_otra')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("base_datos_otra") }}
           </small>
         </label>
       </div>
     </article>
+
+    <!-- =====================================================
+         ARTÍCULO DE ALTO IMPACTO
+    ====================================================== -->
 
     <article
       v-if="esAltoImpacto"
@@ -187,8 +470,14 @@
     >
       <header class="art-card__head">
         <div>
-          <p class="art-card__kicker">Alto impacto</p>
-          <h3 class="art-card__title">Impacto, cuartil y SJR</h3>
+          <p class="art-card__kicker">
+            Alto impacto
+          </p>
+
+          <h3 class="art-card__title">
+            Impacto, cuartil y SJR
+          </h3>
+
           <p class="art-card__desc">
             Esta sección aplica únicamente para artículos de alto impacto.
           </p>
@@ -196,15 +485,38 @@
       </header>
 
       <div class="art-grid">
-        <label class="art-field art-field--span-4">
-          <span class="art-label">Factor de impacto</span>
+        <!-- Factor de impacto -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('factor_impacto'),
+          }"
+        >
+          <span class="art-label">
+            Factor de impacto
+          </span>
+
           <select
-            :value="form.factor_impacto"
+            :value="form.factor_impacto || ''"
             class="art-input art-select"
             :disabled="disabled"
-            @change="updateField('factor_impacto', $event.target.value)"
+            :aria-invalid="hasFieldError('factor_impacto')"
+            :aria-describedby="
+              hasFieldError('factor_impacto')
+                ? fieldErrorId('factor_impacto')
+                : undefined
+            "
+            @change="
+              updateField(
+                'factor_impacto',
+                $event.target.value
+              )
+            "
           >
-            <option value="">Sin factor registrado</option>
+            <option value="">
+              Sin factor registrado
+            </option>
+
             <option
               v-for="factor in factoresImpacto"
               :key="factor.value"
@@ -213,20 +525,49 @@
               {{ factor.label }}
             </option>
           </select>
-          <small v-if="fieldError('factor_impacto')" class="art-error">
+
+          <small
+            v-if="hasFieldError('factor_impacto')"
+            :id="fieldErrorId('factor_impacto')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("factor_impacto") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-4">
-          <span class="art-label">Cuartil</span>
+        <!-- Cuartil -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('cuartil'),
+          }"
+        >
+          <span class="art-label">
+            Cuartil
+          </span>
+
           <select
-            :value="form.cuartil"
+            :value="normalizedQuartile"
             class="art-input art-select"
             :disabled="disabled"
-            @change="updateField('cuartil', $event.target.value)"
+            :aria-invalid="hasFieldError('cuartil')"
+            :aria-describedby="
+              hasFieldError('cuartil')
+                ? fieldErrorId('cuartil')
+                : undefined
+            "
+            @change="
+              updateField(
+                'cuartil',
+                normalizeQuartile($event.target.value)
+              )
+            "
           >
-            <option value="">Seleccione un cuartil</option>
+            <option value="">
+              Seleccione un cuartil
+            </option>
+
             <option
               v-for="cuartil in cuartiles"
               :key="cuartil.value"
@@ -235,25 +576,74 @@
               {{ cuartil.label }}
             </option>
           </select>
-          <small v-if="fieldError('cuartil')" class="art-error">
+
+          <small
+            v-if="hasFieldError('cuartil')"
+            :id="fieldErrorId('cuartil')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("cuartil") }}
           </small>
         </label>
 
-        <label class="art-field art-field--span-4">
-          <span class="art-label">SJR</span>
+        <!-- SJR -->
+        <label
+          class="art-field art-field--span-4"
+          :class="{
+            'art-field--invalid': hasFieldError('sjr'),
+          }"
+        >
+          <span class="art-label">
+            SJR
+
+            <span
+              v-if="form.factor_impacto === 'sjr'"
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
+          </span>
+
           <input
-            :value="form.sjr"
+            :value="form.sjr || ''"
             class="art-input"
             type="text"
+            inputmode="decimal"
             placeholder="Ej. 0.75"
-            :disabled="disabled || form.factor_impacto !== 'sjr'"
-            @input="updateField('sjr', $event.target.value)"
+            :disabled="
+              disabled ||
+              form.factor_impacto !== 'sjr'
+            "
+            :required="form.factor_impacto === 'sjr'"
+            :aria-invalid="hasFieldError('sjr')"
+            :aria-describedby="
+              hasFieldError('sjr')
+                ? fieldErrorId('sjr')
+                : `${componentId}-sjr-help`
+            "
+            @input="
+              updateField(
+                'sjr',
+                $event.target.value
+              )
+            "
           />
-          <small class="art-help">
-            Solo requerido cuando el factor de impacto sea SJR.
+
+          <small
+            :id="`${componentId}-sjr-help`"
+            class="art-help"
+          >
+            Solo se habilita cuando el factor de impacto seleccionado es SJR.
           </small>
-          <small v-if="fieldError('sjr')" class="art-error">
+
+          <small
+            v-if="hasFieldError('sjr')"
+            :id="fieldErrorId('sjr')"
+            class="art-error"
+            role="alert"
+          >
             {{ fieldError("sjr") }}
           </small>
         </label>
@@ -263,143 +653,394 @@
 </template>
 
 <script setup>
-import { computed, watch } from "vue";
-import "./articulo-campos.css";
+import {
+  computed,
+  useId,
+  watch,
+} from "vue";
+
+defineOptions({
+  name: "ArticuloCampos",
+});
 
 const props = defineProps({
   modelValue: {
     type: Object,
     required: true,
   },
+
   errors: {
     type: Object,
     default: () => ({}),
   },
+
   disabled: {
     type: Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(["update:modelValue", "change"]);
+const emit = defineEmits([
+  "update:modelValue",
+  "change",
+]);
 
-const basesRegional = [
-  { value: "latindex", label: "Latindex" },
-  { value: "scielo", label: "SciELO" },
-  { value: "redalyc", label: "Redalyc" },
-  { value: "dialnet", label: "Dialnet" },
-  { value: "google_scholar", label: "Google Scholar" },
-  { value: "otra", label: "Otra" },
-];
+/* =========================================================
+   IDENTIFICADOR ACCESIBLE
+========================================================= */
 
-const factoresImpacto = [
-  { value: "sjr", label: "SJR" },
-  { value: "jcr", label: "JCR" },
-];
+const componentId =
+  `articulo-campos-${useId().replaceAll(":", "")}`;
 
-const cuartiles = [
-  { value: "q1", label: "Q1" },
-  { value: "q2", label: "Q2" },
-  { value: "q3", label: "Q3" },
-  { value: "q4", label: "Q4" },
-  { value: "sin_cuartil", label: "Sin cuartil" },
-];
+const fieldErrorId = (field) => (
+  `${componentId}-${field}-error`
+);
 
-const form = computed(() => props.modelValue || {});
+/* =========================================================
+   CATÁLOGOS
+========================================================= */
+
+const basesRegional = Object.freeze([
+  {
+    value: "latindex",
+    label: "Latindex",
+  },
+  {
+    value: "scielo",
+    label: "SciELO",
+  },
+  {
+    value: "redalyc",
+    label: "Redalyc",
+  },
+  {
+    value: "dialnet",
+    label: "Dialnet",
+  },
+  {
+    value: "google_scholar",
+    label: "Google Scholar",
+  },
+  {
+    value: "otra",
+    label: "Otra",
+  },
+]);
+
+const factoresImpacto = Object.freeze([
+  {
+    value: "sjr",
+    label: "SJR",
+  },
+  {
+    value: "jcr",
+    label: "JCR",
+  },
+]);
+
+const cuartiles = Object.freeze([
+  {
+    value: "q1",
+    label: "Q1",
+  },
+  {
+    value: "q2",
+    label: "Q2",
+  },
+  {
+    value: "q3",
+    label: "Q3",
+  },
+  {
+    value: "q4",
+    label: "Q4",
+  },
+  {
+    value: "sin_cuartil",
+    label: "Sin cuartil",
+  },
+]);
+
+/* =========================================================
+   MODELO
+========================================================= */
+
+const form = computed(() => (
+  props.modelValue &&
+  typeof props.modelValue === "object"
+    ? props.modelValue
+    : {}
+));
+
+const normalizeArticleType = (value) => {
+  const normalized = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (
+    [
+      "ar",
+      "regional",
+      "articulo_regional",
+    ].includes(normalized)
+  ) {
+    return "articulo_regional";
+  }
+
+  if (
+    [
+      "aai",
+      "alto_impacto",
+      "articulo_alto_impacto",
+    ].includes(normalized)
+  ) {
+    return "articulo_alto_impacto";
+  }
+
+  return normalized;
+};
 
 const tipoCodigo = computed(() => {
-  const value = String(form.value.tipo_codigo || form.value.tipo_articulo || "").trim().toLowerCase();
-
-  if (value === "regional") return "articulo_regional";
-  if (value === "alto_impacto") return "articulo_alto_impacto";
-
-  return value;
+  return normalizeArticleType(
+    form.value.tipo_codigo ||
+    form.value.tipo_articulo ||
+    ""
+  );
 });
 
-const esRegional = computed(() => tipoCodigo.value === "articulo_regional");
-const esAltoImpacto = computed(() => tipoCodigo.value === "articulo_alto_impacto");
+const esRegional = computed(() => (
+  tipoCodigo.value ===
+  "articulo_regional"
+));
+
+const esAltoImpacto = computed(() => (
+  tipoCodigo.value ===
+  "articulo_alto_impacto"
+));
 
 const tipoVisual = computed(() => {
-  if (esRegional.value) return "regional";
-  if (esAltoImpacto.value) return "alto-impacto";
+  if (esRegional.value) {
+    return "regional";
+  }
+
+  if (esAltoImpacto.value) {
+    return "alto-impacto";
+  }
+
   return "articulo";
 });
 
 const tipoLabel = computed(() => {
-  if (esRegional.value) return "Artículo regional";
-  if (esAltoImpacto.value) return "Artículo de alto impacto";
+  if (esRegional.value) {
+    return "Artículo regional";
+  }
+
+  if (esAltoImpacto.value) {
+    return "Artículo de alto impacto";
+  }
+
   return "Artículo";
 });
 
-function normalizeError(value) {
-  if (!value) return "";
+/* =========================================================
+   NORMALIZACIÓN DE CAMPOS
+========================================================= */
+
+const normalizeQuartile = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (
+    [
+      "sin_cuartil",
+      "sincuartil",
+    ].includes(normalized)
+  ) {
+    return "sin_cuartil";
+  }
+
+  return normalized;
+};
+
+const normalizedQuartile = computed(() => (
+  normalizeQuartile(
+    form.value.cuartil
+  )
+));
+
+const normalizeOptionalNumber = (value) => {
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : null;
+};
+
+/* =========================================================
+   ERRORES
+========================================================= */
+
+const normalizeError = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "";
+  }
 
   if (Array.isArray(value)) {
-    return value.filter(Boolean).join(" ");
+    return value
+      .map(normalizeError)
+      .filter(Boolean)
+      .join(" ");
   }
 
   if (typeof value === "object") {
-    return Object.values(value).flat().filter(Boolean).join(" ");
+    return Object.values(value)
+      .map(normalizeError)
+      .filter(Boolean)
+      .join(" ");
   }
 
-  return String(value);
-}
+  return String(value).trim();
+};
 
-function fieldError(field) {
-  return normalizeError(props.errors?.[field]);
-}
+const fieldError = (field) => (
+  normalizeError(
+    props.errors?.[field]
+  )
+);
 
-function emitPatch(patch) {
+const hasFieldError = (field) => (
+  Boolean(fieldError(field))
+);
+
+/* =========================================================
+   ACTUALIZACIÓN DEL MODELO
+========================================================= */
+
+const emitPatch = (patch) => {
+  const current = form.value;
+
+  const hasChanges = Object.entries(
+    patch
+  ).some(([key, value]) => (
+    !Object.is(
+      current[key],
+      value
+    )
+  ));
+
+  if (!hasChanges) {
+    return;
+  }
+
   const next = {
-    ...form.value,
+    ...current,
     ...patch,
   };
 
-  emit("update:modelValue", next);
-  emit("change", next);
-}
+  emit(
+    "update:modelValue",
+    next
+  );
 
-function updateField(field, value) {
+  emit(
+    "change",
+    next
+  );
+};
+
+const updateField = (
+  field,
+  value
+) => {
   const patch = {
     [field]: value,
   };
 
-  if (field === "base_datos_indexada" && value !== "otra") {
+  if (
+    field === "base_datos_indexada" &&
+    value !== "otra"
+  ) {
     patch.base_datos_otra = "";
   }
 
-  if (field === "factor_impacto" && value !== "sjr") {
+  if (
+    field === "factor_impacto" &&
+    value !== "sjr"
+  ) {
     patch.sjr = "";
   }
 
   emitPatch(patch);
-}
+};
+
+/* =========================================================
+   COHERENCIA ENTRE TIPOS DE ARTÍCULO
+========================================================= */
 
 watch(
   tipoCodigo,
-  (tipo) => {
-    if (!tipo) return;
 
-    if (tipo === "articulo_regional") {
+  (tipo) => {
+    if (
+      tipo ===
+      "articulo_regional"
+    ) {
       emitPatch({
-        tipo_codigo: "articulo_regional",
-        tipo_articulo: "regional",
+        tipo_codigo:
+          "articulo_regional",
+
+        tipo_articulo:
+          "regional",
+
         factor_impacto: "",
         cuartil: "",
         sjr: "",
       });
+
       return;
     }
 
-    if (tipo === "articulo_alto_impacto") {
+    if (
+      tipo ===
+      "articulo_alto_impacto"
+    ) {
       emitPatch({
-        tipo_codigo: "articulo_alto_impacto",
-        tipo_articulo: "alto_impacto",
+        tipo_codigo:
+          "articulo_alto_impacto",
+
+        tipo_articulo:
+          "alto_impacto",
+
         base_datos_indexada: "",
         base_datos_otra: "",
       });
     }
   },
-  { immediate: true },
+
+  {
+    immediate: true,
+  }
 );
 </script>
+
+<style
+  scoped
+  src="./articulo-campos.css"
+></style>

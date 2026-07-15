@@ -1,124 +1,295 @@
 <template>
-  <main class="adm-del-page">
-    <section class="adm-del-shell">
-      <header class="adm-del-hero page-stage page-hero">
-        <div class="adm-del-hero__copy">
-          <p class="adm-del-kicker">Administración · Publicaciones</p>
+  <div class="sgpc-admin-page">
+    <main class="adm-del-page">
+      <section class="adm-del-shell">
+        <!-- ===================================================
+             ENCABEZADO
+        ==================================================== -->
+        <header
+          class="adm-del-hero adm-surface adm-hero"
+          aria-labelledby="adm-del-page-title"
+        >
+          <div class="adm-del-hero__copy">
+            <span class="adm-kicker">
+              Administración · Publicaciones
+            </span>
 
-          <h1 class="adm-del-title">
-            Carga histórica por usuario
-          </h1>
+            <h1
+              id="adm-del-page-title"
+              class="adm-title adm-del-title"
+            >
+              Registro delegado
+            </h1>
 
-          <p class="adm-del-subtitle">
-            Busque un usuario y registre publicaciones antiguas directamente en su perfil.
-          </p>
-        </div>
-      </header>
+            <p class="adm-subtitle adm-del-subtitle">
+              Seleccione un usuario y registre producción científica
+              histórica directamente en su perfil institucional.
+            </p>
+          </div>
 
-      <section class="adm-del-main">
-        <section class="adm-del-card adm-del-card--search">
+          <div class="adm-del-hero__summary" aria-label="Flujo de trabajo">
+            <span class="adm-del-step">
+              <strong>1</strong>
+              Buscar usuario
+            </span>
+
+            <span class="adm-del-step">
+              <strong>2</strong>
+              Seleccionar cuenta
+            </span>
+
+            <span class="adm-del-step">
+              <strong>3</strong>
+              Registrar publicación
+            </span>
+          </div>
+        </header>
+
+        <!-- ===================================================
+             BÚSQUEDA Y SELECCIÓN
+        ==================================================== -->
+        <section
+          class="adm-del-card adm-del-card--search adm-surface"
+          aria-labelledby="adm-del-search-title"
+          :aria-busy="loadingUsers ? 'true' : 'false'"
+        >
           <div class="adm-del-card__head">
             <div>
-              <h2 class="adm-del-card__title">Seleccionar usuario</h2>
+              <h2
+                id="adm-del-search-title"
+                class="adm-del-card__title"
+              >
+                Seleccionar usuario
+              </h2>
+
+              <p class="adm-del-card__subtitle">
+                Busque cuentas activas por nombre, correo,
+                identificación, facultad o carrera.
+              </p>
             </div>
-          </div>
 
-          <div class="adm-del-card__body">
-            <div class="adm-del-searchbar">
-              <div class="adm-del-searchbar__field">
-                <label
-                  class="adm-del-searchbar__label"
-                  for="adm-del-search-input"
-                >
-                  Buscar usuario
-                </label>
-
-                <div class="adm-del-searchbar__control">
-                  <span class="adm-del-searchbar__icon" aria-hidden="true">
-                    ⌕
-                  </span>
-
-                  <input
-                    id="adm-del-search-input"
-                    v-model.trim="search"
-                    class="adm-del-input"
-                    :class="{ 'is-loading': loadingUsers }"
-                    type="search"
-                    placeholder="Ej. María Pérez, 1312345678, correo@uleam.edu.ec..."
-                    autocomplete="off"
-                    @keydown.enter.prevent="fetchUsers()"
-                    @search="handleNativeSearch"
-                  />
-
-                  <button
-                    v-if="hasSearch"
-                    class="adm-del-searchbar__clear"
-                    type="button"
-                    aria-label="Limpiar búsqueda"
-                    title="Limpiar búsqueda"
-                    @click="clearSearch"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <small
-                  v-if="searchFeedbackLabel"
-                  class="adm-del-searchbar__hint"
-                >
-                  {{ searchFeedbackLabel }}
-                </small>
-              </div>
-            </div>
-          </div>
-
-          <div class="adm-del-card__body adm-del-card__body--results">
-            <div
-              v-if="!hasSearch && !loadingUsers && !userError"
-              class="adm-del-state"
+            <span
+              v-if="hasSearch && !loadingUsers"
+              class="adm-del-count"
+              aria-live="polite"
+              aria-atomic="true"
             >
-              <strong>Empiece a escribir para buscar</strong>
+              {{ searchResultLabel }}
+            </span>
+          </div>
+
+          <div
+            class="adm-del-searchbar"
+            role="search"
+            aria-label="Buscar usuario para registro delegado"
+          >
+            <label
+              class="adm-del-searchbar__label"
+              for="adm-del-search-input"
+            >
+              Buscar usuario
+            </label>
+
+            <div class="adm-del-searchbar__row">
+              <div class="adm-del-searchbar__control">
+                <span
+                  class="adm-del-searchbar__icon"
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="m20.7 19.3-4.2-4.2a7.5 7.5 0 1 0-1.4 1.4l4.2 4.2a1 1 0 0 0 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"
+                    />
+                  </svg>
+                </span>
+
+                <input
+                  id="adm-del-search-input"
+                  v-model.trim="search"
+                  class="adm-del-input"
+                  type="search"
+                  placeholder="Ej.: María Pérez, 1312345678 o usuario@uleam.edu.ec"
+                  autocomplete="off"
+                  :disabled="loadingUsers"
+                  :aria-describedby="
+                    searchFeedbackLabel
+                      ? 'adm-del-search-feedback'
+                      : undefined
+                  "
+                  @keydown.enter.prevent="fetchUsers"
+                  @search="handleNativeSearch"
+                />
+
+                <button
+                  v-if="hasSearch"
+                  class="adm-del-searchbar__clear"
+                  type="button"
+                  :disabled="loadingUsers"
+                  aria-label="Limpiar búsqueda"
+                  title="Limpiar búsqueda"
+                  @click="clearSearch"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </div>
+
+              <button
+                class="adm-del-button adm-del-button--primary"
+                type="button"
+                :disabled="loadingUsers || !hasSearch"
+                @click="fetchUsers"
+              >
+                <span
+                  v-if="loadingUsers"
+                  class="adm-del-spinner"
+                  aria-hidden="true"
+                ></span>
+
+                {{ loadingUsers ? "Buscando..." : "Buscar" }}
+              </button>
+            </div>
+
+            <p
+              v-if="searchFeedbackLabel"
+              id="adm-del-search-feedback"
+              class="adm-del-searchbar__hint"
+              aria-live="polite"
+            >
+              {{ searchFeedbackLabel }}
+            </p>
+          </div>
+
+          <!-- Estado inicial -->
+          <div
+            v-if="!hasSearch && !loadingUsers && !userError"
+            class="adm-del-state"
+          >
+            <div class="adm-del-state__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
+                />
+              </svg>
+            </div>
+
+            <div>
+              <strong>Busque una cuenta activa</strong>
+
               <span>
-                Puede buscar por nombre, apellido, correo o identificación.
+                Los resultados aparecerán mientras escribe.
               </span>
             </div>
+          </div>
 
-            <div v-else-if="loadingUsers" class="adm-del-state">
-              <strong>Buscando usuarios...</strong>
-              <span>Espere un momento mientras se consultan los registros.</span>
-            </div>
+          <!-- Carga -->
+          <div
+            v-else-if="loadingUsers"
+            class="adm-del-results-skeleton"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="adm-del-sr-only">
+              Buscando usuarios.
+            </span>
 
             <div
-              v-else-if="userError"
-              class="adm-del-state adm-del-state--error"
+              v-for="index in 4"
+              :key="index"
+              class="adm-del-user-skeleton"
+              aria-hidden="true"
             >
-              <strong>No se pudo cargar el listado.</strong>
+              <span class="adm-del-skeleton adm-del-skeleton--avatar"></span>
+
+              <span class="adm-del-user-skeleton__copy">
+                <span class="adm-del-skeleton adm-del-skeleton--name"></span>
+                <span class="adm-del-skeleton adm-del-skeleton--email"></span>
+              </span>
+
+              <span class="adm-del-skeleton adm-del-skeleton--pill"></span>
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div
+            v-else-if="userError"
+            class="adm-del-state adm-del-state--error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <div class="adm-del-state__icon" aria-hidden="true">
+              !
+            </div>
+
+            <div>
+              <strong>No se pudo cargar el listado</strong>
               <span>{{ userError }}</span>
             </div>
+          </div>
 
-            <div v-else-if="!filteredUsers.length" class="adm-del-state">
-              <strong>Sin resultados</strong>
-              <span>No hay coincidencias para “{{ search }}”.</span>
+          <!-- Sin resultados -->
+          <div
+            v-else-if="!filteredUsers.length"
+            class="adm-del-state"
+          >
+            <div class="adm-del-state__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 3h8v2H8V9Zm0 4h5v2H8v-2Z"
+                />
+              </svg>
             </div>
 
-            <div v-else class="adm-del-results-grid">
+            <div>
+              <strong>Sin coincidencias</strong>
+
+              <span>
+                No se encontraron usuarios para “{{ search }}”.
+              </span>
+            </div>
+          </div>
+
+          <!-- Resultados -->
+          <ul
+            v-else
+            class="adm-del-results-grid"
+            aria-label="Usuarios encontrados"
+          >
+            <li
+              v-for="user in filteredUsers"
+              :key="user.id"
+              class="adm-del-results-grid__item"
+            >
               <button
-                v-for="user in filteredUsers"
-                :key="user.id"
                 type="button"
                 class="adm-del-user-card"
-                :class="{ 'is-active': selectedUser?.id === user.id }"
-                :aria-pressed="selectedUser?.id === user.id ? 'true' : 'false'"
+                :class="{
+                  'is-active':
+                    Number(selectedUser?.id) === Number(user.id),
+                }"
+                :aria-pressed="
+                  Number(selectedUser?.id) === Number(user.id)
+                    ? 'true'
+                    : 'false'
+                "
+                :aria-label="`Seleccionar a ${fullUserName(user)}`"
                 @click="selectUser(user)"
               >
                 <div class="adm-del-user-card__identity">
-                  <div class="adm-del-user-card__avatar">
+                  <div
+                    class="adm-del-user-card__avatar"
+                    aria-hidden="true"
+                  >
                     {{ initialsFromUser(user) }}
                   </div>
 
                   <div class="adm-del-user-card__identity-copy">
                     <div class="adm-del-user-card__top">
-                      <strong>{{ fullUserName(user) }}</strong>
+                      <strong>
+                        {{ fullUserName(user) }}
+                      </strong>
 
                       <span
                         v-if="userBadgeLabel(user)"
@@ -130,21 +301,24 @@
                     </div>
 
                     <p class="adm-del-user-card__meta">
-                      {{ user.email || "Sin correo" }}
+                      {{ user.email || "Sin correo registrado" }}
                     </p>
 
                     <p class="adm-del-user-card__submeta">
-                      <span v-if="user.identificacion">
-                        CI: {{ user.identificacion }}
+                      <span>
+                        {{
+                          user.identificacion
+                            ? `CI: ${user.identificacion}`
+                            : "Sin identificación"
+                        }}
                       </span>
-                      <span v-else>Sin identificación</span>
 
                       <span v-if="user.facultad_nombre">
-                        · {{ user.facultad_nombre }}
+                        {{ user.facultad_nombre }}
                       </span>
 
                       <span v-if="user.carrera_nombre">
-                        · {{ user.carrera_nombre }}
+                        {{ user.carrera_nombre }}
                       </span>
                     </p>
                   </div>
@@ -152,35 +326,95 @@
 
                 <div class="adm-del-user-card__metrics">
                   <span class="adm-del-mini-pill">
-                    {{ user.total_publicaciones || 0 }} publicaciones
+                    {{ publicationTotalLabel(user.total_publicaciones) }}
                   </span>
 
                   <span
-                    v-if="selectedUser?.id === user.id"
+                    v-if="
+                      Number(selectedUser?.id) === Number(user.id)
+                    "
                     class="adm-del-mini-pill adm-del-mini-pill--selected"
                   >
                     Seleccionado
                   </span>
                 </div>
               </button>
-            </div>
-          </div>
+            </li>
+          </ul>
         </section>
 
+        <!-- ===================================================
+             ESPACIO DE TRABAJO SIN USUARIO
+        ==================================================== -->
         <section
-          v-if="selectedUser"
-          class="adm-del-card adm-del-card--target adm-del-card--highlight"
+          v-if="!selectedUser"
+          class="adm-del-empty-workspace adm-surface"
+          aria-labelledby="adm-del-empty-title"
         >
-          <div class="adm-del-card__head">
-            <div>
-              <h2 class="adm-del-card__title">Usuario seleccionado</h2>
-            </div>
+          <div
+            class="adm-del-empty-workspace__icon"
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2v5h5M8 13h8M8 17h8"
+              />
+            </svg>
           </div>
 
-          <div class="adm-del-card__body">
+          <h2
+            id="adm-del-empty-title"
+            class="adm-del-empty-workspace__title"
+          >
+            Seleccione un usuario para continuar
+          </h2>
+
+          <p class="adm-del-empty-workspace__text">
+            Después de seleccionar una cuenta podrá consultar su
+            información, revisar el historial y abrir el formulario
+            correspondiente al tipo de publicación.
+          </p>
+        </section>
+
+        <!-- ===================================================
+             ESPACIO DE TRABAJO
+        ==================================================== -->
+        <section
+          v-else
+          class="adm-del-workspace"
+          aria-label="Registro delegado para el usuario seleccionado"
+        >
+          <!-- Usuario seleccionado -->
+          <section
+            class="adm-del-card adm-del-card--target adm-surface"
+            aria-labelledby="adm-del-target-title"
+          >
+            <div class="adm-del-card__head">
+              <div>
+                <span class="adm-del-section-kicker">
+                  Cuenta objetivo
+                </span>
+
+                <h2
+                  id="adm-del-target-title"
+                  class="adm-del-card__title"
+                >
+                  Usuario seleccionado
+                </h2>
+              </div>
+
+              <span class="adm-del-mini-pill adm-del-mini-pill--selected">
+                Seleccionado
+              </span>
+            </div>
+
             <div class="adm-del-target-panel">
               <div class="adm-del-target-panel__identity">
-                <div class="adm-del-target-avatar">
+                <div
+                  class="adm-del-target-avatar"
+                  aria-hidden="true"
+                >
                   {{ selectedInitials }}
                 </div>
 
@@ -190,7 +424,10 @@
                   </h3>
 
                   <p class="adm-del-target-email">
-                    {{ selectedUser.email || "Sin correo registrado" }}
+                    {{
+                      selectedUser.email ||
+                      "Sin correo registrado"
+                    }}
                   </p>
 
                   <div class="adm-del-target-pills">
@@ -202,146 +439,240 @@
                     </span>
 
                     <span class="adm-del-mini-pill">
-                      {{ selectedUser.total_publicaciones || 0 }} publicaciones
+                      {{
+                        publicationTotalLabel(
+                          selectedUser.total_publicaciones
+                        )
+                      }}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div class="adm-del-target-grid">
-                <article class="adm-del-info-box">
-                  <span class="adm-del-info-box__label">Facultad</span>
-                  <strong class="adm-del-info-box__value">
-                    {{ selectedUser.facultad_nombre || "Sin facultad" }}
-                  </strong>
-                </article>
+              <dl class="adm-del-target-grid">
+                <div class="adm-del-info-box">
+                  <dt class="adm-del-info-box__label">
+                    Facultad
+                  </dt>
 
-                <article class="adm-del-info-box">
-                  <span class="adm-del-info-box__label">Carrera</span>
-                  <strong class="adm-del-info-box__value">
-                    {{ selectedUser.carrera_nombre || "Sin carrera" }}
-                  </strong>
-                </article>
+                  <dd class="adm-del-info-box__value">
+                    {{
+                      selectedUser.facultad_nombre ||
+                      "Sin facultad asignada"
+                    }}
+                  </dd>
+                </div>
 
-                <article class="adm-del-info-box">
-                  <span class="adm-del-info-box__label">Autor vinculado</span>
-                  <strong class="adm-del-info-box__value">
-                    {{ selectedUser.autor_nombre || fullUserName(selectedUser) }}
-                  </strong>
-                </article>
+                <div class="adm-del-info-box">
+                  <dt class="adm-del-info-box__label">
+                    Carrera
+                  </dt>
+
+                  <dd class="adm-del-info-box__value">
+                    {{
+                      selectedUser.carrera_nombre ||
+                      "Sin carrera asignada"
+                    }}
+                  </dd>
+                </div>
+
+                <div class="adm-del-info-box">
+                  <dt class="adm-del-info-box__label">
+                    Autor vinculado
+                  </dt>
+
+                  <dd class="adm-del-info-box__value">
+                    {{
+                      selectedUser.autor_nombre ||
+                      fullUserName(selectedUser)
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <!-- Tipos de publicación -->
+          <section
+            class="adm-del-card adm-del-card--actions adm-surface"
+            aria-labelledby="adm-del-actions-title"
+          >
+            <div class="adm-del-card__head">
+              <div>
+                <span class="adm-del-section-kicker">
+                  Nuevo registro
+                </span>
+
+                <h2
+                  id="adm-del-actions-title"
+                  class="adm-del-card__title"
+                >
+                  Registrar publicación
+                </h2>
+
+                <p class="adm-del-card__subtitle">
+                  El formulario se abrirá en modo administrativo
+                  delegado para la cuenta seleccionada.
+                </p>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section
-          v-if="selectedUser"
-          class="adm-del-card adm-del-card--actions"
-        >
-          <div class="adm-del-card__head">
-            <div>
-              <h2 class="adm-del-card__title">Registrar publicación</h2>
-            </div>
-          </div>
-
-          <div class="adm-del-card__body">
             <div class="adm-del-action-grid">
               <button
+                v-for="type in publicationTypes"
+                :key="type.key"
                 type="button"
-                class="adm-del-action-card adm-del-action-card--aai"
-                @click="goToForm('articuloAltoImpacto')"
+                class="adm-del-action-card"
+                :class="`adm-del-action-card--${type.tone}`"
+                :aria-label="
+                  `Registrar ${type.title} para ${fullUserName(selectedUser)}`
+                "
+                @click="goToForm(type.key)"
               >
-                <span class="adm-del-action-card__code">AAI</span>
-                <strong>Artículo de alto impacto</strong>
-                <span class="adm-del-action-card__hint">Abrir formulario</span>
-              </button>
+                <span class="adm-del-action-card__code">
+                  {{ type.code }}
+                </span>
 
-              <button
-                type="button"
-                class="adm-del-action-card adm-del-action-card--ar"
-                @click="goToForm('articuloRegional')"
-              >
-                <span class="adm-del-action-card__code">AR</span>
-                <strong>Artículo regional</strong>
-                <span class="adm-del-action-card__hint">Abrir formulario</span>
-              </button>
+                <strong>
+                  {{ type.title }}
+                </strong>
 
-              <button
-                type="button"
-                class="adm-del-action-card adm-del-action-card--pon"
-                @click="goToForm('ponencia')"
-              >
-                <span class="adm-del-action-card__code">PON</span>
-                <strong>Ponencia</strong>
-                <span class="adm-del-action-card__hint">Abrir formulario</span>
-              </button>
-
-              <button
-                type="button"
-                class="adm-del-action-card adm-del-action-card--lib"
-                @click="goToForm('libro')"
-              >
-                <span class="adm-del-action-card__code">LIB</span>
-                <strong>Libro</strong>
-                <span class="adm-del-action-card__hint">Abrir formulario</span>
-              </button>
-
-              <button
-                type="button"
-                class="adm-del-action-card adm-del-action-card--cap"
-                @click="goToForm('capitulo')"
-              >
-                <span class="adm-del-action-card__code">CAP</span>
-                <strong>Capítulo de libro</strong>
-                <span class="adm-del-action-card__hint">Abrir formulario</span>
+                <span class="adm-del-action-card__arrow" aria-hidden="true">
+                  →
+                </span>
               </button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section
-          v-if="selectedUser"
-          class="adm-del-card adm-del-card--history"
-        >
-          <div class="adm-del-card__head">
-            <div>
-              <h2 class="adm-del-card__title">Historial</h2>
+          <!-- Historial -->
+          <section
+            class="adm-del-card adm-del-card--history adm-surface"
+            aria-labelledby="adm-del-history-title"
+            :aria-busy="loadingPublicaciones ? 'true' : 'false'"
+          >
+            <div class="adm-del-card__head">
+              <div>
+                <span class="adm-del-section-kicker">
+                  Producción registrada
+                </span>
+
+                <h2
+                  id="adm-del-history-title"
+                  class="adm-del-card__title"
+                >
+                  Historial de publicaciones
+                </h2>
+
+                <p class="adm-del-card__subtitle">
+                  Registros encontrados para el usuario objetivo.
+                </p>
+              </div>
+
+              <div class="adm-del-head-actions">
+                <span
+                  class="adm-del-count"
+                  aria-live="polite"
+                >
+                  {{ historyCountLabel }}
+                </span>
+
+                <button
+                  class="adm-del-button adm-del-button--secondary adm-del-button--icon-text"
+                  type="button"
+                  :disabled="loadingPublicaciones"
+                  @click="refreshSelectedHistory"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h8V3l-3.3 3.3Z"
+                    />
+                  </svg>
+
+                  Actualizar
+                </button>
+              </div>
             </div>
 
-            <div class="adm-del-head-actions">
-              <span class="adm-del-mini-pill">
-                {{ userPublicaciones.length }} registros
-              </span>
-            </div>
-          </div>
-
-          <div class="adm-del-card__body">
+            <!-- Carga -->
             <div
-              v-if="loadingPublicaciones && !userPublicaciones.length"
-              class="adm-del-state"
+              v-if="
+                loadingPublicaciones &&
+                !userPublicaciones.length
+              "
+              class="adm-del-history-skeleton"
+              role="status"
+              aria-live="polite"
             >
-              <strong>Cargando historial...</strong>
-              <span>Consultando publicaciones del usuario seleccionado.</span>
+              <span class="adm-del-sr-only">
+                Cargando historial de publicaciones.
+              </span>
+
+              <article
+                v-for="index in 4"
+                :key="index"
+                class="adm-del-history-skeleton__card"
+                aria-hidden="true"
+              >
+                <span class="adm-del-skeleton adm-del-skeleton--history-chip"></span>
+                <span class="adm-del-skeleton adm-del-skeleton--history-title"></span>
+                <span class="adm-del-skeleton adm-del-skeleton--history-meta"></span>
+              </article>
             </div>
 
+            <!-- Error -->
             <div
               v-else-if="publicacionesError"
               class="adm-del-state adm-del-state--error"
+              role="alert"
+              aria-live="assertive"
             >
-              <strong>No se pudo cargar el historial.</strong>
-              <span>{{ publicacionesError }}</span>
+              <div class="adm-del-state__icon" aria-hidden="true">
+                !
+              </div>
+
+              <div>
+                <strong>No se pudo cargar el historial</strong>
+                <span>{{ publicacionesError }}</span>
+              </div>
             </div>
 
-            <div v-else-if="!userPublicaciones.length" class="adm-del-state">
-              <strong>Sin publicaciones registradas</strong>
-              <span>Este usuario todavía no muestra publicaciones en esta vista.</span>
+            <!-- Vacío -->
+            <div
+              v-else-if="!userPublicaciones.length"
+              class="adm-del-state"
+            >
+              <div class="adm-del-state__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2v5h5M8 13h8M8 17h8"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <strong>Sin publicaciones registradas</strong>
+
+                <span>
+                  Este usuario todavía no muestra publicaciones
+                  en esta vista.
+                </span>
+              </div>
             </div>
 
-            <div v-else class="adm-del-history-grid">
+            <!-- Resultados -->
+            <div
+              v-else
+              class="adm-del-history-grid"
+              role="list"
+              aria-label="Historial de publicaciones"
+            >
               <article
-                v-for="item in userPublicaciones"
-                :key="item.id"
+                v-for="(item, index) in userPublicaciones"
+                :key="historyItemKey(item, index)"
                 class="adm-del-history-card"
+                role="listitem"
               >
                 <div class="adm-del-history-card__top">
                   <span class="adm-del-badge adm-del-badge--soft">
@@ -353,36 +684,65 @@
                   </span>
 
                   <span class="adm-del-mini-pill">
-                    {{ item.anio_publicacion || "s/a" }}
+                    {{ item.anio_publicacion || "Sin año" }}
                   </span>
                 </div>
 
                 <strong class="adm-del-history-card__title">
-                  {{ item.titulo || item.titulo_admin || "Sin título" }}
+                  {{
+                    item.titulo ||
+                    item.titulo_admin ||
+                    "Publicación sin título"
+                  }}
                 </strong>
 
                 <p class="adm-del-history-card__meta">
-                  {{ item.autor_principal || item.autor || "Sin autor principal" }}
+                  {{
+                    item.autor_principal ||
+                    item.autor ||
+                    "Sin autor principal"
+                  }}
                 </p>
 
-                <p class="adm-del-history-card__submeta">
-                  {{ item.carrera || item.carrera_nombre || "Sin carrera" }} ·
-                  {{ item.facultad || item.facultad_nombre || "Sin facultad" }}
-                </p>
+                <div class="adm-del-history-card__footer">
+                  <span>
+                    {{
+                      item.carrera ||
+                      item.carrera_nombre ||
+                      "Sin carrera"
+                    }}
+                  </span>
+
+                  <span>
+                    {{
+                      item.facultad ||
+                      item.facultad_nombre ||
+                      "Sin facultad"
+                    }}
+                  </span>
+                </div>
               </article>
             </div>
-          </div>
+          </section>
         </section>
       </section>
-    </section>
-  </main>
+    </main>
+  </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
+
 import { adminApi } from "../../scripts/api/adminApi";
 import { listarAdminPublicaciones } from "../../scripts/api/publicacionesAdminApi";
+
 import {
   buildAdminPublicacionLinks,
   buildAdminPublicacionTargetQuery,
@@ -402,16 +762,75 @@ const publicacionesError = ref("");
 const userPublicaciones = ref([]);
 
 let searchTimer = null;
+let usersRequestSerial = 0;
+let publicacionesRequestSerial = 0;
 
-const hasSearch = computed(() => Boolean(String(search.value || "").trim()));
+const publicationTypes = Object.freeze([
+  {
+    key: "articuloAltoImpacto",
+    code: "AAI",
+    title: "Artículo de alto impacto",
+    tone: "aai",
+  },
+  {
+    key: "articuloRegional",
+    code: "AR",
+    title: "Artículo regional",
+    tone: "ar",
+  },
+  {
+    key: "ponencia",
+    code: "PON",
+    title: "Ponencia",
+    tone: "pon",
+  },
+  {
+    key: "libro",
+    code: "LIB",
+    title: "Libro",
+    tone: "lib",
+  },
+  {
+    key: "capitulo",
+    code: "CAP",
+    title: "Capítulo de libro",
+    tone: "cap",
+  },
+]);
+
+const normalizeRows = (data) => {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.results)) {
+    return data.results;
+  }
+
+  return [];
+};
+
+const normalizeText = (value) => {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+};
+
+const hasSearch = computed(() => {
+  return Boolean(String(search.value || "").trim());
+});
 
 const filteredUsers = computed(() => {
-  const q = normalizeText(search.value);
+  const query = normalizeText(search.value);
 
-  if (!q) return [];
+  if (!query) {
+    return [];
+  }
 
   return users.value.filter((user) => {
-    const blob = [
+    const content = [
       user?.nombres,
       user?.apellidos,
       user?.email,
@@ -419,35 +838,53 @@ const filteredUsers = computed(() => {
       user?.autor_nombre,
       user?.facultad_nombre,
       user?.carrera_nombre,
-    ]
-      .join(" ")
-      .toLowerCase();
+    ].join(" ");
 
-    return normalizeText(blob).includes(q);
+    return normalizeText(content).includes(query);
   });
 });
 
-const selectedInitials = computed(() => initialsFromUser(selectedUser.value));
+const selectedInitials = computed(() => {
+  return initialsFromUser(selectedUser.value);
+});
+
+const searchResultLabel = computed(() => {
+  const total = filteredUsers.value.length;
+
+  return total === 1
+    ? "1 usuario encontrado"
+    : `${total} usuarios encontrados`;
+});
 
 const searchFeedbackLabel = computed(() => {
-  if (!hasSearch.value) return "";
-  if (loadingUsers.value) return "Buscando usuarios...";
-  if (!filteredUsers.value.length) {
+  if (!hasSearch.value) {
+    return "";
+  }
+
+  if (loadingUsers.value) {
+    return "Buscando usuarios...";
+  }
+
+  const total = filteredUsers.value.length;
+
+  if (!total) {
     return `No hay coincidencias para “${search.value}”.`;
   }
 
-  return `${filteredUsers.value.length} resultado(s).`;
+  return total === 1
+    ? "Se encontró 1 usuario."
+    : `Se encontraron ${total} usuarios.`;
 });
 
-function normalizeText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim();
-}
+const historyCountLabel = computed(() => {
+  const total = userPublicaciones.value.length;
 
-function resolveRouteUsuarioId() {
+  return total === 1
+    ? "1 registro"
+    : `${total} registros`;
+});
+
+const resolveRouteUsuarioId = () => {
   const raw =
     route.params?.usuarioId ||
     route.query?.usuario_objetivo_id ||
@@ -457,64 +894,106 @@ function resolveRouteUsuarioId() {
     "";
 
   const parsed = Number(String(raw).trim());
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
 
-function fullUserName(user) {
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : null;
+};
+
+const fullUserName = (user) => {
+  const nombres = String(user?.nombres || "").trim();
+  const apellidos = String(user?.apellidos || "").trim();
+
   return (
-    `${user?.nombres || ""} ${user?.apellidos || ""}`.trim() ||
+    `${nombres} ${apellidos}`.trim() ||
     `Usuario #${user?.id || "—"}`
   );
-}
+};
 
-function initialsFromUser(user) {
-  if (!user) return "—";
+const initialsFromUser = (user) => {
+  if (!user) {
+    return "—";
+  }
 
-  const primerNombre =
+  const firstName =
     String(user?.nombres || "")
       .trim()
       .split(/\s+/)
       .filter(Boolean)[0] || "";
 
-  const primerApellido =
+  const firstSurname =
     String(user?.apellidos || "")
       .trim()
       .split(/\s+/)
       .filter(Boolean)[0] || "";
 
-  const inicialNombre = primerNombre
-    ? primerNombre.charAt(0).toUpperCase()
-    : "";
+  const initials = [
+    firstName.charAt(0),
+    firstSurname.charAt(0),
+  ]
+    .filter(Boolean)
+    .join("")
+    .toUpperCase();
 
-  const inicialApellido = primerApellido
-    ? primerApellido.charAt(0).toUpperCase()
-    : "";
+  return initials || "US";
+};
 
-  const result = `${inicialNombre}${inicialApellido}`.trim();
+const userBadgeLabel = (user) => {
+  if (user?.es_pendiente) {
+    return "Pendiente";
+  }
 
-  if (result) return result;
-  if (inicialNombre) return inicialNombre;
-  if (inicialApellido) return inicialApellido;
+  if (user?.es_externo) {
+    return "Externo";
+  }
 
-  return "US";
-}
+  if (user?.es_institucional) {
+    return "Institucional";
+  }
 
-function userBadgeLabel(user) {
-  if (user?.es_pendiente) return "Pendiente";
-  if (user?.es_externo) return "Externo";
-  if (user?.es_institucional) return "Institucional";
   return "";
-}
+};
 
-function badgeScopeClass(user) {
-  if (user?.es_pendiente) return "is-warning";
-  if (user?.es_externo) return "is-soft";
-  if (user?.es_institucional) return "is-primary";
+const badgeScopeClass = (user) => {
+  if (user?.es_pendiente) {
+    return "is-warning";
+  }
+
+  if (user?.es_institucional) {
+    return "is-primary";
+  }
+
   return "is-soft";
-}
+};
 
-function mergeUserIntoList(user) {
-  if (!user?.id) return;
+const publicationTotalLabel = (value) => {
+  const total = Number(value || 0);
+
+  return total === 1
+    ? "1 publicación"
+    : `${total} publicaciones`;
+};
+
+const historyItemKey = (item, index) => {
+  return [
+    item?.id,
+    item?.numero,
+    item?.titulo,
+    index,
+  ]
+    .filter(
+      (value) =>
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+    )
+    .join("-");
+};
+
+const mergeUserIntoList = (user) => {
+  if (!user?.id) {
+    return;
+  }
 
   const index = users.value.findIndex(
     (item) => Number(item.id) === Number(user.id)
@@ -526,81 +1005,120 @@ function mergeUserIntoList(user) {
   }
 
   users.value.unshift(user);
-}
+};
 
-async function fetchUserById(userId) {
+const fetchUserById = async (userId) => {
   return adminApi.obtenerUsuario(userId);
-}
+};
 
-async function fetchUsers() {
-  const q = String(search.value || "").trim();
+const fetchUsers = async () => {
+  const query = String(search.value || "").trim();
 
-  if (!q) {
+  if (!query) {
+    usersRequestSerial += 1;
     users.value = [];
     userError.value = "";
     loadingUsers.value = false;
     return;
   }
 
+  const requestId = ++usersRequestSerial;
+
   loadingUsers.value = true;
   userError.value = "";
 
   try {
-    const data = await adminApi.usuarios(q, {
+    const data = await adminApi.usuarios(query, {
       scope: "activos",
     });
 
-    users.value = Array.isArray(data) ? data : [];
+    if (requestId !== usersRequestSerial) {
+      return;
+    }
+
+    users.value = normalizeRows(data);
 
     if (selectedUser.value?.id) {
-      const refreshed = users.value.find(
-        (item) => Number(item.id) === Number(selectedUser.value.id)
+      const refreshedUser = users.value.find(
+        (item) =>
+          Number(item.id) === Number(selectedUser.value.id)
       );
 
-      if (refreshed) {
-        selectedUser.value = refreshed;
+      if (refreshedUser) {
+        selectedUser.value = refreshedUser;
       }
     }
   } catch (error) {
-    console.error(error);
-    userError.value = "No fue posible consultar los usuarios en este momento.";
+    if (requestId !== usersRequestSerial) {
+      return;
+    }
+
+    console.error("Error buscando usuarios:", error);
+
+    userError.value =
+      error?.response?.data?.detail ||
+      "No fue posible consultar los usuarios en este momento.";
+
     users.value = [];
   } finally {
-    loadingUsers.value = false;
+    if (requestId === usersRequestSerial) {
+      loadingUsers.value = false;
+    }
   }
-}
+};
 
-async function fetchUserPublicaciones() {
+const fetchUserPublicaciones = async () => {
   if (!selectedUser.value?.id) {
+    publicacionesRequestSerial += 1;
     userPublicaciones.value = [];
     publicacionesError.value = "";
+    loadingPublicaciones.value = false;
     return;
   }
+
+  const requestId = ++publicacionesRequestSerial;
+  const selectedUserId = selectedUser.value.id;
 
   loadingPublicaciones.value = true;
   publicacionesError.value = "";
 
   try {
     const response = await listarAdminPublicaciones({
-      usuario_objetivo_id: selectedUser.value.id,
+      usuario_objetivo_id: selectedUserId,
       ordering: "fecha_desc",
     });
 
-    userPublicaciones.value = Array.isArray(response?.results)
-      ? response.results
-      : [];
+    if (requestId !== publicacionesRequestSerial) {
+      return;
+    }
+
+    userPublicaciones.value = normalizeRows(response);
   } catch (error) {
-    console.error(error);
+    if (requestId !== publicacionesRequestSerial) {
+      return;
+    }
+
+    console.error(
+      "Error cargando publicaciones del usuario:",
+      error
+    );
+
     publicacionesError.value =
+      error?.response?.data?.detail ||
       "No fue posible cargar el historial del usuario seleccionado.";
+
     userPublicaciones.value = [];
   } finally {
-    loadingPublicaciones.value = false;
+    if (requestId === publicacionesRequestSerial) {
+      loadingPublicaciones.value = false;
+    }
   }
-}
+};
 
-function buildTarget(user = selectedUser.value) {
-  if (!user?.id) return null;
+const buildTarget = (user = selectedUser.value) => {
+  if (!user?.id) {
+    return null;
+  }
 
   return {
     usuarioId: user.id,
@@ -608,15 +1126,22 @@ function buildTarget(user = selectedUser.value) {
     usuarioNombre: fullUserName(user),
     autorNombre: user.autor_nombre || "",
   };
-}
+};
 
-async function syncRouteWithSelectedUser(user) {
-  if (!user?.id) return;
+const syncRouteWithSelectedUser = async (user) => {
+  if (!user?.id) {
+    return;
+  }
 
   const usuarioId = String(user.id);
-  const currentUsuarioId = String(resolveRouteUsuarioId() || "");
+  const currentUsuarioId = String(
+    resolveRouteUsuarioId() || ""
+  );
   const currentRouteName = String(route.name || "");
-  const query = buildAdminPublicacionTargetQuery(buildTarget(user));
+
+  const query = buildAdminPublicacionTargetQuery(
+    buildTarget(user)
+  );
 
   if (
     currentRouteName === "AdminPublicacionesUsuario" &&
@@ -627,15 +1152,19 @@ async function syncRouteWithSelectedUser(user) {
 
   await router.replace({
     name: "AdminPublicacionesUsuario",
-    params: { usuarioId },
+    params: {
+      usuarioId,
+    },
     query,
   });
-}
+};
 
-async function selectUser(user, options = {}) {
+const selectUser = async (user, options = {}) => {
   const { syncRoute = true } = options;
 
-  if (!user?.id) return;
+  if (!user?.id) {
+    return;
+  }
 
   selectedUser.value = user;
   mergeUserIntoList(user);
@@ -645,21 +1174,28 @@ async function selectUser(user, options = {}) {
   }
 
   await fetchUserPublicaciones();
-}
+};
 
-function goToForm(kind) {
+const goToForm = (kind) => {
   const target = buildTarget();
-  if (!target) return;
+
+  if (!target) {
+    return;
+  }
 
   const links = buildAdminPublicacionLinks(target);
   const destination = links[kind];
 
-  if (!destination) return;
+  if (!destination) {
+    return;
+  }
 
   router.push(destination);
-}
+};
 
-function clearSearch() {
+const clearSearch = () => {
+  usersRequestSerial += 1;
+
   search.value = "";
   users.value = [];
   userError.value = "";
@@ -669,25 +1205,35 @@ function clearSearch() {
     clearTimeout(searchTimer);
     searchTimer = null;
   }
-}
+};
 
-function handleNativeSearch() {
+const handleNativeSearch = () => {
   if (!String(search.value || "").trim()) {
     clearSearch();
   }
-}
+};
 
-async function hydrateSelectedUserFromRoute() {
+const refreshSelectedHistory = async () => {
+  await fetchUserPublicaciones();
+};
+
+const hydrateSelectedUserFromRoute = async () => {
   const usuarioId = resolveRouteUsuarioId();
 
-  if (!usuarioId) return;
+  if (!usuarioId) {
+    return;
+  }
 
-  if (Number(selectedUser.value?.id) === Number(usuarioId)) {
+  if (
+    Number(selectedUser.value?.id) === Number(usuarioId)
+  ) {
     return;
   }
 
   let user =
-    users.value.find((item) => Number(item.id) === Number(usuarioId)) || null;
+    users.value.find(
+      (item) => Number(item.id) === Number(usuarioId)
+    ) || null;
 
   if (!user) {
     try {
@@ -697,21 +1243,33 @@ async function hydrateSelectedUserFromRoute() {
         mergeUserIntoList(user);
       }
     } catch (error) {
-      console.error(error);
+      console.error(
+        "No se pudo recuperar el usuario de la ruta:",
+        error
+      );
+
+      userError.value =
+        error?.response?.data?.detail ||
+        "No se pudo recuperar el usuario indicado en la ruta.";
     }
   }
 
   if (user) {
-    await selectUser(user, { syncRoute: false });
+    await selectUser(user, {
+      syncRoute: false,
+    });
   }
-}
+};
 
 watch(search, () => {
-  if (searchTimer) clearTimeout(searchTimer);
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
 
-  const q = String(search.value || "").trim();
+  const query = String(search.value || "").trim();
 
-  if (!q) {
+  if (!query) {
+    usersRequestSerial += 1;
     users.value = [];
     userError.value = "";
     loadingUsers.value = false;
@@ -719,13 +1277,18 @@ watch(search, () => {
     return;
   }
 
-  searchTimer = setTimeout(() => {
+  searchTimer = window.setTimeout(() => {
     fetchUsers();
   }, 350);
 });
 
 watch(
-  () => route.fullPath,
+  () => [
+    route.name,
+    route.params?.usuarioId,
+    route.query?.usuario_objetivo_id,
+    route.query?.usuario_id,
+  ],
   async () => {
     await hydrateSelectedUserFromRoute();
   }
@@ -736,6 +1299,9 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  usersRequestSerial += 1;
+  publicacionesRequestSerial += 1;
+
   if (searchTimer) {
     clearTimeout(searchTimer);
     searchTimer = null;
@@ -743,4 +1309,5 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style src="./admin-publicaciones-delegadas.css"></style>
+<style src="../styles/admin-shared.css"></style>
+<style scoped src="./admin-publicaciones-delegadas.css"></style>

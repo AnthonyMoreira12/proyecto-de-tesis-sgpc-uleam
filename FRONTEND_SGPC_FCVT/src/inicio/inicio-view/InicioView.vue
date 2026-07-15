@@ -31,7 +31,7 @@
 
             <div class="ivbi-sk-filters">
               <span
-                v-for="n in 5"
+                v-for="n in 6"
                 :key="`gf-${n}`"
                 class="ivbi-sk-field"
               ></span>
@@ -56,184 +56,249 @@
 
         <div v-else class="ivbi-dashboard">
           <header class="ivbi-header">
-            <div class="ivbi-header__titlebox">
-              <span class="ivbi-header__kicker">SGPC ULEAM</span>
-              <h1 class="ivbi-header__title">Panel analítico institucional</h1>
-              <p class="ivbi-header__meta">{{ dashboardMetaLine }}</p>
-            </div>
+            <section class="ivbi-header__top" aria-labelledby="ivbi-dashboard-title">
+              <div class="ivbi-header__titlebox">
+                <span class="ivbi-header__kicker">SGPC ULEAM</span>
 
-            <nav class="ivbi-segmented" aria-label="Vistas del dashboard">
-              <button
-                v-for="vista in vistaOpciones"
-                :key="vista.key"
-                type="button"
-                class="ivbi-segmented__btn"
-                :class="{ 'is-active': vistaActiva === vista.key }"
-                :aria-pressed="vistaActiva === vista.key"
-                @click="vistaActiva = vista.key"
-              >
-                {{ vista.label }}
-              </button>
-            </nav>
+                <h1 id="ivbi-dashboard-title" class="ivbi-header__title">
+                  Panel analítico institucional
+                </h1>
 
-            <section class="ivbi-filterbar" aria-label="Filtros del dashboard">
-              <div class="ivbi-filterbar__fields">
-                <label class="ivbi-field">
-                  <span>Facultad</span>
-                  <select v-model="globalFilters.facultad_id">
-                    <option value="">Todas</option>
-                    <option
-                      v-for="facultad in filtrosDisponibles.facultades"
-                      :key="facultad.id"
-                      :value="String(facultad.id)"
-                    >
-                      {{ facultad.nombre }}
-                    </option>
-                  </select>
-                </label>
-
-                <label class="ivbi-field">
-                  <span>Carrera</span>
-                  <select v-model="globalFilters.carrera_id">
-                    <option value="">Todas</option>
-                    <option
-                      v-for="carrera in carrerasFiltradas"
-                      :key="carrera.id"
-                      :value="String(carrera.id)"
-                    >
-                      {{ carrera.nombre }}
-                    </option>
-                  </select>
-                </label>
-
-                <label class="ivbi-field">
-                  <span>Tipo</span>
-                  <select v-model="activeViewFilters.tipo_codigo">
-                    <option value="">Todos</option>
-                    <option
-                      v-for="tipo in tiposDisponiblesCanonicos"
-                      :key="`tipo-${vistaActiva}-${tipo.codigo}`"
-                      :value="tipo.codigo"
-                    >
-                      {{ tipo.nombre }}
-                    </option>
-                  </select>
-                </label>
-
-                <template v-if="vistaActiva === 'resumen'">
-                  <label class="ivbi-field">
-                    <span>Desde</span>
-                    <select v-model="viewFilters.resumen.anio_desde">
-                      <option value="">Todos</option>
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`r-desde-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label class="ivbi-field">
-                    <span>Hasta</span>
-                    <select v-model="viewFilters.resumen.anio_hasta">
-                      <option value="">Todos</option>
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`r-hasta-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-                </template>
-
-                <template v-else-if="vistaActiva === 'tendencia'">
-                  <label class="ivbi-field">
-                    <span>Desde</span>
-                    <select v-model="viewFilters.tendencia.anio_desde">
-                      <option value="">Todos</option>
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-desde-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label class="ivbi-field">
-                    <span>Hasta</span>
-                    <select v-model="viewFilters.tendencia.anio_hasta">
-                      <option value="">Todos</option>
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-hasta-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label class="ivbi-field">
-                    <span>Año mensual</span>
-                    <select v-model="viewFilters.tendencia.anio">
-                      <option value="">{{ autoAnioMensualLabel }}</option>
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-anio-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-                </template>
-
-                <template v-else>
-                  <label class="ivbi-field">
-                    <span>Top</span>
-                    <select v-model="viewFilters.rankings.top">
-                      <option value="5">Top 5</option>
-                      <option value="10">Top 10</option>
-                      <option value="15">Top 15</option>
-                      <option value="20">Top 20</option>
-                    </select>
-                  </label>
-                </template>
+                <p class="ivbi-header__meta">
+                  {{ dashboardMetaLine }}
+                </p>
               </div>
 
-              <div class="ivbi-filterbar__actions">
+              <div class="ivbi-header__actions">
                 <button
-                  class="ivbi-btn ivbi-btn--primary"
+                  class="ivbi-btn ivbi-btn--primary ivbi-btn--download"
                   type="button"
                   :disabled="loading || isRefreshing || downloadingReport"
                   @click="downloadDashboardReport"
                 >
-                  {{ downloadingReport ? "Generando…" : "Descargar reporte" }}
-                </button>
+                  <svg
+                    v-if="!downloadingReport"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="M10 3v9M6.5 9.5 10 13l3.5-3.5M4 16.5h12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
 
-                <button
-                  class="ivbi-btn ivbi-btn--ghost"
-                  type="button"
-                  :disabled="loading || isRefreshing || downloadingReport"
-                  @click="resetCurrentViewFilters"
-                >
-                  Limpiar filtros
-                </button>
+                  <span
+                    v-else
+                    class="ivbi-btn__spinner"
+                    aria-hidden="true"
+                  ></span>
 
-                <button
-                  class="ivbi-btn ivbi-btn--ghost"
-                  type="button"
-                  :disabled="loading || isRefreshing || downloadingReport"
-                  @click="resetAllFilters"
-                >
-                  Restablecer todo
+                  <span>
+                    {{ downloadingReport ? "Generando reporte…" : "Descargar reporte" }}
+                  </span>
                 </button>
+              </div>
+            </section>
+
+            <section class="ivbi-header__navigation" aria-label="Vista actual del dashboard">
+              <nav class="ivbi-segmented" aria-label="Vistas del dashboard">
+                <button
+                  v-for="vista in vistaOpciones"
+                  :key="vista.key"
+                  type="button"
+                  class="ivbi-segmented__btn"
+                  :class="{ 'is-active': vistaActiva === vista.key }"
+                  :aria-pressed="vistaActiva === vista.key"
+                  @click="vistaActiva = vista.key"
+                >
+                  {{ vista.label }}
+                </button>
+              </nav>
+
+              <p class="ivbi-header__view-help">
+                <strong>{{ activeViewLabel }}:</strong>
+                {{ activeViewDescription }}
+              </p>
+            </section>
+
+            <section class="ivbi-filterbar" aria-labelledby="ivbi-filters-title">
+              <header class="ivbi-filterbar__head">
+                <div>
+                  <span class="ivbi-filterbar__eyebrow">Refinar información</span>
+                  <h2 id="ivbi-filters-title">Filtros de {{ activeViewLabel.toLowerCase() }}</h2>
+                </div>
+
+                <span class="ivbi-filterbar__status" aria-live="polite">
+                  {{ isRefreshing ? "Actualizando…" : "Aplicación automática" }}
+                </span>
+              </header>
+
+              <div class="ivbi-filterbar__content">
+                <div class="ivbi-filterbar__fields">
+                  <label class="ivbi-field">
+                    <span>Facultad</span>
+                    <select v-model="globalFilters.facultad_id">
+                      <option value="">Todas</option>
+                      <option
+                        v-for="facultad in filtrosDisponibles.facultades"
+                        :key="facultad.id"
+                        :value="String(facultad.id)"
+                      >
+                        {{ facultad.nombre }}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label class="ivbi-field">
+                    <span>Carrera</span>
+                    <select v-model="globalFilters.carrera_id">
+                      <option value="">Todas</option>
+                      <option
+                        v-for="carrera in carrerasFiltradas"
+                        :key="carrera.id"
+                        :value="String(carrera.id)"
+                      >
+                        {{ carrera.nombre }}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label class="ivbi-field">
+                    <span>Tipo</span>
+                    <select v-model="activeViewFilters.tipo_codigo">
+                      <option value="">Todos</option>
+                      <option
+                        v-for="tipo in tiposDisponiblesCanonicos"
+                        :key="`tipo-${vistaActiva}-${tipo.codigo}`"
+                        :value="tipo.codigo"
+                      >
+                        {{ tipo.nombre }}
+                      </option>
+                    </select>
+                  </label>
+
+                  <template v-if="vistaActiva === 'resumen'">
+                    <label class="ivbi-field">
+                      <span>Desde</span>
+                      <select v-model="viewFilters.resumen.anio_desde">
+                        <option value="">Todos</option>
+                        <option
+                          v-for="anio in filtrosDisponibles.anios"
+                          :key="`r-desde-${anio.value}`"
+                          :value="String(anio.value)"
+                        >
+                          {{ anio.label }}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label class="ivbi-field">
+                      <span>Hasta</span>
+                      <select v-model="viewFilters.resumen.anio_hasta">
+                        <option value="">Todos</option>
+                        <option
+                          v-for="anio in filtrosDisponibles.anios"
+                          :key="`r-hasta-${anio.value}`"
+                          :value="String(anio.value)"
+                        >
+                          {{ anio.label }}
+                        </option>
+                      </select>
+                    </label>
+                  </template>
+
+                  <template v-else-if="vistaActiva === 'tendencia'">
+                    <label class="ivbi-field">
+                      <span>Desde</span>
+                      <select v-model="viewFilters.tendencia.anio_desde">
+                        <option value="">Todos</option>
+                        <option
+                          v-for="anio in filtrosDisponibles.anios"
+                          :key="`t-desde-${anio.value}`"
+                          :value="String(anio.value)"
+                        >
+                          {{ anio.label }}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label class="ivbi-field">
+                      <span>Hasta</span>
+                      <select v-model="viewFilters.tendencia.anio_hasta">
+                        <option value="">Todos</option>
+                        <option
+                          v-for="anio in filtrosDisponibles.anios"
+                          :key="`t-hasta-${anio.value}`"
+                          :value="String(anio.value)"
+                        >
+                          {{ anio.label }}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label class="ivbi-field">
+                      <span>Año mensual</span>
+                      <select v-model="viewFilters.tendencia.anio">
+                        <option value="">{{ autoAnioMensualLabel }}</option>
+                        <option
+                          v-for="anio in filtrosDisponibles.anios"
+                          :key="`t-anio-${anio.value}`"
+                          :value="String(anio.value)"
+                        >
+                          {{ anio.label }}
+                        </option>
+                      </select>
+                    </label>
+                  </template>
+
+                  <template v-else>
+                    <label class="ivbi-field">
+                      <span>Cantidad</span>
+                      <select v-model="viewFilters.rankings.top">
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                      </select>
+                    </label>
+                  </template>
+                </div>
+
+                <div class="ivbi-filterbar__actions">
+                  <button
+                    class="ivbi-btn ivbi-btn--secondary"
+                    type="button"
+                    :disabled="loading || isRefreshing || downloadingReport"
+                    @click="resetCurrentViewFilters"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                      <path
+                        d="M4 4v5h5M4.7 8.5a6.5 6.5 0 1 1 1.1 6.2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+
+                    <span>Restablecer vista</span>
+                  </button>
+
+                  <button
+                    class="ivbi-btn ivbi-btn--ghost"
+                    type="button"
+                    :disabled="loading || isRefreshing || downloadingReport"
+                    @click="resetAllFilters"
+                  >
+                    Restablecer todo
+                  </button>
+                </div>
               </div>
             </section>
           </header>
@@ -254,6 +319,13 @@
                     v-for="kpi in headlineKpis"
                     :key="kpi.key"
                     class="ivbi-kpi-card"
+                    :class="[
+                      `ivbi-kpi-card--${kpi.key}`,
+                      {
+                        'is-primary': ['publicaciones', 'alto-impacto'].includes(kpi.key),
+                        'is-coverage': ['facultades', 'carreras'].includes(kpi.key)
+                      }
+                    ]"
                   >
                     <span class="ivbi-kpi-card__label">{{ kpi.label }}</span>
 
@@ -271,6 +343,20 @@
                       <div class="ivbi-card__head-main">
                         <span class="ivbi-card__eyebrow">Distribución</span>
                         <h3 class="ivbi-card__title">Publicaciones por tipo</h3>
+                      </div>
+
+                      <div class="ivbi-card__head-tools">
+                        <span v-if="tipoDominante" class="ivbi-insight-pill">
+                          Dominante: {{ tipoDominante.tipo_codigo }} ·
+                          {{ formatPercent(tipoDominante.porcentaje) }}
+                        </span>
+
+                        <span class="ivbi-info-tip" tabindex="0">
+                          <span aria-hidden="true">i</span>
+                          <span class="ivbi-info-tip__content" role="tooltip">
+                            Seleccione un tipo en la leyenda para aplicar o quitar ese filtro.
+                          </span>
+                        </span>
                       </div>
                     </header>
 
@@ -328,20 +414,6 @@
 
                     <div v-else class="ivbi-empty">
                       Sin datos.
-                    </div>
-
-                    <div class="ivbi-mini-stats">
-                      <article class="ivbi-mini-stat">
-                        <span>Tipos activos</span>
-                        <strong>{{ publicacionesPorTipo.items.length }}</strong>
-                      </article>
-
-                      <article class="ivbi-mini-stat">
-                        <span>Dominante</span>
-                        <strong>
-                          {{ tipoDominante ? tipoDominante.tipo_codigo : "—" }}
-                        </strong>
-                      </article>
                     </div>
                   </article>
 
@@ -863,7 +935,7 @@
                   <article class="ivbi-card ivbi-card--revistas">
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">Soporte</span>
+                        <span class="ivbi-card__eyebrow">Difusión científica</span>
                         <h3 class="ivbi-card__title">Revistas con más artículos</h3>
                       </div>
                     </header>
@@ -910,7 +982,7 @@
                   <article class="ivbi-card ivbi-card--proyectos">
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">Soporte</span>
+                        <span class="ivbi-card__eyebrow">Vinculación investigativa</span>
                         <h3 class="ivbi-card__title">
                           Proyectos con más publicaciones
                         </h3>
@@ -1100,6 +1172,23 @@ const vistaOpciones = Object.freeze([
   { key: "tendencia", label: "Tendencia" },
   { key: "rankings", label: "Rankings" },
 ]);
+
+const activeViewLabel = computed(() => {
+  return (
+    vistaOpciones.find((item) => item.key === vistaActiva.value)?.label ||
+    "Resumen"
+  );
+});
+
+const activeViewDescription = computed(() => {
+  const descriptions = {
+    resumen: "indicadores generales, distribución y concentración institucional.",
+    tendencia: "evolución histórica, comparativa anual y comportamiento mensual.",
+    rankings: "facultades, carreras, autores, revistas y proyectos destacados.",
+  };
+
+  return descriptions[vistaActiva.value] || descriptions.resumen;
+});
 
 let autoApplyTimer = null;
 let requestId = 0;
@@ -1338,7 +1427,7 @@ function horizontalWidth(items = [], value = 0, valueKey = "value") {
   const max = maxValue(items, valueKey);
   if (!max) return "0%";
 
-  const percent = Math.max((Number(value || 0) / max) * 100, 12);
+  const percent = Math.max((Number(value || 0) / max) * 100, 4);
   return `${percent}%`;
 }
 

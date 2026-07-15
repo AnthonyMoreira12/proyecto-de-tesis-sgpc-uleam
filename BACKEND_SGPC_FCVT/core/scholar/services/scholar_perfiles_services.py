@@ -2,10 +2,10 @@
 Servicios auxiliares para perfiles tipo Scholar.
 """
 
-from django.db.models import TextField, Value
+from django.db.models import Exists, OuterRef, TextField, Value
 from django.db.models.functions import Cast, Coalesce, Concat
 
-from core.models import Publicacion, PublicacionAutor
+from core.models import Publicacion, PublicacionArchivo, PublicacionAutor
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     annotate_tipo_publicacion_final,
     tipo_publicacion_label,
@@ -39,15 +39,81 @@ def get_author_org_label(author):
         return "Autor externo" if getattr(author, "es_externo", False) else "ULEAM"
 
     carrera = getattr(user, "carrera", None)
-    facultad = getattr(user, "facultad", None)
+    facultad = getattr(carrera, "facultad", None) if carrera else None
 
     parts = []
+
     if carrera and getattr(carrera, "nombre", None):
         parts.append(carrera.nombre)
+
     if facultad and getattr(facultad, "nombre", None):
         parts.append(facultad.nombre)
 
     return " • ".join(parts) if parts else "ULEAM"
+
+
+def _build_absolute_url(request, file_field):
+    try:
+        if not file_field:
+            return None
+        url = file_field.url
+    except Exception:
+        return None
+
+    if request:
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            return url
+
+    return url
+
+
+def _get_pdf_file(publicacion):
+    archivo_pdf = getattr(publicacion, "archivo_pdf", None)
+
+    if archivo_pdf and getattr(archivo_pdf, "name", None):
+        return archivo_pdf
+
+    prefetched = getattr(publicacion, "_prefetched_objects_cache", {})
+
+    if "archivos" in prefetched:
+        for adjunto in prefetched["archivos"]:
+            archivo = getattr(adjunto, "archivo", None)
+            if archivo and getattr(archivo, "name", None):
+                return archivo
+        return None
+
+    try:
+        adjunto = (
+            publicacion.archivos.filter(archivo__isnull=False)
+            .exclude(archivo="")
+            .order_by("orden", "id")
+            .first()
+        )
+    except Exception:
+        return None
+
+    if adjunto and adjunto.archivo and getattr(adjunto.archivo, "name", None):
+        return adjunto.archivo
+
+    return None
+
+
+def publicacion_has_pdf(publicacion):
+    annotated = getattr(publicacion, "tiene_adjuntos_pdf", None)
+
+    archivo_pdf = getattr(publicacion, "archivo_pdf", None)
+    has_main_pdf = bool(archivo_pdf and getattr(archivo_pdf, "name", None))
+
+    if annotated is not None:
+        return bool(has_main_pdf or annotated)
+
+    return bool(_get_pdf_file(publicacion))
+
+
+def publicacion_pdf_url(request, publicacion):
+    return _build_absolute_url(request, _get_pdf_file(publicacion))
 
 
 def get_publicacion_title_and_venue(publicacion):
@@ -117,10 +183,28 @@ def build_public_profile_payload(*, request, author, is_me=False):
         .distinct()
     )
 
+    adjuntos_pdf = (
+        PublicacionArchivo.objects.filter(
+            publicacion_id=OuterRef("pk"),
+            archivo__isnull=False,
+        )
+        .exclude(archivo="")
+    )
+
     publicaciones_qs = (
         annotate_tipo_publicacion_final(
             Publicacion.objects
-            .select_related("tipo", "articulo", "ponencia", "libro", "capitulo_libro")
+            .select_related(
+                "tipo",
+                "carrera",
+                "carrera__facultad",
+                "articulo",
+                "ponencia",
+                "libro",
+                "capitulo_libro",
+            )
+            .prefetch_related("archivos")
+            .annotate(tiene_adjuntos_pdf=Exists(adjuntos_pdf))
             .filter(id__in=publicacion_ids)
         )
         .order_by("-anio_publicacion", "-id")
@@ -130,15 +214,19 @@ def build_public_profile_payload(*, request, author, is_me=False):
     for pub in publicaciones_qs:
         title, venue = get_publicacion_title_and_venue(pub)
         tipo_final = getattr(pub, "tipo_publicacion_final", "sin_clasificar")
+        has_pdf = publicacion_has_pdf(pub)
+        pdf_url = publicacion_pdf_url(request, pub)
 
         publicaciones.append(
             {
                 "id": pub.id,
                 "title": title,
+                "titulo": title,
                 "authors": get_author_authors_string(pub.id),
                 "venue": venue,
                 "citedBy": 0,
                 "year": getattr(pub, "anio_publicacion", None),
+                "anio_publicacion": getattr(pub, "anio_publicacion", None),
                 "type": {
                     "id": pub.tipo_id,
                     "nombre": pub.tipo.nombre if pub.tipo else None,
@@ -148,6 +236,11 @@ def build_public_profile_payload(*, request, author, is_me=False):
                 else None,
                 "tipo_publicacion_final": tipo_final,
                 "tipo_publicacion_final_label": tipo_publicacion_label(tipo_final),
+                "hasPdf": has_pdf,
+                "has_pdf": has_pdf,
+                "tiene_pdf": has_pdf,
+                "pdf_url": pdf_url,
+                "archivo_pdf_url": pdf_url,
             }
         )
 

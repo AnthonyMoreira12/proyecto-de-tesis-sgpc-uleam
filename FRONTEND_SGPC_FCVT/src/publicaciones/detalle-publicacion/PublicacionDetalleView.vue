@@ -279,7 +279,7 @@
                 <div class="pdet-fileMeta">
                   <span class="pdet-fileEyebrow">Documento</span>
                   <h3 class="pdet-fileName">
-                    {{ fileNameFromUrl(detalleNormalizado.archivoPdfUrl) }}
+                    {{ displayPdfName }}
                   </h3>
                   <p class="pdet-fileText">
                     PDF adjunto al registro.
@@ -582,14 +582,14 @@ const resolvePdfUrl = (url) => {
 
 const fileNameFromUrl = (url) => {
   const value = toStr(url);
-  if (!value) return "archivo.pdf";
+  if (!value) return "";
 
   try {
     const parsed = new URL(value, window.location.origin);
     const last = parsed.pathname.split("/").filter(Boolean).pop();
-    return decodeURIComponent(last || "archivo.pdf");
+    return decodeURIComponent(last || "");
   } catch {
-    return "archivo.pdf";
+    return "";
   }
 };
 
@@ -668,6 +668,7 @@ const detalleNormalizado = computed(() => {
   const tipoLabel = firstFilled(
     d.tipo,
     d.tipo_publicacion,
+    d.tipo_publicacion_final_label,
     d.tipo_publicacion_final,
     "Publicación"
   );
@@ -695,6 +696,7 @@ const detalleNormalizado = computed(() => {
   const archivoPdfUrl = resolvePdfUrl(
     firstFilled(
       d.archivo_pdf_url,
+      d.pdf_url,
       d.archivo_pdf,
       d.pdf,
       d.archivo,
@@ -726,6 +728,27 @@ const detalleNormalizado = computed(() => {
   };
 });
 
+const hasPdf = computed(() => {
+  const d = detalle.value || {};
+
+  return Boolean(
+    detalleNormalizado.value.archivoPdfUrl ||
+      d.tiene_pdf ||
+      d.has_pdf ||
+      d.archivo_pdf_url ||
+      d.pdf_url ||
+      d.archivo_pdf ||
+      d.pdf ||
+      d.archivo ||
+      d.archivos?.length ||
+      d.adjuntos?.length
+  );
+});
+
+const displayPdfName = computed(() => {
+  return fileNameFromUrl(detalleNormalizado.value.archivoPdfUrl) || "publicacion.pdf";
+});
+
 const userOwnsPublication = computed(() => {
   const authors = detalleNormalizado.value.autores || [];
 
@@ -753,8 +776,6 @@ const userOwnsPublication = computed(() => {
 });
 
 const canEdit = computed(() => isAdmin.value || userOwnsPublication.value);
-
-const hasPdf = computed(() => Boolean(detalleNormalizado.value.archivoPdfUrl));
 
 const heroIntroText = computed(() => {
   if (isAdmin.value) {
@@ -976,12 +997,101 @@ const openEditMode = () => {
   editMode.value = true;
 };
 
+const writePdfLoading = (targetWindow) => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Cargando PDF...</title>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <p>Cargando PDF...</p>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const writePdfError = (targetWindow, message = "No se pudo abrir el PDF.") => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>No se pudo abrir el PDF</title>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: Arial, sans-serif; padding: 24px;">
+        <h2>${message}</h2>
+        <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const writePdfViewer = (targetWindow, blobUrl) => {
+  targetWindow.document.open();
+  targetWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>Vista previa del PDF</title>
+        <meta charset="utf-8" />
+        <style>
+          html,
+          body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #111827;
+          }
+
+          iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #ffffff;
+          }
+        </style>
+      </head>
+      <body>
+        <iframe src="${blobUrl}" title="Vista previa del PDF"></iframe>
+      </body>
+    </html>
+  `);
+  targetWindow.document.close();
+};
+
+const fetchPdfBlob = async (id) => {
+  const response = await api.get(`/publicaciones/${id}/pdf/`, {
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  });
+
+  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+
+  if (contentType && !contentType.includes("application/pdf")) {
+    throw new Error("La respuesta recibida no es un PDF.");
+  }
+
+  return new Blob([response.data], {
+    type: "application/pdf",
+  });
+};
+
 const openPdf = async () => {
   const id = route.params.id;
 
   if (!id) return;
 
-  const previewWindow = window.open("", "_blank");
+  const previewWindow = window.open("about:blank", "_blank");
 
   if (!previewWindow) {
     alert(
@@ -990,43 +1100,20 @@ const openPdf = async () => {
     return;
   }
 
-  previewWindow.document.write(`
-    <html>
-      <head>
-        <title>Cargando PDF...</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
-        <p>Cargando PDF...</p>
-      </body>
-    </html>
-  `);
+  writePdfLoading(previewWindow);
 
   try {
-    const response = await api.get(`/publicaciones/${id}/pdf/`, {
-      responseType: "blob",
-      headers: {
-        Accept: "application/pdf",
-      },
-    });
-
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
+    const blob = await fetchPdfBlob(id);
     const blobUrl = URL.createObjectURL(blob);
 
-    previewWindow.location.href = blobUrl;
+    writePdfViewer(previewWindow, blobUrl);
 
     setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
-    }, 120000);
+    }, 180000);
   } catch (err) {
     console.error(err);
-
-    previewWindow.document.body.innerHTML = `
-      <p>No se pudo abrir el PDF.</p>
-      <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
-    `;
+    writePdfError(previewWindow);
   }
 };
 
@@ -1036,21 +1123,9 @@ const downloadPdf = async () => {
   if (!id) return;
 
   try {
-    const response = await api.get(`/publicaciones/${id}/pdf/`, {
-      responseType: "blob",
-      headers: {
-        Accept: "application/pdf",
-      },
-    });
-
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
+    const blob = await fetchPdfBlob(id);
     const blobUrl = URL.createObjectURL(blob);
-
-    const filename =
-      fileNameFromUrl(detalleNormalizado.value.archivoPdfUrl) || "publicacion.pdf";
+    const filename = displayPdfName.value || "publicacion.pdf";
 
     const link = document.createElement("a");
     link.href = blobUrl;

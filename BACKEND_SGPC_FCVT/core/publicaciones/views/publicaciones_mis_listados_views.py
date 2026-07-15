@@ -24,6 +24,14 @@ from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
 
 
 class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
+    """
+    Lista las publicaciones relacionadas con el usuario autenticado.
+
+    Incluye:
+    - Publicaciones creadas directamente por el usuario.
+    - Publicaciones donde el usuario aparece como autor vinculado.
+    """
+
     def get(self, request):
         tipo = request.query_params.get("tipo") or request.query_params.get(
             "tipo_publicacion_final"
@@ -31,14 +39,16 @@ class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
 
         autores_prefetch = Prefetch(
             "participaciones",
-            queryset=(
-                PublicacionAutor.objects.select_related("autor").order_by("orden", "id")
+            queryset=PublicacionAutor.objects.select_related("autor").order_by(
+                "orden",
+                "id",
             ),
         )
 
         autor_id = resolve_user_autor_id(request.user)
 
         filtros = Q(usuario_creador=request.user)
+
         if autor_id:
             filtros |= Q(participaciones__autor_id=autor_id)
 
@@ -46,8 +56,8 @@ class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
             Publicacion.objects.select_related(
                 "tipo",
                 "proyecto",
-                "facultad",
                 "carrera",
+                "carrera__facultad",
                 "usuario_creador",
                 "articulo",
                 "ponencia",
@@ -66,6 +76,7 @@ class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
 
         if tipo:
             tipo = str(tipo).strip().lower()
+
             if tipo in TIPOS_PUBLICACION_FINALES:
                 publicaciones = publicaciones.filter(tipo_publicacion_final=tipo)
 
@@ -74,4 +85,5 @@ class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
             many=True,
             context={"request": request},
         )
+
         return Response(serializer.data)

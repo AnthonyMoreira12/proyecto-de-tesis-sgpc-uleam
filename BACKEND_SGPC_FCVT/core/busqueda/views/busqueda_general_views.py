@@ -9,8 +9,23 @@ from core.busqueda.selectors.busqueda_general_selectors import (
 )
 from core.busqueda.serializers.busqueda_autor_serializers import AutorBusquedaSerializer
 from core.busqueda.serializers.busqueda_proyecto_serializers import ProyectoBusquedaSerializer
-from core.busqueda.serializers.busqueda_publicacion_serializers import PublicacionBusquedaSerializer
+from core.busqueda.serializers.busqueda_publicacion_serializers import (
+    PublicacionBusquedaSerializer,
+)
 from core.busqueda.serializers.busqueda_usuario_serializers import UsuarioBusquedaSerializer
+
+
+def _is_truthy(value):
+    return str(value or "").strip().lower() in {
+        "1",
+        "true",
+        "t",
+        "yes",
+        "y",
+        "si",
+        "sí",
+        "on",
+    }
 
 
 class BusquedaGeneralAPIView(APIView):
@@ -24,6 +39,13 @@ class BusquedaGeneralAPIView(APIView):
 
         limit = max(1, min(limit, 20))
 
+        solo_con_pdf = _is_truthy(
+            request.GET.get("solo_con_pdf")
+            or request.GET.get("solo_pdf")
+            or request.GET.get("con_pdf")
+            or request.GET.get("has_pdf")
+        )
+
         if not q:
             return Response(
                 {
@@ -36,7 +58,11 @@ class BusquedaGeneralAPIView(APIView):
 
         usuarios = buscar_usuarios(q, limit=limit)
         proyectos = buscar_proyectos(q, limit=limit)
-        publicaciones = buscar_publicaciones(q, limit=limit)
+        publicaciones = buscar_publicaciones(
+            q,
+            limit=limit,
+            solo_con_pdf=solo_con_pdf,
+        )
         autores = buscar_autores(q, limit=limit)
 
         return Response(

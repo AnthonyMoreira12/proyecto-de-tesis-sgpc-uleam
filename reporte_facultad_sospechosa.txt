@@ -1,0 +1,744 @@
+﻿REPORTE DE REFERENCIAS SOSPECHOSAS AL CAMPO FACULTAD
+Generado: 07/08/2026 10:00:17
+Regla esperada: usar carrera__facultad en lugar de facultad directa cuando aplique.
+
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   173
+Código:  facultad_id = _safe_int(params.get("facultad_id"))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   178
+Código:  if facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   179
+Código:  qs = qs.filter(carrera__facultad_id=facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   485
+Código:  publicaciones.exclude(carrera__facultad_id__isnull=True)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   487
+Código:  facultad_id=F("carrera__facultad_id"),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   491
+Código:  .order_by("-total", "facultad_nombre")[:limit]
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   498
+Código:  "facultad_id": row["facultad_id"],
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   663
+Código:  publicaciones.values("carrera__facultad_id")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   664
+Código:  .exclude(carrera__facultad_id__isnull=True)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   737
+Código:  carreras_qs = Carrera.objects.select_related("facultad").all().order_by("nombre")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   740
+Código:  carreras_qs = carreras_qs.filter(facultad_id=selected_facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   742
+Código:  carreras = list(carreras_qs.values("id", "nombre", "facultad_id"))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   768
+Código:  "facultad_id": row["facultad_id"],
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   787
+Código:  facultad_id = _safe_int(params.get("facultad_id"))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   798
+Código:  if facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   800
+Código:  Facultad.objects.filter(id=facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   813
+Código:  "facultad_id": facultad_id,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\dashboard.py
+Linea:   828
+Código:  selected_facultad_id = _safe_int(params.get("facultad_id"))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\urls.py
+Linea:   285
+Código:  "selects/carreras/<int:facultad_id>/",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\selectors\admin_publicaciones_selectors.py
+Linea:   89
+Código:  facultad_id=None,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\selectors\admin_publicaciones_selectors.py
+Linea:   104
+Código:  facultad_id = _safe_int(facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\selectors\admin_publicaciones_selectors.py
+Linea:   121
+Código:  if facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\selectors\admin_publicaciones_selectors.py
+Linea:   122
+Código:  qs = qs.filter(carrera__facultad_id=facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\serializers\admin_usuarios_serializers.py
+Linea:   15
+Código:  facultad_nombre = serializers.CharField(source="carrera.facultad.nombre", read_only=True)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\serializers\update\publicaciones_actualizacion_serializers.py
+Linea:   54
+Código:  # La facultad real se obtiene desde carrera.facultad.
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\serializers\update\publicaciones_actualizacion_serializers.py
+Linea:   352
+Código:  if getattr(final_carrera, "facultad_id", None) != facultad_payload_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\views\admin_catalogos_views.py
+Linea:   29
+Código:  queryset = Carrera.objects.select_related("facultad").all().order_by("nombre")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\views\admin_publicaciones_views.py
+Linea:   94
+Código:  facultad_id = self.request.query_params.get("facultad_id")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\views\admin_publicaciones_views.py
+Linea:   111
+Código:  facultad_id=facultad_id,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\views\admin_publicaciones_views.py
+Linea:   319
+Código:  if not output.get("facultad") and getattr(usuario_objetivo, "facultad_id", None):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\admin\views\admin_publicaciones_views.py
+Linea:   320
+Código:  output["facultad"] = usuario_objetivo.facultad_id
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_read_serializers.py
+Linea:   18
+Código:  source="carrera.facultad.nombre",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_read_serializers.py
+Linea:   28
+Código:  facultad_id = serializers.IntegerField(
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_read_serializers.py
+Linea:   29
+Código:  source="carrera.facultad_id",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_read_serializers.py
+Linea:   78
+Código:  "facultad_id",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   93
+Código:  final_facultad_id = attrs.get("facultad_set", getattr(user, "facultad_id", None))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   97
+Código:  facultad_exists = Facultad.objects.filter(pk=final_facultad_id).exists()
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   107
+Código:  Carrera.objects.select_related("facultad")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   118
+Código:  final_facultad_id = carrera_obj.facultad_id
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   121
+Código:  if carrera_obj.facultad_id != final_facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   135
+Código:  and current_carrera.facultad_id != final_facultad_id
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   170
+Código:  if instance.facultad_id != new_facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\serializers\auth_profile_update_serializers.py
+Linea:   171
+Código:  instance.facultad_id = new_facultad_id
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\services\auth_microsoft_services.py
+Linea:   298
+Código:  "facultad_id": getattr(user, "facultad_id", None),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\services\auth_profile_services.py
+Linea:   82
+Código:  and bool(getattr(user, "facultad_id", None))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\auth\views\auth_login_views.py
+Linea:   54
+Código:  "facultad_id": getattr(user, "facultad_id", None),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\busqueda\serializers\busqueda_proyecto_serializers.py
+Linea:   13
+Código:  facultad = serializers.CharField(source="carrera.facultad.nombre", read_only=True)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   77
+Código:  def build_carreras_select_data(*, facultad_id=None):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   78
+Código:  qs = Carrera.objects.select_related("facultad").all()
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   80
+Código:  if facultad_id is not None:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   81
+Código:  qs = qs.filter(facultad_id=facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   86
+Código:  facultad = carrera.facultad
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   93
+Código:  "facultad_id": carrera.facultad_id,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   172
+Código:  facultad = carrera.facultad if carrera else None
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\selectors\catalogos_selects_selectors.py
+Linea:   186
+Código:  "facultad_id": facultad.id if facultad else None,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\views\catalogos_selects_apiviews.py
+Linea:   40
+Código:  facultad_id=fid,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\views\catalogos_selects_viewsets.py
+Linea:   35
+Código:  def get_carreras(self, request, facultad_id=None, *args, **kwargs):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\catalogos\views\catalogos_selects_viewsets.py
+Linea:   38
+Código:  facultad_id=facultad_id,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\migrations\0001_initial.py
+Linea:   434
+Código:  field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='publicaciones', to='core.facultad'),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\migrations\0001_initial.py
+Linea:   520
+Código:  field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='core.facultad'),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\migrations\0001_initial.py
+Linea:   535
+Código:  field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carreras', to='core.facultad'),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\migrations\0001_initial.py
+Linea:   565
+Código:  field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='usuarios', to='core.facultad'),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\migrations\0001_initial.py
+Linea:   803
+Código:  index=models.Index(fields=['facultad'], name='usuarios_faculta_b36819_idx'),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\models\academico.py
+Linea:   117
+Código:  if not self.facultad_id:
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\models\academico.py
+Linea:   118
+Código:  errors["facultad"] = "La facultad es obligatoria."
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\models\academico.py
+Linea:   128
+Código:  return f"{self.nombre} ({self.facultad.siglas or self.facultad.nombre})"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\proyectos\serializers\proyectos_proyecto_serializers.py
+Linea:   56
+Código:  source="carrera.facultad.nombre",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\proyectos\serializers\proyectos_proyecto_serializers.py
+Linea:   157
+Código:  source="carrera.facultad.nombre",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\create\publicaciones_articulo_create_serializers.py
+Linea:   396
+Código:  if carrera and facultad and getattr(carrera, "facultad_id", None) != getattr(facultad, "id", None):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\create\publicaciones_capitulo_libro_create_serializers.py
+Linea:   181
+Código:  if carrera and facultad and getattr(carrera, "facultad_id", None) != getattr(facultad, "id", None):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\create\publicaciones_libro_create_serializers.py
+Linea:   180
+Código:  if carrera and facultad and getattr(carrera, "facultad_id", None) != getattr(facultad, "id", None):
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\create\publicaciones_ponencia_create_serializers.py
+Linea:   372
+Código:  facultad = carrera.facultad
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\read\publicaciones_detalle_serializers.py
+Linea:   83
+Código:  facultad_id = serializers.SerializerMethodField()
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\serializers\read\publicaciones_detalle_serializers.py
+Linea:   159
+Código:  "facultad_id",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_detalle_services.py
+Linea:   281
+Código:  "facultad_id": facultad.id if facultad else None,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_excel_services.py
+Linea:   145
+Código:  facultad_id = _normalize_text(filters.get("facultad"))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_excel_services.py
+Linea:   186
+Código:  if facultad_id.isdigit():
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_excel_services.py
+Linea:   187
+Código:  qs = qs.filter(facultad_id=int(facultad_id))
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_excel_services.py
+Linea:   197
+Código:  Q(facultad__nombre__icontains=texto)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\services\publicaciones_excel_services.py
+Linea:   365
+Código:  "Facultad": _normalize_text(getattr(pub.facultad, "nombre", "")) or "—",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\tests\test_publicaciones_archivos.py
+Linea:   16
+Código:  self.facultad = Facultad.objects.create(nombre="Facultad de Prueba")
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\BACKEND_SGPC_FCVT\core\publicaciones\tests\test_publicaciones_archivos.py
+Linea:   17
+Código:  self.carrera = Carrera.objects.create(nombre="Carrera de Prueba", facultad=self.facultad)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-facultades-carreras\GestionFacultadesCarrerasView.vue
+Linea:   201
+Código:  if (!payload?.facultad) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-facultades-carreras\GestionFacultadesCarrerasView.vue
+Linea:   210
+Código:  if ("facultad" in payload && !payload?.facultad) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-facultades-carreras\GestionFacultadesCarrerasView.vue
+Linea:   238
+Código:  map: (row) => row?.facultad_nombre || row?.facultad?.nombre || "-",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-publicaciones\AdminPublicacionesDelegadasView.vue
+Linea:   370
+Código:  {{ item.facultad || item.facultad_nombre || "Sin facultad" }}
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   149
+Código:  v-model="form.facultad"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   177
+Código:  :disabled="saving || loadingCatalogos || !form.facultad"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   191
+Código:  <p v-if="form.facultad && loadingCarreras" class="usermodal-help">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   578
+Código:  await loadCarreras(form.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   593
+Código:  form.facultad = "";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   616
+Código:  form.facultad = usuario.facultad ?? "";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   629
+Código:  if (form.facultad) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   630
+Código:  await loadCarreras(form.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   805
+Código:  const facultad = form.facultad ? Number(form.facultad) : null;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\administracion\gestion-usuarios\UsuarioModal.vue
+Linea:   813
+Código:  payload.facultad = facultad;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   83
+Código:  <select v-model="globalFilters.facultad_id">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1108
+Código:  facultad_id: "",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1390
+Código:  facultad_id: globalFilters.facultad_id || undefined,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1586
+Código:  globalFilters.facultad_id = "";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1720
+Código:  if (!globalFilters.facultad_id) return all;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1723
+Código:  (career) => String(career.facultad_id) === String(globalFilters.facultad_id)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1946
+Código:  label: item.facultad,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\inicio\inicio-view\InicioView.vue
+Linea:   1997
+Código:  () => globalFilters.facultad_id,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   573
+Código:  v-model="form.facultad_id"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   600
+Código:  !form.facultad_id
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   618
+Código:  <span v-else-if="form.facultad_id && !carreras.length" class="help">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   709
+Código:  facultad_id: "",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   720
+Código:  return u?.facultad_nombre || u?.facultad || "";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   777
+Código:  const facOk = !!(u.facultad_id || getUserFacultadLabel(u));
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   864
+Código:  if (!(u.facultad_id || getUserFacultadLabel(u))) faltantes.push("Facultad");
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   879
+Código:  if (u.facultad_id || getUserFacultadLabel(u)) completos++;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   919
+Código:  form.value.facultad_id = user.value?.facultad_id || "";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   1057
+Código:  await loadCarreras(form.value.facultad_id);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   1070
+Código:  if (form.value.facultad_id) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   1071
+Código:  await loadCarreras(form.value.facultad_id);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\perfiles\perfil-usuario\PerfilUsuarioView.vue
+Linea:   1133
+Código:  const facultadId = normalizeNullableId(form.value.facultad_id);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   316
+Código:  v-model="form.facultad"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   360
+Código:  'is-disabled': !form.facultad || saving || loadingCarreras
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   377
+Código:  :disabled="!form.facultad || saving || loadingCarreras"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   390
+Código:  :disabled="!form.facultad || saving || loadingCarreras"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   430
+Código:  @click="cargarCarrerasPorFacultad(form.facultad)"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   444
+Código:  v-if="!form.facultad"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   920
+Código:  :class="{ 'is-complete': Boolean(form.facultad && carreraSeleccionada) }"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1318
+Código:  (item) => normalizeId(item.id) === normalizeId(form.value.facultad)
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1332
+Código:  if (!form.value.facultad) return "Seleccione primero una facultad";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1342
+Código:  return triedSubmit.value && !form.value.facultad;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1371
+Código:  Boolean(form.value.facultad),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1434
+Código:  data?.facultad_id ||
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1435
+Código:  data?.facultad?.id ||
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1437
+Código:  data?.facultad;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1445
+Código:  data?.facultad?.nombre ||
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1446
+Código:  data?.facultad ||
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1556
+Código:  if (form.value.facultad) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1557
+Código:  await cargarCarrerasPorFacultad(form.value.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1617
+Código:  if (!form.value.facultad) return;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1619
+Código:  await cargarCarrerasPorFacultad(form.value.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1633
+Código:  facultad: item?.facultad || item?.facultad_nombre || facultad || "",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1702
+Código:  if (!form.value.facultad) return [];
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1728
+Código:  if (!form.value.facultad || loadingCarreras.value) return;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   1740
+Código:  if (!form.value.facultad || loadingCarreras.value) return;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\formulario\ProyectoFormularioView.vue
+Linea:   2205
+Código:  if (!form.value.facultad) {
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\listado\ProyectosListadoView.vue
+Linea:   318
+Código:  <span :title="p.facultad || '—'">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\proyectos\listado\ProyectosListadoView.vue
+Linea:   319
+Código:  {{ p.facultad || "—" }}
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\articulo-alto-impacto\ArticuloAltoImpactoForm.vue
+Linea:   929
+Código:  return !!(dg.facultad && dg.carrera && dg.area && dg.subarea);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\articulo-alto-impacto\ArticuloAltoImpactoForm.vue
+Linea:   1244
+Código:  if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\articulo-regional\ArticuloRegionalForm.vue
+Linea:   890
+Código:  return !!(dg.facultad && dg.carrera && dg.area && dg.subarea);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\articulo-regional\ArticuloRegionalForm.vue
+Linea:   1167
+Código:  if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\capitulo-libro\CapituloLibroForm.vue
+Linea:   762
+Código:  return !!(dg.facultad && dg.carrera && dg.area && dg.subarea);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\capitulo-libro\CapituloLibroForm.vue
+Linea:   1046
+Código:  if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   24
+Código:  :value="local.facultad"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   38
+Código:  <p v-if="props.errors?.facultad" class="dg-hint dg-hint-err">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   39
+Código:  {{ props.errors.facultad }}
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   55
+Código:  :disabled="!local.facultad || loadingCarreras"
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   59
+Código:  !local.facultad
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   78
+Código:  <p v-if="!local.facultad" class="dg-hint">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   366
+Código:  facultad: asStr(props.modelValue?.facultad),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   490
+Código:  facultad: toNumOrNull(local.facultad),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   644
+Código:  const nextFacultad = asStr(value?.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   647
+Código:  local.facultad = nextFacultad;
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   677
+Código:  () => local.facultad,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\componentes\DatosGenerales.vue
+Linea:   755
+Código:  if (local.facultad) await cargarCarreras(local.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\detalle-publicacion\EditarPublicacionView.vue
+Linea:   681
+Código:  facultad: detalle?.facultad_id ?? null,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\detalle-publicacion\PublicacionDetalleView.vue
+Linea:   99
+Código:  <span v-if="detalleNormalizado.facultad" class="pdet-chip">
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\detalle-publicacion\PublicacionDetalleView.vue
+Linea:   100
+Código:  {{ detalleNormalizado.facultad }}
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\detalle-publicacion\PublicacionDetalleView.vue
+Linea:   717
+Código:  facultad: firstFilled(d.facultad, d.facultad_nombre),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\detalle-publicacion\PublicacionDetalleView.vue
+Linea:   844
+Código:  buildField("Facultad", d.facultad, { span: 4 }),
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\libro\LibroForm.vue
+Linea:   734
+Código:  return !!(dg.facultad && dg.carrera && dg.area && dg.subarea);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\libro\LibroForm.vue
+Linea:   1016
+Código:  if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\listado-publicaciones\PublicacionesListadoView.vue
+Linea:   722
+Código:  const facultad = String(pub?.facultad || "").trim();
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\listado-publicaciones\PublicacionesListadoView.vue
+Linea:   791
+Código:  const cumpleFacultad = compareCatalogValue(p?.facultad, criteria.facultadLabel);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\listado-publicaciones\PublicacionesListadoView.vue
+Linea:   803
+Código:  p?.facultad,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\mis-publicaciones\MisPublicacionesView.vue
+Linea:   277
+Código:  <td :title="pub.facultad || ''">{{ pub.facultad || "—" }}</td>
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\mis-publicaciones\MisPublicacionesView.vue
+Linea:   400
+Código:  const facultad = String(pub?.facultad || "").trim();
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\mis-publicaciones\MisPublicacionesView.vue
+Linea:   496
+Código:  item?.facultad,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\ponencia\PonenciaRegistro.vue
+Linea:   789
+Código:  dg.facultad &&
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\publicaciones\ponencia\PonenciaRegistro.vue
+Linea:   1089
+Código:  if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\api\publicacionesAdminApi.js
+Linea:   74
+Código:  "facultad_id",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\api\publicacionesApi.js
+Linea:   145
+Código:  payload.facultad = normalizeId(payload.facultad);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\composables\usePublicacionDelegada.js
+Linea:   80
+Código:  facultad_id: "",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\composables\usePublicacionDelegada.js
+Linea:   137
+Código:  facultad_id: "",
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\stores\scholarStore.js
+Linea:   79
+Código:  const facultad = toStr(item?.facultad).trim();
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\stores\scholarStore.js
+Linea:   147
+Código:  item?.facultad,
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\stores\scholarStore.js
+Linea:   178
+Código:  const extraTags = uniqueTextList([item?.facultad, item?.carrera]);
+------------------------------------------------------------
+Archivo: C:\Users\TONYMOR\Desktop\SOFTWARE DE GESTIÓN DE PRODUCCIÓN CIENTÍFICA PARA LA FACULTAD DE CIENCIAS DE LA VIDA Y TECNOLOGÍAS\FRONTEND_SGPC_FCVT\src\scripts\stores\scholarStore.js
+Linea:   209
+Código:  data?.facultad,
+------------------------------------------------------------

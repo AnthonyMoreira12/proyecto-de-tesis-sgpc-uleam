@@ -1,36 +1,90 @@
 ﻿<template>
-  <div class="sgpc-form-page">
+  <div class="sgpc-form-page sgpc-form-page--libro">
     <div class="sgpc-form-shell">
-      <header class="sgpc-form-header page-stage page-header">
+      <header class="sgpc-form-header sgpc-publication-header page-stage page-header">
         <div class="sgpc-form-heading">
-          <p class="sgpc-form-kicker">{{ pageKicker }}</p>
+          <div class="sgpc-publication-header__topline">
+            <p class="sgpc-form-kicker">
+              {{ pageKicker }}
+            </p>
 
-          <h1 class="sgpc-form-title">{{ pageTitle }}</h1>
+            <div
+              class="sgpc-publication-header__chips"
+              aria-label="Clasificación del formulario"
+            >
+              <span class="sgpc-publication-chip">
+                Publicación científica
+              </span>
+
+              <span class="sgpc-publication-chip sgpc-publication-chip--accent">
+                Libro
+              </span>
+            </div>
+          </div>
+
+          <h1 class="sgpc-form-title">
+            {{ pageTitle }}
+          </h1>
 
           <p class="sgpc-form-subtitle">
             {{ pageSubtitle }}
           </p>
 
-          <p v-if="draftInfo" class="sgpc-banner-info">
+          <p
+            v-if="draftInfo"
+            class="sgpc-banner-info"
+            role="status"
+            aria-live="polite"
+          >
             {{ draftInfo }}
           </p>
+        </div>
+
+        <div
+          class="sgpc-publication-header__mark"
+          aria-hidden="true"
+        >
+          <div class="sgpc-publication-header__mark-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="30"
+              height="30"
+            >
+              <path
+                fill="currentColor"
+                d="M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3V3Zm3 2H6v13a1 1 0 0 0 1 1h11V6a1 1 0 0 0-1-1H7Zm2 3h6v2H9V8Zm0 4h6v2H9v-2Zm0 4h4v2H9v-2Z"
+              />
+            </svg>
+          </div>
+
+          <span>LIB</span>
+          <small>Libro científico</small>
         </div>
       </header>
 
       <form
         class="sgpc-form sgpc-form--with-aside"
-        @submit.prevent="registrarLibro"
+        aria-label="Formulario para registrar un libro"
         enctype="multipart/form-data"
+        @submit.prevent="registrarLibro"
       >
         <main class="sgpc-form-main page-stage page-main">
+          <!-- =====================================================
+               CONTEXTO ADMINISTRATIVO
+          ====================================================== -->
+
           <section
             v-if="isAdminDelegado"
             id="sec-contexto-admin"
             class="sgpc-card sgpc-card--admin-context"
+            data-section="ADMIN"
           >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Contexto del registro</h3>
+                <h2 class="sgpc-card-title">
+                  Contexto del registro
+                </h2>
+
                 <p class="sgpc-card-desc">
                   Este registro se guardará para el usuario seleccionado.
                 </p>
@@ -38,11 +92,14 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="lb-admin-context-anchor"></div>
+              <div id="lb-admin-context-anchor" tabindex="-1"></div>
 
               <div class="sgpc-admin-context">
                 <article class="sgpc-admin-context__item">
-                  <span class="sgpc-admin-context__label">Usuario objetivo</span>
+                  <span class="sgpc-admin-context__label">
+                    Usuario objetivo
+                  </span>
+
                   <strong class="sgpc-admin-context__value">
                     {{ adminDisplayUsuario }}
                   </strong>
@@ -52,7 +109,10 @@
                   v-if="showAutorObjetivo"
                   class="sgpc-admin-context__item"
                 >
-                  <span class="sgpc-admin-context__label">Autor objetivo</span>
+                  <span class="sgpc-admin-context__label">
+                    Autor objetivo
+                  </span>
+
                   <strong class="sgpc-admin-context__value">
                     {{ adminDisplayAutor }}
                   </strong>
@@ -60,24 +120,39 @@
               </div>
 
               <p class="sgpc-hint">
-                El autor objetivo se agregará automáticamente a la autoría del registro.
+                El autor objetivo se agregará automáticamente a la autoría del
+                registro.
               </p>
 
               <p
                 v-if="fieldErrors.admin_context"
+                id="lb-admin-context-error"
                 class="sgpc-hint sgpc-hint-error"
+                role="alert"
               >
                 {{ fieldErrors.admin_context }}
               </p>
             </div>
           </section>
 
-          <section id="sec-datos-generales" class="sgpc-card">
+          <!-- =====================================================
+               DATOS GENERALES
+          ====================================================== -->
+
+          <section
+            id="sec-datos-generales"
+            class="sgpc-card"
+            data-section="01"
+          >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Datos generales</h3>
+                <h2 class="sgpc-card-title">
+                  Datos generales
+                </h2>
+
                 <p class="sgpc-card-desc">
-                  Información institucional para clasificación del registro.
+                  Información institucional para la clasificación del
+                  registro.
                 </p>
               </div>
             </div>
@@ -86,21 +161,32 @@
               <DatosGenerales
                 v-model="form.datos_generales"
                 :errors="fieldErrors"
-                :hideUbicacion="true"
-                :proyectoOpcional="true"
-                proyectoLabel="Proyecto de investigación"
-                areaLabel="Área del conocimiento (UNESCO)"
-                subareaLabel="Subárea del conocimiento (UNESCO)"
+                :hide-ubicacion="true"
+                :proyecto-opcional="true"
+                proyecto-label="Proyecto de investigación"
+                area-label="Área del conocimiento (UNESCO)"
+                subarea-label="Subárea del conocimiento (UNESCO)"
               />
             </div>
           </section>
 
-          <section id="sec-origen" class="sgpc-card">
+          <!-- =====================================================
+               ORIGEN
+          ====================================================== -->
+
+          <section
+            id="sec-origen"
+            class="sgpc-card"
+            data-section="02"
+          >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Origen de la publicación</h3>
+                <h2 class="sgpc-card-title">
+                  Origen de la publicación
+                </h2>
+
                 <p class="sgpc-card-desc">
-                  Relación académica del libro.
+                  Indique la relación académica del libro registrado.
                 </p>
               </div>
             </div>
@@ -108,36 +194,76 @@
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-origen_tipo">
-                    Origen de la publicación <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-origen_tipo"
+                  >
+                    Origen de la publicación
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <select
                     id="lb-origen_tipo"
+                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
+                    :aria-describedby="fieldErrors.origen_tipo ? 'lb-origen-tipo-error' : undefined"
                     v-model="form.origen_tipo"
                     class="sgpc-input"
                     required
                   >
-                    <option disabled value="">Seleccione...</option>
-                    <option value="ninguno">Ninguno</option>
-                    <option value="tic">Trabajo de integración curricular</option>
-                    <option value="maestria">Tesis de maestría</option>
-                    <option value="doctoral">Tesis doctoral</option>
+                    <option
+                      disabled
+                      value=""
+                    >
+                      Seleccione...
+                    </option>
+
+                    <option value="ninguno">
+                      Ninguno
+                    </option>
+
+                    <option value="tic">
+                      Trabajo de integración curricular
+                    </option>
+
+                    <option value="maestria">
+                      Tesis de maestría
+                    </option>
+
+                    <option value="doctoral">
+                      Tesis doctoral
+                    </option>
                   </select>
 
-                  <p v-if="fieldErrors.origen_tipo" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.origen_tipo"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-origen-tipo-error"
+                    role="alert">
                     {{ fieldErrors.origen_tipo }}
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-origen_grado">
+                  <label
+                    class="sgpc-label"
+                    for="lb-origen_grado"
+                  >
                     Grado / programa
-                    <span v-if="form.origen_tipo === 'tic'" class="req">*</span>
+
+                    <span
+                      v-if="form.origen_tipo === 'tic'"
+                      class="req"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="lb-origen_grado"
+                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
+                    :aria-describedby="fieldErrors.origen_grado ? 'lb-origen-grado-error' : undefined"
+                    maxlength="255"
                     v-model.trim="form.origen_grado"
                     class="sgpc-input"
                     type="text"
@@ -147,10 +273,16 @@
                   />
 
                   <p class="sgpc-hint">
-                    Se habilita solo cuando el origen es “Trabajo de integración curricular”.
+                    Se habilita únicamente cuando el origen es “Trabajo de
+                    integración curricular”.
                   </p>
 
-                  <p v-if="fieldErrors.origen_grado" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.origen_grado"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-origen-grado-error"
+                    role="alert">
                     {{ fieldErrors.origen_grado }}
                   </p>
                 </div>
@@ -158,12 +290,24 @@
             </div>
           </section>
 
-          <section id="sec-libro" class="sgpc-card">
+          <!-- =====================================================
+               INFORMACIÓN DEL LIBRO
+          ====================================================== -->
+
+          <section
+            id="sec-libro"
+            class="sgpc-card"
+            data-section="03"
+          >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Información del libro</h3>
+                <h2 class="sgpc-card-title">
+                  Información del libro
+                </h2>
+
                 <p class="sgpc-card-desc">
-                  Datos editoriales principales de la obra publicada.
+                  Datos bibliográficos y editoriales principales de la obra
+                  publicada.
                 </p>
               </div>
             </div>
@@ -171,12 +315,19 @@
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
                 <div class="sgpc-field sgpc-col-span-12">
-                  <label class="sgpc-label" for="lb-nombre_libro">
-                    Nombre del libro <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-nombre_libro"
+                  >
+                    Nombre del libro
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
                     id="lb-nombre_libro"
+                    :aria-invalid="Boolean(fieldErrors.nombre_libro)"
+                    :aria-describedby="fieldErrors.nombre_libro ? 'lb-nombre-libro-error' : undefined"
+                    maxlength="500"
                     v-model.trim="form.nombre_libro"
                     class="sgpc-input"
                     type="text"
@@ -184,36 +335,59 @@
                     placeholder="Ej. Innovación y desarrollo científico"
                   />
 
-                  <p v-if="fieldErrors.nombre_libro" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.nombre_libro"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-nombre-libro-error"
+                    role="alert">
                     {{ fieldErrors.nombre_libro }}
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-fecha_publicacion">
-                    Fecha de publicación <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-fecha_publicacion"
+                  >
+                    Fecha de publicación
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
                     id="lb-fecha_publicacion"
+                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    :aria-describedby="fieldErrors.fecha_publicacion ? 'lb-fecha-publicacion-error' : undefined"
                     v-model="form.fecha_publicacion"
                     class="sgpc-input"
                     type="date"
                     required
                   />
 
-                  <p v-if="fieldErrors.fecha_publicacion" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.fecha_publicacion"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-fecha-publicacion-error"
+                    role="alert">
                     {{ fieldErrors.fecha_publicacion }}
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-codigo_isbn">
-                    Código ISBN <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-codigo_isbn"
+                  >
+                    Código ISBN
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
                     id="lb-codigo_isbn"
+                    :aria-invalid="Boolean(fieldErrors.codigo_isbn)"
+                    :aria-describedby="fieldErrors.codigo_isbn ? 'lb-codigo-isbn-error' : undefined"
+                    maxlength="32"
                     v-model.trim="form.codigo_isbn"
                     class="sgpc-input"
                     type="text"
@@ -221,18 +395,34 @@
                     placeholder="Ej. 978-9942-xx-xxxx-x"
                   />
 
-                  <p v-if="fieldErrors.codigo_isbn" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.codigo_isbn"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-codigo-isbn-error"
+                    role="alert">
                     {{ fieldErrors.codigo_isbn }}
+                  </p>
+
+                  <p class="sgpc-hint">
+                    Ingrese el ISBN asignado oficialmente a la obra.
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-editorial_compilador">
-                    Editorial / Compilador <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-editorial_compilador"
+                  >
+                    Editorial / Compilador
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
                     id="lb-editorial_compilador"
+                    :aria-invalid="Boolean(fieldErrors.editorial_compilador)"
+                    :aria-describedby="fieldErrors.editorial_compilador ? 'lb-editorial-compilador-error' : undefined"
+                    maxlength="255"
                     v-model.trim="form.editorial_compilador"
                     class="sgpc-input"
                     type="text"
@@ -240,42 +430,73 @@
                     placeholder="Ej. Editorial ULEAM"
                   />
 
-                  <p v-if="fieldErrors.editorial_compilador" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.editorial_compilador"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-editorial-compilador-error"
+                    role="alert">
                     {{ fieldErrors.editorial_compilador }}
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="lb-revisor_par_arbitraje">
-                    Revisor par / arbitraje <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-revisor_par_arbitraje"
+                  >
+                    Revisor par / arbitraje
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <select
                     id="lb-revisor_par_arbitraje"
+                    :aria-invalid="Boolean(fieldErrors.revisor_par_arbitraje)"
+                    :aria-describedby="fieldErrors.revisor_par_arbitraje ? 'lb-revisor-par-arbitraje-error' : undefined"
                     v-model="form.revisor_par_arbitraje"
                     class="sgpc-input"
                     required
                   >
-                    <option disabled value="">Seleccione...</option>
-                    <option value="si">Sí</option>
-                    <option value="no">No</option>
+                    <option
+                      disabled
+                      value=""
+                    >
+                      Seleccione...
+                    </option>
+
+                    <option value="si">
+                      Sí
+                    </option>
+
+                    <option value="no">
+                      No
+                    </option>
                   </select>
 
                   <p
                     v-if="fieldErrors.revisor_par_arbitraje"
                     class="sgpc-hint sgpc-hint-error"
-                  >
+                  
+                    id="lb-revisor-par-arbitraje-error"
+                    role="alert">
                     {{ fieldErrors.revisor_par_arbitraje }}
                   </p>
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-12">
-                  <label class="sgpc-label" for="lb-link_libro">
-                    Link del libro <span class="req">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="lb-link_libro"
+                  >
+                    Link del libro
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
                     id="lb-link_libro"
+                    :aria-invalid="Boolean(fieldErrors.link_libro)"
+                    :aria-describedby="fieldErrors.link_libro ? 'lb-link-libro-error' : undefined"
+                    maxlength="500"
                     v-model.trim="form.link_libro"
                     class="sgpc-input"
                     type="url"
@@ -283,7 +504,12 @@
                     placeholder="https://..."
                   />
 
-                  <p v-if="fieldErrors.link_libro" class="sgpc-hint sgpc-hint-error">
+                  <p
+                    v-if="fieldErrors.link_libro"
+                    class="sgpc-hint sgpc-hint-error"
+                  
+                    id="lb-link-libro-error"
+                    role="alert">
                     {{ fieldErrors.link_libro }}
                   </p>
                 </div>
@@ -291,36 +517,63 @@
             </div>
           </section>
 
-          <section id="sec-autores" class="sgpc-card">
+          <!-- =====================================================
+               AUTORES
+          ====================================================== -->
+
+          <section
+            id="sec-autores"
+            class="sgpc-card"
+            data-section="04"
+          >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Autores</h3>
+                <h2 class="sgpc-card-title">
+                  Autores
+                </h2>
+
                 <p class="sgpc-card-desc">
-                  Seleccione autores y defina su participación y orden.
+                  Seleccione autores y defina su participación y orden de
+                  firma.
                 </p>
               </div>
             </div>
 
             <div class="sgpc-card-body">
-              <div id="lb-autores-anchor"></div>
+              <div id="lb-autores-anchor" tabindex="-1"></div>
 
               <AutoresSelector
                 v-model="form.autores"
                 :error="fieldErrors.autores"
               />
 
-              <p v-if="fieldErrors.autores" class="sgpc-hint sgpc-hint-error">
+              <p
+                v-if="fieldErrors.autores"
+                class="sgpc-hint sgpc-hint-error"
+              >
                 {{ fieldErrors.autores }}
               </p>
             </div>
           </section>
 
-          <section id="sec-adjuntos" class="sgpc-card">
+          <!-- =====================================================
+               ADJUNTOS
+          ====================================================== -->
+
+          <section
+            id="sec-adjuntos"
+            class="sgpc-card"
+            data-section="05"
+          >
             <div class="sgpc-card-head">
               <div>
-                <h3 class="sgpc-card-title">Adjuntos PDF</h3>
+                <h2 class="sgpc-card-title">
+                  Adjuntos PDF
+                </h2>
+
                 <p class="sgpc-card-desc">
-                  Puede adjuntar el PDF principal del libro y soportes complementarios.
+                  Adjunte el PDF principal del libro y los soportes
+                  complementarios necesarios.
                 </p>
               </div>
             </div>
@@ -342,104 +595,286 @@
             </div>
           </section>
 
-          <div v-if="mensaje" :class="['sgpc-alert', `is-${mensajeTipo}`]">
+          <!-- =====================================================
+               MENSAJES
+          ====================================================== -->
+
+          <div
+            v-if="mensaje"
+            :class="[
+              'sgpc-alert',
+              `is-${mensajeTipo}`,
+            ]"
+            :role="mensajeTipo === 'error' ? 'alert' : 'status'"
+            :aria-live="mensajeTipo === 'error' ? 'assertive' : 'polite'"
+          >
             {{ mensaje }}
           </div>
         </main>
 
+        <!-- =====================================================
+             RESUMEN LATERAL
+        ====================================================== -->
+
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
             <div class="sgpc-summary-head">
-              <h3>Resumen del registro</h3>
+              <div
+                class="sgpc-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3V3Zm3 2H6v13a1 1 0 0 0 1 1h11V6a1 1 0 0 0-1-1H7Zm2 3h6v2H9V8Z"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <p class="sgpc-summary-kicker">
+                  Seguimiento
+                </p>
+
+                <h3>
+                  Resumen del registro
+                </h3>
+              </div>
             </div>
 
             <div class="sgpc-progress">
               <div class="sgpc-progress-row">
                 <span>Completitud</span>
-                <strong>{{ progressPercent }}%</strong>
+
+                <strong>
+                  {{ progressPercent }}%
+                </strong>
               </div>
 
-              <div class="sgpc-progress-bar">
-                <span :style="{ width: `${progressPercent}%` }"></span>
+              <div
+                class="sgpc-progress-bar"
+                role="progressbar"
+                aria-label="Completitud del formulario"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-valuenow="progressPercent"
+              >
+                <span
+                  :style="{
+                    width: `${progressPercent}%`,
+                  }"
+                ></span>
               </div>
+
+              <p class="sgpc-progress-caption">
+                {{ completedRequiredCount }} de
+                {{ totalRequiredCount }} secciones obligatorias completas
+              </p>
             </div>
 
             <div class="sgpc-status-list">
               <button
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredContext }"
+                :class="{
+                  'is-ok': hasRequiredContext,
+                }"
                 @click="goTo('sec-datos-generales')"
               >
                 <div>
-                  <strong>Datos generales</strong>
-                  <span>{{ hasRequiredContext ? "Completo" : "Campos pendientes" }}</span>
+                  <strong>
+                    Datos generales
+                  </strong>
+
+                  <span>
+                    {{
+                      hasRequiredContext
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
+                  </span>
                 </div>
-                <em>{{ hasRequiredContext ? "Completo" : "Pendiente" }}</em>
+
+                <em>
+                  {{
+                    hasRequiredContext
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredOrigin }"
+                :class="{
+                  'is-ok': hasRequiredOrigin,
+                }"
                 @click="goTo('sec-origen')"
               >
                 <div>
-                  <strong>Origen</strong>
-                  <span>{{ hasRequiredOrigin ? "Completo" : "Campos pendientes" }}</span>
+                  <strong>
+                    Origen
+                  </strong>
+
+                  <span>
+                    {{
+                      hasRequiredOrigin
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
+                  </span>
                 </div>
-                <em>{{ hasRequiredOrigin ? "Completo" : "Pendiente" }}</em>
+
+                <em>
+                  {{
+                    hasRequiredOrigin
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredBook }"
+                :class="{
+                  'is-ok': hasRequiredBook,
+                }"
                 @click="goTo('sec-libro')"
               >
                 <div>
-                  <strong>Información del libro</strong>
-                  <span>{{ hasRequiredBook ? "Completo" : "Campos pendientes" }}</span>
+                  <strong>
+                    Información del libro
+                  </strong>
+
+                  <span>
+                    {{
+                      hasRequiredBook
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
+                  </span>
                 </div>
-                <em>{{ hasRequiredBook ? "Completo" : "Pendiente" }}</em>
+
+                <em>
+                  {{
+                    hasRequiredBook
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredAuthors }"
+                :class="{
+                  'is-ok': hasRequiredAuthors,
+                }"
                 @click="goTo('sec-autores')"
               >
                 <div>
-                  <strong>Autores</strong>
+                  <strong>
+                    Autores
+                  </strong>
+
                   <span>
-                    {{ hasRequiredAuthors ? `${form.autores.length} autor(es)` : "Sin autores" }}
+                    {{
+                      hasRequiredAuthors
+                        ? `${form.autores.length} autor(es)`
+                        : "Sin autores"
+                    }}
                   </span>
                 </div>
-                <em>{{ hasRequiredAuthors ? "Completo" : "Pendiente" }}</em>
+
+                <em>
+                  {{
+                    hasRequiredAuthors
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasAdjuntos }"
+                :class="{
+                  'is-ok': hasAdjuntos,
+                }"
                 @click="goTo('sec-adjuntos')"
               >
                 <div>
-                  <strong>Adjuntos PDF</strong>
-                  <span>{{ hasAdjuntos ? `${form.archivos.length} archivo(s)` : "Opcional" }}</span>
+                  <strong>
+                    Adjuntos PDF
+                  </strong>
+
+                  <span>
+                    {{
+                      hasAdjuntos
+                        ? `${form.archivos.length} archivo(s)`
+                        : "Opcional"
+                    }}
+                  </span>
                 </div>
-                <em>{{ hasAdjuntos ? "Completo" : "Opcional" }}</em>
+
+                <em>
+                  {{
+                    hasAdjuntos
+                      ? "Completo"
+                      : "Opcional"
+                  }}
+                </em>
               </button>
             </div>
 
             <div class="sgpc-summary-actions">
-              <button class="sgpc-btn-primary" type="submit" :disabled="loading">
-                <span v-if="loading">{{ submitLoadingText }}</span>
-                <span v-else>{{ submitText }}</span>
+              <button
+                class="sgpc-btn-primary sgpc-publication-submit"
+                type="submit"
+                :disabled="loading"
+                :aria-busy="loading ? 'true' : 'false'"
+              >
+                <span
+                  v-if="loading"
+                  class="sgpc-spinner"
+                  aria-hidden="true"
+                ></span>
+
+                <svg
+                  v-else
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M5 4h12l2 2v14H5V4Zm2 2v12h10V7.2L15.8 6H7Zm2 2h6v4H9V8Zm0 6h6v2H9v-2Z"
+                  />
+                </svg>
+
+                <span>
+                  {{
+                    loading
+                      ? submitLoadingText
+                      : submitText
+                  }}
+                </span>
               </button>
 
-              <button class="sgpc-btn" type="button" :disabled="loading" @click="clearDraft">
+              <button
+                class="sgpc-btn"
+                type="button"
+                :disabled="loading"
+                title="Elimina únicamente el borrador guardado en este navegador"
+                @click="clearDraft"
+              >
                 Limpiar borrador
               </button>
             </div>
@@ -454,27 +889,34 @@
 import DatosGenerales from "../componentes/DatosGenerales.vue";
 import AutoresSelector from "../componentes/AutoresSelector.vue";
 import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
+
 import api from "../../scripts/api/axios";
+
 import {
   restoreDraftArchivos,
   serializeDraftArchivos,
   appendArchivosToFormData,
 } from "../../scripts/utils/adjuntosPdf";
 
-const BASE_STORAGE_KEY = "sgpc-libro-draft:v21";
-const STANDARD_CREATE_ENDPOINT = "/libros/";
-const ADMIN_CREATE_ENDPOINT = "/admin/publicaciones/libros/crear/";
+const BASE_STORAGE_KEY =
+  "sgpc-libro-draft:v21";
 
-const ERROR_KEY_ALIASES = {
+const STANDARD_CREATE_ENDPOINT =
+  "/libros/";
+
+const ADMIN_CREATE_ENDPOINT =
+  "/admin/publicaciones/libros/crear/";
+
+const ERROR_KEY_ALIASES = Object.freeze({
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
   archivo_pdf: "archivos",
   non_field_errors: "admin_context",
-};
+});
 
-const FIELD_LABELS = {
+const FIELD_LABELS = Object.freeze({
   admin_context: "Usuario objetivo",
   facultad: "Facultad",
   carrera: "Carrera",
@@ -491,15 +933,79 @@ const FIELD_LABELS = {
   link_libro: "Link del libro",
   autores: "Autores",
   archivos: "Adjuntos PDF",
-};
+});
 
-function asText(v) {
-  if (Array.isArray(v)) return v.map(asText).join(", ");
-  if (v != null && typeof v === "object") {
-    return Object.values(v).map(asText).join(", ");
+const ERROR_FIELD_ORDER = Object.freeze([
+  "admin_context",
+  "facultad",
+  "carrera",
+  "proyecto",
+  "area",
+  "subarea",
+  "origen_tipo",
+  "origen_grado",
+  "nombre_libro",
+  "fecha_publicacion",
+  "codigo_isbn",
+  "editorial_compilador",
+  "revisor_par_arbitraje",
+  "link_libro",
+  "autores",
+  "archivos",
+]);
+
+function createEmptyForm() {
+  return {
+    datos_generales: {
+      facultad: null,
+      carrera: null,
+      proyecto: null,
+      area: null,
+      subarea: null,
+      pais: null,
+      ciudad: null,
+    },
+
+    origen_tipo: "",
+    origen_grado: "",
+    nombre_libro: "",
+    fecha_publicacion: "",
+    codigo_isbn: "",
+    editorial_compilador: "",
+    revisor_par_arbitraje: "",
+    link_libro: "",
+    autores: [],
+    archivos: [],
+  };
+}
+
+function asText(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(asText)
+      .filter(Boolean)
+      .join(", ");
   }
-  if (v == null) return "";
-  return String(v);
+
+  if (
+    value !== null &&
+    value !== undefined &&
+    typeof value === "object"
+  ) {
+    return Object.values(value)
+      .map(asText)
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+  return String(value).trim();
 }
 
 function normalizeErrorKey(key) {
@@ -507,76 +1013,132 @@ function normalizeErrorKey(key) {
 }
 
 function normalizeDrfErrors(data) {
-  if (!data) return { fields: {}, message: "No se pudo guardar. Verifique los campos." };
+  if (!data) {
+    return {
+      fields: {},
+      message:
+        "No se pudo guardar. Verifique los campos.",
+    };
+  }
 
-  if (typeof data?.detail === "string") {
-    return { fields: {}, message: data.detail };
+  if (
+    typeof data?.detail === "string"
+  ) {
+    return {
+      fields: {},
+      message: data.detail,
+    };
   }
 
   const rawErrors =
-    data?.errors && typeof data.errors === "object"
+    data?.errors &&
+    typeof data.errors === "object"
       ? data.errors
       : data;
 
-  if (typeof rawErrors !== "object" || rawErrors == null) {
-    return { fields: {}, message: "No se pudo guardar. Verifique los campos." };
+  if (
+    typeof rawErrors !== "object" ||
+    rawErrors === null
+  ) {
+    return {
+      fields: {},
+      message:
+        "No se pudo guardar. Verifique los campos.",
+    };
   }
 
   const fields = {};
   let first = null;
 
-  Object.entries(rawErrors).forEach(([k, v]) => {
-    if (k === "detail") return;
-    const normalizedKey = normalizeErrorKey(k);
-    fields[normalizedKey] = asText(v);
-    if (!first) first = normalizedKey;
-  });
+  Object.entries(rawErrors).forEach(
+    ([key, value]) => {
+      if (key === "detail") {
+        return;
+      }
 
-  let message = "No se pudo registrar. Revise los campos marcados.";
+      const normalizedKey =
+        normalizeErrorKey(key);
+
+      const message =
+        asText(value);
+
+      if (!message) {
+        return;
+      }
+
+      fields[normalizedKey] =
+        message;
+
+      if (!first) {
+        first = normalizedKey;
+      }
+    }
+  );
+
+  let message =
+    "No se pudo registrar. Revise los campos marcados.";
 
   if (fields.admin_context) {
-    message = fields.admin_context;
+    message =
+      fields.admin_context;
   } else if (fields.autores) {
     message =
       "Revise la sección de Autores: debe existir al menos un autor y el orden debe ser válido.";
   } else if (fields.archivos) {
-    message = "Revise la sección de Adjuntos PDF.";
+    message =
+      "Revise la sección de Adjuntos PDF.";
   } else if (first) {
-    const label = FIELD_LABELS[first] || first;
-    message = `${label}: ${fields[first]}`;
+    const label =
+      FIELD_LABELS[first] ||
+      first;
+
+    message =
+      `${label}: ${fields[first]}`;
   }
 
-  return { fields, message };
+  return {
+    fields,
+    message,
+  };
 }
 
 function firstErrorField(fields) {
-  const order = [
-    "admin_context",
-    "facultad",
-    "carrera",
-    "proyecto",
-    "area",
-    "subarea",
-    "origen_tipo",
-    "origen_grado",
-    "nombre_libro",
-    "fecha_publicacion",
-    "codigo_isbn",
-    "editorial_compilador",
-    "revisor_par_arbitraje",
-    "link_libro",
-    "autores",
-    "archivos",
-  ];
+  for (const key of ERROR_FIELD_ORDER) {
+    if (fields?.[key]) {
+      return key;
+    }
+  }
 
-  for (const k of order) if (fields?.[k]) return k;
-  return Object.keys(fields || {})[0] || null;
+  return (
+    Object.keys(fields || {})[0] ||
+    null
+  );
 }
 
-function appendIfPresent(fd, key, value) {
-  if (value === null || value === "" || value === undefined) return;
-  if (typeof value === "number" && !Number.isFinite(value)) return;
-  fd.append(key, String(value));
+function appendIfPresent(
+  formData,
+  key,
+  value
+) {
+  if (
+    value === null ||
+    value === "" ||
+    value === undefined
+  ) {
+    return;
+  }
+
+  if (
+    typeof value === "number" &&
+    !Number.isFinite(value)
+  ) {
+    return;
+  }
+
+  formData.append(
+    key,
+    String(value)
+  );
 }
 
 function normalizeComparableText(value) {
@@ -612,91 +1174,141 @@ export default {
         autorNombre: "",
       },
 
-      form: {
-        datos_generales: {
-          facultad: null,
-          carrera: null,
-          proyecto: null,
-          area: null,
-          subarea: null,
-          pais: null,
-          ciudad: null,
-        },
-        origen_tipo: "",
-        origen_grado: "",
-        nombre_libro: "",
-        fecha_publicacion: "",
-        codigo_isbn: "",
-        editorial_compilador: "",
-        revisor_par_arbitraje: "",
-        link_libro: "",
-        autores: [],
-        archivos: [],
-      },
+      form: createEmptyForm(),
     };
   },
 
   computed: {
     isAdminDelegado() {
-      const path = String(this.$route?.path || "");
-      const q = this.$route?.query || {};
-      const p = this.$route?.params || {};
+      const path =
+        String(
+          this.$route?.path ||
+          ""
+        );
+
+      const query =
+        this.$route?.query ||
+        {};
+
+      const params =
+        this.$route?.params ||
+        {};
 
       return Boolean(
-        this.$route?.meta?.delegatedPublication ||
-          path.startsWith("/admin/publicaciones/usuario/") ||
-          p.usuarioId ||
-          q.modo === "delegado" ||
-          q.delegado === "1" ||
-          q.admin === "1"
+        this.$route?.meta
+          ?.delegatedPublication ||
+          path.startsWith(
+            "/admin/publicaciones/usuario/"
+          ) ||
+          params.usuarioId ||
+          query.modo ===
+            "delegado" ||
+          query.delegado ===
+            "1" ||
+          query.admin ===
+            "1"
       );
     },
 
     draftStorageKey() {
       if (!this.isAdminDelegado) {
-        return `${BASE_STORAGE_KEY}:self`;
+        return (
+          `${BASE_STORAGE_KEY}:self`
+        );
       }
 
       const usuarioId =
-        this.adminContext.usuarioId ||
-        Number(this.$route?.params?.usuarioId || 0) ||
+        this.adminContext
+          .usuarioId ||
+        Number(
+          this.$route?.params
+            ?.usuarioId ||
+          0
+        ) ||
         "sin-usuario";
 
-      return `${BASE_STORAGE_KEY}:admin:${usuarioId}`;
+      return (
+        `${BASE_STORAGE_KEY}:admin:${usuarioId}`
+      );
     },
 
     adminDisplayUsuario() {
       return (
-        this.adminContext.usuarioNombre ||
-        `ID ${this.adminContext.usuarioId || "—"}`
+        this.adminContext
+          .usuarioNombre ||
+        `ID ${
+          this.adminContext
+            .usuarioId ||
+          "—"
+        }`
       );
     },
 
     adminDisplayAutor() {
-      if (this.adminContext.autorNombre) return this.adminContext.autorNombre;
-      if (this.adminContext.autorId) return `ID ${this.adminContext.autorId}`;
-      return "Se resolverá automáticamente";
+      if (
+        this.adminContext
+          .autorNombre
+      ) {
+        return (
+          this.adminContext
+            .autorNombre
+        );
+      }
+
+      if (
+        this.adminContext
+          .autorId
+      ) {
+        return (
+          `ID ${this.adminContext.autorId}`
+        );
+      }
+
+      return (
+        "Se resolverá automáticamente"
+      );
     },
 
     showAutorObjetivo() {
-      if (!this.isAdminDelegado) return false;
+      if (!this.isAdminDelegado) {
+        return false;
+      }
 
-      const usuarioNombre = normalizeComparableText(this.adminContext.usuarioNombre);
-      const autorNombre = normalizeComparableText(this.adminContext.autorNombre);
+      const usuarioNombre =
+        normalizeComparableText(
+          this.adminContext
+            .usuarioNombre
+        );
 
-      if (autorNombre && usuarioNombre && autorNombre !== usuarioNombre) {
+      const autorNombre =
+        normalizeComparableText(
+          this.adminContext
+            .autorNombre
+        );
+
+      if (
+        autorNombre &&
+        usuarioNombre &&
+        autorNombre !==
+          usuarioNombre
+      ) {
         return true;
       }
 
       if (
         this.adminContext.autorId &&
         this.adminContext.usuarioId &&
-        this.adminContext.autorId !== this.adminContext.usuarioId
+        this.adminContext.autorId !==
+          this.adminContext.usuarioId
       ) {
         return true;
       }
 
-      if (this.adminContext.autorId && !this.adminContext.usuarioNombre) {
+      if (
+        this.adminContext.autorId &&
+        !this.adminContext
+          .usuarioNombre
+      ) {
         return true;
       }
 
@@ -715,10 +1327,14 @@ export default {
 
     pageSubtitle() {
       if (this.isAdminDelegado) {
-        return "Registre la información editorial del libro para el usuario seleccionado. Los campos marcados con * son obligatorios.";
+        return (
+          "Registre la información editorial del libro para el usuario seleccionado. Los campos marcados con * son obligatorios."
+        );
       }
 
-      return "Registre la información editorial del libro, sus autores y evidencias. Los campos marcados con * son obligatorios.";
+      return (
+        "Registre la información editorial del libro, sus autores y evidencias. Los campos marcados con * son obligatorios."
+      );
     },
 
     submitText() {
@@ -730,57 +1346,148 @@ export default {
     },
 
     hasRequiredContext() {
-      const dg = this.form.datos_generales || {};
-      return !!(dg.facultad && dg.carrera && dg.area && dg.subarea);
+      const general =
+        this.form
+          .datos_generales ||
+        {};
+
+      return Boolean(
+        general.facultad &&
+        general.carrera &&
+        general.area &&
+        general.subarea
+      );
     },
 
     hasRequiredOrigin() {
-      if (!this.form.origen_tipo) return false;
-      if (this.form.origen_tipo === "tic") {
-        return !!String(this.form.origen_grado || "").trim();
+      if (
+        !this.form.origen_tipo
+      ) {
+        return false;
       }
+
+      if (
+        this.form.origen_tipo ===
+        "tic"
+      ) {
+        return Boolean(
+          String(
+            this.form
+              .origen_grado ||
+            ""
+          ).trim()
+        );
+      }
+
       return true;
     },
 
     hasRequiredBook() {
-      return !!(
-        String(this.form.nombre_libro || "").trim() &&
-        this.form.fecha_publicacion &&
-        String(this.form.codigo_isbn || "").trim() &&
-        String(this.form.editorial_compilador || "").trim() &&
-        String(this.form.revisor_par_arbitraje || "").trim() &&
-        String(this.form.link_libro || "").trim()
+      return Boolean(
+        String(
+          this.form
+            .nombre_libro ||
+          ""
+        ).trim() &&
+        this.form
+          .fecha_publicacion &&
+        String(
+          this.form
+            .codigo_isbn ||
+          ""
+        ).trim() &&
+        String(
+          this.form
+            .editorial_compilador ||
+          ""
+        ).trim() &&
+        String(
+          this.form
+            .revisor_par_arbitraje ||
+          ""
+        ).trim() &&
+        String(
+          this.form
+            .link_libro ||
+          ""
+        ).trim()
       );
     },
 
     hasRequiredAuthors() {
-      return Array.isArray(this.form.autores) && this.form.autores.length > 0;
+      return (
+        Array.isArray(
+          this.form.autores
+        ) &&
+        this.form.autores
+          .length > 0
+      );
     },
 
     hasAdjuntos() {
-      return Array.isArray(this.form.archivos) && this.form.archivos.length > 0;
+      return (
+        Array.isArray(
+          this.form.archivos
+        ) &&
+        this.form.archivos
+          .length > 0
+      );
     },
 
     requiredSections() {
       return [
-        { key: "datos", done: this.hasRequiredContext },
-        { key: "origen", done: this.hasRequiredOrigin },
-        { key: "libro", done: this.hasRequiredBook },
-        { key: "autores", done: this.hasRequiredAuthors },
+        {
+          key: "datos",
+          done:
+            this.hasRequiredContext,
+        },
+        {
+          key: "origen",
+          done:
+            this.hasRequiredOrigin,
+        },
+        {
+          key: "libro",
+          done:
+            this.hasRequiredBook,
+        },
+        {
+          key: "autores",
+          done:
+            this.hasRequiredAuthors,
+        },
       ];
     },
 
     completedRequiredCount() {
-      return this.requiredSections.filter((s) => s.done).length;
+      return this.requiredSections
+        .filter(
+          (section) =>
+            section.done
+        )
+        .length;
     },
 
     totalRequiredCount() {
-      return this.requiredSections.length;
+      return (
+        this.requiredSections
+          .length
+      );
     },
 
     progressPercent() {
-      if (!this.totalRequiredCount) return 0;
-      return Math.round((this.completedRequiredCount / this.totalRequiredCount) * 100);
+      if (
+        !this.totalRequiredCount
+      ) {
+        return 0;
+      }
+
+      return Math.round(
+        (
+          this.completedRequiredCount /
+          this.totalRequiredCount
+        ) * 100
+      );
     },
   },
 
@@ -790,49 +1497,96 @@ export default {
   },
 
   beforeUnmount() {
-    clearTimeout(this._draftTimer);
+    clearTimeout(
+      this._draftTimer
+    );
   },
 
   watch: {
     form: {
       deep: true,
-      handler(val) {
-        if (this._draftSuspended) return;
 
-        clearTimeout(this._draftTimer);
-        this._draftTimer = setTimeout(() => {
-          const payload = {
-            form: {
-              datos_generales: {
-                ...val.datos_generales,
-                pais: null,
-                ciudad: null,
+      handler(value) {
+        if (
+          this._draftSuspended
+        ) {
+          return;
+        }
+
+        clearTimeout(
+          this._draftTimer
+        );
+
+        this._draftTimer =
+          setTimeout(() => {
+            const payload = {
+              form: {
+                datos_generales: {
+                  ...value.datos_generales,
+                  pais: null,
+                  ciudad: null,
+                },
+
+                origen_tipo:
+                  value.origen_tipo,
+
+                origen_grado:
+                  value.origen_grado,
+
+                nombre_libro:
+                  value.nombre_libro,
+
+                fecha_publicacion:
+                  value.fecha_publicacion,
+
+                codigo_isbn:
+                  value.codigo_isbn,
+
+                editorial_compilador:
+                  value.editorial_compilador,
+
+                revisor_par_arbitraje:
+                  value.revisor_par_arbitraje,
+
+                link_libro:
+                  value.link_libro,
+
+                autores:
+                  value.autores,
+
+                archivos:
+                  serializeDraftArchivos(
+                    value.archivos
+                  ),
               },
-              origen_tipo: val.origen_tipo,
-              origen_grado: val.origen_grado,
-              nombre_libro: val.nombre_libro,
-              fecha_publicacion: val.fecha_publicacion,
-              codigo_isbn: val.codigo_isbn,
-              editorial_compilador: val.editorial_compilador,
-              revisor_par_arbitraje: val.revisor_par_arbitraje,
-              link_libro: val.link_libro,
-              autores: val.autores,
-              archivos: serializeDraftArchivos(val.archivos),
-            },
-            updatedAt: new Date().toISOString(),
-          };
 
-          try {
-            localStorage.setItem(this.draftStorageKey, JSON.stringify(payload));
-          } catch (e) {
-            console.warn("No se pudo guardar el borrador.", e);
-          }
-        }, 250);
+              updatedAt:
+                new Date()
+                  .toISOString(),
+            };
+
+            try {
+              localStorage.setItem(
+                this.draftStorageKey,
+                JSON.stringify(
+                  payload
+                )
+              );
+            } catch (error) {
+              console.warn(
+                "No se pudo guardar el borrador.",
+                error
+              );
+            }
+          }, 250);
       },
     },
 
-    "form.origen_tipo"(v) {
-      if (v !== "tic") this.form.origen_grado = "";
+    "form.origen_tipo"(value) {
+      if (value !== "tic") {
+        this.form.origen_grado =
+          "";
+      }
     },
 
     "$route.fullPath"() {
@@ -842,73 +1596,161 @@ export default {
 
   methods: {
     hydrateAdminContextFromRoute() {
-      const q = this.$route?.query || {};
-      const p = this.$route?.params || {};
+      const query =
+        this.$route?.query ||
+        {};
 
-      const usuarioId = Number(
-        p.usuarioId || q.usuario_id || q.usuarioId || q.user_id || 0
-      );
+      const params =
+        this.$route?.params ||
+        {};
 
-      const autorId = Number(
-        p.autorId || q.autor_id || q.autorId || 0
-      );
+      const usuarioId =
+        Number(
+          params.usuarioId ||
+          query.usuario_id ||
+          query.usuarioId ||
+          query.user_id ||
+          0
+        );
+
+      const autorId =
+        Number(
+          params.autorId ||
+          query.autor_id ||
+          query.autorId ||
+          0
+        );
 
       this.adminContext = {
-        usuarioId: Number.isFinite(usuarioId) && usuarioId > 0 ? usuarioId : null,
-        autorId: Number.isFinite(autorId) && autorId > 0 ? autorId : null,
-        usuarioNombre: String(
-          q.usuario_nombre || q.usuarioNombre || q.user_name || ""
-        ).trim(),
-        autorNombre: String(
-          q.autor_nombre || q.autorNombre || q.author_name || ""
-        ).trim(),
+        usuarioId:
+          Number.isFinite(
+            usuarioId
+          ) &&
+          usuarioId > 0
+            ? usuarioId
+            : null,
+
+        autorId:
+          Number.isFinite(
+            autorId
+          ) &&
+          autorId > 0
+            ? autorId
+            : null,
+
+        usuarioNombre:
+          String(
+            query.usuario_nombre ||
+            query.usuarioNombre ||
+            query.user_name ||
+            ""
+          ).trim(),
+
+        autorNombre:
+          String(
+            query.autor_nombre ||
+            query.autorNombre ||
+            query.author_name ||
+            ""
+          ).trim(),
       };
     },
 
     loadDraft() {
-      const raw = localStorage.getItem(this.draftStorageKey);
-      if (!raw) return;
+      let raw = null;
 
       try {
-        const parsed = JSON.parse(raw);
+        raw =
+          localStorage.getItem(
+            this.draftStorageKey
+          );
+      } catch (error) {
+        console.warn(
+          "No se pudo leer el borrador.",
+          error
+        );
+
+        return;
+      }
+
+      if (!raw) {
+        return;
+      }
+
+      try {
+        const parsed =
+          JSON.parse(raw);
 
         this.form = {
           ...this.form,
           ...(parsed.form || parsed),
+
           datos_generales: {
-            ...this.form.datos_generales,
-            ...((parsed.form?.datos_generales || parsed.datos_generales) || {}),
+            ...this.form
+              .datos_generales,
+
+            ...(
+              (
+                parsed.form
+                  ?.datos_generales ||
+                parsed.datos_generales
+              ) ||
+              {}
+            ),
+
             pais: null,
             ciudad: null,
           },
-          autores: Array.isArray(parsed.form?.autores ?? parsed.autores)
-            ? (parsed.form?.autores ?? parsed.autores)
-            : [],
-          archivos: restoreDraftArchivos(parsed.form?.archivos ?? parsed.archivos),
+
+          autores:
+            Array.isArray(
+              parsed.form?.autores ??
+              parsed.autores
+            )
+              ? (
+                  parsed.form?.autores ??
+                  parsed.autores
+                )
+              : [],
+
+          archivos:
+            restoreDraftArchivos(
+              parsed.form?.archivos ??
+              parsed.archivos
+            ),
         };
 
         if (parsed?.updatedAt) {
-          const dt = new Date(parsed.updatedAt);
-          this.draftInfo = `Se recuperó un borrador guardado (${dt.toLocaleString()}).`;
+          const date =
+            new Date(
+              parsed.updatedAt
+            );
+
+          this.draftInfo =
+            `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
         } else {
-          this.draftInfo = "Se recuperó un borrador guardado.";
+          this.draftInfo =
+            "Se recuperó un borrador guardado.";
         }
 
-        this.mensaje = "Se recuperó un borrador guardado.";
-        this.mensajeTipo = "info";
-      } catch (e) {
-        console.warn("Borrador corrupto, se ignora", e);
+      } catch (error) {
+        console.warn(
+          "Borrador corrupto, se ignora.",
+          error
+        );
       }
     },
 
     suspendDraftOnce() {
       this._draftSuspended = true;
-      setTimeout(() => {
+
+      this.$nextTick(() => {
         this._draftSuspended = false;
-      }, 0);
+      });
     },
 
     handleRouteContextChange() {
+      clearTimeout(this._draftTimer);
       this.hydrateAdminContextFromRoute();
       this.suspendDraftOnce();
       this.resetForm();
@@ -916,21 +1758,39 @@ export default {
     },
 
     goTo(id) {
-      const el = document.getElementById(id);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const element =
+        document.getElementById(
+          id
+        );
+
+      element?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     },
 
     clearDraft() {
+      clearTimeout(this._draftTimer);
+
       try {
-        localStorage.removeItem(this.draftStorageKey);
-      } catch (e) {
-        console.warn("No se pudo eliminar el borrador:", e);
+        localStorage.removeItem(
+          this.draftStorageKey
+        );
+      } catch (error) {
+        console.warn(
+          "No se pudo eliminar el borrador.",
+          error
+        );
       }
 
       this.suspendDraftOnce();
       this.resetForm();
-      this.mensaje = "Borrador eliminado.";
-      this.mensajeTipo = "info";
+
+      this.mensaje =
+        "Borrador eliminado.";
+
+      this.mensajeTipo =
+        "info";
     },
 
     clearErrors() {
@@ -941,131 +1801,324 @@ export default {
 
     focusField(key) {
       const localIdMap = {
-        admin_context: "lb-admin-context-anchor",
-        origen_tipo: "lb-origen_tipo",
-        origen_grado: "lb-origen_grado",
-        nombre_libro: "lb-nombre_libro",
-        fecha_publicacion: "lb-fecha_publicacion",
-        codigo_isbn: "lb-codigo_isbn",
-        editorial_compilador: "lb-editorial_compilador",
-        revisor_par_arbitraje: "lb-revisor_par_arbitraje",
-        link_libro: "lb-link_libro",
-        autores: "lb-autores-anchor",
-        archivos: "lb-archivo-input",
+        admin_context:
+          "lb-admin-context-anchor",
+
+        origen_tipo:
+          "lb-origen_tipo",
+
+        origen_grado:
+          "lb-origen_grado",
+
+        nombre_libro:
+          "lb-nombre_libro",
+
+        fecha_publicacion:
+          "lb-fecha_publicacion",
+
+        codigo_isbn:
+          "lb-codigo_isbn",
+
+        editorial_compilador:
+          "lb-editorial_compilador",
+
+        revisor_par_arbitraje:
+          "lb-revisor_par_arbitraje",
+
+        link_libro:
+          "lb-link_libro",
+
+        autores:
+          "lb-autores-anchor",
+
+        archivos:
+          "lb-archivo-input",
       };
 
-      const el =
-        document.getElementById(`dg-${key}`) ||
-        document.getElementById(localIdMap[key] || "");
+      const element =
+        document.getElementById(
+          `dg-${key}`
+        ) ||
+        document.getElementById(
+          localIdMap[key] ||
+          ""
+        );
 
-      if (!el) return;
-
-      if (key === "autores" || key === "archivos" || key === "admin_context") {
-        el.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      if (!element) {
         return;
       }
 
-      if (typeof el.focus === "function") el.focus({ preventScroll: false });
-      else el.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      if (
+        key === "autores" ||
+        key === "archivos" ||
+        key === "admin_context"
+      ) {
+        element.scrollIntoView?.({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        element.focus?.({
+          preventScroll: true,
+        });
+
+        return;
+      }
+
+      if (
+        typeof element.focus ===
+        "function"
+      ) {
+        element.focus({
+          preventScroll: false,
+        });
+      } else {
+        element.scrollIntoView?.({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
     },
 
     buildAutoresPayload() {
-      const raw = Array.isArray(this.form.autores) ? this.form.autores : [];
+      const raw =
+        Array.isArray(
+          this.form.autores
+        )
+          ? this.form.autores
+          : [];
 
       return raw
-        .map((a, index) => {
-          const id = Number(a?.autor_id ?? a?.id ?? a?.autor?.id);
-          if (!Number.isFinite(id) || id <= 0) return null;
+        .map(
+          (autor, index) => {
+            const id =
+              Number(
+                autor?.autor_id ??
+                autor?.id ??
+                autor?.autor?.id
+              );
 
-          const orden = index + 1;
+            if (
+              !Number.isFinite(id) ||
+              id <= 0
+            ) {
+              return null;
+            }
 
-          return {
-            autor_id: id,
-            orden,
-            rol_autoria: orden === 1 ? "principal" : "coautor",
-          };
-        })
+            const orden =
+              index + 1;
+
+            return {
+              autor_id: id,
+              orden,
+
+              rol_autoria:
+                orden === 1
+                  ? "principal"
+                  : "coautor",
+            };
+          }
+        )
         .filter(Boolean);
     },
 
     hasPendingRecoveredFiles() {
-      return (Array.isArray(this.form.archivos) ? this.form.archivos : []).some(
-        (it) => !it?.file && it?.originalName
+      return (
+        Array.isArray(
+          this.form.archivos
+        )
+          ? this.form.archivos
+          : []
+      ).some(
+        (item) =>
+          !item?.file &&
+          item?.originalName
       );
     },
 
     validateAdminContext() {
-      if (!this.isAdminDelegado) return null;
+      if (
+        !this.isAdminDelegado
+      ) {
+        return null;
+      }
 
-      if (!this.adminContext.usuarioId) {
-        return "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
+      if (
+        !this.adminContext
+          .usuarioId
+      ) {
+        return (
+          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
+        );
       }
 
       return null;
     },
 
     validateFront() {
-      const fe = {};
-      const dg = this.form.datos_generales || {};
+      const errors = {};
 
-      if (this.isAdminDelegado && !this.adminContext.usuarioId) {
-        fe.admin_context =
+      const general =
+        this.form
+          .datos_generales ||
+        {};
+
+      if (
+        this.isAdminDelegado &&
+        !this.adminContext
+          .usuarioId
+      ) {
+        errors.admin_context =
           "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
       }
 
-      if (!dg.facultad) fe.facultad = "Seleccione una facultad.";
-      if (!dg.carrera) fe.carrera = "Seleccione una carrera.";
-      if (!dg.area) fe.area = "Seleccione un área del conocimiento (UNESCO).";
-      if (!dg.subarea) fe.subarea = "Seleccione una subárea del conocimiento (UNESCO).";
-
-      if (!String(this.form.origen_tipo || "").trim()) {
-        fe.origen_tipo = "Seleccione el origen de la publicación.";
+      if (!general.facultad) {
+        errors.facultad =
+          "Seleccione una facultad.";
       }
 
-      if (this.form.origen_tipo === "tic" && !String(this.form.origen_grado || "").trim()) {
-        fe.origen_grado = "Campo obligatorio.";
+      if (!general.carrera) {
+        errors.carrera =
+          "Seleccione una carrera.";
       }
 
-      if (!String(this.form.nombre_libro || "").trim()) {
-        fe.nombre_libro = "Campo obligatorio.";
+      if (!general.area) {
+        errors.area =
+          "Seleccione un área del conocimiento (UNESCO).";
       }
 
-      if (!this.form.fecha_publicacion) {
-        fe.fecha_publicacion = "Campo obligatorio.";
+      if (!general.subarea) {
+        errors.subarea =
+          "Seleccione una subárea del conocimiento (UNESCO).";
       }
 
-      if (!String(this.form.codigo_isbn || "").trim()) {
-        fe.codigo_isbn = "Campo obligatorio.";
+      if (
+        !String(
+          this.form
+            .origen_tipo ||
+          ""
+        ).trim()
+      ) {
+        errors.origen_tipo =
+          "Seleccione el origen de la publicación.";
       }
 
-      if (!String(this.form.editorial_compilador || "").trim()) {
-        fe.editorial_compilador = "Campo obligatorio.";
+      if (
+        this.form.origen_tipo ===
+          "tic" &&
+        !String(
+          this.form
+            .origen_grado ||
+          ""
+        ).trim()
+      ) {
+        errors.origen_grado =
+          "Campo obligatorio.";
       }
 
-      if (!String(this.form.revisor_par_arbitraje || "").trim()) {
-        fe.revisor_par_arbitraje = "Seleccione Sí o No.";
+      if (
+        !String(
+          this.form
+            .nombre_libro ||
+          ""
+        ).trim()
+      ) {
+        errors.nombre_libro =
+          "Campo obligatorio.";
       }
 
-      if (!String(this.form.link_libro || "").trim()) {
-        fe.link_libro = "Campo obligatorio.";
+      if (
+        !this.form
+          .fecha_publicacion
+      ) {
+        errors.fecha_publicacion =
+          "Campo obligatorio.";
       }
 
-      if (!Array.isArray(this.form.autores) || this.form.autores.length === 0) {
-        fe.autores = "Debe registrar al menos un autor.";
+      if (
+        !String(
+          this.form
+            .codigo_isbn ||
+          ""
+        ).trim()
+      ) {
+        errors.codigo_isbn =
+          "Campo obligatorio.";
       }
 
-      if (this.hasPendingRecoveredFiles()) {
-        fe.archivos =
+      if (
+        !String(
+          this.form
+            .editorial_compilador ||
+          ""
+        ).trim()
+      ) {
+        errors.editorial_compilador =
+          "Campo obligatorio.";
+      }
+
+      if (
+        !String(
+          this.form
+            .revisor_par_arbitraje ||
+          ""
+        ).trim()
+      ) {
+        errors.revisor_par_arbitraje =
+          "Seleccione Sí o No.";
+      }
+
+      if (
+        !String(
+          this.form
+            .link_libro ||
+          ""
+        ).trim()
+      ) {
+        errors.link_libro =
+          "Campo obligatorio.";
+      }
+
+      if (
+        !Array.isArray(
+          this.form.autores
+        ) ||
+        this.form.autores
+          .length === 0
+      ) {
+        errors.autores =
+          "Debe registrar al menos un autor.";
+      }
+
+      if (
+        this.hasPendingRecoveredFiles()
+      ) {
+        errors.archivos =
           "Hay adjuntos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
       }
 
-      this.fieldErrors = fe;
+      this.fieldErrors =
+        errors;
 
-      if (Object.keys(fe).length) {
-        const first = firstErrorField(fe);
-        this.mensaje = "Complete los campos obligatorios antes de guardar.";
-        this.mensajeTipo = "error";
-        if (first) this.focusField(first);
+      if (
+        Object.keys(errors)
+          .length
+      ) {
+        const first =
+          firstErrorField(
+            errors
+          );
+
+        this.mensaje =
+          "Complete los campos obligatorios antes de guardar.";
+
+        this.mensajeTipo =
+          "error";
+
+        if (first) {
+          this.focusField(first);
+        }
+
         return false;
       }
 
@@ -1073,23 +2126,52 @@ export default {
     },
 
     buildCreateUrl() {
-      if (!this.isAdminDelegado) return STANDARD_CREATE_ENDPOINT;
-
-      const params = new URLSearchParams();
-
-      if (this.adminContext.usuarioId) {
-        params.set("usuario_id", String(this.adminContext.usuarioId));
+      if (!this.isAdminDelegado) {
+        return STANDARD_CREATE_ENDPOINT;
       }
 
-      if (this.adminContext.autorId) {
-        params.set("autor_id", String(this.adminContext.autorId));
+      const params =
+        new URLSearchParams();
+
+      if (
+        this.adminContext
+          .usuarioId
+      ) {
+        params.set(
+          "usuario_id",
+          String(
+            this.adminContext
+              .usuarioId
+          )
+        );
       }
 
-      const qs = params.toString();
-      return qs ? `${ADMIN_CREATE_ENDPOINT}?${qs}` : ADMIN_CREATE_ENDPOINT;
+      if (
+        this.adminContext
+          .autorId
+      ) {
+        params.set(
+          "autor_id",
+          String(
+            this.adminContext
+              .autorId
+          )
+        );
+      }
+
+      const queryString =
+        params.toString();
+
+      return queryString
+        ? `${ADMIN_CREATE_ENDPOINT}?${queryString}`
+        : ADMIN_CREATE_ENDPOINT;
     },
 
     async registrarLibro() {
+      if (this.loading) {
+        return;
+      }
+
       this.loading = true;
       this.clearErrors();
 
@@ -1099,46 +2181,103 @@ export default {
           return;
         }
 
-        const autoresPayload = this.buildAutoresPayload();
-        if (!autoresPayload.length) {
+        const autoresPayload =
+          this.buildAutoresPayload();
+
+        if (
+          !autoresPayload.length
+        ) {
           this.fieldErrors = {
             ...this.fieldErrors,
-            autores: "Los autores seleccionados no tienen ID válido.",
+
+            autores:
+              "Los autores seleccionados no tienen ID válido.",
           };
-          this.mensaje = "Revise la sección de autores.";
-          this.mensajeTipo = "error";
-          this.focusField("autores");
+
+          this.mensaje =
+            "Revise la sección de autores.";
+
+          this.mensajeTipo =
+            "error";
+
+          this.focusField(
+            "autores"
+          );
+
           this.loading = false;
           return;
         }
 
-        const adminValidationError = this.validateAdminContext();
-        if (adminValidationError) {
+        const adminValidationError =
+          this.validateAdminContext();
+
+        if (
+          adminValidationError
+        ) {
           this.fieldErrors = {
             ...this.fieldErrors,
-            admin_context: adminValidationError,
+
+            admin_context:
+              adminValidationError,
           };
-          this.mensaje = adminValidationError;
-          this.mensajeTipo = "error";
-          this.focusField("admin_context");
+
+          this.mensaje =
+            adminValidationError;
+
+          this.mensajeTipo =
+            "error";
+
+          this.focusField(
+            "admin_context"
+          );
+
           this.loading = false;
           return;
         }
 
-        const fd = new FormData();
+        const formData =
+          new FormData();
 
-        Object.entries(this.form.datos_generales).forEach(([k, v]) => {
-          if (k === "pais" || k === "ciudad") return;
-          appendIfPresent(fd, k, v);
-        });
+        Object.entries(
+          this.form
+            .datos_generales
+        ).forEach(
+          ([key, value]) => {
+            if (
+              key === "pais" ||
+              key === "ciudad"
+            ) {
+              return;
+            }
 
-        appendIfPresent(fd, "origen_tipo", this.form.origen_tipo || "ninguno");
+            appendIfPresent(
+              formData,
+              key,
+              value
+            );
+          }
+        );
 
-        if (this.form.origen_tipo === "tic") {
-          appendIfPresent(fd, "origen_grado", this.form.origen_grado);
+        appendIfPresent(
+          formData,
+          "origen_tipo",
+          this.form.origen_tipo ||
+            "ninguno"
+        );
+
+        if (
+          this.form.origen_tipo ===
+          "tic"
+        ) {
+          appendIfPresent(
+            formData,
+            "origen_grado",
+            this.form
+              .origen_grado
+          );
         }
 
-        const campos = [
+        const fields = [
           "nombre_libro",
           "fecha_publicacion",
           "codigo_isbn",
@@ -1147,56 +2286,140 @@ export default {
           "link_libro",
         ];
 
-        campos.forEach((k) => {
-          appendIfPresent(fd, k, this.form[k]);
-        });
+        fields.forEach(
+          (key) => {
+            appendIfPresent(
+              formData,
+              key,
+              this.form[key]
+            );
+          }
+        );
 
-        fd.append("autores", JSON.stringify(autoresPayload));
+        formData.append(
+          "autores",
+          JSON.stringify(
+            autoresPayload
+          )
+        );
 
-        if (this.isAdminDelegado && this.adminContext.usuarioId) {
-          fd.append("usuario_objetivo_id", String(this.adminContext.usuarioId));
+        if (
+          this.isAdminDelegado &&
+          this.adminContext
+            .usuarioId
+        ) {
+          formData.append(
+            "usuario_objetivo_id",
+            String(
+              this.adminContext
+                .usuarioId
+            )
+          );
 
-          if (this.adminContext.autorId) {
-            fd.append("autor_objetivo_id", String(this.adminContext.autorId));
+          if (
+            this.adminContext
+              .autorId
+          ) {
+            formData.append(
+              "autor_objetivo_id",
+              String(
+                this.adminContext
+                  .autorId
+              )
+            );
           }
         }
 
-        appendArchivosToFormData(fd, this.form.archivos, {
-          primaryField: "archivo_pdf",
-          filesField: "archivos",
-          metaField: "archivos_meta",
-        });
+        appendArchivosToFormData(
+          formData,
+          this.form.archivos,
+          {
+            primaryField:
+              "archivo_pdf",
 
-        await api.post(this.buildCreateUrl(), fd);
+            filesField:
+              "archivos",
+
+            metaField:
+              "archivos_meta",
+          }
+        );
+
+        await api.post(
+          this.buildCreateUrl(),
+          formData
+        );
 
         this.suspendDraftOnce();
-        localStorage.removeItem(this.draftStorageKey);
 
-        this.mensaje = this.isAdminDelegado
-          ? "Libro registrado correctamente para el usuario seleccionado."
-          : "Libro registrado exitosamente.";
-        this.mensajeTipo = "success";
+        try {
+          localStorage.removeItem(
+            this.draftStorageKey
+          );
+        } catch (error) {
+          console.warn(
+            "No se pudo eliminar el borrador después del registro.",
+            error
+          );
+        }
+
         this.resetForm();
+
+        this.mensaje =
+          this.isAdminDelegado
+            ? "Libro registrado correctamente para el usuario seleccionado."
+            : "Libro registrado exitosamente.";
+
+        this.mensajeTipo =
+          "success";
       } catch (error) {
-        const status = error?.response?.status;
-        const data = error?.response?.data;
+        const status =
+          error?.response
+            ?.status;
+
+        const data =
+          error?.response
+            ?.data;
 
         if (status === 401) {
-          this.mensaje = "Sesión expirada. Vuelva a iniciar sesión.";
-          this.mensajeTipo = "error";
-          this.loading = false;
+          this.mensaje =
+            "Sesión expirada. Vuelva a iniciar sesión.";
+
+          this.mensajeTipo =
+            "error";
+
           return;
         }
 
-        const normalized = normalizeDrfErrors(data);
-        this.fieldErrors = normalized.fields || {};
-        this.mensaje = normalized.message || "Error al registrar el libro.";
-        this.mensajeTipo = "error";
+        const normalized =
+          normalizeDrfErrors(
+            data
+          );
 
-        const first = firstErrorField(this.fieldErrors);
-        if (first) this.focusField(first);
+        this.fieldErrors =
+          normalized.fields ||
+          {};
 
-        console.error("❌ Error libro:", data || error);
+        this.mensaje =
+          normalized.message ||
+          "Error al registrar el libro.";
+
+        this.mensajeTipo =
+          "error";
+
+        const first =
+          firstErrorField(
+            this.fieldErrors
+          );
+
+        if (first) {
+          this.focusField(first);
+        }
+
+        console.error(
+          "❌ Error libro:",
+          data || error
+        );
       } finally {
         this.loading = false;
       }
@@ -1205,73 +2428,11 @@ export default {
     resetForm() {
       this.fieldErrors = {};
       this.draftInfo = "";
-
-      this.form = {
-        datos_generales: {
-          facultad: null,
-          carrera: null,
-          proyecto: null,
-          area: null,
-          subarea: null,
-          pais: null,
-          ciudad: null,
-        },
-        origen_tipo: "",
-        origen_grado: "",
-        nombre_libro: "",
-        fecha_publicacion: "",
-        codigo_isbn: "",
-        editorial_compilador: "",
-        revisor_par_arbitraje: "",
-        link_libro: "",
-        autores: [],
-        archivos: [],
-      };
+      this.form = createEmptyForm();
     },
   },
 };
 </script>
 
 <style src="../componentes/sgpc-fcvt.css"></style>
-
-<style scoped>
-.sgpc-alert {
-  white-space: pre-line;
-}
-
-.sgpc-card--admin-context {
-  border-style: dashed;
-}
-
-.sgpc-admin-context {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.sgpc-admin-context__item {
-  border: 1px solid var(--border-color, rgba(17, 17, 17, 0.12));
-  background: color-mix(in srgb, var(--bg-card, #ffffff) 90%, var(--bg-soft, #f4f2ed) 10%);
-  border-radius: 18px;
-  padding: 14px 16px;
-}
-
-.sgpc-admin-context__label {
-  display: block;
-  font-size: 0.82rem;
-  color: var(--text-secondary, #5f5a53);
-  margin-bottom: 6px;
-}
-
-.sgpc-admin-context__value {
-  display: block;
-  font-size: 0.98rem;
-  color: var(--text-primary, #111111);
-}
-
-@media (max-width: 980px) {
-  .sgpc-admin-context {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<style src="./libro-form.css"></style>

@@ -4,6 +4,7 @@
     id="as-autores"
     aria-labelledby="as-autores-title"
     :aria-busy="loadingAutores ? 'true' : 'false'"
+    :aria-describedby="props.error ? 'as-autores-error' : undefined"
   >
     <p class="as-sr-only as-live" aria-live="polite" aria-atomic="true">
       {{ liveMessage }}
@@ -41,8 +42,10 @@
 
     <p
       v-if="props.error"
+      id="as-autores-error"
       class="as-alert as-alert-error surface-enter surface-enter--2"
       role="alert"
+      aria-live="assertive"
     >
       {{ props.error }}
     </p>
@@ -755,6 +758,9 @@
                       id="nuevo-identificacion"
                       class="as-input"
                       v-model.trim="nuevo.identificacion"
+                      required
+                      maxlength="10"
+                      pattern="[0-9]{10}"
                       placeholder="Ej. 1312345678"
                       inputmode="numeric"
                       autocomplete="off"
@@ -793,6 +799,7 @@
                       class="as-input"
                       type="email"
                       v-model.trim="nuevo.correo"
+                      required
                       placeholder="correo@ejemplo.com"
                       autocomplete="off"
                       :aria-invalid="createFieldErrors.correo ? 'true' : 'false'"
@@ -829,6 +836,7 @@
                       id="nuevo-nombres"
                       class="as-input"
                       v-model.trim="nuevo.nombres"
+                      required
                       placeholder="Ej. María"
                       autocomplete="off"
                       :aria-invalid="createFieldErrors.nombres ? 'true' : 'false'"
@@ -861,6 +869,7 @@
                       id="nuevo-apellidos"
                       class="as-input"
                       v-model.trim="nuevo.apellidos"
+                      required
                       placeholder="Ej. Pérez"
                       autocomplete="off"
                       :aria-invalid="createFieldErrors.apellidos ? 'true' : 'false'"
@@ -893,6 +902,7 @@
                       id="nuevo-institucion"
                       class="as-input"
                       v-model.trim="nuevo.institucion"
+                      maxlength="255"
                       placeholder="Ej. Universidad Laica Eloy Alfaro de Manabí"
                       autocomplete="organization"
                       :aria-invalid="createFieldErrors.institucion ? 'true' : 'false'"
@@ -947,8 +957,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+
 import api from "../../scripts/api/axios";
+
+defineOptions({
+  name: "AutoresSelector",
+});
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -1084,11 +1106,7 @@ const getCurrentUserKey = () => {
 
     return String(userId).trim() || "guest";
   } catch {
-    return (
-      localStorage.getItem("autor_id") ||
-      localStorage.getItem("email") ||
-      "guest"
-    );
+    return "guest";
   }
 };
 
@@ -1105,6 +1123,7 @@ const autorKey = (autor, index) => {
 const asArrayResponse = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.data)) return data.data;
   return [];
 };
 
@@ -1144,7 +1163,7 @@ const dedupeById = (items = []) => {
 const normalizeAutores = (raw) => {
   return dedupeById(
     (raw || []).map((a) => {
-      const rawId = Number(a?.id);
+      const rawId = Number(a?.id ?? a?.autor_id);
       const nombres = String(a?.nombres ?? "").trim();
       const apellidos = String(a?.apellidos ?? "").trim();
       const correoResuelto = cleanEmail(a?.correo_resuelto ?? a?.correo);
@@ -1188,22 +1207,38 @@ const normalizeSelected = (arr) => {
   const base = Array.isArray(arr) ? [...arr] : [];
 
   const clean = base
-    .map((x) => {
-      const id = Number(x?.autor_id ?? x?.autor?.id ?? x?.id);
+    .map((item) => {
+      const nestedAutor =
+        item?.autor && typeof item.autor === "object"
+          ? item.autor
+          : null;
+
+      const id = Number(
+        item?.autor_id ??
+        nestedAutor?.id ??
+        item?.id
+      );
+
       if (!Number.isFinite(id) || id <= 0) return null;
 
-      const nombreCompleto = (
-        x?.nombre_completo ||
-        x?.autor_nombre ||
-        x?.nombre ||
-        x?.label ||
+      const nombreCompleto = String(
+        item?.nombre_completo ||
+        item?.autor_nombre ||
+        item?.nombre ||
+        item?.label ||
+        nestedAutor?.nombre_completo ||
+        nestedAutor?.autor_nombre ||
+        `${nestedAutor?.nombres || ""} ${nestedAutor?.apellidos || ""}`.trim() ||
         ""
       ).trim();
 
       return {
         autor_id: id,
-        orden: Number(x?.orden) || 9999,
-        rol_autoria: x?.rol_autoria === "principal" ? "principal" : "coautor",
+        orden: Number(item?.orden) || 9999,
+        rol_autoria:
+          item?.rol_autoria === "principal"
+            ? "principal"
+            : "coautor",
         nombre_completo: nombreCompleto,
       };
     })
@@ -1443,14 +1478,25 @@ const clearSearch = async () => {
 const duplicateAutor = computed(() => duplicateResult.value?.autor || null);
 const duplicateExists = computed(() => !!duplicateResult.value?.exists);
 
+const cancelDuplicateCheck = () => {
+  duplicateReq += 1;
+
+  if (duplicateTimer) {
+    window.clearTimeout(duplicateTimer);
+    duplicateTimer = null;
+  }
+
+  checkingDuplicate.value = false;
+};
+
 const resetDuplicateState = () => {
+  cancelDuplicateCheck();
+
   duplicateResult.value = {
     exists: false,
     match_type: null,
     autor: null,
   };
-
-  checkingDuplicate.value = false;
 };
 
 const resetCreateTouched = () => {
@@ -1582,10 +1628,12 @@ const runDuplicateCheck = async () => {
 
     if (reqId !== duplicateReq) return;
 
+    const responseData = res?.data?.data || res?.data || {};
+
     duplicateResult.value = {
-      exists: !!res?.data?.exists,
-      match_type: res?.data?.match_type || null,
-      autor: res?.data?.autor || null,
+      exists: !!responseData?.exists,
+      match_type: responseData?.match_type || null,
+      autor: responseData?.autor || null,
     };
 
     if (duplicateResult.value.exists) {
@@ -1911,7 +1959,11 @@ const mergeAutor = (autor) => {
 };
 
 const createDisabled = computed(() => {
-  return creating.value || checkingDuplicate.value;
+  return (
+    creating.value ||
+    checkingDuplicate.value ||
+    duplicateExists.value
+  );
 });
 
 const useDuplicateAutor = async () => {
@@ -1953,7 +2005,12 @@ const createAutor = async () => {
     };
 
     const res = await api.post("/autores/", payload);
-    const inserted = normalizeAutores([res.data])[0];
+    const responseAutor =
+      res?.data?.autor ||
+      res?.data?.data ||
+      res?.data;
+
+    const inserted = normalizeAutores([responseAutor])[0];
 
     if (!inserted?.id) {
       throw new Error("La respuesta del servidor no devolvió un autor válido.");
@@ -2084,6 +2141,9 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  refreshReq += 1;
+  duplicateReq += 1;
+
   document.body.classList.remove("as-modal-open");
   window.removeEventListener("keydown", onKey);
 

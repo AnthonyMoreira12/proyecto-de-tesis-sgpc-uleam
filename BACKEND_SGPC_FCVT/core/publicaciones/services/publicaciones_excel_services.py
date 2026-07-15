@@ -81,10 +81,26 @@ def _parse_year(value):
 
 
 def _safe_related(instance, attr_name):
+    if instance is None:
+        return None
+
     try:
         return getattr(instance, attr_name)
     except Exception:
         return None
+
+
+def _facultad_from_publicacion(pub):
+    """
+    Obtiene la facultad real desde la carrera de la publicación.
+
+    Regla de normalización:
+    Publicacion -> carrera -> facultad
+
+    No usar pub.facultad porque Publicacion ya no debe tener facultad directa.
+    """
+    carrera = _safe_related(pub, "carrera")
+    return _safe_related(carrera, "facultad")
 
 
 def _tipo_bucket(pub):
@@ -153,8 +169,8 @@ def _build_queryset(filters):
         Publicacion.objects.select_related(
             "tipo",
             "proyecto",
-            "facultad",
             "carrera",
+            "carrera__facultad",
             "area",
             "subarea",
             "pais",
@@ -167,7 +183,9 @@ def _build_queryset(filters):
         .prefetch_related(
             Prefetch(
                 "participaciones",
-                queryset=PublicacionAutor.objects.select_related("autor").order_by("orden"),
+                queryset=PublicacionAutor.objects.select_related("autor").order_by(
+                    "orden"
+                ),
                 to_attr="participaciones_ordenadas",
             ),
             "archivos",
@@ -184,7 +202,7 @@ def _build_queryset(filters):
             qs = qs.filter(anio_publicacion__lte=anio_hasta)
 
     if facultad_id.isdigit():
-        qs = qs.filter(facultad_id=int(facultad_id))
+        qs = qs.filter(carrera__facultad_id=int(facultad_id))
 
     if carrera_id.isdigit():
         qs = qs.filter(carrera_id=int(carrera_id))
@@ -194,7 +212,7 @@ def _build_queryset(filters):
 
     if texto:
         qs = qs.filter(
-            Q(facultad__nombre__icontains=texto)
+            Q(carrera__facultad__nombre__icontains=texto)
             | Q(carrera__nombre__icontains=texto)
             | Q(proyecto__nombre__icontains=texto)
             | Q(area__nombre__icontains=texto)
@@ -250,15 +268,19 @@ def _autor_data(pub):
     coautores = []
 
     for part in parts:
+        autor = _safe_related(part, "autor")
+        if not autor:
+            continue
+
         nombre = (
-            f"{_normalize_text(part.autor.nombres)} "
-            f"{_normalize_text(part.autor.apellidos)}"
+            f"{_normalize_text(autor.nombres)} "
+            f"{_normalize_text(autor.apellidos)}"
         ).strip()
 
         if not nombre:
             nombre = (
-                _normalize_text(part.autor.correo)
-                or _normalize_text(part.autor.identificacion)
+                _normalize_text(autor.correo)
+                or _normalize_text(autor.identificacion)
             )
 
         if part.orden == 1 or part.rol_autoria == "principal":
@@ -269,10 +291,12 @@ def _autor_data(pub):
 
     if not principal and parts:
         first = parts[0]
-        principal = (
-            f"{_normalize_text(first.autor.nombres)} "
-            f"{_normalize_text(first.autor.apellidos)}"
-        ).strip() or "—"
+        autor = _safe_related(first, "autor")
+        if autor:
+            principal = (
+                f"{_normalize_text(autor.nombres)} "
+                f"{_normalize_text(autor.apellidos)}"
+            ).strip() or "—"
 
     return principal or "—", " | ".join(coautores) or "—"
 
@@ -282,7 +306,12 @@ def _adjuntos_text(pub):
     if not archivos:
         return "—"
 
-    nombres = [archivo.nombre for archivo in archivos if _normalize_text(archivo.nombre)]
+    nombres = [
+        archivo.nombre
+        for archivo in archivos
+        if _normalize_text(getattr(archivo, "nombre", ""))
+    ]
+
     if nombres:
         return " | ".join(nombres)
 
@@ -359,14 +388,20 @@ def _display_base_indexada(articulo):
 
 
 def _base_common(pub):
+    facultad = _facultad_from_publicacion(pub)
+    carrera = _safe_related(pub, "carrera")
+    proyecto = _safe_related(pub, "proyecto")
+    area = _safe_related(pub, "area")
+    subarea = _safe_related(pub, "subarea")
+
     return OrderedDict(
         {
             "N°": pub.numero or pub.id,
-            "Facultad": _normalize_text(getattr(pub.facultad, "nombre", "")) or "—",
-            "Carrera": _normalize_text(getattr(pub.carrera, "nombre", "")) or "—",
-            "Proyecto": _normalize_text(getattr(pub.proyecto, "nombre", "")) or "—",
-            "Área": _normalize_text(getattr(pub.area, "nombre", "")) or "—",
-            "Subárea": _normalize_text(getattr(pub.subarea, "nombre", "")) or "—",
+            "Facultad": _normalize_text(getattr(facultad, "nombre", "")) or "—",
+            "Carrera": _normalize_text(getattr(carrera, "nombre", "")) or "—",
+            "Proyecto": _normalize_text(getattr(proyecto, "nombre", "")) or "—",
+            "Área": _normalize_text(getattr(area, "nombre", "")) or "—",
+            "Subárea": _normalize_text(getattr(subarea, "nombre", "")) or "—",
         }
     )
 
@@ -378,10 +413,14 @@ def _row_alto_impacto(pub):
     row = _base_common(pub)
     row.update(
         {
-            "Origen publicación": pub.get_origen_tipo_display() if pub.origen_tipo else "—",
+            "Origen publicación": pub.get_origen_tipo_display()
+            if pub.origen_tipo
+            else "—",
             "Grado / programa": _normalize_text(pub.origen_grado) or "—",
             "Título del artículo": _normalize_text(art.nombre_articulo) or "—",
-            "Fecha publicación": pub.fecha_publicacion.isoformat() if pub.fecha_publicacion else "—",
+            "Fecha publicación": pub.fecha_publicacion.isoformat()
+            if pub.fecha_publicacion
+            else "—",
             "Nombre revista": _normalize_text(art.nombre_revista) or "—",
             "N° revista": art.numero_revista if art.numero_revista is not None else "—",
             "ISSN": _normalize_text(art.codigo_issn) or "—",
@@ -406,16 +445,21 @@ def _row_regional(pub):
     row = _base_common(pub)
     row.update(
         {
-            "Origen publicación": pub.get_origen_tipo_display() if pub.origen_tipo else "—",
+            "Origen publicación": pub.get_origen_tipo_display()
+            if pub.origen_tipo
+            else "—",
             "Grado / programa": _normalize_text(pub.origen_grado) or "—",
             "Título del artículo": _normalize_text(art.nombre_articulo) or "—",
-            "Fecha publicación": pub.fecha_publicacion.isoformat() if pub.fecha_publicacion else "—",
+            "Fecha publicación": pub.fecha_publicacion.isoformat()
+            if pub.fecha_publicacion
+            else "—",
             "Base indexada": _display_base_indexada(art),
             "Otra base": (
                 _normalize_text(art.base_datos_otra)
                 if _normalize_lower(art.base_datos_indexada) == "otra"
                 else "—"
-            ) or "—",
+            )
+            or "—",
             "Nombre revista": _normalize_text(art.nombre_revista) or "—",
             "N° revista": art.numero_revista if art.numero_revista is not None else "—",
             "ISSN": _normalize_text(art.codigo_issn) or "—",
@@ -434,17 +478,23 @@ def _row_ponencia(pub):
     principal, coautores = _autor_data(pub)
     pon = pub.ponencia
     archivos = _get_archivos(pub)
+    pais = _safe_related(pub, "pais")
+    ciudad = _safe_related(pub, "ciudad")
 
     row = _base_common(pub)
     row.update(
         {
             "Nombre del evento": _normalize_text(pon.nombre_evento) or "—",
             "Link evento": _normalize_text(pon.link_evento) or "—",
-            "País": _normalize_text(getattr(pub.pais, "nombre", "")) or "—",
-            "Ciudad": _normalize_text(getattr(pub.ciudad, "nombre", "")) or "—",
+            "País": _normalize_text(getattr(pais, "nombre", "")) or "—",
+            "Ciudad": _normalize_text(getattr(ciudad, "nombre", "")) or "—",
             "Nombre ponencia": _normalize_text(pon.nombre_ponencia) or "—",
-            "Tipo presentación": pon.get_tipo_presentacion_display() if pon.tipo_presentacion else "—",
-            "Fecha presentación": pub.fecha_publicacion.isoformat() if pub.fecha_publicacion else "—",
+            "Tipo presentación": pon.get_tipo_presentacion_display()
+            if pon.tipo_presentacion
+            else "—",
+            "Fecha presentación": pub.fecha_publicacion.isoformat()
+            if pub.fecha_publicacion
+            else "—",
             "ISSN / ISBN": _normalize_text(pon.codigo_issn_isbn) or "—",
             "Autor principal": principal,
             "Coautores": coautores,
@@ -465,9 +515,13 @@ def _row_libro(pub):
         {
             "Nombre del libro": _normalize_text(libro.nombre_libro) or "—",
             "ISBN": _normalize_text(libro.codigo_isbn) or "—",
-            "Fecha publicación": pub.fecha_publicacion.isoformat() if pub.fecha_publicacion else "—",
+            "Fecha publicación": pub.fecha_publicacion.isoformat()
+            if pub.fecha_publicacion
+            else "—",
             "Editorial / Compilador": _normalize_text(libro.editorial_compilador) or "—",
-            "Revisor / arbitraje": libro.get_revisor_par_arbitraje_display() if libro.revisor_par_arbitraje else "—",
+            "Revisor / arbitraje": libro.get_revisor_par_arbitraje_display()
+            if libro.revisor_par_arbitraje
+            else "—",
             "Link libro": _normalize_text(libro.link_libro) or "—",
             "Autor principal": principal,
             "Coautores": coautores,
@@ -486,10 +540,14 @@ def _row_capitulo(pub):
         {
             "Nombre del capítulo": _normalize_text(cap.nombre_capitulo) or "—",
             "Nombre del libro": _normalize_text(cap.nombre_libro) or "—",
-            "Fecha publicación": pub.fecha_publicacion.isoformat() if pub.fecha_publicacion else "—",
+            "Fecha publicación": pub.fecha_publicacion.isoformat()
+            if pub.fecha_publicacion
+            else "—",
             "ISBN": _normalize_text(cap.codigo_isbn) or "—",
             "Editor / compilador": _normalize_text(cap.editor_compilador) or "—",
-            "Revisor / arbitraje": cap.get_revisor_par_arbitraje_display() if cap.revisor_par_arbitraje else "—",
+            "Revisor / arbitraje": cap.get_revisor_par_arbitraje_display()
+            if cap.revisor_par_arbitraje
+            else "—",
             "Link capítulo": _normalize_text(cap.link_capitulo) or "—",
             "Autor principal": principal,
             "Coautores": coautores,
@@ -554,7 +612,11 @@ def _style_sheet(ws, total_columns, total_rows):
         for col_idx in range(1, total_columns + 1):
             cell = ws.cell(row=row_idx, column=col_idx)
             cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
-            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            cell.alignment = Alignment(
+                horizontal="center",
+                vertical="center",
+                wrap_text=True,
+            )
 
             if col_idx == 1:
                 cell.fill = PatternFill("solid", fgColor=NUM_BG)

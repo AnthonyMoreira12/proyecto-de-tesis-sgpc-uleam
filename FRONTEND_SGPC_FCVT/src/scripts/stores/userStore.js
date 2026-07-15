@@ -20,68 +20,142 @@ const STORAGE_KEYS = AUTH_STORAGE_KEYS;
 let profileRefreshPromise = null;
 let authBootstrapPromise = null;
 
+const AVATAR_KEYS = Object.freeze([
+  "avatar_url",
+  "avatarUrl",
+  "avatar",
+  "foto_url",
+  "foto",
+  "photo_url",
+  "photo",
+]);
+
 const normalizeNullableString = (value) => {
   const text = String(value ?? "").trim();
-  return text || null;
+
+  if (!text) return null;
+
+  const lowered = text.toLowerCase();
+
+  if (
+    lowered === "null" ||
+    lowered === "undefined" ||
+    lowered === "none" ||
+    lowered === "nan" ||
+    lowered === "false"
+  ) {
+    return null;
+  }
+
+  return text;
+};
+
+const hasOwn = (obj, key) =>
+  Object.prototype.hasOwnProperty.call(obj || {}, key);
+
+const hasAvatarField = (data = {}) => {
+  return AVATAR_KEYS.some((key) => hasOwn(data, key));
+};
+
+const extractAvatarUrl = (data = {}, fallback = null) => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return normalizeNullableString(fallback);
+  }
+
+  const dataHasAvatarField = hasAvatarField(data);
+
+  if (!dataHasAvatarField) {
+    return normalizeNullableString(fallback);
+  }
+
+  for (const key of AVATAR_KEYS) {
+    const value = normalizeNullableString(data[key]);
+    if (value) return value;
+  }
+
+  return null;
 };
 
 const resolveAutorId = (u = {}) =>
   String(u?.autor_id ?? u?.author_id ?? u?.scholar_profile_id ?? "").trim();
 
-const normalizeUser = (data) => {
-  if (!data || typeof data !== "object") return null;
+const normalizeUser = (data, fallbackAvatar = null) => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
 
   const user = { ...data };
 
   user.is_staff = !!user.is_staff;
   user.is_superuser = !!user.is_superuser;
+
   user.is_admin = !!(
     user.is_admin ||
     user.es_admin ||
     user.is_staff ||
     user.is_superuser
   );
+
   user.es_admin = user.is_admin;
-  user.avatar_url = normalizeNullableString(user.avatar_url);
+  user.avatar_url = extractAvatarUrl(user, fallbackAvatar);
 
   return user;
 };
 
 export const useUserStore = defineStore("user", {
-  state: () => ({
-    accessToken: getAccessToken(),
-    refreshToken: getRefreshToken(),
-    user: normalizeUser(getStoredUser(null)),
+  state: () => {
+    const persistedAvatar = normalizeNullableString(
+      getStorageValue(STORAGE_KEYS.avatar, "")
+    );
 
-    nombres: getStorageValue(STORAGE_KEYS.nombres, ""),
-    apellidos: getStorageValue(STORAGE_KEYS.apellidos, ""),
-    avatar: normalizeNullableString(getStorageValue(STORAGE_KEYS.avatar, "")),
-    rol: getStorageValue(STORAGE_KEYS.rol, ""),
-    email: getStorageValue(STORAGE_KEYS.email, ""),
-    autorId: getStorageValue(STORAGE_KEYS.autorId, ""),
+    const storedUser = normalizeUser(getStoredUser(null), persistedAvatar);
 
-    hydrated: false,
-    profileRefreshing: false,
-  }),
+    return {
+      accessToken: getAccessToken(),
+      refreshToken: getRefreshToken(),
+      user: storedUser,
+
+      nombres: getStorageValue(STORAGE_KEYS.nombres, "") || storedUser?.nombres || "",
+      apellidos: getStorageValue(STORAGE_KEYS.apellidos, "") || storedUser?.apellidos || "",
+      avatar: normalizeNullableString(persistedAvatar || storedUser?.avatar_url || ""),
+      rol: getStorageValue(STORAGE_KEYS.rol, "") || storedUser?.rol || storedUser?.role || "",
+      email: getStorageValue(STORAGE_KEYS.email, "") || storedUser?.email || storedUser?.correo || "",
+      autorId: getStorageValue(STORAGE_KEYS.autorId, "") || resolveAutorId(storedUser || {}),
+
+      hydrated: false,
+      profileRefreshing: false,
+    };
+  },
 
   getters: {
     fullName(state) {
       const u = state.user;
       const ms = u?.ms_display_name ? String(u.ms_display_name).trim() : "";
+
       if (ms) return ms;
 
       const n = (state.nombres || u?.nombres || "").trim();
       const a = (state.apellidos || u?.apellidos || "").trim();
+
       return `${n} ${a}`.trim() || "Usuario";
     },
 
     avatarUrl(state) {
-      return normalizeNullableString(state.avatar || state.user?.avatar_url);
+      return normalizeNullableString(
+        state.avatar ||
+          state.user?.avatar_url ||
+          state.user?.avatarUrl ||
+          state.user?.avatar ||
+          state.user?.foto_url ||
+          state.user?.foto ||
+          state.user?.photo_url ||
+          state.user?.photo ||
+          ""
+      );
     },
 
     inicial(state) {
       const n = state.nombres || state.user?.nombres || "";
       const a = state.apellidos || state.user?.apellidos || "";
+
       return (n.trim()[0] || a.trim()[0] || "U").toUpperCase();
     },
 
@@ -121,7 +195,11 @@ export const useUserStore = defineStore("user", {
     },
 
     applyUserData(data) {
-      const normalized = normalizeUser(data);
+      const fallbackAvatar = normalizeNullableString(
+        this.avatar || this.user?.avatar_url || ""
+      );
+
+      const normalized = normalizeUser(data, fallbackAvatar);
 
       if (!normalized) {
         this.applyEmptyUserState();
@@ -141,7 +219,11 @@ export const useUserStore = defineStore("user", {
       this.accessToken = getAccessToken();
       this.refreshToken = getRefreshToken();
 
-      const persistedUser = normalizeUser(getStoredUser(null));
+      const persistedAvatar = normalizeNullableString(
+        getStorageValue(STORAGE_KEYS.avatar, "")
+      );
+
+      const persistedUser = normalizeUser(getStoredUser(null), persistedAvatar);
 
       if (persistedUser) {
         this.applyUserData(persistedUser);
@@ -149,15 +231,14 @@ export const useUserStore = defineStore("user", {
         this.user = null;
         this.nombres = getStorageValue(STORAGE_KEYS.nombres, "");
         this.apellidos = getStorageValue(STORAGE_KEYS.apellidos, "");
-        this.avatar = normalizeNullableString(
-          getStorageValue(STORAGE_KEYS.avatar, "")
-        );
+        this.avatar = normalizeNullableString(getStorageValue(STORAGE_KEYS.avatar, ""));
         this.rol = getStorageValue(STORAGE_KEYS.rol, "");
         this.email = getStorageValue(STORAGE_KEYS.email, "");
         this.autorId = getStorageValue(STORAGE_KEYS.autorId, "");
       }
 
       this.hydrated = true;
+      this.persistUserFields();
     },
 
     async refreshProfile(options = {}) {
@@ -212,7 +293,11 @@ export const useUserStore = defineStore("user", {
           return null;
         }
 
-        if (!force && this.user) {
+        /*
+          Si ya existe usuario pero no hay avatar, NO devolvemos cache.
+          Forzamos auth/profile/ para traer avatar_url desde el backend.
+        */
+        if (!force && this.user && this.avatarUrl) {
           return this.user;
         }
 
@@ -220,12 +305,14 @@ export const useUserStore = defineStore("user", {
           const profile = await this.refreshProfile({ throwOnError: true });
 
           if (!profile) {
+            if (this.user) return this.user;
             this.clearUser();
             return null;
           }
 
           return this.user;
         } catch {
+          if (this.user) return this.user;
           this.clearUser();
           return null;
         }
@@ -265,6 +352,7 @@ export const useUserStore = defineStore("user", {
 
     setAvatar(url) {
       const normalizedUrl = normalizeNullableString(url);
+
       this.avatar = normalizedUrl;
 
       if (this.user) {

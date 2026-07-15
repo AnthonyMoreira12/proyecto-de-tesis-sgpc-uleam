@@ -27,12 +27,14 @@ class PerfilAutorListSerializer(serializers.ModelSerializer):
         if not user:
             return "Autor externo"
 
-        facultad = getattr(user, "facultad", None)
         carrera = getattr(user, "carrera", None)
+        facultad = getattr(carrera, "facultad", None) if carrera else None
 
         parts = []
+
         if carrera and getattr(carrera, "nombre", None):
             parts.append(carrera.nombre)
+
         if facultad and getattr(facultad, "nombre", None):
             parts.append(facultad.nombre)
 
@@ -48,4 +50,4 @@ class PerfilAutorListSerializer(serializers.ModelSerializer):
             except Exception:
                 return user.avatar.url
 
-        return None 
+        return None

@@ -1,269 +1,596 @@
 <template>
-  <div class="perfil-container">
-    <div v-if="loading" class="perfil-shell perfil-shell--loading">
-      <section class="perfil-hero perfil-hero--skeleton">
-        <div class="sk-kicker"></div>
-        <div class="sk-title"></div>
-        <div class="sk-text"></div>
-
-        <div class="sk-pills">
-          <div class="sk-pill"></div>
-          <div class="sk-pill"></div>
-          <div class="sk-pill"></div>
-        </div>
+  <main class="perfil-container">
+    <div
+      v-if="loading"
+      class="perfil-shell"
+      aria-label="Cargando perfil"
+      aria-busy="true"
+    >
+      <section class="perfil-hero perfil-hero--loading">
+        <div class="perfil-skeleton sk-line sk-line--small"></div>
+        <div class="perfil-skeleton sk-line sk-line--title"></div>
+        <div class="perfil-skeleton sk-line sk-line--text"></div>
       </section>
 
-      <div class="perfil-layout perfil-skeleton">
-        <aside class="perfil-sidebar">
-          <div class="perfil-sidebar-card">
-            <div class="sk-avatar"></div>
-            <div class="sk-line w-70"></div>
-            <div class="sk-line w-50"></div>
-
-            <div class="sk-tags">
-              <div class="sk-pill"></div>
-              <div class="sk-pill"></div>
-            </div>
-
-            <div class="sk-actions">
-              <div class="sk-btn"></div>
-              <div class="sk-btn"></div>
-            </div>
-          </div>
+      <div class="perfil-layout">
+        <aside class="perfil-sidebar-card perfil-sidebar-card--loading">
+          <div class="perfil-skeleton sk-avatar"></div>
+          <div class="perfil-skeleton sk-line sk-line--name"></div>
+          <div class="perfil-skeleton sk-line sk-line--email"></div>
+          <div class="perfil-skeleton sk-block"></div>
         </aside>
 
-        <main class="perfil-main">
-          <div class="sk-card sk-card--notice"></div>
-          <div class="sk-card sk-card--panel"></div>
-          <div class="sk-card sk-card--panel"></div>
-        </main>
+        <div class="perfil-main">
+          <div class="perfil-card perfil-loading-card">
+            <div class="perfil-skeleton sk-line sk-line--section"></div>
+            <div class="perfil-skeleton sk-grid"></div>
+          </div>
+
+          <div class="perfil-card perfil-loading-card">
+            <div class="perfil-skeleton sk-line sk-line--section"></div>
+            <div class="perfil-skeleton sk-grid sk-grid--fields"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div v-else-if="user" class="perfil-shell">
-      <header class="perfil-hero page-stage page-hero page-stage-1">
+    <div
+      v-else-if="user"
+      class="perfil-shell"
+    >
+      <header
+        class="perfil-hero page-stage page-stage-1"
+        aria-labelledby="perfil-title"
+      >
         <div class="perfil-hero__copy">
-          <p class="perfil-kicker">Mi cuenta</p>
-          <h1 class="perfil-title">Perfil</h1>
+          <span class="perfil-kicker">
+            Cuenta institucional
+          </span>
+
+          <h1 id="perfil-title" class="perfil-title">
+            Mi perfil
+          </h1>
+
           <p class="perfil-subtitle">
-            Consulta el estado de tu cuenta y mantén actualizada tu información institucional.
+            Consulte y mantenga actualizada la información asociada a su cuenta
+            en SGPC ULEAM.
           </p>
         </div>
 
-        <div class="perfil-hero__meta">
-          <div class="perfil-head-pills" aria-label="Resumen del perfil">
-            <span
-              class="head-pill"
-              :class="perfilCompletoCalculado ? 'is-ok' : 'is-warn'"
-            >
-              {{ profileCompletion }}% completo
-            </span>
+        <div class="perfil-hero__actions">
+          <span
+            class="perfil-status-badge"
+            :class="{
+              'is-complete': perfilCompletoCalculado,
+              'is-pending': !perfilCompletoCalculado,
+            }"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                v-if="perfilCompletoCalculado"
+                d="m5 10 3 3 7-7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
 
-            <span
-              class="head-pill"
-              :class="canEditProfile ? 'is-ok' : 'is-warn'"
-            >
-              {{ canEditProfile ? "Edición disponible" : "Edición cerrada" }}
-            </span>
+              <path
+                v-else
+                d="M10 5.7v4.8M10 14.2h.01"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
 
-            <span class="head-pill">
-              {{ user.auth_source === "microsoft" ? "Microsoft 365" : "Cuenta local" }}
+            <span>
+              {{
+                perfilCompletoCalculado
+                  ? "Perfil completo"
+                  : `${profileCompletion}% completado`
+              }}
             </span>
-          </div>
+          </span>
 
           <button
-            class="btn-pill"
-            :class="canEditProfile ? 'btn-pill--primary' : 'btn-pill--ghost'"
+            class="perfil-primary-button"
+            :class="{
+              'is-disabled': !canEditProfile,
+            }"
             type="button"
-            :title="canEditProfile ? 'Editar perfil' : editDisabledReason"
+            :title="
+              canEditProfile
+                ? 'Editar información del perfil'
+                : editDisabledReason
+            "
             @click="handleEditAction"
           >
-            {{ canEditProfile ? "Editar perfil" : "Solicitar edición" }}
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="m12.7 4.2 3.1 3.1M4 16l2.8-.6 8.4-8.4a1.6 1.6 0 0 0 0-2.3 1.6 1.6 0 0 0-2.3 0L4.6 13.2 4 16Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+            <span>
+              {{
+                canEditProfile
+                  ? "Editar perfil"
+                  : "Edición no disponible"
+              }}
+            </span>
           </button>
         </div>
       </header>
 
-      <div class="perfil-layout page-stage page-content page-stage-2">
+      <div class="perfil-layout page-stage page-stage-2">
         <aside class="perfil-sidebar">
           <section class="perfil-sidebar-card">
-            <button
-              class="perfil-avatar-button"
-              type="button"
-              :title="avatarButtonLabel"
-              :aria-label="avatarButtonLabel"
-              @click="openAvatarFlow"
-            >
-              <img
-                v-if="hasAvatar"
-                :src="user.avatar_url"
-                alt="Foto de perfil"
-                class="perfil-avatar"
-              />
+            <div class="perfil-avatar-area">
+              <button
+                class="perfil-avatar-button"
+                type="button"
+                :title="avatarButtonLabel"
+                :aria-label="avatarButtonLabel"
+                @click="openAvatarFlow"
+              >
+                <img
+                  v-if="hasAvatar"
+                  :src="user.avatar_url"
+                  alt="Foto de perfil"
+                  class="perfil-avatar"
+                  @error="avatarBroken = true"
+                />
 
-              <div v-else class="perfil-avatar-placeholder">
-                {{ initials }}
-              </div>
-            </button>
+                <span
+                  v-else
+                  class="perfil-avatar-placeholder"
+                  aria-hidden="true"
+                >
+                  {{ initials }}
+                </span>
+
+                <span class="perfil-avatar-edit" aria-hidden="true">
+                  <svg viewBox="0 0 20 20">
+                    <path
+                      d="M4 6.5A2.5 2.5 0 0 1 6.5 4H8l1-1.3h2L12 4h1.5A2.5 2.5 0 0 1 16 6.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 13.5v-7Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="2.4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
 
             <div class="perfil-identidad">
-              <p class="perfil-eyebrow">Cuenta</p>
-              <h2 class="perfil-nombre">{{ displayName }}</h2>
-              <p class="perfil-correo">{{ user.email || "Sin correo registrado" }}</p>
+              <span class="perfil-eyebrow">
+                {{ roleLabel }}
+              </span>
+
+              <h2 class="perfil-nombre">
+                {{ displayName }}
+              </h2>
+
+              <p class="perfil-correo">
+                {{ user.email || "Sin correo registrado" }}
+              </p>
             </div>
 
             <div class="perfil-tags">
-              <span class="tag tag-rol">{{ roleLabel }}</span>
-
-              <span v-if="isAdmin" class="tag tag-admin">
-                Administrador
+              <span class="perfil-tag">
+                {{
+                  user.auth_source === "microsoft"
+                    ? "Microsoft 365"
+                    : "Cuenta local"
+                }}
               </span>
 
               <span
-                :class="[
-                  'tag',
-                  perfilCompletoCalculado ? 'tag-ok' : 'tag-warn'
-                ]"
+                v-if="isAdmin"
+                class="perfil-tag is-admin"
               >
-                {{ perfilCompletoCalculado ? "Completo" : "Pendiente" }}
+                Administrador
               </span>
             </div>
 
-            <div class="sidebar-primary-actions">
-              <button
-                class="btn-action btn-action--primary"
-                type="button"
-                @click="openAvatarFlow"
-              >
-                {{ hasAvatar ? "Actualizar foto" : "Agregar foto" }}
-              </button>
-
-              <p class="avatar-help">
-                JPG, PNG o WEBP · máximo {{ avatarMaxSizeLabel }}
-              </p>
-            </div>
-
-            <div class="sidebar-divider"></div>
-
-            <div class="sidebar-actions-block">
-              <div class="sidebar-section-title">Acceso</div>
-
-              <div class="sidebar-actions">
-                <button
-                  v-if="isAdmin"
-                  class="btn-action"
-                  type="button"
-                  @click="irAPanelAdmin"
-                >
-                  Panel administrativo
-                </button>
-
-                <button
-                  class="btn-action btn-action--danger"
-                  type="button"
-                  @click="cerrarSesion"
-                >
-                  Cerrar sesión
-                </button>
+            <div class="perfil-completion">
+              <div class="perfil-completion__top">
+                <span>Completitud</span>
+                <strong>{{ profileCompletion }}%</strong>
               </div>
 
-              <p v-if="user.auth_source === 'microsoft'" class="sidebar-hint">
-                Cuenta sincronizada con Microsoft 365.
+              <div
+                class="perfil-progress"
+                role="progressbar"
+                aria-label="Completitud del perfil"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-valuenow="profileCompletion"
+              >
+                <span
+                  :style="{
+                    width: `${profileCompletion}%`,
+                  }"
+                ></span>
+              </div>
+
+              <p>
+                {{
+                  perfilCompletoCalculado
+                    ? "La información requerida está registrada."
+                    : "Existen datos institucionales pendientes."
+                }}
               </p>
             </div>
+
+            <button
+              class="perfil-photo-button"
+              type="button"
+              @click="openAvatarFlow"
+            >
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="M4 6.5A2.5 2.5 0 0 1 6.5 4H8l1-1.3h2L12 4h1.5A2.5 2.5 0 0 1 16 6.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 13.5v-7Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="2.4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+              </svg>
+
+              <span>
+                {{ hasAvatar ? "Actualizar foto" : "Agregar foto" }}
+              </span>
+            </button>
+
+            <div class="perfil-sidebar-divider"></div>
+
+            <nav
+              class="perfil-quick-actions"
+              aria-label="Accesos de cuenta"
+            >
+              <button
+                v-if="isAdmin"
+                type="button"
+                @click="irAPanelAdmin"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="M10 2.5 3.5 5.4v4.4c0 3.7 2.7 7.1 6.5 8 3.8-.9 6.5-4.3 6.5-8V5.4L10 2.5Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <span>Panel administrativo</span>
+              </button>
+
+              <button
+                class="is-danger"
+                type="button"
+                @click="cerrarSesion"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="M8 3H4.5A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17H8M12.5 6.5 16 10l-3.5 3.5M7 10h9"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <span>Cerrar sesión</span>
+              </button>
+            </nav>
           </section>
         </aside>
 
-        <main class="perfil-main">
-          <section v-if="showIncompleteBanner" class="perfil-card perfil-notice">
-            <div class="perfil-notice__copy">
-              <div class="perfil-notice__title">
-                Información pendiente
-              </div>
+        <div class="perfil-main">
+          <section
+            v-if="showIncompleteBanner"
+            class="perfil-notice"
+          >
+            <span class="perfil-notice__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 3 2.8 19h18.4L12 3Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linejoin="round"
+                />
 
-              <div class="perfil-notice__text">
-                Completa los datos faltantes para mantener actualizado tu perfil institucional.
-              </div>
+                <path
+                  d="M12 9v4M12 16.5h.01"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
 
-              <div class="perfil-notice__meta">
-                <span class="notice-chip">
-                  Progreso: <strong>{{ profileCompletion }}%</strong>
+            <div class="perfil-notice__content">
+              <h2>Información pendiente</h2>
+
+              <p>
+                Complete los datos requeridos para mantener actualizado su
+                perfil institucional.
+              </p>
+
+              <div class="perfil-notice__details">
+                <span v-if="missingFields.length">
+                  Pendiente:
+                  <strong>{{ missingFields.join(", ") }}</strong>
                 </span>
 
-                <span v-if="missingFields.length" class="notice-chip">
-                  Pendiente: <strong>{{ missingFields.join(", ") }}</strong>
+                <span v-if="tiempoRestante">
+                  Tiempo disponible:
+                  <strong>
+                    {{ tiempoRestante.horas }}h
+                    {{ tiempoRestante.minutos }}m
+                  </strong>
                 </span>
-
-                <span v-if="tiempoRestante" class="notice-chip">
-                  Edición:
-                  <strong>{{ tiempoRestante.horas }}h {{ tiempoRestante.minutos }}m</strong>
-                </span>
-              </div>
-
-              <div class="progress-bar" aria-hidden="true">
-                <div
-                  class="progress-fill"
-                  :style="{ width: profileCompletion + '%' }"
-                ></div>
               </div>
             </div>
 
             <div class="perfil-notice__actions">
               <button
-                class="btn-mini btn-mini--primary"
                 type="button"
+                class="perfil-notice__primary"
                 @click="handleEditAction"
               >
                 Completar datos
               </button>
 
               <button
-                class="btn-mini"
                 type="button"
+                class="perfil-notice__secondary"
                 @click="dismissIncompleteBanner"
               >
-                Luego
+                Recordar después
               </button>
             </div>
           </section>
 
-          <section class="perfil-card perfil-card--data">
-            <div class="section-head">
+          <section
+            class="perfil-card"
+            aria-labelledby="account-summary-title"
+          >
+            <header class="perfil-card__head">
               <div>
-                <h3 class="section-title">Datos institucionales</h3>
-                <p class="section-subtitle">
-                  Información principal registrada en el sistema.
+                <span class="perfil-section-label">
+                  Cuenta
+                </span>
+
+                <h2 id="account-summary-title">
+                  Estado de la cuenta
+                </h2>
+
+                <p>
+                  Información de autenticación, permisos y disponibilidad de
+                  edición.
+                </p>
+              </div>
+            </header>
+
+            <div class="perfil-summary-grid">
+              <article class="perfil-summary-item">
+                <span class="perfil-summary-item__icon">
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path
+                      d="M10 2.5 3.5 5.4v4.4c0 3.7 2.7 7.1 6.5 8 3.8-.9 6.5-4.3 6.5-8V5.4L10 2.5Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="perfil-summary-item__label">
+                    Autenticación
+                  </span>
+
+                  <strong>
+                    {{
+                      user.auth_source === "microsoft"
+                        ? "Microsoft 365"
+                        : "Cuenta local"
+                    }}
+                  </strong>
+
+                  <p>{{ authSourceNote }}</p>
+                </div>
+              </article>
+
+              <article class="perfil-summary-item">
+                <span class="perfil-summary-item__icon">
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <circle
+                      cx="10"
+                      cy="6.5"
+                      r="3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <path
+                      d="M4.5 16c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="perfil-summary-item__label">
+                    Tipo de usuario
+                  </span>
+
+                  <strong>{{ roleLabel }}</strong>
+
+                  <p>
+                    {{
+                      isExternalAuthor
+                        ? "Cuenta registrada como autor externo."
+                        : "Cuenta vinculada a la institución."
+                    }}
+                  </p>
+                </div>
+              </article>
+
+              <article class="perfil-summary-item">
+                <span class="perfil-summary-item__icon">
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="7"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <path
+                      d="M10 6v4l2.5 1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="perfil-summary-item__label">
+                    Edición
+                  </span>
+
+                  <strong>
+                    <template v-if="tiempoRestante">
+                      Disponible por
+                      {{ tiempoRestante.horas }}h
+                      {{ tiempoRestante.minutos }}m
+                    </template>
+
+                    <template v-else>
+                      No disponible
+                    </template>
+                  </strong>
+
+                  <p>
+                    {{
+                      canEditProfile
+                        ? "Puede modificar los datos habilitados."
+                        : "Los cambios requieren intervención administrativa."
+                    }}
+                  </p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section
+            class="perfil-card"
+            aria-labelledby="institutional-data-title"
+          >
+            <header class="perfil-card__head">
+              <div>
+                <span class="perfil-section-label">
+                  Información
+                </span>
+
+                <h2 id="institutional-data-title">
+                  Datos institucionales
+                </h2>
+
+                <p>
+                  Datos principales asociados a su cuenta en el sistema.
                 </p>
               </div>
 
               <span
-                class="section-chip"
-                :class="perfilCompletoCalculado ? 'chip-ok' : 'chip-warn'"
+                class="perfil-card__status"
+                :class="{
+                  'is-complete': perfilCompletoCalculado,
+                  'is-pending': !perfilCompletoCalculado,
+                }"
               >
-                {{ perfilCompletoCalculado ? "Completo" : "Pendiente" }}
+                {{
+                  perfilCompletoCalculado
+                    ? "Completo"
+                    : "Pendiente"
+                }}
               </span>
-            </div>
+            </header>
 
             <dl class="perfil-fields">
               <div class="perfil-field perfil-field--wide">
                 <dt>{{ correoLabel }}</dt>
 
-                <dd class="dd-row">
-                  <span class="mono">{{ user.email || "—" }}</span>
+                <dd>
+                  <span class="perfil-field__value mono">
+                    {{ user.email || "—" }}
+                  </span>
 
                   <button
                     v-if="user.email"
-                    class="icon-btn"
+                    class="perfil-copy-button"
                     type="button"
                     aria-label="Copiar correo"
                     title="Copiar correo"
                     @click="copyText(user.email)"
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <rect
+                        x="6.5"
+                        y="6.5"
+                        width="9"
+                        height="9"
+                        rx="1.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
                       />
+
                       <path
-                        d="M6 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"
+                        d="M5 13.5H4.5A1.5 1.5 0 0 1 3 12V4.5A1.5 1.5 0 0 1 4.5 3H12a1.5 1.5 0 0 1 1.5 1.5V5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
                       />
                     </svg>
                   </button>
@@ -273,28 +600,41 @@
               <div class="perfil-field">
                 <dt>Identificación</dt>
 
-                <dd class="dd-row">
+                <dd>
                   <span
-                    class="mono"
-                    :class="{ 'is-empty': !user.identificacion }"
+                    class="perfil-field__value mono"
+                    :class="{
+                      'is-empty': !user.identificacion,
+                    }"
                   >
                     {{ user.identificacion || "Pendiente" }}
                   </span>
 
                   <button
                     v-if="user.identificacion"
-                    class="icon-btn"
+                    class="perfil-copy-button"
                     type="button"
                     aria-label="Copiar identificación"
                     title="Copiar identificación"
                     @click="copyText(String(user.identificacion))"
                   >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <rect
+                        x="6.5"
+                        y="6.5"
+                        width="9"
+                        height="9"
+                        rx="1.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
                       />
+
                       <path
-                        d="M6 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"
+                        d="M5 13.5H4.5A1.5 1.5 0 0 1 3 12V4.5A1.5 1.5 0 0 1 4.5 3H12a1.5 1.5 0 0 1 1.5 1.5V5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
                       />
                     </svg>
                   </button>
@@ -303,11 +643,19 @@
 
               <div
                 v-if="!isExternalAuthor"
-                class="perfil-field perfil-field--wide"
+                class="perfil-field"
               >
                 <dt>Facultad</dt>
-                <dd :class="{ 'is-empty': !facultadLabel }">
-                  {{ facultadLabel || "Pendiente" }}
+
+                <dd>
+                  <span
+                    class="perfil-field__value"
+                    :class="{
+                      'is-empty': !facultadLabel,
+                    }"
+                  >
+                    {{ facultadLabel || "Pendiente" }}
+                  </span>
                 </dd>
               </div>
 
@@ -316,187 +664,130 @@
                 class="perfil-field"
               >
                 <dt>Carrera</dt>
-                <dd :class="{ 'is-empty': !carreraLabel }">
-                  {{ carreraLabel || "Pendiente" }}
+
+                <dd>
+                  <span
+                    class="perfil-field__value"
+                    :class="{
+                      'is-empty': !carreraLabel,
+                    }"
+                  >
+                    {{ carreraLabel || "Pendiente" }}
+                  </span>
                 </dd>
               </div>
 
               <div class="perfil-field">
-                <dt>Registro</dt>
+                <dt>Fecha de registro</dt>
+
                 <dd>
-                  {{ user.fecha_registro ? formatFecha(user.fecha_registro) : "N/A" }}
+                  <span class="perfil-field__value">
+                    {{
+                      user.fecha_registro
+                        ? formatFecha(user.fecha_registro)
+                        : "No disponible"
+                    }}
+                  </span>
                 </dd>
               </div>
 
               <div
                 v-if="user.auth_source === 'microsoft'"
-                class="perfil-field"
+                class="perfil-field perfil-field--wide"
               >
-                <dt>Sincronización</dt>
+                <dt>Última sincronización</dt>
+
                 <dd>
-                  {{ user.ms_last_sync ? formatFechaTime(user.ms_last_sync) : "Sin sincronización" }}
+                  <span class="perfil-field__value">
+                    {{
+                      user.ms_last_sync
+                        ? formatFechaTime(user.ms_last_sync)
+                        : "Sin sincronización registrada"
+                    }}
+                  </span>
                 </dd>
               </div>
             </dl>
           </section>
-
-          <section class="perfil-card perfil-card--status">
-            <div class="section-head">
-              <div>
-                <h3 class="section-title">Estado de la cuenta</h3>
-                <p class="section-subtitle">
-                  Resumen de acceso, permisos y edición.
-                </p>
-              </div>
-
-              <span class="section-chip">Resumen</span>
-            </div>
-
-            <div class="perfil-status-grid">
-              <article class="status-item status-item--progress">
-                <div class="status-top">
-                  <span class="status-kicker">Progreso del perfil</span>
-
-                  <span
-                    class="status-pill"
-                    :class="perfilCompletoCalculado ? 'status-pill-ok' : 'status-pill-warn'"
-                  >
-                    {{ profileCompletion }}%
-                  </span>
-                </div>
-
-                <div class="status-value">
-                  {{ perfilCompletoCalculado ? "Información completa" : "Información pendiente" }}
-                </div>
-
-                <p class="status-note">
-                  {{ perfilCompletoCalculado
-                    ? "El perfil tiene los datos requeridos."
-                    : "Existen datos requeridos que aún no han sido registrados."
-                  }}
-                </p>
-
-                <div class="progress-bar progress-bar--status" aria-hidden="true">
-                  <div
-                    class="progress-fill"
-                    :style="{ width: profileCompletion + '%' }"
-                  ></div>
-                </div>
-              </article>
-
-              <article class="status-item">
-                <div class="status-top">
-                  <span class="status-kicker">Autenticación</span>
-
-                  <span
-                    class="status-pill"
-                    :class="user.auth_source === 'microsoft' ? 'status-pill-info' : 'status-pill-neutral'"
-                  >
-                    {{ user.auth_source === "microsoft" ? "Microsoft 365" : "Local" }}
-                  </span>
-                </div>
-
-                <div class="status-value">
-                  {{ user.auth_source === "microsoft" ? "Sincronizada" : "Cuenta local" }}
-                </div>
-
-                <p class="status-note">
-                  {{ authSourceNote }}
-                </p>
-              </article>
-
-              <article class="status-item">
-                <div class="status-top">
-                  <span class="status-kicker">Tipo de cuenta</span>
-
-                  <span class="status-pill status-pill-neutral">
-                    {{ isExternalAuthor ? "Externa" : "Institucional" }}
-                  </span>
-                </div>
-
-                <div class="status-value">
-                  {{ roleLabel }}
-                </div>
-
-                <p class="status-note">
-                  {{ isExternalAuthor ? "Registro externo." : "Cuenta vinculada a la institución." }}
-                </p>
-              </article>
-
-              <article class="status-item">
-                <div class="status-top">
-                  <span class="status-kicker">Edición</span>
-
-                  <span
-                    class="status-pill"
-                    :class="canEditProfile ? 'status-pill-ok' : 'status-pill-warn'"
-                  >
-                    {{ canEditProfile ? "Disponible" : "Cerrada" }}
-                  </span>
-                </div>
-
-                <div class="status-value">
-                  <template v-if="tiempoRestante">
-                    {{ tiempoRestante.horas }}h {{ tiempoRestante.minutos }}m
-                  </template>
-
-                  <template v-else>
-                    No disponible
-                  </template>
-                </div>
-
-                <p class="status-note">
-                  <template v-if="tiempoRestante">
-                    Puedes actualizar tu perfil desde esta vista.
-                  </template>
-
-                  <template v-else>
-                    Solicita cambios al administrador.
-                  </template>
-                </p>
-              </article>
-            </div>
-          </section>
-        </main>
+        </div>
       </div>
     </div>
 
-    <div v-else class="perfil-shell perfil-shell--error">
-      <div class="perfil-error">
-        <p>No se pudo cargar el perfil.</p>
+    <section
+      v-else
+      class="perfil-shell perfil-error-state"
+      role="alert"
+    >
+      <span class="perfil-error-state__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <path
+            d="M12 7.5V13M12 16.5h.01"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </span>
+
+      <div>
+        <h1>No se pudo cargar el perfil</h1>
+
+        <p>
+          Compruebe su conexión e intente cargar nuevamente la información.
+        </p>
 
         <button
-          class="btn-pill btn-pill--primary"
           type="button"
           @click="reloadProfile"
         >
           Reintentar
         </button>
       </div>
-    </div>
+    </section>
 
-    <Transition name="modal-fade">
-      <div
-        v-if="toast.show"
-        class="toast"
-        :class="toast.type"
-        aria-live="polite"
-      >
-        <span class="toast-text">{{ toast.message }}</span>
-
-        <button
-          class="toast-x"
-          type="button"
-          @click="hideToast"
-          aria-label="Cerrar notificación"
+    <Teleport to="body">
+      <Transition name="perfil-toast">
+        <div
+          v-if="toast.show"
+          class="perfil-toast"
+          :class="`is-${toast.type}`"
+          role="status"
+          aria-live="polite"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 6 6 18" />
-            <path d="M6 6 18 18" />
-          </svg>
-        </button>
-      </div>
-    </Transition>
+          <span class="perfil-toast__indicator" aria-hidden="true"></span>
+
+          <span class="perfil-toast__message">
+            {{ toast.message }}
+          </span>
+
+          <button
+            type="button"
+            aria-label="Cerrar notificación"
+            @click="hideToast"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="m5 5 10 10M15 5 5 15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </Transition>
+    </Teleport>
 
     <PerfilAvatarModal
       v-model="showAvatarModal"
@@ -509,193 +800,317 @@
       @toast="showToast"
     />
 
-    <Transition name="modal-fade">
-      <div
-        v-if="showEditModal"
-        class="modal-overlay"
-        @mousedown.self="closeEditModal"
-      >
+    <Teleport to="body">
+      <Transition name="perfil-modal">
         <div
-          class="edit-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-profile-title"
+          v-if="showEditModal"
+          class="perfil-modal-overlay"
+          @click.self="closeEditModal"
         >
-          <div class="modal-head">
-            <div class="modal-head__copy">
-              <h3 id="edit-profile-title" class="edit-title">
-                Actualizar perfil
-              </h3>
-
-              <p class="modal-subtitle">
-                Modifica únicamente los datos habilitados para tu cuenta.
-              </p>
-            </div>
-
-            <button
-              class="perfil-modal-close perfil-modal-close--danger"
-              type="button"
-              @click="closeEditModal"
-              aria-label="Cerrar"
-              title="Cerrar"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M18 6 6 18" />
-                <path d="M6 6 18 18" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="edit-body">
-            <div class="edit-form">
-              <label class="edit-label">
-                <span>Identificación</span>
-
-                <input
-                  v-model.trim="form.identificacion"
-                  class="edit-input"
-                  maxlength="10"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  :disabled="!canEditProfile || savingProfile"
-                />
-
-                <span class="help">
-                  Debe contener exactamente 10 dígitos.
+          <section
+            ref="editModalRef"
+            class="perfil-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-profile-title"
+            tabindex="-1"
+          >
+            <header class="perfil-edit-modal__head">
+              <div class="perfil-edit-modal__identity">
+                <span class="perfil-edit-modal__icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20">
+                    <path
+                      d="m12.7 4.2 3.1 3.1M4 16l2.8-.6 8.4-8.4a1.6 1.6 0 0 0 0-2.3 1.6 1.6 0 0 0-2.3 0L4.6 13.2 4 16Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
                 </span>
-              </label>
 
-              <template v-if="!isExternalAuthor">
-                <label class="edit-label">
-                  <span>Facultad</span>
+                <div>
+                  <span>Información de cuenta</span>
 
-                  <select
-                    v-model="form.facultad_id"
-                    class="edit-input"
+                  <h2 id="edit-profile-title">
+                    Actualizar perfil
+                  </h2>
+
+                  <p>
+                    Modifique únicamente los datos habilitados para su cuenta.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                class="perfil-edit-modal__close"
+                type="button"
+                :disabled="savingProfile"
+                aria-label="Cerrar ventana"
+                title="Cerrar"
+                @click="closeEditModal"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="m5 5 10 10M15 5 5 15"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </header>
+
+            <div class="perfil-edit-modal__body">
+              <div
+                v-if="tiempoRestante"
+                class="perfil-edit-time"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+
+                  <path
+                    d="M10 6v4l2.5 1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>
+                  Edición disponible durante
+                  <strong>
+                    {{ tiempoRestante.horas }}h
+                    {{ tiempoRestante.minutos }}m
+                  </strong>
+                </span>
+              </div>
+
+              <form
+                class="perfil-edit-form"
+                @submit.prevent="saveProfile"
+              >
+                <label class="perfil-form-field">
+                  <span class="perfil-form-field__label">
+                    Identificación
+                  </span>
+
+                  <input
+                    ref="identificationInputRef"
+                    v-model.trim="form.identificacion"
+                    type="text"
+                    maxlength="10"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    placeholder="Ingrese 10 dígitos"
                     :disabled="!canEditProfile || savingProfile"
-                    @change="onFacultadChange"
-                  >
-                    <option value="">Seleccione facultad</option>
+                  />
 
-                    <option
-                      v-for="f in facultades"
-                      :key="f.id"
-                      :value="f.id"
-                    >
-                      {{ f.nombre }}
-                    </option>
-                  </select>
+                  <small>
+                    Debe contener exactamente 10 dígitos numéricos.
+                  </small>
                 </label>
 
-                <label class="edit-label">
-                  <span>Carrera</span>
+                <template v-if="!isExternalAuthor">
+                  <div class="perfil-edit-form__grid">
+                    <label class="perfil-form-field">
+                      <span class="perfil-form-field__label">
+                        Facultad
+                      </span>
 
-                  <select
-                    v-model="form.carrera_id"
-                    class="edit-input"
-                    :disabled="
-                      !canEditProfile ||
-                      savingProfile ||
-                      loadingCarreras ||
-                      !form.facultad_id
-                    "
-                  >
-                    <option value="">Seleccione carrera</option>
+                      <select
+                        v-model="form.facultad_id"
+                        :disabled="!canEditProfile || savingProfile"
+                        @change="onFacultadChange"
+                      >
+                        <option value="">
+                          Seleccione una facultad
+                        </option>
 
-                    <option
-                      v-for="c in carreras"
-                      :key="c.id"
-                      :value="c.id"
-                    >
-                      {{ c.nombre }}
-                    </option>
-                  </select>
+                        <option
+                          v-for="facultad in facultades"
+                          :key="facultad.id"
+                          :value="facultad.id"
+                        >
+                          {{ facultad.nombre }}
+                        </option>
+                      </select>
+                    </label>
 
-                  <span v-if="loadingCarreras" class="help">
-                    Cargando carreras...
-                  </span>
+                    <label class="perfil-form-field">
+                      <span class="perfil-form-field__label">
+                        Carrera
+                      </span>
 
-                  <span v-else-if="form.facultad_id && !carreras.length" class="help">
-                    No hay carreras disponibles para esta facultad.
-                  </span>
-                </label>
-              </template>
+                      <select
+                        v-model="form.carrera_id"
+                        :disabled="
+                          !canEditProfile ||
+                          savingProfile ||
+                          loadingCarreras ||
+                          !form.facultad_id
+                        "
+                      >
+                        <option value="">
+                          {{
+                            loadingCarreras
+                              ? "Cargando carreras..."
+                              : "Seleccione una carrera"
+                          }}
+                        </option>
+
+                        <option
+                          v-for="carrera in carreras"
+                          :key="carrera.id"
+                          :value="carrera.id"
+                        >
+                          {{ carrera.nombre }}
+                        </option>
+                      </select>
+
+                      <small
+                        v-if="
+                          form.facultad_id &&
+                          !loadingCarreras &&
+                          !carreras.length
+                        "
+                      >
+                        No existen carreras registradas para esta facultad.
+                      </small>
+                    </label>
+                  </div>
+                </template>
+
+                <p
+                  v-if="editError"
+                  class="perfil-edit-error"
+                  role="alert"
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <path
+                      d="M10 5.8v5M10 14.3h.01"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+
+                  <span>{{ editError }}</span>
+                </p>
+              </form>
             </div>
 
-            <p v-if="editError" class="edit-error">
-              {{ editError }}
-            </p>
-          </div>
+            <footer class="perfil-edit-modal__actions">
+              <button
+                class="perfil-edit-button perfil-edit-button--secondary"
+                type="button"
+                :disabled="savingProfile"
+                @click="closeEditModal"
+              >
+                Cancelar
+              </button>
 
-          <div class="edit-actions">
-            <button
-              v-if="canEditProfile"
-              class="btn-pill btn-pill--success"
-              type="button"
-              :disabled="savingProfile"
-              @click="saveProfile"
-            >
-              {{ savingProfile ? "Guardando..." : "Guardar cambios" }}
-            </button>
+              <button
+                class="perfil-edit-button perfil-edit-button--primary"
+                type="button"
+                :disabled="!canEditProfile || savingProfile"
+                @click="saveProfile"
+              >
+                <span
+                  v-if="savingProfile"
+                  class="perfil-edit-spinner"
+                  aria-hidden="true"
+                ></span>
 
-            <button
-              class="btn-pill btn-pill--danger"
-              type="button"
-              :disabled="savingProfile"
-              @click="closeEditModal"
-            >
-              Cancelar
-            </button>
-          </div>
+                <svg
+                  v-else
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m5 10 3 3 7-7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <span>
+                  {{ savingProfile ? "Guardando..." : "Guardar cambios" }}
+                </span>
+              </button>
+            </footer>
+          </section>
         </div>
-      </div>
-    </Transition>
-  </div>
+      </Transition>
+    </Teleport>
+  </main>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+
 import { useRouter } from "vue-router";
+
 import api from "../../scripts/api/axios";
 import { useUserStore } from "../../scripts/stores/userStore";
+
 import PerfilAvatarModal from "./componentes/PerfilAvatarModal.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
 
-const MAX_AVATAR_FILE_SIZE = 1 * 1024 * 1024;
-
-const prettyBytes = (bytes) => {
-  const size = Number(bytes || 0);
-  if (size <= 0) return "0 B";
-
-  const units = ["B", "KB", "MB", "GB"];
-  let value = size;
-  let index = 0;
-
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
-};
-
-const avatarMaxSizeLabel = prettyBytes(MAX_AVATAR_FILE_SIZE);
+const MAX_AVATAR_FILE_SIZE =
+  1 * 1024 * 1024;
 
 const user = ref(null);
 const loading = ref(true);
 const now = ref(Date.now());
-let clockId = null;
 
 const showAvatarModal = ref(false);
 const showEditModal = ref(false);
 const savingProfile = ref(false);
 const editError = ref("");
 
+const editModalRef = ref(null);
+const identificationInputRef = ref(null);
+
 const facultades = ref([]);
 const carreras = ref([]);
 const loadingCarreras = ref(false);
+
+const avatarBroken = ref(false);
+
+let clockId = null;
 
 const toast = ref({
   show: false,
@@ -710,22 +1125,100 @@ const form = ref({
   carrera_id: "",
 });
 
+const prettyBytes = (bytes) => {
+  const size = Number(bytes || 0);
+
+  if (size <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+
+  let value = size;
+  let index = 0;
+
+  while (
+    value >= 1024 &&
+    index < units.length - 1
+  ) {
+    value /= 1024;
+    index += 1;
+  }
+
+  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+};
+
+const avatarMaxSizeLabel =
+  prettyBytes(MAX_AVATAR_FILE_SIZE);
+
 const asArray = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.results)) {
+    return data.results;
+  }
+
   return [];
 };
 
-const getUserFacultadLabel = (u) => {
-  return u?.facultad_nombre || u?.facultad || "";
+const firstFilled = (...values) => {
+  return (
+    values
+      .map((value) =>
+        String(value ?? "").trim()
+      )
+      .find(Boolean) ||
+    ""
+  );
 };
 
-const getUserCarreraLabel = (u) => {
-  return u?.carrera_nombre || u?.carrera || "";
+const getUserFacultadId = (currentUser) => {
+  return (
+    currentUser?.facultad_id ||
+    currentUser?.carrera?.facultad_id ||
+    currentUser?.carrera?.facultad?.id ||
+    ""
+  );
 };
 
-const facultadLabel = computed(() => getUserFacultadLabel(user.value));
-const carreraLabel = computed(() => getUserCarreraLabel(user.value));
+const getUserCarreraId = (currentUser) => {
+  return (
+    currentUser?.carrera_id ||
+    currentUser?.carrera?.id ||
+    ""
+  );
+};
+
+const getUserFacultadLabel = (currentUser) => {
+  return firstFilled(
+    currentUser?.carrera?.facultad?.nombre,
+    currentUser?.carrera?.facultad_nombre,
+    currentUser?.facultad_nombre,
+    typeof currentUser?.facultad === "object"
+      ? currentUser.facultad?.nombre
+      : currentUser?.facultad
+  );
+};
+
+const getUserCarreraLabel = (currentUser) => {
+  return firstFilled(
+    currentUser?.carrera?.nombre,
+    currentUser?.carrera_nombre,
+    typeof currentUser?.carrera === "string"
+      ? currentUser.carrera
+      : ""
+  );
+};
+
+const facultadLabel = computed(() => {
+  return getUserFacultadLabel(user.value);
+});
+
+const carreraLabel = computed(() => {
+  return getUserCarreraLabel(user.value);
+});
 
 const correoLabel = computed(() => {
   return user.value?.auth_source === "microsoft"
@@ -734,263 +1227,532 @@ const correoLabel = computed(() => {
 });
 
 const initials = computed(() => {
-  const nombres = (user.value?.nombres || "").trim();
-  const apellidos = (user.value?.apellidos || "").trim();
-  return `${nombres[0] || ""}${apellidos[0] || ""}`.toUpperCase() || "U";
+  const nombres = String(
+    user.value?.nombres || ""
+  ).trim();
+
+  const apellidos = String(
+    user.value?.apellidos || ""
+  ).trim();
+
+  return (
+    `${nombres[0] || ""}${apellidos[0] || ""}`.toUpperCase() ||
+    "U"
+  );
 });
 
 const displayName = computed(() => {
-  if (user.value?.auth_source === "microsoft" && user.value?.ms_display_name) {
+  if (
+    user.value?.auth_source === "microsoft" &&
+    user.value?.ms_display_name
+  ) {
     return user.value.ms_display_name;
   }
 
-  return `${user.value?.nombres || ""} ${user.value?.apellidos || ""}`.trim() || "Usuario";
+  return (
+    `${user.value?.nombres || ""} ${user.value?.apellidos || ""}`.trim() ||
+    "Usuario"
+  );
 });
 
-const hasAvatar = computed(() => !!user.value?.avatar_url);
+const hasAvatar = computed(() => {
+  return Boolean(
+    user.value?.avatar_url &&
+    !avatarBroken.value
+  );
+});
 
-const avatarButtonLabel = computed(() =>
-  hasAvatar.value ? "Actualizar foto de perfil" : "Agregar foto de perfil"
-);
+const avatarButtonLabel = computed(() => {
+  return hasAvatar.value
+    ? "Actualizar foto de perfil"
+    : "Agregar foto de perfil";
+});
 
-const isExternalAuthor = computed(
-  () => String(user.value?.rol || "").toLowerCase() === "autor_externo"
-);
+const isExternalAuthor = computed(() => {
+  return (
+    String(
+      user.value?.rol || ""
+    ).toLowerCase() === "autor_externo"
+  );
+});
 
-const isAdmin = computed(() =>
-  !!(user.value?.is_staff || user.value?.is_superuser || user.value?.es_admin)
-);
+const isAdmin = computed(() => {
+  const currentUser = user.value;
+
+  return Boolean(
+    currentUser?.is_staff ||
+    currentUser?.is_superuser ||
+    currentUser?.es_admin ||
+    currentUser?.is_admin
+  );
+});
 
 const roleLabel = computed(() => {
-  if (isExternalAuthor.value) return "Autor externo";
-  if (String(user.value?.rol || "").toLowerCase() === "autor") return "Autor";
-  return "Usuario";
+  const role = String(
+    user.value?.rol || ""
+  ).toLowerCase();
+
+  if (isExternalAuthor.value) {
+    return "Autor externo";
+  }
+
+  if (role === "autor") {
+    return "Autor";
+  }
+
+  return "Usuario institucional";
 });
 
 const perfilCompletoCalculado = computed(() => {
-  const u = user.value;
-  if (!u) return false;
+  const currentUser = user.value;
 
-  const identOk = !!u.identificacion;
-  if (isExternalAuthor.value) return identOk;
+  if (!currentUser) {
+    return false;
+  }
 
-  const facOk = !!(u.facultad_id || getUserFacultadLabel(u));
-  const carOk = !!(u.carrera_id || getUserCarreraLabel(u));
+  const identificacionCompleta =
+    Boolean(currentUser.identificacion);
 
-  return identOk && facOk && carOk;
+  if (isExternalAuthor.value) {
+    return identificacionCompleta;
+  }
+
+  const facultadCompleta =
+    Boolean(
+      getUserFacultadId(currentUser) ||
+      getUserFacultadLabel(currentUser)
+    );
+
+  const carreraCompleta =
+    Boolean(
+      getUserCarreraId(currentUser) ||
+      getUserCarreraLabel(currentUser)
+    );
+
+  return (
+    identificacionCompleta &&
+    facultadCompleta &&
+    carreraCompleta
+  );
 });
 
 const canEditProfile = computed(() => {
-  const u = user.value;
-  if (!u) return false;
+  const currentUser = user.value;
 
-  if (u.profile_edit_locked) return false;
+  if (!currentUser) {
+    return false;
+  }
 
-  if (u.profile_edit_until) {
-    const until = new Date(u.profile_edit_until);
-    if (!Number.isNaN(until.getTime())) {
-      return now.value <= until.getTime();
+  if (currentUser.profile_edit_locked) {
+    return false;
+  }
+
+  if (currentUser.profile_edit_until) {
+    const limit =
+      new Date(
+        currentUser.profile_edit_until
+      );
+
+    if (!Number.isNaN(limit.getTime())) {
+      return now.value <= limit.getTime();
     }
   }
 
-  if (!u.fecha_registro) return true;
+  if (!currentUser.fecha_registro) {
+    return true;
+  }
 
-  const created = new Date(u.fecha_registro);
-  if (Number.isNaN(created.getTime())) return true;
+  const created =
+    new Date(
+      currentUser.fecha_registro
+    );
 
-  const diffHours = (now.value - created.getTime()) / (1000 * 60 * 60);
-  return diffHours <= 48;
+  if (Number.isNaN(created.getTime())) {
+    return true;
+  }
+
+  const elapsedHours =
+    (now.value - created.getTime()) /
+    (1000 * 60 * 60);
+
+  return elapsedHours <= 48;
 });
 
 const tiempoRestante = computed(() => {
-  const u = user.value;
-  if (!u) return null;
+  const currentUser = user.value;
 
-  let limiteMs = null;
-
-  if (u.profile_edit_until) {
-    const until = new Date(u.profile_edit_until).getTime();
-    if (!Number.isNaN(until)) limiteMs = until;
+  if (!currentUser) {
+    return null;
   }
 
-  if (!limiteMs) {
-    if (!u.fecha_registro) return null;
+  let limitMilliseconds = null;
 
-    const created = new Date(u.fecha_registro).getTime();
-    if (Number.isNaN(created)) return null;
+  if (currentUser.profile_edit_until) {
+    const limit =
+      new Date(
+        currentUser.profile_edit_until
+      ).getTime();
 
-    limiteMs = created + 48 * 60 * 60 * 1000;
+    if (!Number.isNaN(limit)) {
+      limitMilliseconds = limit;
+    }
   }
 
-  const diff = limiteMs - now.value;
-  if (diff <= 0) return null;
+  if (!limitMilliseconds) {
+    if (!currentUser.fecha_registro) {
+      return null;
+    }
 
-  const horas = Math.floor(diff / (1000 * 60 * 60));
-  const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const created =
+      new Date(
+        currentUser.fecha_registro
+      ).getTime();
 
-  return { horas, minutos };
+    if (Number.isNaN(created)) {
+      return null;
+    }
+
+    limitMilliseconds =
+      created +
+      48 * 60 * 60 * 1000;
+  }
+
+  const difference =
+    limitMilliseconds -
+    now.value;
+
+  if (difference <= 0) {
+    return null;
+  }
+
+  const horas =
+    Math.floor(
+      difference /
+      (1000 * 60 * 60)
+    );
+
+  const minutos =
+    Math.floor(
+      (
+        difference %
+        (1000 * 60 * 60)
+      ) /
+      (1000 * 60)
+    );
+
+  return {
+    horas,
+    minutos,
+  };
 });
 
 const editDisabledReason = computed(() => {
   if (user.value?.profile_edit_locked) {
-    return user.value?.profile_edit_lock_reason || "La edición de perfil está bloqueada por el sistema.";
+    return (
+      user.value?.profile_edit_lock_reason ||
+      "La edición del perfil está bloqueada."
+    );
   }
 
-  return "El periodo de edición de perfil ha finalizado. Solicita cambios al administrador.";
+  return "El periodo de edición finalizó. Solicite los cambios al administrador.";
 });
 
 const showIncompleteBanner = computed(() => {
-  const u = user.value;
-  if (!u) return false;
-  if (perfilCompletoCalculado.value) return false;
+  const currentUser = user.value;
 
-  if (u.perfil_banner_snooze_until) {
-    const until = new Date(u.perfil_banner_snooze_until);
-    if (!Number.isNaN(until.getTime()) && now.value < until.getTime()) return false;
+  if (!currentUser) {
+    return false;
+  }
+
+  if (perfilCompletoCalculado.value) {
+    return false;
+  }
+
+  if (
+    currentUser.perfil_banner_snooze_until
+  ) {
+    const limit =
+      new Date(
+        currentUser.perfil_banner_snooze_until
+      );
+
+    if (
+      !Number.isNaN(limit.getTime()) &&
+      now.value < limit.getTime()
+    ) {
+      return false;
+    }
   }
 
   return canEditProfile.value;
 });
 
 const missingFields = computed(() => {
-  const u = user.value;
-  if (!u) return [];
+  const currentUser = user.value;
 
-  const faltantes = [];
-
-  if (!u.identificacion) faltantes.push("Identificación");
-
-  if (!isExternalAuthor.value) {
-    if (!(u.facultad_id || getUserFacultadLabel(u))) faltantes.push("Facultad");
-    if (!(u.carrera_id || getUserCarreraLabel(u))) faltantes.push("Carrera");
+  if (!currentUser) {
+    return [];
   }
 
-  return faltantes;
+  const missing = [];
+
+  if (!currentUser.identificacion) {
+    missing.push("Identificación");
+  }
+
+  if (!isExternalAuthor.value) {
+    if (
+      !getUserFacultadId(currentUser) &&
+      !getUserFacultadLabel(currentUser)
+    ) {
+      missing.push("Facultad");
+    }
+
+    if (
+      !getUserCarreraId(currentUser) &&
+      !getUserCarreraLabel(currentUser)
+    ) {
+      missing.push("Carrera");
+    }
+  }
+
+  return missing;
 });
 
 const profileCompletion = computed(() => {
-  const u = user.value;
-  if (!u) return 0;
+  const currentUser = user.value;
 
-  if (isExternalAuthor.value) return u.identificacion ? 100 : 0;
+  if (!currentUser) {
+    return 0;
+  }
 
-  let completos = 0;
-  if (u.identificacion) completos++;
-  if (u.facultad_id || getUserFacultadLabel(u)) completos++;
-  if (u.carrera_id || getUserCarreraLabel(u)) completos++;
+  if (isExternalAuthor.value) {
+    return currentUser.identificacion
+      ? 100
+      : 0;
+  }
 
-  return Math.round((completos / 3) * 100);
+  let completed = 0;
+
+  if (currentUser.identificacion) {
+    completed += 1;
+  }
+
+  if (
+    getUserFacultadId(currentUser) ||
+    getUserFacultadLabel(currentUser)
+  ) {
+    completed += 1;
+  }
+
+  if (
+    getUserCarreraId(currentUser) ||
+    getUserCarreraLabel(currentUser)
+  ) {
+    completed += 1;
+  }
+
+  return Math.round(
+    (completed / 3) * 100
+  );
 });
 
 const authSourceNote = computed(() => {
-  if (user.value?.auth_source === "microsoft") {
-    return "Parte de tus datos puede sincronizarse automáticamente desde Microsoft 365.";
+  if (
+    user.value?.auth_source === "microsoft"
+  ) {
+    return "La cuenta utiliza el acceso institucional de Microsoft 365.";
   }
 
-  return "El acceso se administra directamente desde el sistema.";
+  return "El acceso se administra directamente desde SGPC ULEAM.";
 });
 
 const safeReadStoredUser = () => {
   try {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
+    const raw =
+      localStorage.getItem("user");
+
+    return raw
+      ? JSON.parse(raw)
+      : null;
   } catch {
     return null;
   }
 };
 
 const syncUserState = (data) => {
-  user.value = data || null;
-  if (!data) return;
-
-  localStorage.setItem("user", JSON.stringify(data));
-
-  if (typeof userStore.setUserData === "function") {
-    userStore.setUserData(data);
+  if (!data) {
+    user.value = null;
+    return;
   }
 
-  if (typeof userStore.setAvatar === "function") {
-    userStore.setAvatar(data.avatar_url || null);
-  }
+  const mergedUser = {
+    ...(user.value || {}),
+    ...data,
+  };
+
+  user.value = mergedUser;
+
+  localStorage.setItem(
+    "user",
+    JSON.stringify(mergedUser)
+  );
+
+  userStore.setUserData?.(mergedUser);
+  userStore.setAvatar?.(
+    mergedUser.avatar_url || null
+  );
 };
 
 const resetEditForm = () => {
-  form.value.identificacion = user.value?.identificacion || "";
-  form.value.facultad_id = user.value?.facultad_id || "";
-  form.value.carrera_id = user.value?.carrera_id || "";
+  form.value = {
+    identificacion:
+      user.value?.identificacion || "",
+
+    facultad_id:
+      getUserFacultadId(user.value),
+
+    carrera_id:
+      getUserCarreraId(user.value),
+  };
 };
 
-const showToast = (type, message, ms = 2800) => {
-  if (toast.value.t) clearTimeout(toast.value.t);
+const showToast = (
+  type,
+  message,
+  milliseconds = 2800
+) => {
+  if (toast.value.t) {
+    clearTimeout(toast.value.t);
+  }
 
   toast.value.type = type;
   toast.value.message = message;
   toast.value.show = true;
-  toast.value.t = setTimeout(() => {
-    toast.value.show = false;
-    toast.value.t = null;
-  }, ms);
+
+  toast.value.t =
+    setTimeout(() => {
+      toast.value.show = false;
+      toast.value.t = null;
+    }, milliseconds);
 };
 
 const hideToast = () => {
-  if (toast.value.t) clearTimeout(toast.value.t);
+  if (toast.value.t) {
+    clearTimeout(toast.value.t);
+  }
+
   toast.value.show = false;
   toast.value.t = null;
 };
 
-const copyText = async (txt) => {
+const copyText = async (text) => {
+  const value = String(text ?? "");
+
   try {
-    if (!navigator.clipboard?.writeText) {
-      throw new Error("Clipboard no soportado");
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(
+        value
+      );
+    } else {
+      const textarea =
+        document.createElement("textarea");
+
+      textarea.value = value;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      document.execCommand("copy");
+      textarea.remove();
     }
 
-    await navigator.clipboard.writeText(String(txt ?? ""));
-    showToast("success", "Copiado al portapapeles.");
+    showToast(
+      "success",
+      "Información copiada."
+    );
   } catch (error) {
     console.error(error);
-    showToast("error", "No se pudo copiar.");
+
+    showToast(
+      "error",
+      "No se pudo copiar la información."
+    );
   }
 };
 
-const formatFecha = (fecha) => {
-  if (!fecha) return "N/A";
-  const d = new Date(fecha);
-  if (Number.isNaN(d.getTime())) return "N/A";
-
-  return d.toLocaleDateString("es-EC", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
-
-const formatFechaTime = (fecha) => {
-  if (!fecha) return "N/A";
-  const d = new Date(fecha);
-  if (Number.isNaN(d.getTime())) return "N/A";
-
-  return d.toLocaleString("es-EC", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const cerrarSesion = () => {
-  if (typeof userStore.clearUser === "function") {
-    userStore.clearUser();
+const formatFecha = (dateValue) => {
+  if (!dateValue) {
+    return "No disponible";
   }
 
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+  const date =
+    new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No disponible";
+  }
+
+  return date.toLocaleDateString(
+    "es-EC",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }
+  );
+};
+
+const formatFechaTime = (dateValue) => {
+  if (!dateValue) {
+    return "No disponible";
+  }
+
+  const date =
+    new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No disponible";
+  }
+
+  return date.toLocaleString(
+    "es-EC",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
+};
+
+const cerrarSesion = async () => {
+  try {
+    await userStore.logout?.();
+  } catch {
+    // Se continúa con la limpieza local.
+  }
+
+  userStore.clearUser?.();
+
+  localStorage.removeItem(
+    "access_token"
+  );
+
+  localStorage.removeItem(
+    "refresh_token"
+  );
+
   localStorage.removeItem("user");
-  router.replace("/login");
+
+  await router.replace("/login");
 };
 
 const irAPanelAdmin = () => {
-  router.push({ name: "AdminPanel" });
+  router.push("/admin/panel");
 };
 
 const openAvatarFlow = () => {
@@ -998,45 +1760,46 @@ const openAvatarFlow = () => {
 };
 
 const handleAvatarUpdated = (nextUser) => {
+  avatarBroken.value = false;
   syncUserState(nextUser);
 };
 
-const closeAvatarModal = () => {
-  showAvatarModal.value = false;
-};
-
 const closeEditModal = () => {
-  if (savingProfile.value) return;
+  if (savingProfile.value) {
+    return;
+  }
+
   showEditModal.value = false;
   editError.value = "";
 };
 
 const handleEditAction = async () => {
   if (!canEditProfile.value) {
-    showToast("info", editDisabledReason.value, 3800);
+    showToast(
+      "info",
+      editDisabledReason.value,
+      3800
+    );
+
     return;
   }
 
   await openEditProfileModal();
 };
 
-const onKeyDown = (e) => {
-  if (e.key !== "Escape") return;
-
-  if (showEditModal.value) closeEditModal();
-  if (showAvatarModal.value) closeAvatarModal();
-};
-
-watch([showAvatarModal, showEditModal], ([avatarOpen, editOpen]) => {
-  document.body.style.overflow = avatarOpen || editOpen ? "hidden" : "";
-});
-
 const loadFacultades = async () => {
-  const resp = await api.get("selects/facultades/");
-  facultades.value = asArray(resp.data);
+  const response =
+    await api.get(
+      "selects/facultades/"
+    );
+
+  facultades.value =
+    asArray(response.data);
 };
 
-const loadCarreras = async (facultadId) => {
+const loadCarreras = async (
+  facultadId
+) => {
   if (!facultadId) {
     carreras.value = [];
     return;
@@ -1045,8 +1808,13 @@ const loadCarreras = async (facultadId) => {
   loadingCarreras.value = true;
 
   try {
-    const resp = await api.get(`selects/carreras/${facultadId}/`);
-    carreras.value = asArray(resp.data);
+    const response =
+      await api.get(
+        `selects/carreras/${facultadId}/`
+      );
+
+    carreras.value =
+      asArray(response.data);
   } finally {
     loadingCarreras.value = false;
   }
@@ -1054,87 +1822,181 @@ const loadCarreras = async (facultadId) => {
 
 const onFacultadChange = async () => {
   form.value.carrera_id = "";
-  await loadCarreras(form.value.facultad_id);
+
+  await loadCarreras(
+    form.value.facultad_id
+  );
 };
 
 const openEditProfileModal = async () => {
   editError.value = "";
   resetEditForm();
+
   showEditModal.value = true;
 
-  if (!canEditProfile.value || isExternalAuthor.value) return;
+  await nextTick();
+
+  identificationInputRef.value?.focus?.({
+    preventScroll: true,
+  });
+
+  if (
+    !canEditProfile.value ||
+    isExternalAuthor.value
+  ) {
+    return;
+  }
 
   try {
     await loadFacultades();
 
     if (form.value.facultad_id) {
-      await loadCarreras(form.value.facultad_id);
-
-      const existe = carreras.value.some(
-        (c) => String(c.id) === String(form.value.carrera_id)
+      await loadCarreras(
+        form.value.facultad_id
       );
 
-      if (!existe) form.value.carrera_id = "";
+      const exists =
+        carreras.value.some(
+          (career) =>
+            String(career.id) ===
+            String(form.value.carrera_id)
+        );
+
+      if (!exists) {
+        form.value.carrera_id = "";
+      }
     } else {
       carreras.value = [];
       form.value.carrera_id = "";
     }
   } catch (error) {
     console.error(error);
-    editError.value = "No se pudieron cargar facultades y carreras.";
+
+    editError.value =
+      "No se pudieron cargar las facultades y carreras.";
   }
 };
 
-const resolveProfileError = (data, fallback) => {
-  if (!data) return fallback;
+const resolveProfileError = (
+  data,
+  fallback
+) => {
+  if (!data) {
+    return fallback;
+  }
 
-  if (typeof data.detail === "string" && data.detail) return data.detail;
-  if (typeof data.error === "string" && data.error) return data.error;
+  if (
+    typeof data.detail === "string" &&
+    data.detail
+  ) {
+    return data.detail;
+  }
+
+  if (
+    typeof data.error === "string" &&
+    data.error
+  ) {
+    return data.error;
+  }
 
   const keys = [
     "identificacion",
     "facultad_set",
     "carrera_set",
+    "carrera",
     "non_field_errors",
   ];
 
   for (const key of keys) {
     const value = data[key];
-    if (Array.isArray(value) && value[0]) return String(value[0]);
-    if (typeof value === "string" && value) return value;
+
+    if (
+      Array.isArray(value) &&
+      value[0]
+    ) {
+      return String(value[0]);
+    }
+
+    if (
+      typeof value === "string" &&
+      value
+    ) {
+      return value;
+    }
   }
 
   return fallback;
 };
 
 const normalizeNullableId = (value) => {
-  if (value === "" || value === null || value === undefined) return null;
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
+    return null;
+  }
 
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+
+  return (
+    Number.isFinite(parsed) &&
+    parsed > 0
+  )
+    ? parsed
+    : null;
 };
 
 const saveProfile = async () => {
-  if (savingProfile.value) return;
+  if (savingProfile.value) {
+    return;
+  }
 
   if (!canEditProfile.value) {
-    editError.value = editDisabledReason.value;
-    showToast("error", editError.value);
+    editError.value =
+      editDisabledReason.value;
+
+    showToast(
+      "error",
+      editError.value
+    );
+
     return;
   }
 
-  const ident = String(form.value.identificacion || "").trim();
+  const identificacion =
+    String(
+      form.value.identificacion || ""
+    ).trim();
 
-  if (ident && !/^\d{10}$/.test(ident)) {
-    editError.value = "La identificación debe tener 10 dígitos numéricos.";
+  if (
+    identificacion &&
+    !/^\d{10}$/.test(identificacion)
+  ) {
+    editError.value =
+      "La identificación debe contener exactamente 10 dígitos.";
+
     return;
   }
 
-  const facultadId = normalizeNullableId(form.value.facultad_id);
-  const carreraId = normalizeNullableId(form.value.carrera_id);
+  const facultadId =
+    normalizeNullableId(
+      form.value.facultad_id
+    );
 
-  if (!isExternalAuthor.value && Boolean(facultadId) !== Boolean(carreraId)) {
-    editError.value = "Seleccione facultad y carrera juntas, o deje ambas vacías.";
+  const carreraId =
+    normalizeNullableId(
+      form.value.carrera_id
+    );
+
+  if (
+    !isExternalAuthor.value &&
+    Boolean(facultadId) !==
+      Boolean(carreraId)
+  ) {
+    editError.value =
+      "Seleccione la facultad y la carrera correspondientes.";
+
     return;
   }
 
@@ -1142,42 +2004,73 @@ const saveProfile = async () => {
   editError.value = "";
 
   try {
-    const payload = isExternalAuthor.value
-      ? {
-          identificacion: ident || null,
-          facultad_set: null,
-          carrera_set: null,
-        }
-      : {
-          identificacion: ident || null,
-          facultad_set: facultadId,
-          carrera_set: carreraId,
-        };
+    const payload =
+      isExternalAuthor.value
+        ? {
+            identificacion:
+              identificacion || null,
 
-    const resp = await api.patch("auth/profile/", payload);
-    syncUserState(resp.data);
+            facultad_set: null,
+            carrera_set: null,
+          }
+        : {
+            identificacion:
+              identificacion || null,
 
-    showToast("success", "Perfil actualizado.");
-    showEditModal.value = false;
-  } catch (err) {
-    console.error(err);
+            facultad_set:
+              facultadId,
 
-    const code = err?.response?.status;
-    const data = err?.response?.data || {};
+            carrera_set:
+              carreraId,
+          };
 
-    if (code === 403) {
-      editError.value = resolveProfileError(data, "Edición bloqueada.");
-    } else if (code === 400 || code === 409) {
-      editError.value = resolveProfileError(
-        data,
-        "Datos inválidos. Revisa identificación, facultad y carrera."
+    const response =
+      await api.patch(
+        "auth/profile/",
+        payload
       );
+
+    syncUserState(response.data);
+
+    showToast(
+      "success",
+      "El perfil se actualizó correctamente."
+    );
+
+    showEditModal.value = false;
+  } catch (error) {
+    console.error(error);
+
+    const status =
+      error?.response?.status;
+
+    const data =
+      error?.response?.data || {};
+
+    if (status === 403) {
+      editError.value =
+        resolveProfileError(
+          data,
+          "La edición del perfil está bloqueada."
+        );
+    } else if (
+      status === 400 ||
+      status === 409
+    ) {
+      editError.value =
+        resolveProfileError(
+          data,
+          "Revise la identificación, facultad y carrera."
+        );
     } else {
-      editError.value = "No se pudo actualizar el perfil.";
+      editError.value =
+        "No se pudo actualizar el perfil.";
     }
 
-    showToast("error", editError.value);
-    await reloadProfile();
+    showToast(
+      "error",
+      editError.value
+    );
   } finally {
     savingProfile.value = false;
   }
@@ -1185,12 +2078,26 @@ const saveProfile = async () => {
 
 const dismissIncompleteBanner = async () => {
   try {
-    await api.patch("auth/profile/", { snooze_hours: 5 });
+    await api.patch(
+      "auth/profile/",
+      {
+        snooze_hours: 5,
+      }
+    );
+
     await reloadProfile();
-    showToast("info", "Te lo recordaremos más tarde.");
+
+    showToast(
+      "info",
+      "El recordatorio volverá a mostrarse más tarde."
+    );
   } catch (error) {
     console.error(error);
-    showToast("error", "No se pudo posponer el recordatorio.");
+
+    showToast(
+      "error",
+      "No se pudo posponer el recordatorio."
+    );
   }
 };
 
@@ -1198,12 +2105,19 @@ const reloadProfile = async () => {
   loading.value = true;
 
   try {
-    const resp = await api.get("auth/profile/");
-    syncUserState(resp.data);
+    const response =
+      await api.get(
+        "auth/profile/"
+      );
+
+    syncUserState(response.data);
+    avatarBroken.value = false;
   } catch (error) {
     console.error(error);
 
-    const cached = safeReadStoredUser();
+    const cached =
+      safeReadStoredUser();
+
     if (cached) {
       syncUserState(cached);
     } else {
@@ -1214,21 +2128,77 @@ const reloadProfile = async () => {
   }
 };
 
+const onKeyDown = (event) => {
+  if (
+    event.key === "Escape" &&
+    showEditModal.value
+  ) {
+    closeEditModal();
+  }
+};
+
+watch(
+  showEditModal,
+  async (isOpen) => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.documentElement.classList.toggle(
+      "perfil-modal-lock",
+      isOpen
+    );
+
+    document.body.classList.toggle(
+      "perfil-modal-lock",
+      isOpen
+    );
+
+    if (isOpen) {
+      await nextTick();
+
+      editModalRef.value?.focus?.({
+        preventScroll: true,
+      });
+    }
+  }
+);
+
+watch(
+  () => user.value?.avatar_url,
+  () => {
+    avatarBroken.value = false;
+  }
+);
+
 onMounted(async () => {
-  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener(
+    "keydown",
+    onKeyDown
+  );
 
-  clockId = window.setInterval(() => {
-    now.value = Date.now();
-  }, 60000);
+  clockId = window.setInterval(
+    () => {
+      now.value = Date.now();
+    },
+    60000
+  );
 
-  const token = localStorage.getItem("access_token");
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
   if (!token) {
     loading.value = false;
-    router.replace("/login");
+
+    await router.replace("/login");
     return;
   }
 
-  const cached = safeReadStoredUser();
+  const cached =
+    safeReadStoredUser();
+
   if (cached) {
     syncUserState(cached);
   }
@@ -1237,15 +2207,27 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("keydown", onKeyDown);
-  document.body.style.overflow = "";
+  window.removeEventListener(
+    "keydown",
+    onKeyDown
+  );
+
+  document.documentElement.classList.remove(
+    "perfil-modal-lock"
+  );
+
+  document.body.classList.remove(
+    "perfil-modal-lock"
+  );
 
   if (clockId) {
     clearInterval(clockId);
     clockId = null;
   }
 
-  if (toast.value.t) clearTimeout(toast.value.t);
+  if (toast.value.t) {
+    clearTimeout(toast.value.t);
+  }
 });
 </script>
 

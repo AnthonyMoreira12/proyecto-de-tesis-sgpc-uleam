@@ -26,9 +26,11 @@ const route = useRoute();
 const AVISOS_DISABLED_PATHS = new Set([
   "/login",
   "/reset-password",
+  "/restablecer-contrasena",
 ]);
 
-const CHECK_INTERVAL_MS = 45000;
+const CHECK_INTERVAL_MS = 45_000;
+const ROUTE_CHECK_DELAY_MS = 350;
 
 const user = ref(null);
 const overlayVisible = ref(false);
@@ -48,9 +50,7 @@ const isAvisosDisabledRoute = () => {
 };
 
 const canCheckAvisos = () => {
-  if (isAvisosDisabledRoute()) return false;
-  if (!getAccessToken()) return false;
-  return true;
+  return !isAvisosDisabledRoute() && Boolean(getAccessToken());
 };
 
 const loadProfile = async () => {
@@ -61,18 +61,27 @@ const loadProfile = async () => {
 
   try {
     const { data } = await api.get("auth/profile/");
+
     user.value = data;
+
     return data;
   } catch (error) {
     user.value = null;
+
+    if (Number(error?.response?.status || 0) !== 401) {
+      console.error(
+        "No fue posible cargar el perfil para los avisos.",
+        error
+      );
+    }
+
     return null;
   }
 };
 
 const checkAvisos = async ({ force = false } = {}) => {
-  if (checking) return;
+  if (checking || !canCheckAvisos()) return;
   if (overlayVisible.value && !force) return;
-  if (!canCheckAvisos()) return;
 
   checking = true;
 
@@ -82,21 +91,34 @@ const checkAvisos = async ({ force = false } = {}) => {
     }
 
     const status = await getAvisosStatus();
-    const nextVersion = status.notifyVersion || status.version || "";
+
+    const nextVersion = String(
+      status?.notifyVersion ||
+        status?.version ||
+        ""
+    );
 
     currentVersion.value = nextVersion;
 
-    const mustOpen = await shouldOpenAvisos(user.value, status);
+    const mustOpen = await shouldOpenAvisos(
+      user.value,
+      status
+    );
 
     if (mustOpen) {
       openInManageMode.value = false;
       overlayVisible.value = true;
     }
   } catch (error) {
-    const statusCode = Number(error?.response?.status || 0);
+    const statusCode = Number(
+      error?.response?.status || 0
+    );
 
     if (statusCode !== 401) {
-      console.error(error);
+      console.error(
+        "No fue posible comprobar los avisos institucionales.",
+        error
+      );
     }
   } finally {
     checking = false;
@@ -135,9 +157,20 @@ const openAvisosManager = async () => {
 };
 
 const handleExternalOpen = async (event) => {
-  const mode = event?.detail?.mode || event?.detail?.tipo || "";
+  const mode = String(
+    event?.detail?.mode ||
+      event?.detail?.tipo ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
 
-  if (mode === "manage" || mode === "admin" || event?.detail?.manage === true) {
+  const shouldManage =
+    mode === "manage" ||
+    mode === "admin" ||
+    event?.detail?.manage === true;
+
+  if (shouldManage) {
     await openAvisosManager();
     return;
   }
@@ -146,26 +179,43 @@ const handleExternalOpen = async (event) => {
 };
 
 const handleOverlayClosed = () => {
-  markAvisosAsSeen(user.value, currentVersion.value);
+  if (currentVersion.value) {
+    markAvisosAsSeen(
+      user.value,
+      currentVersion.value
+    );
+  }
+
   openInManageMode.value = false;
 };
 
 const handleVersionChange = (nextVersion) => {
-  currentVersion.value = String(nextVersion || "");
+  currentVersion.value = String(
+    nextVersion || ""
+  );
+};
+
+const clearRouteCheck = () => {
+  if (!routeCheckTimer) return;
+
+  window.clearTimeout(routeCheckTimer);
+  routeCheckTimer = null;
 };
 
 const scheduleRouteCheck = () => {
-  if (routeCheckTimer) {
-    window.clearTimeout(routeCheckTimer);
-    routeCheckTimer = null;
-  }
+  clearRouteCheck();
 
-  routeCheckTimer = window.setTimeout(async () => {
-    if (!canCheckAvisos()) return;
+  routeCheckTimer = window.setTimeout(
+    async () => {
+      routeCheckTimer = null;
 
-    await loadProfile();
-    await checkAvisos();
-  }, 350);
+      if (!canCheckAvisos()) return;
+
+      await loadProfile();
+      await checkAvisos();
+    },
+    ROUTE_CHECK_DELAY_MS
+  );
 };
 
 const startInterval = () => {
@@ -187,8 +237,11 @@ watch(
   () => route.fullPath,
   () => {
     if (isAvisosDisabledRoute()) {
+      clearRouteCheck();
+
       overlayVisible.value = false;
       openInManageMode.value = false;
+
       return;
     }
 
@@ -197,7 +250,10 @@ watch(
 );
 
 onMounted(async () => {
-  window.addEventListener("sgpc:open-avisos", handleExternalOpen);
+  window.addEventListener(
+    "sgpc:open-avisos",
+    handleExternalOpen
+  );
 
   await nextTick();
 
@@ -210,13 +266,12 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("sgpc:open-avisos", handleExternalOpen);
+  window.removeEventListener(
+    "sgpc:open-avisos",
+    handleExternalOpen
+  );
 
   stopInterval();
-
-  if (routeCheckTimer) {
-    window.clearTimeout(routeCheckTimer);
-    routeCheckTimer = null;
-  }
+  clearRouteCheck();
 });
 </script>

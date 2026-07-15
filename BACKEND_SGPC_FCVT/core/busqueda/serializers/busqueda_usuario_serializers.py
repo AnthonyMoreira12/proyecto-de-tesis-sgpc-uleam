@@ -1,16 +1,11 @@
-"""
-Serializer para búsqueda rápida de usuarios.
-Expone datos básicos del perfil, relación académica y URL absoluta del avatar.
-"""
-
 from rest_framework import serializers
 
 from core.models import Usuario
 
 
 class UsuarioBusquedaSerializer(serializers.ModelSerializer):
-    facultad = serializers.CharField(source="facultad.nombre", read_only=True)
-    carrera = serializers.CharField(source="carrera.nombre", read_only=True)
+    facultad = serializers.SerializerMethodField(read_only=True)
+    carrera = serializers.SerializerMethodField(read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -26,6 +21,15 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
             "avatar_url",
         ]
         read_only_fields = fields
+
+    def get_facultad(self, obj):
+        carrera = getattr(obj, "carrera", None)
+        facultad = getattr(carrera, "facultad", None) if carrera else None
+        return getattr(facultad, "nombre", None) if facultad else None
+
+    def get_carrera(self, obj):
+        carrera = getattr(obj, "carrera", None)
+        return getattr(carrera, "nombre", None) if carrera else None
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")
@@ -44,4 +48,4 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
             except Exception:
                 return avatar_url
 
-        return avatar_url   
+        return avatar_url

@@ -2,893 +2,972 @@
   <div class="avn-content">
     <section
       class="avn-stage-card"
-      :class="{ 'is-manage-active': showContainerResizeHandles }"
+      :class="{
+        'is-manage-open': manageModeActive,
+        'is-banner-mode': isBannerOnly,
+        'is-text-mode': isTextOnly,
+      }"
       :style="stageCardStyle"
     >
       <button
         class="avn-close"
         type="button"
-        aria-label="Cerrar avisos"
+        aria-label="Cerrar avisos institucionales"
+        title="Cerrar"
         @click="handleContinue"
       >
-        ×
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"
+          />
+        </svg>
       </button>
-
-      <template v-if="showContainerResizeHandles">
-        <button
-          v-for="direction in resizeDirections"
-          :key="direction"
-          class="avn-window-handle"
-          :class="`avn-window-handle--${direction}`"
-          type="button"
-          :aria-label="getResizeAriaLabel(direction)"
-          @pointerdown.prevent="startContainerResize(direction, $event)"
-        ></button>
-
-        <div class="avn-window-grip" aria-hidden="true"></div>
-      </template>
 
       <section
         v-if="loading || !heroReady"
         class="avn-stage-card__loading"
         aria-busy="true"
-        aria-label="Cargando avisos"
+        aria-label="Cargando avisos institucionales"
       >
-        <div class="avn-stage-card__shimmer"></div>
+        <div class="avn-skeleton avn-skeleton--media"></div>
+
+        <div class="avn-skeleton avn-skeleton--content">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </section>
 
       <template v-else-if="showCarousel">
         <div
-          class="avn-stage"
+          class="avn-stage-main"
           :class="{
-            'avn-stage--mixed': isMixedMode,
-            'avn-stage--banner-only': isBannerOnly,
-            'avn-stage--text-only': isTextOnly
+            'avn-stage-main--mixed': isMixedMode,
+            'avn-stage-main--banner': isBannerOnly,
+            'avn-stage-main--text': isTextOnly,
           }"
           :style="stageGridStyle"
+          tabindex="0"
+          role="region"
+          aria-roledescription="carrusel"
+          :aria-label="`Avisos institucionales. Aviso ${currentBanner + 1} de ${bannersNormalized.length}`"
+          @mouseenter="pauseCarousel"
+          @mouseleave="resumeCarousel"
+          @keydown="onCarouselKeydown"
         >
-          <section
-            v-if="!isTextOnly"
-            class="avn-stage__media"
-            :class="{ 'is-full': isBannerOnly }"
-          >
-            <div
-              class="avn-carousel"
-              tabindex="0"
-              role="region"
-              aria-roledescription="carrusel"
-              :aria-label="`Avisos institucionales (${currentBanner + 1} de ${bannersNormalized.length})`"
-              @mouseenter="pauseCarousel"
-              @mouseleave="resumeCarousel"
-              @keydown="onCarouselKeydown"
-            >
-              <p class="sr-only" aria-live="polite">
-                Aviso {{ currentBanner + 1 }} de {{ bannersNormalized.length }}.
-              </p>
+          <p class="sr-only" aria-live="polite">
+            Aviso {{ currentBanner + 1 }} de {{ bannersNormalized.length }}.
+          </p>
 
-              <div class="avn-slides">
-                <article
-                  v-for="(banner, index) in bannersNormalized"
-                  :key="banner.id"
-                  class="avn-slide"
-                  :class="{ 'is-active': index === currentBanner }"
-                  :aria-hidden="index !== currentBanner"
+          <section v-if="!isTextOnly" class="avn-stage__media">
+            <div class="avn-slides">
+              <article
+                v-for="(banner, index) in bannersNormalized"
+                :key="banner.id"
+                class="avn-slide"
+                :class="{ 'is-active': index === currentBanner }"
+                :aria-hidden="index !== currentBanner"
+              >
+                <img
+                  :src="banner.image_url"
+                  :alt="`Imagen del aviso institucional ${index + 1}`"
+                  class="avn-slide__img"
+                  :loading="index === currentBanner ? 'eager' : 'lazy'"
+                  :fetchpriority="index === currentBanner ? 'high' : 'low'"
+                  :decoding="index === currentBanner ? 'sync' : 'async'"
+                />
+              </article>
+            </div>
+
+            <div class="avn-media__shade" aria-hidden="true"></div>
+
+            <span class="avn-media__brand">
+              SGPC ULEAM
+            </span>
+          </section>
+
+          <section v-if="!isBannerOnly" class="avn-stage__aside">
+            <div class="avn-stage__copy">
+              <div class="avn-stage__eyebrow-row">
+                <span class="avn-stage__eyebrow">
+                  {{ panelDisplayContent.eyebrow }}
+                </span>
+
+                <span
+                  v-if="panelDisplayContent.recentLabel"
+                  class="avn-stage__badge"
                 >
-                  <img
-                    :src="banner.image_url"
-                    :alt="`Aviso institucional ${index + 1}`"
-                    class="avn-slide__img"
-                    :loading="index === currentBanner ? 'eager' : 'lazy'"
-                    :fetchpriority="index === currentBanner ? 'high' : 'low'"
-                    :decoding="index === currentBanner ? 'sync' : 'async'"
-                  />
-                </article>
+                  {{ panelDisplayContent.recentLabel }}
+                </span>
               </div>
 
+              <h2 class="avn-stage__title">
+                {{ panelDisplayContent.title }}
+              </h2>
+
+              <p class="avn-stage__text">
+                {{ panelDisplayContent.text }}
+              </p>
+
+              <div class="avn-stage__meta">
+                <span class="avn-chip">
+                  Comunicado institucional
+                </span>
+
+                <span
+                  v-if="manageModeActive"
+                  class="avn-chip avn-chip--accent"
+                >
+                  {{ displayModeLabel }}
+                </span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="avn-stage-footer">
+          <div class="avn-carousel-controls">
+            <template v-if="bannersNormalized.length > 1">
               <button
-                v-if="bannersNormalized.length > 1"
-                class="avn-nav avn-nav--prev"
+                class="avn-pager-btn"
                 type="button"
                 aria-label="Aviso anterior"
                 @click="prev"
               >
-                ‹
-              </button>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="m15.4 5.4-1.4-1.4L6 12l8 8 1.4-1.4L8.8 12l6.6-6.6Z"
+                  />
+                </svg>
 
-              <button
-                v-if="bannersNormalized.length > 1"
-                class="avn-nav avn-nav--next"
-                type="button"
-                aria-label="Siguiente aviso"
-                @click="next"
-              >
-                ›
+                <span>Anterior</span>
               </button>
 
               <div
-                v-if="bannersNormalized.length > 1"
                 class="avn-dots"
                 aria-label="Seleccionar aviso"
               >
                 <button
-                  v-for="(banner, i) in bannersNormalized"
+                  v-for="(banner, index) in bannersNormalized"
                   :key="banner.id"
                   class="avn-dot"
-                  :class="{ 'is-active': i === currentBanner }"
+                  :class="{ 'is-active': index === currentBanner }"
                   type="button"
-                  :aria-label="`Ir al aviso ${i + 1}`"
-                  :aria-current="i === currentBanner ? 'true' : 'false'"
-                  @click="goTo(i)"
-                />
+                  :aria-label="`Ir al aviso ${index + 1}`"
+                  :aria-current="index === currentBanner ? 'true' : 'false'"
+                  @click="goTo(index)"
+                ></button>
               </div>
-            </div>
-          </section>
 
-          <button
-            v-if="isMixedMode && showContainerResizeHandles"
-            class="avn-stage__splitter"
-            type="button"
-            aria-label="Mover división entre banner y texto"
-            @pointerdown.prevent="startPaneResize($event)"
-          ></button>
-
-          <div
-            v-else-if="isMixedMode && !isCompactScreen"
-            class="avn-stage__divider"
-            aria-hidden="true"
-          ></div>
-
-          <section
-            v-if="!isBannerOnly"
-            class="avn-stage__aside"
-            :class="{ 'is-full': isTextOnly }"
-          >
-            <div class="avn-stage__panel">
-              <div
-                class="avn-stage__body"
-                :class="{ 'is-text-only': isTextOnly }"
+              <button
+                class="avn-pager-btn"
+                type="button"
+                aria-label="Siguiente aviso"
+                @click="next"
               >
-                <template v-if="isTextOnly">
-                  <div class="avn-stage__text-shell">
-                    <div
-                      v-if="bannersNormalized.length > 1 || panelDisplayContent.recentLabel"
-                      class="avn-stage__text-topbar"
-                    >
-                      <div class="avn-stage__text-topbar-left">
-                        <span class="avn-stage__text-kicker">
-                          Comunicado institucional
-                        </span>
+                <span>Siguiente</span>
 
-                        <span
-                          v-if="panelDisplayContent.recentLabel"
-                          class="avn-stage__text-badge"
-                        >
-                          {{ panelDisplayContent.recentLabel }}
-                        </span>
-                      </div>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="m8.6 18.6 1.4 1.4 8-8-8-8-1.4 1.4 6.6 6.6-6.6 6.6Z"
+                  />
+                </svg>
+              </button>
+            </template>
 
-                      <span
-                        v-if="bannersNormalized.length > 1"
-                        class="avn-stage__text-counter"
-                      >
-                        {{ currentBanner + 1 }} / {{ bannersNormalized.length }}
-                      </span>
-                    </div>
+            <span v-else class="avn-carousel-counter">
+              Aviso institucional
+            </span>
+          </div>
 
-                    <div class="avn-stage__copy avn-stage__copy--text-only">
-                      <div class="avn-stage__eyebrow-row">
-                        <span v-if="!showInlineEditor" class="avn-stage__eyebrow">
-                          {{ panelDisplayContent.eyebrow }}
-                        </span>
-
-                        <label
-                          v-else
-                          class="avn-inline-pill"
-                          for="avn-active-eyebrow"
-                        >
-                          <span class="sr-only">Etiqueta superior del aviso</span>
-                          <input
-                            id="avn-active-eyebrow"
-                            name="active_eyebrow"
-                            autocomplete="off"
-                            v-model="activeBannerContentDraft.eyebrow"
-                            type="text"
-                            class="avn-inline-pill__input"
-                            maxlength="60"
-                          />
-                        </label>
-                      </div>
-
-                      <h2 v-if="!showInlineEditor" class="avn-stage__title">
-                        {{ panelDisplayContent.title }}
-                      </h2>
-
-                      <label
-                        v-else
-                        class="avn-inline-field avn-inline-field--title"
-                        for="avn-active-title"
-                      >
-                        <span class="sr-only">Título del aviso</span>
-                        <textarea
-                          id="avn-active-title"
-                          name="active_title"
-                          autocomplete="off"
-                          v-model="activeBannerContentDraft.title"
-                          rows="3"
-                          class="avn-inline-field__textarea avn-inline-field__textarea--title"
-                          maxlength="220"
-                        ></textarea>
-                      </label>
-
-                      <p v-if="!showInlineEditor" class="avn-stage__text">
-                        {{ panelDisplayContent.text }}
-                      </p>
-
-                      <label
-                        v-else
-                        class="avn-inline-field"
-                        for="avn-active-text"
-                      >
-                        <span class="sr-only">Mensaje principal del aviso</span>
-                        <textarea
-                          id="avn-active-text"
-                          name="active_text"
-                          autocomplete="off"
-                          v-model="activeBannerContentDraft.text"
-                          rows="6"
-                          class="avn-inline-field__textarea"
-                          maxlength="700"
-                        ></textarea>
-                      </label>
-
-                      <div class="avn-stage__meta">
-                        <span
-                          v-if="manageModeActive"
-                          class="avn-chip"
-                        >
-                          Aviso {{ currentBanner + 1 }} de {{ bannersNormalized.length }}
-                        </span>
-
-                        <span
-                          v-if="manageModeActive"
-                          class="avn-chip avn-chip--mode"
-                        >
-                          {{ displayModeLabel }}
-                        </span>
-
-                        <template v-if="showInlineEditor">
-                          <label
-                            class="avn-inline-pill avn-inline-pill--meta"
-                            for="avn-active-recent-label-inline"
-                          >
-                            <span class="avn-inline-pill__prefix">Actualización</span>
-                            <input
-                              id="avn-active-recent-label-inline"
-                              name="active_recent_label_inline"
-                              autocomplete="off"
-                              v-model="activeBannerContentDraft.recentLabel"
-                              type="text"
-                              class="avn-inline-pill__input avn-inline-pill__input--meta"
-                              maxlength="60"
-                            />
-                          </label>
-
-                          <span
-                            v-if="hasActiveBannerContentChanges"
-                            class="avn-chip avn-chip--pending"
-                          >
-                            Cambios sin guardar
-                          </span>
-                        </template>
-                      </div>
-                    </div>
-
-                    <div
-                      v-if="bannersNormalized.length > 1"
-                      class="avn-stage__text-nav"
-                    >
-                      <div class="avn-stage__text-nav-copy">
-                        <span class="avn-stage__text-nav-label">Más avisos</span>
-                        <strong class="avn-stage__text-nav-title">
-                          Navega entre los comunicados disponibles
-                        </strong>
-                      </div>
-
-                      <div class="avn-stage__text-nav-actions">
-                        <div class="avn-stage__nav-user-buttons">
-                          <button
-                            class="avn-pager-btn"
-                            type="button"
-                            aria-label="Aviso anterior"
-                            @click="prev"
-                          >
-                            ‹
-                          </button>
-
-                          <button
-                            class="avn-pager-btn"
-                            type="button"
-                            aria-label="Siguiente aviso"
-                            @click="next"
-                          >
-                            ›
-                          </button>
-                        </div>
-
-                        <div
-                          class="avn-stage__dots-inline"
-                          aria-label="Seleccionar aviso"
-                        >
-                          <button
-                            v-for="(banner, i) in bannersNormalized"
-                            :key="banner.id"
-                            class="avn-dot"
-                            :class="{ 'is-active': i === currentBanner }"
-                            type="button"
-                            :aria-label="`Ir al aviso ${i + 1}`"
-                            :aria-current="i === currentBanner ? 'true' : 'false'"
-                            @click="goTo(i)"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="avn-stage__copy">
-                    <div class="avn-stage__eyebrow-row">
-                      <span v-if="!showInlineEditor" class="avn-stage__eyebrow">
-                        {{ panelDisplayContent.eyebrow }}
-                      </span>
-
-                      <label
-                        v-else
-                        class="avn-inline-pill"
-                        for="avn-active-eyebrow"
-                      >
-                        <span class="sr-only">Etiqueta superior del aviso</span>
-                        <input
-                          id="avn-active-eyebrow"
-                          name="active_eyebrow"
-                          autocomplete="off"
-                          v-model="activeBannerContentDraft.eyebrow"
-                          type="text"
-                          class="avn-inline-pill__input"
-                          maxlength="60"
-                        />
-                      </label>
-                    </div>
-
-                    <h2 v-if="!showInlineEditor" class="avn-stage__title">
-                      {{ panelDisplayContent.title }}
-                    </h2>
-
-                    <label
-                      v-else
-                      class="avn-inline-field avn-inline-field--title"
-                      for="avn-active-title"
-                    >
-                      <span class="sr-only">Título del aviso</span>
-                      <textarea
-                        id="avn-active-title"
-                        name="active_title"
-                        autocomplete="off"
-                        v-model="activeBannerContentDraft.title"
-                        rows="3"
-                        class="avn-inline-field__textarea avn-inline-field__textarea--title"
-                        maxlength="220"
-                      ></textarea>
-                    </label>
-
-                    <p v-if="!showInlineEditor" class="avn-stage__text">
-                      {{ panelDisplayContent.text }}
-                    </p>
-
-                    <label
-                      v-else
-                      class="avn-inline-field"
-                      for="avn-active-text"
-                    >
-                      <span class="sr-only">Mensaje principal del aviso</span>
-                      <textarea
-                        id="avn-active-text"
-                        name="active_text"
-                        autocomplete="off"
-                        v-model="activeBannerContentDraft.text"
-                        rows="6"
-                        class="avn-inline-field__textarea"
-                        maxlength="700"
-                      ></textarea>
-                    </label>
-
-                    <div class="avn-stage__meta">
-                      <span class="avn-chip">
-                        Aviso {{ currentBanner + 1 }} de {{ bannersNormalized.length }}
-                      </span>
-
-                      <span
-                        v-if="manageModeActive"
-                        class="avn-chip avn-chip--mode"
-                      >
-                        {{ displayModeLabel }}
-                      </span>
-
-                      <template v-if="!showInlineEditor">
-                        <span
-                          v-if="bannersNormalized.length > 1 && panelDisplayContent.recentLabel"
-                          class="avn-chip"
-                        >
-                          {{ panelDisplayContent.recentLabel }}
-                        </span>
-                      </template>
-
-                      <template v-else>
-                        <label
-                          class="avn-inline-pill avn-inline-pill--meta"
-                          for="avn-active-recent-label-inline"
-                        >
-                          <span class="avn-inline-pill__prefix">Actualización</span>
-                          <input
-                            id="avn-active-recent-label-inline"
-                            name="active_recent_label_inline"
-                            autocomplete="off"
-                            v-model="activeBannerContentDraft.recentLabel"
-                            type="text"
-                            class="avn-inline-pill__input avn-inline-pill__input--meta"
-                            maxlength="60"
-                          />
-                        </label>
-
-                        <span
-                          v-if="hasActiveBannerContentChanges"
-                          class="avn-chip avn-chip--pending"
-                        >
-                          Cambios sin guardar
-                        </span>
-                      </template>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </section>
-        </div>
-      </template>
-
-      <div v-else class="avn-stage avn-stage--empty">
-        <div class="avn-stage__empty">
-          <section class="avn-empty">
-            <div class="avn-empty__seal" aria-hidden="true">
-              SGPC ULEAM
-            </div>
-
-            <p class="avn-empty__kicker">Avisos</p>
-
-            <h2 class="avn-empty__title">
-              {{ isAdmin ? "Sin avisos publicados" : "Sin avisos disponibles" }}
-            </h2>
-
-            <p class="avn-empty__text">
-              {{
-                isAdmin
-                  ? "Crea un aviso para mostrarlo en el inicio."
-                  : "No hay comunicados activos por ahora."
-              }}
-            </p>
-
+          <div class="avn-stage-actions">
             <button
-              v-if="isAdmin"
-              class="avn-btn avn-btn--primary avn-empty__btn"
+              v-if="showAdminPanel"
+              class="avn-btn avn-btn--secondary"
               type="button"
               @click="toggleGestion"
             >
-              Administrar avisos
+              {{ panelAbierto ? "Cerrar edición" : "Administrar avisos" }}
             </button>
-          </section>
-        </div>
-      </div>
-    </section>
 
-    <div
-      v-if="showAdminPanel && !loading && heroReady && !panelAbierto && hasBanners"
-      class="avn-manage-fab-shell"
-      :style="stageShellStyle"
-    >
-      <button
-        class="avn-manage-fab"
-        type="button"
-        @click="toggleGestion"
-      >
-        Administrar avisos
-      </button>
-    </div>
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              data-autofocus="true"
+              @click="handleContinue"
+            >
+              Entendido
+            </button>
+          </div>
+        </footer>
+      </template>
+
+      <section v-else class="avn-empty">
+        <div class="avn-empty__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30">
+            <path
+              fill="currentColor"
+              d="M4 4h16v13H7l-3 3V4Zm2 2v9.2L6.2 15H18V6H6Zm2 2h8v2H8V8Zm0 4h6v2H8v-2Z"
+            />
+          </svg>
+        </div>
+
+        <p class="avn-empty__kicker">
+          SGPC ULEAM
+        </p>
+
+        <h2 class="avn-empty__title">
+          {{
+            isAdmin
+              ? "No hay avisos publicados"
+              : "No hay avisos disponibles"
+          }}
+        </h2>
+
+        <p class="avn-empty__text">
+          {{
+            isAdmin
+              ? "Publica el primer comunicado institucional para mostrarlo a los usuarios."
+              : "En este momento no existen comunicados institucionales activos."
+          }}
+        </p>
+
+        <div class="avn-empty__actions">
+          <button
+            v-if="isAdmin"
+            class="avn-btn avn-btn--secondary"
+            type="button"
+            @click="openPublishTab"
+          >
+            Publicar aviso
+          </button>
+
+          <button
+            class="avn-btn avn-btn--primary"
+            type="button"
+            @click="handleContinue"
+          >
+            Entendido
+          </button>
+        </div>
+      </section>
+    </section>
 
     <section
       v-if="showAdminPanel && panelAbierto"
       class="avn-admin-shell"
       :style="stageShellStyle"
-      aria-label="Panel de edición de avisos"
+      aria-labelledby="avn-admin-title"
     >
-      <transition name="drawer" appear>
-        <section class="avn-admin">
-          <div class="avn-admin__top">
-            <div class="avn-admin__summary">
-              <div class="avn-admin__summary-copy">
-                <h3 class="avn-admin__title">Administración de avisos</h3>
-                <p class="avn-admin__subtitle">
-                  Edita el aviso activo, organiza los publicados, ajusta la presentación y publica nuevas imágenes desde una sola vista.
-                </p>
-              </div>
+      <div class="avn-admin">
+        <header class="avn-admin__header">
+          <div>
+            <p class="avn-admin__eyebrow">
+              Herramientas administrativas
+            </p>
 
-              <div class="avn-admin__chips">
-                <span class="avn-admin-chip">
-                  {{ bannersNormalized.length }} publicado<span v-if="bannersNormalized.length !== 1">s</span>
-                </span>
+            <h3 id="avn-admin-title" class="avn-admin__title">
+              Administración de avisos
+            </h3>
 
-                <span v-if="showCarousel" class="avn-admin-chip">
-                  Activo {{ currentBanner + 1 }}/{{ bannersNormalized.length }}
-                </span>
+            <p class="avn-admin__subtitle">
+              Gestiona los comunicados sin alterar la estructura general del
+              inicio.
+            </p>
+          </div>
 
-                <span class="avn-admin-chip">
-                  {{ displayModeLabel }}
-                </span>
+          <div class="avn-admin__summary">
+            <span class="avn-admin-chip">
+              {{ bannersNormalized.length }}
+              publicado<span v-if="bannersNormalized.length !== 1">s</span>
+            </span>
 
-                <span
-                  v-if="pendingChangeCount"
-                  class="avn-admin-chip avn-admin-chip--accent"
-                >
-                  Pendiente<span v-if="pendingChangeCount !== 1">s</span>: {{ pendingChangeCount }}
-                </span>
-              </div>
+            <span
+              v-if="pendingChangeCount"
+              class="avn-admin-chip avn-admin-chip--accent"
+            >
+              {{ pendingChangeCount }}
+              cambio<span v-if="pendingChangeCount !== 1">s</span>
+              pendiente<span v-if="pendingChangeCount !== 1">s</span>
+            </span>
+          </div>
+        </header>
+
+        <nav
+          class="avn-admin-tabs"
+          role="tablist"
+          aria-label="Secciones de administración"
+        >
+          <button
+            v-for="tab in adminTabs"
+            :id="`avn-tab-${tab.value}`"
+            :key="tab.value"
+            class="avn-admin-tab"
+            :class="{ 'is-active': activeAdminTab === tab.value }"
+            type="button"
+            role="tab"
+            :aria-selected="
+              activeAdminTab === tab.value
+                ? 'true'
+                : 'false'
+            "
+            :aria-controls="`avn-panel-${tab.value}`"
+            @click="activeAdminTab = tab.value"
+          >
+            <span>{{ tab.label }}</span>
+
+            <span
+              v-if="tab.value === 'published'"
+              class="avn-admin-tab__count"
+            >
+              {{ bannersNormalized.length }}
+            </span>
+          </button>
+        </nav>
+
+        <p
+          v-if="editorStatus"
+          class="avn-alert avn-alert--success"
+          role="status"
+          aria-live="polite"
+        >
+          {{ editorStatus }}
+        </p>
+
+        <p
+          v-if="panelError || loadError"
+          class="avn-alert avn-alert--error"
+          role="alert"
+        >
+          {{ panelError || loadError }}
+        </p>
+
+        <section
+          v-show="activeAdminTab === 'published'"
+          id="avn-panel-published"
+          class="avn-admin-panel"
+          role="tabpanel"
+          aria-labelledby="avn-tab-published"
+        >
+          <div class="avn-panel-heading">
+            <div>
+              <h4>Avisos publicados</h4>
+
+              <p>
+                Selecciona un aviso para visualizarlo, editarlo o eliminarlo.
+              </p>
             </div>
 
-            <div class="avn-admin__toolbar">
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              @click="activeAdminTab = 'publish'"
+            >
+              Nuevo aviso
+            </button>
+          </div>
+
+          <div
+            v-if="bannersNormalized.length"
+            class="avn-bulk-bar"
+          >
+            <label
+              class="avn-check-label"
+              for="avn-select-all"
+            >
+              <input
+                id="avn-select-all"
+                type="checkbox"
+                :checked="allSelected"
+                :disabled="uploading || deletingBulk"
+                @change="toggleSelectAll"
+              />
+
+              <span>Seleccionar todos</span>
+            </label>
+
+            <div class="avn-bulk-bar__actions">
+              <span>
+                {{ selectedBannerIds.length }}
+                seleccionado<span v-if="selectedBannerIds.length !== 1">s</span>
+              </span>
+
               <button
-                class="avn-btn avn-btn--subtle"
+                v-if="selectedBannerIds.length"
+                class="avn-btn avn-btn--danger"
                 type="button"
-                @click="toggleGestion"
+                :disabled="deletingBulk"
+                @click="eliminarSeleccionados"
               >
-                Ocultar edición
+                {{
+                  deletingBulk
+                    ? bulkDeleteLabel
+                    : "Eliminar seleccionados"
+                }}
               </button>
             </div>
           </div>
 
-          <p
-            v-if="editorStatus"
-            class="avn-alert avn-admin__flash"
+          <div
+            v-if="bannersNormalized.length"
+            class="avn-published-grid"
           >
-            {{ editorStatus }}
-          </p>
+            <article
+              v-for="(banner, index) in bannersNormalized"
+              :key="banner.id"
+              class="avn-published-item"
+              :class="{
+                'is-active': index === currentBanner,
+                'is-selected': isSelected(banner.id),
+              }"
+            >
+              <div class="avn-published-item__media">
+                <button
+                  class="avn-published-item__preview"
+                  type="button"
+                  :aria-label="`Visualizar aviso ${index + 1}`"
+                  @click="selectBanner(index)"
+                >
+                  <img
+                    :src="banner.image_url"
+                    :alt="`Aviso publicado ${index + 1}`"
+                    loading="lazy"
+                  />
+                </button>
 
-          <p
-            v-if="panelError || loadError"
-            class="avn-alert avn-alert--error avn-admin__flash"
-            role="alert"
-          >
-            {{ panelError || loadError }}
-          </p>
+                <label
+                  class="avn-published-item__check"
+                  :for="`avn-select-${banner.id}`"
+                >
+                  <input
+                    :id="`avn-select-${banner.id}`"
+                    type="checkbox"
+                    :checked="isSelected(banner.id)"
+                    :disabled="
+                      deletingBulk ||
+                      deletingId === banner.id
+                    "
+                    @change="toggleBannerSelection(banner.id)"
+                  />
 
-          <div class="avn-admin__grid">
-            <div class="avn-card avn-card--published">
-              <div class="avn-card__head avn-card__head--stack">
-                <div>
-                  <h4 class="avn-card__title">Avisos publicados</h4>
-                  <p class="avn-card__sub">
-                    Selecciona, revisa y elimina los avisos visibles.
-                  </p>
-                </div>
+                  <span class="sr-only">
+                    Seleccionar aviso {{ index + 1 }}
+                  </span>
+                </label>
+
+                <span
+                  v-if="index === currentBanner"
+                  class="avn-published-item__active"
+                >
+                  Activo
+                </span>
               </div>
 
-              <div v-if="bannersNormalized.length" class="avn-bulk-actions avn-bulk-actions--block">
-                <div class="avn-bulk-actions__left">
-                  <label class="avn-bulk-check" for="avn-select-all">
-                    <input
-                      id="avn-select-all"
-                      name="select_all_banners"
-                      type="checkbox"
-                      :checked="allSelected"
-                      :disabled="uploading || deletingBulk"
-                      @change="toggleSelectAll"
-                    />
-                    <span>Seleccionar todo</span>
-                  </label>
+              <div class="avn-published-item__body">
+                <div>
+                  <strong>
+                    Aviso {{ index + 1 }}
+                  </strong>
 
-                  <span class="avn-bulk-count">
-                    Seleccionados: {{ selectedBannerIds.length }}
+                  <span>
+                    {{ resolveBannerContent(banner).title }}
                   </span>
                 </div>
 
-                <div class="avn-bulk-actions__right">
+                <div class="avn-published-item__actions">
                   <button
-                    v-if="selectedBannerIds.length"
-                    class="avn-btn avn-btn--danger"
+                    class="avn-icon-btn"
                     type="button"
-                    :disabled="uploading || deletingBulk"
-                    @click="eliminarSeleccionados"
+                    aria-label="Editar contenido del aviso"
+                    title="Editar contenido"
+                    @click="editBanner(index)"
                   >
-                    {{ deletingBulk ? bulkDeleteLabel : "Eliminar seleccionados" }}
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="bannersNormalized.length" class="avn-grid-mini">
-                <div
-                  v-for="banner in bannersNormalized"
-                  :key="banner.id"
-                  class="avn-mini"
-                  :class="{ 'is-selected': isSelected(banner.id) }"
-                >
-                  <div class="avn-mini__media">
-                    <label
-                      class="avn-mini__select"
-                      :for="`avn-banner-select-${banner.id}`"
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      aria-hidden="true"
                     >
-                      <input
-                        :id="`avn-banner-select-${banner.id}`"
-                        :name="`banner_select_${banner.id}`"
-                        type="checkbox"
-                        :checked="isSelected(banner.id)"
-                        :disabled="uploading || deletingBulk || deletingId === banner.id"
-                        @change="toggleBannerSelection(banner.id)"
-                      />
-                      <span class="sr-only">Seleccionar aviso</span>
-                    </label>
-
-                    <img
-                      class="avn-mini__img"
-                      :src="banner.image_url"
-                      alt="Aviso publicado"
-                      loading="lazy"
-                      decoding="async"
-                    />
-
-                    <button
-                      class="avn-mini__del"
-                      :class="{ 'is-loading': deletingId === banner.id }"
-                      type="button"
-                      :disabled="uploading || deletingBulk || deletingId === banner.id"
-                      aria-label="Eliminar aviso"
-                      title="Eliminar"
-                      @click="eliminarBanner(banner.id)"
-                    >
-                      <span class="sr-only">Eliminar</span>
-
-                      <svg
-                        v-if="deletingId !== banner.id"
-                        viewBox="0 0 24 24"
-                        width="18"
-                        height="18"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v9h-2v-9Zm4 0h2v9h-2v-9ZM7 10h2v9H7v-9Z"
-                        />
-                      </svg>
-
-                      <span v-else aria-hidden="true">…</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <p v-else class="avn-muted">No hay avisos publicados.</p>
-            </div>
-
-            <div class="avn-admin__side">
-              <div class="avn-card avn-card--editor">
-                <div class="avn-card__head">
-                  <div>
-                    <h4 class="avn-card__title">Edición actual</h4>
-                    <p class="avn-card__sub">
-                      {{
-                        showCarousel
-                          ? isBannerOnly
-                            ? "El modo solo banner oculta el texto en la vista previa. Edita aquí su contenido."
-                            : "El texto del aviso se edita directamente en la vista previa."
-                          : "Publica un aviso para habilitar la edición."
-                      }}
-                    </p>
-                  </div>
-                </div>
-
-                <div class="avn-card__stack">
-                  <div class="avn-action-group">
-                    <span class="avn-action-group__label">Contenido</span>
-
-                    <div v-if="showCarousel && isBannerOnly" class="avn-editor-form">
-                      <label class="avn-field-stack" for="avn-panel-eyebrow">
-                        <span class="avn-field-stack__label">Etiqueta superior</span>
-                        <input
-                          id="avn-panel-eyebrow"
-                          v-model="activeBannerContentDraft.eyebrow"
-                          type="text"
-                          maxlength="60"
-                          class="avn-inline-field__input"
-                          autocomplete="off"
-                        />
-                      </label>
-
-                      <label class="avn-field-stack" for="avn-panel-title">
-                        <span class="avn-field-stack__label">Título</span>
-                        <textarea
-                          id="avn-panel-title"
-                          v-model="activeBannerContentDraft.title"
-                          rows="3"
-                          maxlength="220"
-                          class="avn-inline-field__textarea avn-inline-field__textarea--title"
-                          autocomplete="off"
-                        ></textarea>
-                      </label>
-
-                      <label class="avn-field-stack" for="avn-panel-text">
-                        <span class="avn-field-stack__label">Mensaje</span>
-                        <textarea
-                          id="avn-panel-text"
-                          v-model="activeBannerContentDraft.text"
-                          rows="6"
-                          maxlength="700"
-                          class="avn-inline-field__textarea"
-                          autocomplete="off"
-                        ></textarea>
-                      </label>
-
-                      <label class="avn-field-stack" for="avn-panel-recent">
-                        <span class="avn-field-stack__label">Etiqueta de actualización</span>
-                        <input
-                          id="avn-panel-recent"
-                          v-model="activeBannerContentDraft.recentLabel"
-                          type="text"
-                          maxlength="60"
-                          class="avn-inline-field__input"
-                          autocomplete="off"
-                        />
-                      </label>
-                    </div>
-
-                    <div v-if="showCarousel" class="avn-btn-group avn-btn-group--end avn-btn-group--wrap">
-                      <button
-                        class="avn-btn avn-btn--subtle"
-                        type="button"
-                        :disabled="!hasActiveBannerContentChanges || savingBannerContent"
-                        @click="cancelActiveBannerContent"
-                      >
-                        Descartar
-                      </button>
-
-                      <button
-                        class="avn-btn avn-btn--ghost"
-                        type="button"
-                        :disabled="savingBannerContent"
-                        @click="resetActiveBannerContent"
-                      >
-                        Restablecer
-                      </button>
-
-                      <button
-                        class="avn-btn avn-btn--primary"
-                        type="button"
-                        :disabled="!hasActiveBannerContentChanges || savingBannerContent"
-                        @click="saveActiveBannerContent"
-                      >
-                        Guardar cambios
-                      </button>
-                    </div>
-
-                    <p v-else class="avn-muted">Sin aviso activo.</p>
-                  </div>
-
-                  <div class="avn-action-group">
-                    <span class="avn-action-group__label">Diseño</span>
-
-                    <div class="avn-layout-switch" role="tablist" aria-label="Modo de visualización del aviso">
-                      <button
-                        v-for="option in displayModeOptions"
-                        :key="option.value"
-                        class="avn-layout-option"
-                        :class="{ 'is-active': displayMode === option.value }"
-                        type="button"
-                        role="tab"
-                        :aria-selected="displayMode === option.value ? 'true' : 'false'"
-                        @click="setDisplayMode(option.value)"
-                      >
-                        {{ option.label }}
-                      </button>
-                    </div>
-
-                    <div class="avn-btn-group avn-btn-group--end">
-                      <button
-                        class="avn-btn avn-btn--ghost"
-                        type="button"
-                        :disabled="savingLayout || !isLayoutDirty"
-                        @click="saveCurrentLayout"
-                      >
-                        {{ savingLayout ? "Guardando diseño..." : "Guardar diseño" }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="avn-card avn-card--upload">
-                <div class="avn-card__head">
-                  <div>
-                    <h4 class="avn-card__title">Publicar avisos</h4>
-                    <p class="avn-card__sub">
-                      Sube imágenes en formato JPG o PNG para agregarlas al carrusel institucional.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  class="avn-drop"
-                  :class="{ 'is-dragging': dragging }"
-                  @dragover.prevent="onDragOver"
-                  @dragenter.prevent="onDragEnter"
-                  @dragleave.prevent="onDragLeave"
-                  @drop.prevent="onDrop"
-                >
-                  <div class="avn-drop__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
                       <path
                         fill="currentColor"
-                        d="M12 3l4 4h-3v7h-2V7H8l4-4Zm-7 14h14v2H5v-2Z"
+                        d="m4 15.5 9.9-9.9 4.5 4.5-9.9 9.9H4v-4.5Zm11.3-11.3 1.4-1.4a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8l-1.4 1.4-4.5-4.5Z"
                       />
                     </svg>
-                  </div>
-
-                  <div class="avn-drop__text">
-                    <strong>Arrastra imágenes aquí</strong>
-                    <span>Formatos admitidos: JPG o PNG · máximo {{ bannerMaxSizeLabel }} por imagen</span>
-                  </div>
-                </div>
-
-                <div v-if="previews.length" class="avn-previews">
-                  <div
-                    v-for="(preview, i) in previews"
-                    :key="`${preview}-${i}`"
-                    class="avn-preview"
-                  >
-                    <img :src="preview" alt="Vista previa del aviso" />
-
-                    <button
-                      class="avn-preview__x"
-                      type="button"
-                      aria-label="Quitar imagen"
-                      :disabled="uploading || deletingBulk"
-                      @click="removeFileAt(i)"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-
-                <div class="avn-btn-group avn-btn-group--between avn-btn-group--wrap avn-btn-group--publish">
-                  <button
-                    class="avn-btn avn-btn--ghost"
-                    type="button"
-                    :disabled="uploading || deletingBulk"
-                    @click="openPicker"
-                  >
-                    Seleccionar imágenes
                   </button>
 
                   <button
-                    class="avn-btn avn-btn--primary avn-btn--publish"
-                    :class="{ 'is-loading': uploading }"
+                    class="avn-icon-btn avn-icon-btn--danger"
                     type="button"
-                    :disabled="!files.length || uploading || deletingBulk"
-                    @click="subirBanners"
+                    :disabled="
+                      deletingId === banner.id ||
+                      deletingBulk
+                    "
+                    aria-label="Eliminar aviso"
+                    title="Eliminar"
+                    @click="eliminarBanner(banner.id)"
                   >
-                    {{ uploading ? uploadLabel : "Publicar" }}
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"
+                      />
+                    </svg>
                   </button>
                 </div>
               </div>
-            </div>
+            </article>
+          </div>
+
+          <div v-else class="avn-panel-empty">
+            <p>No existen avisos publicados.</p>
+
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              @click="activeAdminTab = 'publish'"
+            >
+              Publicar el primero
+            </button>
           </div>
         </section>
-      </transition>
+
+        <section
+          v-show="activeAdminTab === 'content'"
+          id="avn-panel-content"
+          class="avn-admin-panel"
+          role="tabpanel"
+          aria-labelledby="avn-tab-content"
+        >
+          <div class="avn-panel-heading">
+            <div>
+              <h4>Contenido del aviso activo</h4>
+
+              <p>
+                Edita el texto asociado al aviso que se muestra en la vista
+                previa.
+              </p>
+            </div>
+
+            <span
+              v-if="showCarousel"
+              class="avn-panel-heading__status"
+            >
+              Aviso {{ currentBanner + 1 }} de
+              {{ bannersNormalized.length }}
+            </span>
+          </div>
+
+          <form
+            v-if="showCarousel"
+            class="avn-form-grid"
+            @submit.prevent="saveActiveBannerContent"
+          >
+            <label
+              class="avn-field avn-field--half"
+              for="avn-content-eyebrow"
+            >
+              <span>Etiqueta superior</span>
+
+              <input
+                id="avn-content-eyebrow"
+                v-model="activeBannerContentDraft.eyebrow"
+                type="text"
+                maxlength="60"
+                autocomplete="off"
+              />
+
+              <small>
+                Ejemplo: Comunicado institucional.
+              </small>
+            </label>
+
+            <label
+              class="avn-field avn-field--half"
+              for="avn-content-recent"
+            >
+              <span>Etiqueta de actualización</span>
+
+              <input
+                id="avn-content-recent"
+                v-model="activeBannerContentDraft.recentLabel"
+                type="text"
+                maxlength="60"
+                autocomplete="off"
+              />
+
+              <small>
+                Ejemplo: Nuevo o Actualizado.
+              </small>
+            </label>
+
+            <label
+              class="avn-field"
+              for="avn-content-title"
+            >
+              <span>Título</span>
+
+              <textarea
+                id="avn-content-title"
+                v-model="activeBannerContentDraft.title"
+                rows="3"
+                maxlength="220"
+              ></textarea>
+            </label>
+
+            <label
+              class="avn-field"
+              for="avn-content-text"
+            >
+              <span>Mensaje</span>
+
+              <textarea
+                id="avn-content-text"
+                v-model="activeBannerContentDraft.text"
+                rows="6"
+                maxlength="700"
+              ></textarea>
+            </label>
+
+            <div class="avn-form-actions">
+              <button
+                class="avn-btn avn-btn--ghost"
+                type="button"
+                :disabled="
+                  !hasActiveBannerContentChanges ||
+                  savingBannerContent
+                "
+                @click="cancelActiveBannerContent"
+              >
+                Descartar cambios
+              </button>
+
+              <button
+                class="avn-btn avn-btn--secondary"
+                type="button"
+                :disabled="savingBannerContent"
+                @click="resetActiveBannerContent"
+              >
+                Usar texto global
+              </button>
+
+              <button
+                class="avn-btn avn-btn--primary"
+                type="submit"
+                :disabled="
+                  !hasActiveBannerContentChanges ||
+                  savingBannerContent
+                "
+              >
+                {{
+                  savingBannerContent
+                    ? "Guardando…"
+                    : "Guardar contenido"
+                }}
+              </button>
+            </div>
+          </form>
+
+          <div v-else class="avn-panel-empty">
+            <p>
+              Publica un aviso para habilitar la edición de contenido.
+            </p>
+
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              @click="activeAdminTab = 'publish'"
+            >
+              Ir a publicar
+            </button>
+          </div>
+        </section>
+
+        <section
+          v-show="activeAdminTab === 'design'"
+          id="avn-panel-design"
+          class="avn-admin-panel"
+          role="tabpanel"
+          aria-labelledby="avn-tab-design"
+        >
+          <div class="avn-panel-heading">
+            <div>
+              <h4>Diseño y presentación</h4>
+
+              <p>
+                Utiliza configuraciones predeterminadas para mantener una
+                composición consistente.
+              </p>
+            </div>
+          </div>
+
+          <div class="avn-design-sections">
+            <fieldset class="avn-option-group">
+              <legend>Modo de visualización</legend>
+
+              <p>
+                Define qué contenido se muestra en el aviso.
+              </p>
+
+              <div class="avn-choice-grid avn-choice-grid--three">
+                <button
+                  v-for="option in displayModeOptions"
+                  :key="option.value"
+                  class="avn-choice-card"
+                  :class="{
+                    'is-active': displayMode === option.value,
+                  }"
+                  type="button"
+                  :aria-pressed="
+                    displayMode === option.value
+                      ? 'true'
+                      : 'false'
+                  "
+                  @click="setDisplayMode(option.value)"
+                >
+                  <strong>{{ option.label }}</strong>
+                  <span>{{ option.description }}</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="avn-option-group">
+              <legend>Tamaño del aviso</legend>
+
+              <p>
+                Evita redimensionamientos libres y conserva proporciones
+                institucionales.
+              </p>
+
+              <div class="avn-choice-grid avn-choice-grid--three">
+                <button
+                  v-for="option in sizePresets"
+                  :key="option.value"
+                  class="avn-choice-card"
+                  :class="{
+                    'is-active': activeSizePreset === option.value,
+                  }"
+                  type="button"
+                  :aria-pressed="
+                    activeSizePreset === option.value
+                      ? 'true'
+                      : 'false'
+                  "
+                  @click="applySizePreset(option.value)"
+                >
+                  <strong>{{ option.label }}</strong>
+                  <span>{{ option.description }}</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset
+              class="avn-option-group"
+              :disabled="!isMixedMode"
+            >
+              <legend>Distribución</legend>
+
+              <p>
+                Determina la proporción entre la imagen y el texto.
+              </p>
+
+              <div class="avn-choice-grid avn-choice-grid--three">
+                <button
+                  v-for="option in distributionPresets"
+                  :key="option.value"
+                  class="avn-choice-card"
+                  :class="{
+                    'is-active':
+                      activeDistributionPreset === option.value,
+                  }"
+                  type="button"
+                  :disabled="!isMixedMode"
+                  :aria-pressed="
+                    activeDistributionPreset === option.value
+                      ? 'true'
+                      : 'false'
+                  "
+                  @click="applyDistributionPreset(option.value)"
+                >
+                  <strong>{{ option.label }}</strong>
+                  <span>{{ option.description }}</span>
+                </button>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="avn-form-actions avn-form-actions--design">
+            <span
+              v-if="isLayoutDirty"
+              class="avn-unsaved-indicator"
+            >
+              Hay cambios de diseño sin guardar.
+            </span>
+
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              :disabled="savingLayout || !isLayoutDirty"
+              @click="saveCurrentLayout"
+            >
+              {{
+                savingLayout
+                  ? "Guardando…"
+                  : "Guardar diseño"
+              }}
+            </button>
+          </div>
+        </section>
+
+        <section
+          v-show="activeAdminTab === 'publish'"
+          id="avn-panel-publish"
+          class="avn-admin-panel"
+          role="tabpanel"
+          aria-labelledby="avn-tab-publish"
+        >
+          <div class="avn-panel-heading">
+            <div>
+              <h4>Publicar nuevos avisos</h4>
+
+              <p>
+                Agrega imágenes JPG o PNG al carrusel institucional.
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="avn-dropzone"
+            :class="{ 'is-dragging': dragging }"
+            role="button"
+            tabindex="0"
+            aria-label="Seleccionar imágenes para publicar"
+            @click="openPicker"
+            @keydown.enter.prevent="openPicker"
+            @keydown.space.prevent="openPicker"
+            @dragover.prevent="onDragOver"
+            @dragenter.prevent="onDragEnter"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onDrop"
+          >
+            <div class="avn-dropzone__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28">
+                <path
+                  fill="currentColor"
+                  d="M11 16V8.8L8.4 11.4 7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2ZM5 19v-4h2v2h10v-2h2v4H5Z"
+                />
+              </svg>
+            </div>
+
+            <strong>
+              Arrastra las imágenes aquí
+            </strong>
+
+            <span>
+              o haz clic para buscarlas en tu equipo
+            </span>
+
+            <small>
+              JPG o PNG · máximo {{ bannerMaxSizeLabel }} por imagen
+            </small>
+          </div>
+
+          <div
+            v-if="previews.length"
+            class="avn-preview-grid"
+          >
+            <article
+              v-for="(preview, index) in previews"
+              :key="`${preview}-${index}`"
+              class="avn-upload-preview"
+            >
+              <img
+                :src="preview"
+                :alt="`Vista previa de la imagen ${index + 1}`"
+              />
+
+              <div class="avn-upload-preview__meta">
+                <span>
+                  {{
+                    files[index]?.name ||
+                    `Imagen ${index + 1}`
+                  }}
+                </span>
+
+                <small>
+                  {{ prettyBytes(files[index]?.size || 0) }}
+                </small>
+              </div>
+
+              <button
+                class="avn-icon-btn avn-icon-btn--danger"
+                type="button"
+                aria-label="Quitar imagen"
+                :disabled="uploading"
+                @click="removeFileAt(index)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="17"
+                  height="17"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"
+                  />
+                </svg>
+              </button>
+            </article>
+          </div>
+
+          <div class="avn-form-actions">
+            <button
+              class="avn-btn avn-btn--secondary"
+              type="button"
+              :disabled="uploading || deletingBulk"
+              @click="openPicker"
+            >
+              Seleccionar imágenes
+            </button>
+
+            <button
+              class="avn-btn avn-btn--primary"
+              type="button"
+              :disabled="
+                !files.length ||
+                uploading ||
+                deletingBulk
+              "
+              @click="subirBanners"
+            >
+              {{
+                uploading
+                  ? uploadLabel
+                  : "Publicar avisos"
+              }}
+            </button>
+          </div>
+        </section>
+      </div>
     </section>
 
     <div
@@ -896,46 +975,59 @@
       class="avn-confirm"
       role="dialog"
       aria-modal="true"
-      aria-label="Confirmar eliminación"
+      aria-labelledby="avn-confirm-title"
+      @keydown.stop="onConfirmKeydown"
     >
-      <div class="avn-confirm__overlay" @click="cerrarDialogo(false)"></div>
+      <button
+        class="avn-confirm__backdrop"
+        type="button"
+        tabindex="-1"
+        aria-label="Cancelar eliminación"
+        @click="cerrarDialogo(false)"
+      ></button>
 
-      <div class="avn-confirm__card" ref="modalCard" tabindex="-1">
-        <div class="avn-confirm__head">
-          <div class="avn-confirm__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z"
-              />
-            </svg>
-          </div>
+      <section
+        ref="modalCard"
+        class="avn-confirm__card"
+        tabindex="-1"
+      >
+        <div class="avn-confirm__icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+          >
+            <path
+              fill="currentColor"
+              d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z"
+            />
+          </svg>
+        </div>
 
-          <div>
-            <h2 class="avn-confirm__title">{{ dialogData.titulo }}</h2>
-            <p class="avn-confirm__msg">{{ dialogData.mensaje }}</p>
-            <p class="avn-confirm__hint">Esta acción no se puede deshacer.</p>
-          </div>
+        <div class="avn-confirm__content">
+          <h2 id="avn-confirm-title">
+            {{ dialogData.titulo }}
+          </h2>
+
+          <p>
+            {{ dialogData.mensaje }}
+          </p>
+
+          <small>
+            Esta acción no se puede deshacer.
+          </small>
         </div>
 
         <img
           v-if="dialogData.bannerImg"
           :src="dialogData.bannerImg"
-          alt="Aviso seleccionado"
+          alt="Vista previa del aviso que se eliminará"
           class="avn-confirm__preview"
         />
 
-        <div
-          v-else-if="dialogData.visible && dialogData.count > 1"
-          class="avn-confirm__bulk"
-        >
-          <strong>{{ dialogData.count }}</strong>
-          <span>avisos seleccionados para eliminar.</span>
-        </div>
-
-        <div class="avn-btn-group avn-btn-group--end avn-btn-group--modal">
+        <div class="avn-confirm__actions">
           <button
-            class="avn-btn avn-btn--ghost"
+            class="avn-btn avn-btn--secondary"
             type="button"
             @click="cerrarDialogo(false)"
           >
@@ -950,13 +1042,12 @@
             Eliminar
           </button>
         </div>
-      </div>
+      </section>
     </div>
 
     <input
       id="avn-file-input"
       ref="fileInput"
-      name="banners_images"
       type="file"
       accept="image/jpeg,image/png"
       multiple
@@ -967,11 +1058,19 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
+
 import api from "../../scripts/api/axios";
+
 import {
   DEFAULT_AVISOS_CONTENT,
-  DEFAULT_AVISOS_LAYOUT,
   getAvisosCombinedVersion,
   getAvisosContent,
   getAvisosLayout,
@@ -985,68 +1084,223 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+
   version: {
     type: String,
     default: "",
   },
+
   initialManage: {
     type: Boolean,
     default: false,
   },
 });
 
-const emit = defineEmits(["continue", "version-change"]);
+const emit = defineEmits([
+  "continue",
+  "version-change",
+]);
 
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
-const MAX_BANNER_FILE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+]);
+
+const MAX_BANNER_FILE_SIZE =
+  2 * 1024 * 1024;
+
 const CAROUSEL_CYCLE_MS = 5200;
 const TEMPORARY_PAUSE_MS = 4000;
-const FOCUSABLE_SELECTOR =
-  'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
+const COMPACT_BREAKPOINT = 920;
 
-const COMPACT_BREAKPOINT = 980;
-
-const STAGE_WIDTH_DEFAULT = DEFAULT_AVISOS_LAYOUT.stageWidth;
-const STAGE_WIDTH_MIN = 900;
-const STAGE_WIDTH_MAX = 1500;
-
-const STAGE_HEIGHT_DEFAULT = DEFAULT_AVISOS_LAYOUT.stageHeight;
-const STAGE_HEIGHT_MIN = 440;
-const STAGE_HEIGHT_MAX = 900;
-
-const SPLITTER_WIDTH = 14;
-const MEDIA_WIDTH_RATIO_DEFAULT = 0.64;
-const MEDIA_WIDTH_MIN = 420;
-const ASIDE_WIDTH_MIN = 320;
+const FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
 
 const DISPLAY_MODE_DEFAULT = "mixed";
-const DISPLAY_MODE_VALUES = new Set(["mixed", "banner", "text"]);
 
-const displayModeOptions = [
-  { value: "mixed", label: "Banner + texto" },
-  { value: "banner", label: "Solo banner" },
-  { value: "text", label: "Solo texto" },
+const DISPLAY_MODE_VALUES = new Set([
+  "mixed",
+  "banner",
+  "text",
+]);
+
+const SIZE_PRESETS = Object.freeze({
+  compact: Object.freeze({
+    width: 840,
+    height: 440,
+  }),
+
+  standard: Object.freeze({
+    width: 1000,
+    height: 520,
+  }),
+
+  wide: Object.freeze({
+    width: 1120,
+    height: 580,
+  }),
+});
+
+const DISTRIBUTION_PRESETS = Object.freeze({
+  image: 0.68,
+  balanced: 0.58,
+  text: 0.44,
+});
+
+const STAGE_WIDTH_MIN = 760;
+const STAGE_WIDTH_MAX = 1120;
+
+const STAGE_HEIGHT_MIN = 420;
+const STAGE_HEIGHT_MAX = 580;
+
+const ASIDE_WIDTH_MIN = 300;
+const MEDIA_WIDTH_MIN = 320;
+
+const adminTabs = [
+  {
+    value: "published",
+    label: "Publicados",
+  },
+  {
+    value: "content",
+    label: "Contenido",
+  },
+  {
+    value: "design",
+    label: "Diseño",
+  },
+  {
+    value: "publish",
+    label: "Publicar",
+  },
 ];
 
-const resizeDirections = ["n", "e", "s", "w", "nw", "ne", "sw", "se"];
+const displayModeOptions = [
+  {
+    value: "mixed",
+    label: "Banner + texto",
+    description:
+      "Presenta la imagen y el contenido informativo.",
+  },
+  {
+    value: "banner",
+    label: "Solo banner",
+    description:
+      "Utiliza toda el área para la imagen.",
+  },
+  {
+    value: "text",
+    label: "Solo texto",
+    description:
+      "Prioriza el contenido escrito del aviso.",
+  },
+];
+
+const sizePresets = [
+  {
+    value: "compact",
+    label: "Compacto",
+    description:
+      "Adecuado para mensajes breves.",
+  },
+  {
+    value: "standard",
+    label: "Estándar",
+    description:
+      "Equilibrio recomendado para uso general.",
+  },
+  {
+    value: "wide",
+    label: "Amplio",
+    description:
+      "Mayor espacio para imágenes y textos extensos.",
+  },
+];
+
+const distributionPresets = [
+  {
+    value: "image",
+    label: "Imagen predominante",
+    description:
+      "Asigna más espacio visual al banner.",
+  },
+  {
+    value: "balanced",
+    label: "Equilibrado",
+    description:
+      "Distribuye de forma uniforme imagen y texto.",
+  },
+  {
+    value: "text",
+    label: "Texto predominante",
+    description:
+      "Reserva mayor amplitud para el comunicado.",
+  },
+];
 
 const prettyBytes = (bytes) => {
   const size = Number(bytes || 0);
-  if (size <= 0) return "0 B";
 
-  const units = ["B", "KB", "MB", "GB"];
+  if (size <= 0) {
+    return "0 B";
+  }
+
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+  ];
+
   let value = size;
   let index = 0;
 
-  while (value >= 1024 && index < units.length - 1) {
+  while (
+    value >= 1024 &&
+    index < units.length - 1
+  ) {
     value /= 1024;
     index += 1;
   }
 
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+  return `${value.toFixed(
+    index === 0 ? 0 : 2
+  )} ${units[index]}`;
 };
 
-const bannerMaxSizeLabel = prettyBytes(MAX_BANNER_FILE_SIZE);
+const bannerMaxSizeLabel =
+  prettyBytes(MAX_BANNER_FILE_SIZE);
+
+const clamp = (value, min, max) => {
+  return Math.min(
+    max,
+    Math.max(min, value)
+  );
+};
+
+const safeNumber = (value, fallback) => {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : fallback;
+};
+
+const sanitizeDisplayMode = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return DISPLAY_MODE_VALUES.has(normalized)
+    ? normalized
+    : DISPLAY_MODE_DEFAULT;
+};
 
 const cloneContent = (value) => {
   return {
@@ -1059,123 +1313,92 @@ const normalizeContent = (value) => {
   const next = cloneContent(value);
 
   return {
-    eyebrow: String(next.eyebrow || "").trim() || DEFAULT_AVISOS_CONTENT.eyebrow,
-    title: String(next.title || "").trim() || DEFAULT_AVISOS_CONTENT.title,
-    text: String(next.text || "").trim() || DEFAULT_AVISOS_CONTENT.text,
+    eyebrow:
+      String(next.eyebrow || "").trim() ||
+      DEFAULT_AVISOS_CONTENT.eyebrow,
+
+    title:
+      String(next.title || "").trim() ||
+      DEFAULT_AVISOS_CONTENT.title,
+
+    text:
+      String(next.text || "").trim() ||
+      DEFAULT_AVISOS_CONTENT.text,
+
     recentLabel:
-      String(next.recentLabel || "").trim() || DEFAULT_AVISOS_CONTENT.recentLabel,
+      String(next.recentLabel || "").trim() ||
+      DEFAULT_AVISOS_CONTENT.recentLabel,
   };
 };
 
 const getRawBannerContent = (banner) => {
   return {
-    eyebrow: String(banner?.eyebrow || "").trim(),
-    title: String(banner?.title || "").trim(),
-    text: String(banner?.text || "").trim(),
-    recentLabel: String(banner?.recentLabel || "").trim(),
+    eyebrow: String(
+      banner?.eyebrow || ""
+    ).trim(),
+
+    title: String(
+      banner?.title || ""
+    ).trim(),
+
+    text: String(
+      banner?.text || ""
+    ).trim(),
+
+    recentLabel: String(
+      banner?.recentLabel || ""
+    ).trim(),
   };
 };
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-
-const safeInt = (value, fallback) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.round(parsed) : Math.round(fallback);
-};
-
-const sanitizeDisplayMode = (value) => {
-  const normalized = String(value || "").trim().toLowerCase();
-  return DISPLAY_MODE_VALUES.has(normalized) ? normalized : DISPLAY_MODE_DEFAULT;
-};
-
-const getStageWidthMax = () => {
-  if (typeof window === "undefined") return STAGE_WIDTH_MAX;
-  const gutter = window.innerWidth <= COMPACT_BREAKPOINT ? 24 : 64;
-  return Math.max(
-    STAGE_WIDTH_MIN,
-    Math.min(STAGE_WIDTH_MAX, Math.round(window.innerWidth - gutter))
+const sanitizeStageWidth = (value) => {
+  return Math.round(
+    clamp(
+      safeNumber(
+        value,
+        SIZE_PRESETS.standard.width
+      ),
+      STAGE_WIDTH_MIN,
+      STAGE_WIDTH_MAX
+    )
   );
 };
 
-const getStageHeightMax = () => {
-  if (typeof window === "undefined") return STAGE_HEIGHT_MAX;
-  return Math.max(
-    STAGE_HEIGHT_MIN,
-    Math.min(STAGE_HEIGHT_MAX, Math.round(window.innerHeight - 48))
+const sanitizeStageHeight = (value) => {
+  return Math.round(
+    clamp(
+      safeNumber(
+        value,
+        SIZE_PRESETS.standard.height
+      ),
+      STAGE_HEIGHT_MIN,
+      STAGE_HEIGHT_MAX
+    )
   );
 };
 
-const getMediaWidthMax = (width = STAGE_WIDTH_DEFAULT) => {
+const getMediaWidthMax = (width) => {
   return Math.max(
     MEDIA_WIDTH_MIN,
-    safeInt(width, STAGE_WIDTH_DEFAULT) - ASIDE_WIDTH_MIN - SPLITTER_WIDTH
+    width - ASIDE_WIDTH_MIN
   );
 };
 
-const getDefaultMediaWidth = (width = STAGE_WIDTH_DEFAULT) => {
-  const base = Math.round(
-    safeInt(width, STAGE_WIDTH_DEFAULT) * MEDIA_WIDTH_RATIO_DEFAULT
-  );
-  return clamp(base, MEDIA_WIDTH_MIN, getMediaWidthMax(width));
-};
-
-const sanitizeStageWidth = (value) =>
-  clamp(safeInt(value, STAGE_WIDTH_DEFAULT), STAGE_WIDTH_MIN, getStageWidthMax());
-
-const sanitizeStageHeight = (value) =>
-  clamp(safeInt(value, STAGE_HEIGHT_DEFAULT), STAGE_HEIGHT_MIN, getStageHeightMax());
-
-const sanitizeMediaWidth = (value, width = STAGE_WIDTH_DEFAULT) =>
-  clamp(
-    safeInt(value, getDefaultMediaWidth(width)),
-    MEDIA_WIDTH_MIN,
-    getMediaWidthMax(width)
-  );
-
-const getScaledMediaWidthForViewport = (
-  rawStageWidth,
-  rawMediaWidth,
-  appliedStageWidth
+const sanitizeMediaWidth = (
+  value,
+  width
 ) => {
-  const sourceStageWidth = safeInt(rawStageWidth, STAGE_WIDTH_DEFAULT);
-  const sourceMediaWidth = safeInt(
-    rawMediaWidth,
-    getDefaultMediaWidth(sourceStageWidth)
+  return Math.round(
+    clamp(
+      safeNumber(
+        value,
+        width *
+          DISTRIBUTION_PRESETS.balanced
+      ),
+      MEDIA_WIDTH_MIN,
+      getMediaWidthMax(width)
+    )
   );
-  const targetStageWidth = safeInt(appliedStageWidth, sourceStageWidth);
-
-  if (!sourceStageWidth || sourceStageWidth <= 0) {
-    return sanitizeMediaWidth(sourceMediaWidth, targetStageWidth);
-  }
-
-  const ratio = sourceMediaWidth / sourceStageWidth;
-  const scaledMediaWidth = Math.round(targetStageWidth * ratio);
-
-  return sanitizeMediaWidth(scaledMediaWidth, targetStageWidth);
-};
-
-const scaleMediaWidthByStage = (
-  currentStageWidth,
-  nextStageWidth,
-  currentMediaWidth
-) => {
-  const sourceStageWidth = safeInt(currentStageWidth, STAGE_WIDTH_DEFAULT);
-  const targetStageWidth = safeInt(nextStageWidth, sourceStageWidth);
-  const sourceMediaWidth = safeInt(
-    currentMediaWidth,
-    getDefaultMediaWidth(sourceStageWidth)
-  );
-
-  if (
-    !sourceStageWidth ||
-    sourceStageWidth <= 0 ||
-    sourceStageWidth === targetStageWidth
-  ) {
-    return sanitizeMediaWidth(sourceMediaWidth, targetStageWidth);
-  }
-
-  const ratio = sourceMediaWidth / sourceStageWidth;
-  return sanitizeMediaWidth(Math.round(targetStageWidth * ratio), targetStageWidth);
 };
 
 const banners = ref([]);
@@ -1186,11 +1409,15 @@ const loading = ref(true);
 const heroReady = ref(false);
 
 const panelAbierto = ref(false);
+const activeAdminTab = ref("published");
+
 const paused = ref(false);
+const isCompactScreen = ref(false);
 
 const uploading = ref(false);
 const deletingId = ref(null);
 const deletingBulk = ref(false);
+
 const bulkDeleteProgress = ref(0);
 const bulkDeleteTotal = ref(0);
 
@@ -1202,6 +1429,7 @@ const uploadTotal = ref(0);
 
 const files = ref([]);
 const previews = ref([]);
+
 const fileInput = ref(null);
 
 const dragging = ref(false);
@@ -1225,323 +1453,569 @@ const dialogData = ref({
 const modalCard = ref(null);
 
 const layoutLoaded = ref(false);
-const stageWidth = ref(STAGE_WIDTH_DEFAULT);
-const stageHeight = ref(STAGE_HEIGHT_DEFAULT);
-const mediaPaneWidth = ref(getDefaultMediaWidth(STAGE_WIDTH_DEFAULT));
-const displayMode = ref(DISPLAY_MODE_DEFAULT);
 
-const persistedStageWidth = ref(STAGE_WIDTH_DEFAULT);
-const persistedStageHeight = ref(STAGE_HEIGHT_DEFAULT);
-const persistedMediaPaneWidth = ref(getDefaultMediaWidth(STAGE_WIDTH_DEFAULT));
-const persistedDisplayMode = ref(DISPLAY_MODE_DEFAULT);
+const stageWidth = ref(
+  SIZE_PRESETS.standard.width
+);
 
-const isCompactScreen = ref(false);
+const stageHeight = ref(
+  SIZE_PRESETS.standard.height
+);
+
+const mediaPaneWidth = ref(
+  Math.round(
+    SIZE_PRESETS.standard.width *
+      DISTRIBUTION_PRESETS.balanced
+  )
+);
+
+const displayMode = ref(
+  DISPLAY_MODE_DEFAULT
+);
+
+const persistedStageWidth = ref(
+  stageWidth.value
+);
+
+const persistedStageHeight = ref(
+  stageHeight.value
+);
+
+const persistedMediaPaneWidth = ref(
+  mediaPaneWidth.value
+);
+
+const persistedDisplayMode = ref(
+  displayMode.value
+);
+
 const refreshingFromVersion = ref(false);
 const pendingRemoteVersionSync = ref(false);
 
-const contentSaved = ref(cloneContent(getAvisosContent()));
+const contentSaved = ref(
+  cloneContent(getAvisosContent())
+);
 
-const activeBannerContentSaved = ref(cloneContent(DEFAULT_AVISOS_CONTENT));
-const activeBannerContentDraft = ref(cloneContent(DEFAULT_AVISOS_CONTENT));
+const activeBannerContentSaved = ref(
+  cloneContent(DEFAULT_AVISOS_CONTENT)
+);
+
+const activeBannerContentDraft = ref(
+  cloneContent(DEFAULT_AVISOS_CONTENT)
+);
 
 let carouselTimer = null;
 let pauseTimeout = null;
 let panelErrorTimeout = null;
 let editorStatusTimeout = null;
 let lastFocusedElement = null;
-let activeLayoutInteraction = null;
 
-const cycleMs = CAROUSEL_CYCLE_MS;
 const preloadedSources = new Set();
 
-const isAdmin = computed(() =>
-  !!(
+const isAdmin = computed(() => {
+  return Boolean(
     usuario.value?.is_staff ||
-    usuario.value?.is_superuser ||
-    usuario.value?.es_admin ||
-    usuario.value?.is_admin
-  )
-);
-
-const bannersNormalized = computed(() => {
-  return (Array.isArray(banners.value) ? banners.value : []).filter(
-    (banner) => !!banner?.image_url
+      usuario.value?.is_superuser ||
+      usuario.value?.es_admin ||
+      usuario.value?.is_admin
   );
 });
 
+const bannersNormalized = computed(() => {
+  return (
+    Array.isArray(banners.value)
+      ? banners.value
+      : []
+  ).filter((banner) => {
+    return Boolean(banner?.image_url);
+  });
+});
+
 const activeBannerItem = computed(() => {
-  return bannersNormalized.value[currentBanner.value] || null;
+  return (
+    bannersNormalized.value[
+      currentBanner.value
+    ] || null
+  );
 });
 
 const resolveBannerContent = (banner) => {
-  const raw = getRawBannerContent(banner);
+  const raw =
+    getRawBannerContent(banner);
 
   return {
-    eyebrow: raw.eyebrow || contentSaved.value.eyebrow,
-    title: raw.title || contentSaved.value.title,
-    text: raw.text || contentSaved.value.text,
-    recentLabel: raw.recentLabel || contentSaved.value.recentLabel,
+    eyebrow:
+      raw.eyebrow ||
+      contentSaved.value.eyebrow,
+
+    title:
+      raw.title ||
+      contentSaved.value.title,
+
+    text:
+      raw.text ||
+      contentSaved.value.text,
+
+    recentLabel:
+      raw.recentLabel ||
+      contentSaved.value.recentLabel,
   };
 };
 
-const hasBanners = computed(() => bannersNormalized.value.length > 0);
+const hasBanners = computed(() => {
+  return bannersNormalized.value.length > 0;
+});
 
-const showCarousel = computed(
-  () => !loading.value && heroReady.value && hasBanners.value
-);
+const showCarousel = computed(() => {
+  return (
+    !loading.value &&
+    heroReady.value &&
+    hasBanners.value
+  );
+});
 
-const showAdminPanel = computed(() => isAdmin.value);
-const manageModeActive = computed(() => showAdminPanel.value && panelAbierto.value);
+const showAdminPanel = computed(() => {
+  return isAdmin.value;
+});
 
-const isMixedMode = computed(() => displayMode.value === "mixed");
-const isBannerOnly = computed(() => displayMode.value === "banner");
-const isTextOnly = computed(() => displayMode.value === "text");
+const manageModeActive = computed(() => {
+  return (
+    showAdminPanel.value &&
+    panelAbierto.value
+  );
+});
 
-const showInlineEditor = computed(
-  () =>
-    manageModeActive.value &&
-    showCarousel.value &&
-    !isBannerOnly.value
-);
+const isMixedMode = computed(() => {
+  return displayMode.value === "mixed";
+});
 
-const showContainerResizeHandles = computed(
-  () => manageModeActive.value && !isCompactScreen.value
-);
+const isBannerOnly = computed(() => {
+  return displayMode.value === "banner";
+});
+
+const isTextOnly = computed(() => {
+  return displayMode.value === "text";
+});
 
 const displayModeLabel = computed(() => {
-  if (isBannerOnly.value) return "Solo banner";
-  if (isTextOnly.value) return "Solo texto";
+  if (isBannerOnly.value) {
+    return "Solo banner";
+  }
+
+  if (isTextOnly.value) {
+    return "Solo texto";
+  }
+
   return "Banner + texto";
 });
 
 const panelDisplayContent = computed(() => {
-  if (!showCarousel.value) {
+  if (!activeBannerItem.value) {
     return contentSaved.value;
   }
 
-  if (showInlineEditor.value) {
-    return activeBannerContentDraft.value;
-  }
-
-  return resolveBannerContent(activeBannerItem.value);
-});
-
-const hasActiveBannerContentChanges = computed(() => {
-  return (
-    JSON.stringify(normalizeContent(activeBannerContentDraft.value)) !==
-    JSON.stringify(normalizeContent(activeBannerContentSaved.value))
+  return resolveBannerContent(
+    activeBannerItem.value
   );
 });
+
+const hasActiveBannerContentChanges =
+  computed(() => {
+    return (
+      JSON.stringify(
+        normalizeContent(
+          activeBannerContentDraft.value
+        )
+      ) !==
+      JSON.stringify(
+        normalizeContent(
+          activeBannerContentSaved.value
+        )
+      )
+    );
+  });
 
 const isLayoutDirty = computed(() => {
   return (
-    stageWidth.value !== persistedStageWidth.value ||
-    stageHeight.value !== persistedStageHeight.value ||
-    mediaPaneWidth.value !== persistedMediaPaneWidth.value ||
-    displayMode.value !== persistedDisplayMode.value
+    stageWidth.value !==
+      persistedStageWidth.value ||
+    stageHeight.value !==
+      persistedStageHeight.value ||
+    mediaPaneWidth.value !==
+      persistedMediaPaneWidth.value ||
+    displayMode.value !==
+      persistedDisplayMode.value
   );
 });
 
+const activeSizePreset = computed(() => {
+  const entries =
+    Object.entries(SIZE_PRESETS);
+
+  return entries.reduce(
+    (best, [key, preset]) => {
+      const distance =
+        Math.abs(
+          stageWidth.value -
+            preset.width
+        ) +
+        Math.abs(
+          stageHeight.value -
+            preset.height
+        );
+
+      return distance < best.distance
+        ? {
+            key,
+            distance,
+          }
+        : best;
+    },
+    {
+      key: "standard",
+      distance:
+        Number.POSITIVE_INFINITY,
+    }
+  ).key;
+});
+
+const activeDistributionPreset =
+  computed(() => {
+    const ratio = stageWidth.value
+      ? mediaPaneWidth.value /
+        stageWidth.value
+      : DISTRIBUTION_PRESETS.balanced;
+
+    return Object.entries(
+      DISTRIBUTION_PRESETS
+    ).reduce(
+      (
+        best,
+        [key, presetRatio]
+      ) => {
+        const distance = Math.abs(
+          ratio - presetRatio
+        );
+
+        return distance < best.distance
+          ? {
+              key,
+              distance,
+            }
+          : best;
+      },
+      {
+        key: "balanced",
+        distance:
+          Number.POSITIVE_INFINITY,
+      }
+    ).key;
+  });
+
+const pendingChangeCount = computed(() => {
+  let count = 0;
+
+  if (
+    hasActiveBannerContentChanges.value
+  ) {
+    count += 1;
+  }
+
+  if (files.value.length) {
+    count += 1;
+  }
+
+  if (isLayoutDirty.value) {
+    count += 1;
+  }
+
+  return count;
+});
+
 const uploadLabel = computed(() => {
-  const current = Math.min(uploadIndex.value, uploadTotal.value);
+  const current = Math.min(
+    uploadIndex.value,
+    uploadTotal.value
+  );
+
   return `Publicando… ${current} de ${uploadTotal.value}`;
 });
 
 const bulkDeleteLabel = computed(() => {
-  const current = Math.min(bulkDeleteProgress.value, bulkDeleteTotal.value);
+  const current = Math.min(
+    bulkDeleteProgress.value,
+    bulkDeleteTotal.value
+  );
+
   return `Eliminando… ${current} de ${bulkDeleteTotal.value}`;
 });
 
 const allSelected = computed(() => {
   return (
     bannersNormalized.value.length > 0 &&
-    selectedBannerIds.value.length === bannersNormalized.value.length
+    selectedBannerIds.value.length ===
+      bannersNormalized.value.length
   );
 });
 
-const pendingChangeCount = computed(() => {
-  let count = 0;
-  if (hasActiveBannerContentChanges.value) count += 1;
-  if (files.value.length) count += 1;
-  if (isLayoutDirty.value) count += 1;
-  return count;
-});
-
 const stageShellStyle = computed(() => {
-  if (isCompactScreen.value) return {};
+  if (isCompactScreen.value) {
+    return {};
+  }
 
   return {
     width: `${stageWidth.value}px`,
-    maxWidth: "calc(100vw - 24px)",
+    maxWidth:
+      "calc(100vw - 24px)",
   };
 });
 
 const stageCardStyle = computed(() => {
-  if (isCompactScreen.value) return {};
+  if (isCompactScreen.value) {
+    return {};
+  }
 
   return {
     width: `${stageWidth.value}px`,
-    maxWidth: "calc(100vw - 24px)",
     height: `${stageHeight.value}px`,
-    minHeight: `${stageHeight.value}px`,
+    maxWidth:
+      "calc(100vw - 24px)",
   };
 });
 
 const stageGridStyle = computed(() => {
-  if (isCompactScreen.value || !isMixedMode.value) return {};
+  if (
+    isCompactScreen.value ||
+    !isMixedMode.value
+  ) {
+    return {};
+  }
 
   return {
-    gridTemplateColumns: `${mediaPaneWidth.value}px ${SPLITTER_WIDTH}px minmax(${ASIDE_WIDTH_MIN}px, 1fr)`,
+    gridTemplateColumns:
+      `${mediaPaneWidth.value}px minmax(0, 1fr)`,
   };
 });
 
 const updateCompactScreen = () => {
-  if (typeof window === "undefined") return;
-
-  const prevWidth = stageWidth.value;
-  const prevMediaWidth = mediaPaneWidth.value;
-
-  isCompactScreen.value = window.innerWidth <= COMPACT_BREAKPOINT;
-
-  stageWidth.value = sanitizeStageWidth(stageWidth.value);
-  stageHeight.value = sanitizeStageHeight(stageHeight.value);
-
-  if (prevWidth !== stageWidth.value) {
-    mediaPaneWidth.value = scaleMediaWidthByStage(
-      prevWidth,
-      stageWidth.value,
-      prevMediaWidth
-    );
-  } else {
-    mediaPaneWidth.value = sanitizeMediaWidth(mediaPaneWidth.value, stageWidth.value);
+  if (typeof window === "undefined") {
+    return;
   }
+
+  isCompactScreen.value =
+    window.innerWidth <=
+    COMPACT_BREAKPOINT;
 };
 
 const setDisplayMode = (mode) => {
-  displayMode.value = sanitizeDisplayMode(mode);
+  displayMode.value =
+    sanitizeDisplayMode(mode);
 };
 
-const setEditorStatus = (message, duration = 2600) => {
+const applySizePreset = (
+  presetName
+) => {
+  const preset =
+    SIZE_PRESETS[presetName];
+
+  if (!preset) {
+    return;
+  }
+
+  const ratio =
+    DISTRIBUTION_PRESETS[
+      activeDistributionPreset.value
+    ] ||
+    DISTRIBUTION_PRESETS.balanced;
+
+  stageWidth.value =
+    sanitizeStageWidth(preset.width);
+
+  stageHeight.value =
+    sanitizeStageHeight(
+      preset.height
+    );
+
+  mediaPaneWidth.value =
+    sanitizeMediaWidth(
+      stageWidth.value * ratio,
+      stageWidth.value
+    );
+};
+
+const applyDistributionPreset = (
+  presetName
+) => {
+  const ratio =
+    DISTRIBUTION_PRESETS[
+      presetName
+    ];
+
+  if (!ratio) {
+    return;
+  }
+
+  mediaPaneWidth.value =
+    sanitizeMediaWidth(
+      stageWidth.value * ratio,
+      stageWidth.value
+    );
+};
+
+const setEditorStatus = (
+  message,
+  duration = 2800
+) => {
   editorStatus.value = message;
-  clearTimeout(editorStatusTimeout);
+
+  window.clearTimeout(
+    editorStatusTimeout
+  );
 
   if (message) {
-    editorStatusTimeout = setTimeout(() => {
-      editorStatus.value = "";
-    }, duration);
+    editorStatusTimeout =
+      window.setTimeout(() => {
+        editorStatus.value = "";
+      }, duration);
   }
 };
 
 const clearPanelError = () => {
-  clearTimeout(panelErrorTimeout);
+  window.clearTimeout(
+    panelErrorTimeout
+  );
+
   panelError.value = "";
 };
 
-const setPanelError = (message, duration = 4000) => {
+const setPanelError = (
+  message,
+  duration = 4800
+) => {
   panelError.value = message;
-  clearTimeout(panelErrorTimeout);
+
+  window.clearTimeout(
+    panelErrorTimeout
+  );
 
   if (message) {
-    panelErrorTimeout = setTimeout(() => {
-      panelError.value = "";
-    }, duration);
+    panelErrorTimeout =
+      window.setTimeout(() => {
+        panelError.value = "";
+      }, duration);
   }
 };
 
-const requestVersionSync = async ({ force = false } = {}) => {
-  if (manageModeActive.value && !force) {
-    pendingRemoteVersionSync.value = true;
+const requestVersionSync = async ({
+  force = false,
+} = {}) => {
+  if (
+    manageModeActive.value &&
+    !force
+  ) {
+    pendingRemoteVersionSync.value =
+      true;
+
     return;
   }
 
-  const status = await getAvisosStatus().catch(() => null);
+  const status =
+    await getAvisosStatus().catch(
+      () => null
+    );
+
   const nextVersion =
     status?.notifyVersion ||
     status?.version ||
-    getAvisosCombinedVersion(props.version);
+    getAvisosCombinedVersion(
+      props.version
+    );
 
-  emit("version-change", nextVersion);
-  pendingRemoteVersionSync.value = false;
-};
-
-const syncPersistedLayout = ({
-  stageWidth: nextStageWidth = stageWidth.value,
-  stageHeight: nextStageHeight = stageHeight.value,
-  mediaPaneWidth: nextMediaPaneWidth = mediaPaneWidth.value,
-  displayMode: nextDisplayMode = displayMode.value,
-} = {}) => {
-  persistedStageWidth.value = safeInt(nextStageWidth, STAGE_WIDTH_DEFAULT);
-  persistedStageHeight.value = safeInt(nextStageHeight, STAGE_HEIGHT_DEFAULT);
-  persistedMediaPaneWidth.value = safeInt(
-    nextMediaPaneWidth,
-    getDefaultMediaWidth(persistedStageWidth.value)
+  emit(
+    "version-change",
+    nextVersion
   );
-  persistedDisplayMode.value = sanitizeDisplayMode(nextDisplayMode);
+
+  pendingRemoteVersionSync.value =
+    false;
 };
 
-const applyRemoteConfig = (config = {}) => {
-  const nextContent = cloneContent({
+const syncPersistedLayout = () => {
+  persistedStageWidth.value =
+    stageWidth.value;
+
+  persistedStageHeight.value =
+    stageHeight.value;
+
+  persistedMediaPaneWidth.value =
+    mediaPaneWidth.value;
+
+  persistedDisplayMode.value =
+    displayMode.value;
+};
+
+const applyRemoteConfig = (
+  config = {}
+) => {
+  contentSaved.value = cloneContent({
     eyebrow: config?.eyebrow,
     title: config?.title,
     text: config?.text,
-    recentLabel: config?.recentLabel,
+    recentLabel:
+      config?.recentLabel,
   });
 
-  const rawStageWidth = safeInt(config?.stageWidth, STAGE_WIDTH_DEFAULT);
-  const rawStageHeight = safeInt(config?.stageHeight, STAGE_HEIGHT_DEFAULT);
-  const rawMediaPaneWidth = safeInt(
-    config?.mediaPaneWidth,
-    getDefaultMediaWidth(rawStageWidth)
-  );
+  const width =
+    sanitizeStageWidth(
+      config?.stageWidth
+    );
 
-  const nextWidth = sanitizeStageWidth(rawStageWidth);
-  const nextHeight = sanitizeStageHeight(rawStageHeight);
+  const height =
+    sanitizeStageHeight(
+      config?.stageHeight
+    );
 
-  const nextMediaWidth =
-    rawStageWidth === nextWidth
-      ? sanitizeMediaWidth(rawMediaPaneWidth, nextWidth)
-      : getScaledMediaWidthForViewport(rawStageWidth, rawMediaPaneWidth, nextWidth);
+  const sourceWidth =
+    safeNumber(
+      config?.stageWidth,
+      width
+    );
 
-  const nextDisplayMode = sanitizeDisplayMode(config?.displayMode);
+  const sourceMedia =
+    safeNumber(
+      config?.mediaPaneWidth,
+      sourceWidth *
+        DISTRIBUTION_PRESETS.balanced
+    );
 
-  contentSaved.value = nextContent;
-  stageWidth.value = nextWidth;
-  stageHeight.value = nextHeight;
-  mediaPaneWidth.value = nextMediaWidth;
-  displayMode.value = nextDisplayMode;
+  const ratio = sourceWidth
+    ? sourceMedia / sourceWidth
+    : DISTRIBUTION_PRESETS.balanced;
 
-  syncPersistedLayout({
-    stageWidth: nextWidth,
-    stageHeight: nextHeight,
-    mediaPaneWidth: nextMediaWidth,
-    displayMode: nextDisplayMode,
-  });
+  stageWidth.value = width;
+  stageHeight.value = height;
+
+  mediaPaneWidth.value =
+    sanitizeMediaWidth(
+      width * ratio,
+      width
+    );
+
+  displayMode.value =
+    sanitizeDisplayMode(
+      config?.displayMode
+    );
+
+  syncPersistedLayout();
 
   layoutLoaded.value = true;
 };
 
-const syncActiveBannerEditor = () => {
-  if (!activeBannerItem.value) {
-    activeBannerContentSaved.value = cloneContent(contentSaved.value);
-    activeBannerContentDraft.value = cloneContent(contentSaved.value);
-    return;
-  }
-
-  const resolved = resolveBannerContent(activeBannerItem.value);
-  activeBannerContentSaved.value = cloneContent(resolved);
-  activeBannerContentDraft.value = cloneContent(resolved);
-};
-
-const updateBannerInList = (savedBanner) => {
-  banners.value = banners.value.map((item) =>
-    item.id === savedBanner.id ? { ...item, ...savedBanner } : item
-  );
-  syncActiveBannerEditor();
-};
-
 const loadRemoteConfig = async () => {
   try {
-    const config = await hydrateAvisosConfig();
+    const config =
+      await hydrateAvisosConfig();
+
     applyRemoteConfig(config);
   } catch (error) {
     console.error(error);
@@ -1553,197 +2027,409 @@ const loadRemoteConfig = async () => {
   }
 };
 
-const refreshRemoteStateFromVersion = async () => {
-  if (refreshingFromVersion.value) return;
-  if (manageModeActive.value) return;
+const syncActiveBannerEditor = () => {
+  const resolved =
+    activeBannerItem.value
+      ? resolveBannerContent(
+          activeBannerItem.value
+        )
+      : contentSaved.value;
 
-  refreshingFromVersion.value = true;
+  activeBannerContentSaved.value =
+    cloneContent(resolved);
 
-  try {
-    await Promise.allSettled([loadRemoteConfig(), cargarBanners()]);
-    syncActiveBannerEditor();
-  } finally {
-    refreshingFromVersion.value = false;
-  }
+  activeBannerContentDraft.value =
+    cloneContent(resolved);
 };
 
-const persistRemoteLayout = async ({ showFeedback = false } = {}) => {
-  if (!isAdmin.value || !layoutLoaded.value) return false;
-  if (savingLayout.value) return false;
+const updateBannerInList = (
+  savedBanner
+) => {
+  banners.value =
+    banners.value.map((item) => {
+      return item.id === savedBanner.id
+        ? {
+            ...item,
+            ...savedBanner,
+          }
+        : item;
+    });
+
+  syncActiveBannerEditor();
+};
+
+const refreshRemoteStateFromVersion =
+  async () => {
+    if (
+      refreshingFromVersion.value ||
+      manageModeActive.value
+    ) {
+      return;
+    }
+
+    refreshingFromVersion.value =
+      true;
+
+    try {
+      await Promise.allSettled([
+        loadRemoteConfig(),
+        cargarBanners(),
+      ]);
+
+      syncActiveBannerEditor();
+    } finally {
+      refreshingFromVersion.value =
+        false;
+    }
+  };
+
+const persistRemoteLayout = async ({
+  showFeedback = false,
+} = {}) => {
+  if (
+    !isAdmin.value ||
+    !layoutLoaded.value ||
+    savingLayout.value
+  ) {
+    return false;
+  }
 
   savingLayout.value = true;
 
+  clearPanelError();
+
   try {
-    const saved = await saveAvisosLayout({
-      stageWidth: stageWidth.value,
-      stageHeight: stageHeight.value,
-      mediaPaneWidth: mediaPaneWidth.value,
-      displayMode: displayMode.value,
-    });
+    const saved =
+      await saveAvisosLayout({
+        stageWidth:
+          stageWidth.value,
+
+        stageHeight:
+          stageHeight.value,
+
+        mediaPaneWidth:
+          mediaPaneWidth.value,
+
+        displayMode:
+          displayMode.value,
+      });
 
     applyRemoteConfig({
+      ...contentSaved.value,
       ...saved,
+
       displayMode:
-        saved?.displayMode != null ? saved.displayMode : displayMode.value,
+        saved?.displayMode ??
+        displayMode.value,
     });
 
+    await requestVersionSync();
+
     if (showFeedback) {
-      setEditorStatus("Diseño guardado correctamente.");
+      setEditorStatus(
+        "Diseño guardado correctamente."
+      );
     }
 
     return true;
   } catch (error) {
     console.error(error);
-    setPanelError("No fue posible guardar el diseño del aviso.");
+
+    setPanelError(
+      "No fue posible guardar el diseño del aviso."
+    );
+
     return false;
   } finally {
     savingLayout.value = false;
   }
 };
 
-const saveCurrentLayout = async () => {
-  await persistRemoteLayout({ showFeedback: true });
+const saveCurrentLayout = () => {
+  return persistRemoteLayout({
+    showFeedback: true,
+  });
 };
 
-const saveActiveBannerContent = async () => {
-  if (!isAdmin.value || !activeBannerItem.value) return;
+const saveActiveBannerContent =
+  async () => {
+    if (
+      !isAdmin.value ||
+      !activeBannerItem.value ||
+      savingBannerContent.value
+    ) {
+      return;
+    }
 
-  savingBannerContent.value = true;
-  clearPanelError();
+    savingBannerContent.value =
+      true;
 
-  try {
-    const payload = normalizeContent(activeBannerContentDraft.value);
-    const { data } = await api.patch(`banners/${activeBannerItem.value.id}/`, payload);
+    clearPanelError();
 
-    updateBannerInList(data);
-    setEditorStatus("Texto del aviso guardado.");
-    await requestVersionSync();
-  } catch (error) {
-    console.error(error);
-    setPanelError("No fue posible guardar el texto del aviso activo.");
-  } finally {
-    savingBannerContent.value = false;
-  }
-};
+    try {
+      const payload =
+        normalizeContent(
+          activeBannerContentDraft.value
+        );
 
-const cancelActiveBannerContent = () => {
-  activeBannerContentDraft.value = cloneContent(activeBannerContentSaved.value);
-  setEditorStatus("");
-};
+      const { data } =
+        await api.patch(
+          `banners/${activeBannerItem.value.id}/`,
+          payload
+        );
 
-const resetActiveBannerContent = async () => {
-  if (!isAdmin.value || !activeBannerItem.value) return;
+      updateBannerInList(data);
 
-  savingBannerContent.value = true;
-  clearPanelError();
+      setEditorStatus(
+        "Contenido del aviso guardado."
+      );
 
-  try {
-    const { data } = await api.patch(`banners/${activeBannerItem.value.id}/`, {
-      eyebrow: "",
-      title: "",
-      text: "",
-      recentLabel: "",
-    });
+      await requestVersionSync();
+    } catch (error) {
+      console.error(error);
 
-    updateBannerInList(data);
-    setEditorStatus("Este aviso volvió a usar el texto global.");
-    await requestVersionSync();
-  } catch (error) {
-    console.error(error);
-    setPanelError("No fue posible restablecer el texto del aviso activo.");
-  } finally {
-    savingBannerContent.value = false;
-  }
-};
+      setPanelError(
+        "No fue posible guardar el contenido del aviso activo."
+      );
+    } finally {
+      savingBannerContent.value =
+        false;
+    }
+  };
+
+const cancelActiveBannerContent =
+  () => {
+    activeBannerContentDraft.value =
+      cloneContent(
+        activeBannerContentSaved.value
+      );
+  };
+
+const resetActiveBannerContent =
+  async () => {
+    if (
+      !isAdmin.value ||
+      !activeBannerItem.value ||
+      savingBannerContent.value
+    ) {
+      return;
+    }
+
+    savingBannerContent.value =
+      true;
+
+    clearPanelError();
+
+    try {
+      const { data } =
+        await api.patch(
+          `banners/${activeBannerItem.value.id}/`,
+          {
+            eyebrow: "",
+            title: "",
+            text: "",
+            recentLabel: "",
+          }
+        );
+
+      updateBannerInList(data);
+
+      setEditorStatus(
+        "El aviso volvió a utilizar el contenido global."
+      );
+
+      await requestVersionSync();
+    } catch (error) {
+      console.error(error);
+
+      setPanelError(
+        "No fue posible restablecer el contenido del aviso."
+      );
+    } finally {
+      savingBannerContent.value =
+        false;
+    }
+  };
 
 const toggleGestion = async () => {
-  const nextState = !panelAbierto.value;
-  panelAbierto.value = nextState;
+  panelAbierto.value =
+    !panelAbierto.value;
 
-  if (!nextState && pendingRemoteVersionSync.value) {
-    await requestVersionSync({ force: true });
+  if (panelAbierto.value) {
+    activeAdminTab.value =
+      hasBanners.value
+        ? "published"
+        : "publish";
+
+    paused.value = true;
+
+    return;
   }
+
+  if (
+    pendingRemoteVersionSync.value
+  ) {
+    await requestVersionSync({
+      force: true,
+    });
+  }
+};
+
+const openPublishTab = () => {
+  panelAbierto.value = true;
+  activeAdminTab.value = "publish";
 };
 
 const handleContinue = async () => {
-  if (dialogData.value.visible) return;
-
-  if (isAdmin.value && isLayoutDirty.value && !savingLayout.value) {
-    await persistRemoteLayout({
-      showFeedback: false,
-    });
+  if (dialogData.value.visible) {
+    return;
   }
 
-  if (pendingRemoteVersionSync.value) {
-    await requestVersionSync({ force: true });
+  if (
+    isAdmin.value &&
+    isLayoutDirty.value &&
+    !savingLayout.value
+  ) {
+    await persistRemoteLayout();
+  }
+
+  if (
+    pendingRemoteVersionSync.value
+  ) {
+    await requestVersionSync({
+      force: true,
+    });
   }
 
   emit("continue");
 };
 
-const syncSelectionWithBanners = () => {
-  const validIds = new Set(bannersNormalized.value.map((banner) => banner.id));
-  selectedBannerIds.value = selectedBannerIds.value.filter((id) =>
-    validIds.has(id)
+const selectBanner = (index) => {
+  moveToBanner(index, true);
+};
+
+const editBanner = (index) => {
+  moveToBanner(index, true);
+
+  activeAdminTab.value =
+    "content";
+};
+
+const syncSelectionWithBanners =
+  () => {
+    const validIds = new Set(
+      bannersNormalized.value.map(
+        (banner) => banner.id
+      )
+    );
+
+    selectedBannerIds.value =
+      selectedBannerIds.value.filter(
+        (id) => validIds.has(id)
+      );
+  };
+
+const isSelected = (id) => {
+  return selectedBannerIds.value.includes(
+    id
   );
 };
 
-const isSelected = (id) => selectedBannerIds.value.includes(id);
-
 const toggleBannerSelection = (id) => {
-  if (isSelected(id)) {
-    selectedBannerIds.value = selectedBannerIds.value.filter(
-      (item) => item !== id
-    );
-    return;
-  }
-
-  selectedBannerIds.value = [...selectedBannerIds.value, id];
+  selectedBannerIds.value =
+    isSelected(id)
+      ? selectedBannerIds.value.filter(
+          (item) => item !== id
+        )
+      : [
+          ...selectedBannerIds.value,
+          id,
+        ];
 };
 
 const toggleSelectAll = () => {
-  if (allSelected.value) {
-    selectedBannerIds.value = [];
-    return;
-  }
-
-  selectedBannerIds.value = bannersNormalized.value.map((banner) => banner.id);
+  selectedBannerIds.value =
+    allSelected.value
+      ? []
+      : bannersNormalized.value.map(
+          (banner) => banner.id
+        );
 };
 
 const stopCarousel = () => {
-  if (carouselTimer) {
-    clearInterval(carouselTimer);
-    carouselTimer = null;
+  if (!carouselTimer) {
+    return;
   }
+
+  window.clearInterval(
+    carouselTimer
+  );
+
+  carouselTimer = null;
 };
 
-const moveToBanner = (index, temporaryPause = true) => {
-  const total = bannersNormalized.value.length;
-  if (!total) return;
+const moveToBanner = (
+  index,
+  temporaryPause = true
+) => {
+  const total =
+    bannersNormalized.value.length;
 
-  currentBanner.value = Math.max(0, Math.min(index, total - 1));
+  if (!total) {
+    return;
+  }
+
+  currentBanner.value = clamp(
+    index,
+    0,
+    total - 1
+  );
 
   if (temporaryPause) {
     paused.value = true;
-    clearTimeout(pauseTimeout);
 
-    pauseTimeout = setTimeout(() => {
-      if (!document.hidden && !dialogData.value.visible && !manageModeActive.value) {
-        paused.value = false;
-      }
-    }, TEMPORARY_PAUSE_MS);
+    window.clearTimeout(
+      pauseTimeout
+    );
+
+    pauseTimeout =
+      window.setTimeout(() => {
+        if (
+          !document.hidden &&
+          !dialogData.value.visible &&
+          !manageModeActive.value
+        ) {
+          paused.value = false;
+        }
+      }, TEMPORARY_PAUSE_MS);
   }
 };
 
 const startCarousel = () => {
   stopCarousel();
 
-  if (bannersNormalized.value.length <= 1) return;
+  if (
+    bannersNormalized.value.length <= 1
+  ) {
+    return;
+  }
 
-  carouselTimer = setInterval(() => {
-    if (paused.value || bannersNormalized.value.length <= 1) return;
-    moveToBanner((currentBanner.value + 1) % bannersNormalized.value.length, false);
-  }, cycleMs);
+  carouselTimer =
+    window.setInterval(() => {
+      if (
+        paused.value ||
+        bannersNormalized.value.length <=
+          1
+      ) {
+        return;
+      }
+
+      moveToBanner(
+        (currentBanner.value + 1) %
+          bannersNormalized.value.length,
+        false
+      );
+    }, CAROUSEL_CYCLE_MS);
 };
 
 const pauseCarousel = () => {
@@ -1751,7 +2437,11 @@ const pauseCarousel = () => {
 };
 
 const resumeCarousel = () => {
-  if (!document.hidden && !dialogData.value.visible && !manageModeActive.value) {
+  if (
+    !document.hidden &&
+    !dialogData.value.visible &&
+    !manageModeActive.value
+  ) {
     paused.value = false;
   }
 };
@@ -1761,139 +2451,211 @@ const goTo = (index) => {
 };
 
 const next = () => {
-  const total = bannersNormalized.value.length;
-  if (total <= 1) return;
-  moveToBanner((currentBanner.value + 1) % total, true);
+  const total =
+    bannersNormalized.value.length;
+
+  if (total > 1) {
+    moveToBanner(
+      (currentBanner.value + 1) %
+        total,
+      true
+    );
+  }
 };
 
 const prev = () => {
-  const total = bannersNormalized.value.length;
-  if (total <= 1) return;
-  moveToBanner((currentBanner.value - 1 + total) % total, true);
+  const total =
+    bannersNormalized.value.length;
+
+  if (total > 1) {
+    moveToBanner(
+      (currentBanner.value -
+        1 +
+        total) %
+        total,
+      true
+    );
+  }
+};
+
+const onCarouselKeydown = (event) => {
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    prev();
+
+    return;
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    next();
+  }
 };
 
 const onVisibilityChange = () => {
   paused.value =
-    document.hidden || dialogData.value.visible || manageModeActive.value;
+    document.hidden ||
+    dialogData.value.visible ||
+    manageModeActive.value;
 };
 
 const revokeAllPreviews = () => {
-  previews.value.forEach((url) => URL.revokeObjectURL(url));
+  previews.value.forEach((url) => {
+    URL.revokeObjectURL(url);
+  });
 };
 
-const setFiles = (selectedFiles) => {
+const setFiles = (
+  selectedFiles
+) => {
   revokeAllPreviews();
+
   files.value = selectedFiles;
-  previews.value = selectedFiles.map((file) => URL.createObjectURL(file));
+
+  previews.value =
+    selectedFiles.map((file) => {
+      return URL.createObjectURL(file);
+    });
 };
 
-const normalizePickedImages = (selectedFiles) => {
-  const images = [];
+const normalizePickedImages = (
+  selectedFiles
+) => {
+  const validImages = [];
+
   let invalidType = 0;
   let invalidSize = 0;
 
-  for (const file of selectedFiles) {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+  selectedFiles.forEach((file) => {
+    if (
+      !ALLOWED_IMAGE_TYPES.has(
+        file.type
+      )
+    ) {
       invalidType += 1;
-      continue;
+
+      return;
     }
 
-    if (Number(file.size || 0) > MAX_BANNER_FILE_SIZE) {
+    if (
+      Number(file.size || 0) >
+      MAX_BANNER_FILE_SIZE
+    ) {
       invalidSize += 1;
-      continue;
+
+      return;
     }
 
-    images.push(file);
-  }
+    validImages.push(file);
+  });
 
-  if (invalidType > 0 && invalidSize > 0) {
+  if (
+    invalidType &&
+    invalidSize
+  ) {
     setPanelError(
-      "Algunos archivos fueron rechazados. Solo se admiten imágenes JPG o PNG y cada banner debe pesar máximo 2 MB."
+      "Algunos archivos no son JPG o PNG y otros superan el límite de 2 MB."
     );
-  } else if (invalidType > 0) {
-    setPanelError("Solo se admiten imágenes en formato JPG o PNG.");
-  } else if (invalidSize > 0) {
-    setPanelError("Cada banner debe pesar máximo 2 MB.");
+  } else if (invalidType) {
+    setPanelError(
+      "Solo se admiten imágenes JPG o PNG."
+    );
+  } else if (invalidSize) {
+    setPanelError(
+      "Cada imagen debe pesar como máximo 2 MB."
+    );
   } else {
     clearPanelError();
   }
 
-  return images;
+  return validImages;
 };
 
 const preloadImage = (src) => {
   return new Promise((resolve) => {
-    if (!src || preloadedSources.has(src)) {
+    if (
+      !src ||
+      preloadedSources.has(src)
+    ) {
       resolve();
+
       return;
     }
 
-    let settled = false;
+    const image = new Image();
 
     const finish = () => {
-      if (settled) return;
-      settled = true;
       preloadedSources.add(src);
       resolve();
     };
 
-    const img = new Image();
-
-    img.onload = async () => {
-      try {
-        if (typeof img.decode === "function") {
-          await img.decode();
-        }
-      } catch {
-        //
-      }
-      finish();
-    };
-
-    img.onerror = finish;
-    img.src = src;
-
-    if (img.complete) {
-      Promise.resolve().finally(finish);
-    }
+    image.onload = finish;
+    image.onerror = finish;
+    image.src = src;
   });
 };
 
-const prefetchNeighborBanners = (index) => {
-  const list = bannersNormalized.value;
-  if (!list.length) return;
+const prefetchNeighborBanners = (
+  index
+) => {
+  const list =
+    bannersNormalized.value;
 
-  const current = list[index];
-  const nextBanner = list[(index + 1) % list.length];
-  const prevBanner = list[(index - 1 + list.length) % list.length];
+  if (!list.length) {
+    return;
+  }
 
-  preloadImage(current?.image_url);
-  preloadImage(nextBanner?.image_url);
+  preloadImage(
+    list[index]?.image_url
+  );
+
+  preloadImage(
+    list[
+      (index + 1) % list.length
+    ]?.image_url
+  );
 
   if (list.length > 2) {
-    preloadImage(prevBanner?.image_url);
+    preloadImage(
+      list[
+        (index - 1 + list.length) %
+          list.length
+      ]?.image_url
+    );
   }
 };
 
 const openPicker = () => {
-  if (!uploading.value && !deletingBulk.value) {
+  if (
+    !uploading.value &&
+    !deletingBulk.value
+  ) {
     fileInput.value?.click();
   }
 };
 
 const onFileChange = (event) => {
-  const rawFiles = Array.from(event.target.files || []);
-  const pickedImages = normalizePickedImages(rawFiles);
-  setFiles(pickedImages);
+  const selectedFiles =
+    Array.from(
+      event.target?.files || []
+    );
 
-  if (event?.target) {
+  const normalized =
+    normalizePickedImages(
+      selectedFiles
+    );
+
+  setFiles(normalized);
+
+  if (event.target) {
     event.target.value = "";
   }
 };
 
 const onDragOver = (event) => {
   if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = "copy";
+    event.dataTransfer.dropEffect =
+      "copy";
   }
 };
 
@@ -1903,8 +2665,12 @@ const onDragEnter = () => {
 };
 
 const onDragLeave = () => {
-  dragDepth.value = Math.max(0, dragDepth.value - 1);
-  if (dragDepth.value === 0) {
+  dragDepth.value = Math.max(
+    0,
+    dragDepth.value - 1
+  );
+
+  if (!dragDepth.value) {
     dragging.value = false;
   }
 };
@@ -1913,17 +2679,28 @@ const onDrop = (event) => {
   dragDepth.value = 0;
   dragging.value = false;
 
-  const rawFiles = Array.from(event.dataTransfer?.files || []);
-  const pickedImages = normalizePickedImages(rawFiles);
+  const selectedFiles =
+    Array.from(
+      event.dataTransfer?.files || []
+    );
 
-  if (pickedImages.length) {
-    setFiles(pickedImages);
+  const picked =
+    normalizePickedImages(
+      selectedFiles
+    );
+
+  if (picked.length) {
+    setFiles(picked);
   }
 };
 
 const removeFileAt = (index) => {
-  const nextFiles = [...files.value];
+  const nextFiles = [
+    ...files.value,
+  ];
+
   nextFiles.splice(index, 1);
+
   setFiles(nextFiles);
 };
 
@@ -1932,12 +2709,23 @@ const cargarBanners = async ({
   showLoading = true,
   preferredBannerId = null,
 } = {}) => {
-  const previousIndex = currentBanner.value;
-  const previousActiveId =
-    preferredBannerId ?? (preserveActive ? activeBannerItem.value?.id ?? null : null);
-  const shouldShowLoading = showLoading || !heroReady.value;
+  const previousIndex =
+    currentBanner.value;
 
-  if (shouldShowLoading) {
+  const previousActiveId =
+    preferredBannerId ??
+    (
+      preserveActive
+        ? activeBannerItem.value?.id ??
+          null
+        : null
+    );
+
+  const mustShowLoading =
+    showLoading ||
+    !heroReady.value;
+
+  if (mustShowLoading) {
     loading.value = true;
     heroReady.value = false;
   }
@@ -1945,77 +2733,139 @@ const cargarBanners = async ({
   loadError.value = "";
 
   try {
-    const response = await api.get("banners/", {
-      params: {
-        _ts: Date.now(),
-      },
-    });
+    const response =
+      await api.get(
+        "banners/",
+        {
+          params: {
+            _ts: Date.now(),
+          },
+        }
+      );
 
-    const list = Array.isArray(response.data) ? response.data : [];
+    const list =
+      Array.isArray(response.data)
+        ? response.data
+        : [];
+
     banners.value = list;
 
     if (list.length) {
       let nextIndex = 0;
 
       if (previousActiveId) {
-        const foundIndex = list.findIndex((item) => item.id === previousActiveId);
-        if (foundIndex >= 0) {
-          nextIndex = foundIndex;
-        } else {
-          nextIndex = Math.min(previousIndex, list.length - 1);
-        }
+        const foundIndex =
+          list.findIndex(
+            (item) =>
+              item.id ===
+              previousActiveId
+          );
+
+        nextIndex =
+          foundIndex >= 0
+            ? foundIndex
+            : Math.min(
+                previousIndex,
+                list.length - 1
+              );
       }
 
-      currentBanner.value = nextIndex;
-      await preloadImage(list[nextIndex]?.image_url);
-      prefetchNeighborBanners(nextIndex);
+      currentBanner.value =
+        nextIndex;
+
+      await preloadImage(
+        list[nextIndex]?.image_url
+      );
+
+      prefetchNeighborBanners(
+        nextIndex
+      );
     } else {
       currentBanner.value = 0;
     }
 
     heroReady.value = true;
+
     syncSelectionWithBanners();
     syncActiveBannerEditor();
   } catch (error) {
     console.error(error);
+
     banners.value = [];
+
     selectedBannerIds.value = [];
-    loadError.value = "No fue posible cargar los avisos en este momento.";
+
+    loadError.value =
+      "No fue posible cargar los avisos en este momento.";
+
     heroReady.value = true;
+
     syncActiveBannerEditor();
   } finally {
-    if (shouldShowLoading) {
+    if (mustShowLoading) {
       loading.value = false;
     }
   }
 };
 
 const subirBanners = async () => {
-  if (!files.value.length || uploading.value || deletingBulk.value) return;
+  if (
+    !files.value.length ||
+    uploading.value ||
+    deletingBulk.value
+  ) {
+    return;
+  }
 
   uploading.value = true;
-  clearPanelError();
-  uploadIndex.value = 0;
-  uploadTotal.value = files.value.length;
 
-  const activeIdBeforeUpload = activeBannerItem.value?.id ?? null;
+  clearPanelError();
+
+  uploadIndex.value = 0;
+  uploadTotal.value =
+    files.value.length;
+
+  const activeIdBeforeUpload =
+    activeBannerItem.value?.id ??
+    null;
+
   let success = true;
 
   try {
-    for (let i = 0; i < files.value.length; i += 1) {
-      uploadIndex.value = i + 1;
+    for (
+      let index = 0;
+      index < files.value.length;
+      index += 1
+    ) {
+      uploadIndex.value =
+        index + 1;
 
       const form = new FormData();
-      form.append("image", files.value[i]);
 
-      await api.post("banners/", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      form.append(
+        "image",
+        files.value[index]
+      );
+
+      await api.post(
+        "banners/",
+        form,
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        }
+      );
     }
   } catch (error) {
     console.error(error);
+
     success = false;
-    setPanelError("No fue posible publicar los avisos. Intente nuevamente.");
+
+    setPanelError(
+      "No fue posible publicar los avisos. Intenta nuevamente."
+    );
   } finally {
     if (success) {
       setFiles([]);
@@ -2024,12 +2874,19 @@ const subirBanners = async () => {
     await cargarBanners({
       preserveActive: true,
       showLoading: false,
-      preferredBannerId: activeIdBeforeUpload,
+      preferredBannerId:
+        activeIdBeforeUpload,
     });
 
     if (success) {
+      setEditorStatus(
+        "Avisos publicados correctamente."
+      );
+
+      activeAdminTab.value =
+        "published";
+
       await requestVersionSync();
-      setEditorStatus("Avisos publicados.");
     }
 
     uploading.value = false;
@@ -2038,26 +2895,43 @@ const subirBanners = async () => {
   }
 };
 
-const mostrarDialogoEliminar = ({ banner = null, count = 1 } = {}) => {
-  const isBulk = count > 1;
-
+const mostrarDialogoEliminar = ({
+  banner = null,
+  count = 1,
+} = {}) => {
   return new Promise((resolve) => {
     dialogData.value = {
       visible: true,
-      titulo: isBulk ? "Eliminar avisos" : "Eliminar aviso",
-      mensaje: isBulk
-        ? `Se eliminarán ${count} avisos seleccionados.`
-        : "Se eliminará el aviso seleccionado.",
-      bannerImg: banner?.image_url || "",
+
+      titulo:
+        count > 1
+          ? "Eliminar avisos"
+          : "Eliminar aviso",
+
+      mensaje:
+        count > 1
+          ? `Se eliminarán ${count} avisos seleccionados.`
+          : "Se eliminará el aviso seleccionado.",
+
+      bannerImg:
+        banner?.image_url || "",
+
       count,
       resolve,
     };
   });
 };
 
-const cerrarDialogo = (confirmado) => {
-  if (typeof dialogData.value.resolve === "function") {
-    dialogData.value.resolve(confirmado);
+const cerrarDialogo = (
+  confirmed
+) => {
+  if (
+    typeof dialogData.value
+      .resolve === "function"
+  ) {
+    dialogData.value.resolve(
+      confirmed
+    );
   }
 
   dialogData.value = {
@@ -2071,19 +2945,42 @@ const cerrarDialogo = (confirmado) => {
 };
 
 const eliminarBanner = async (id) => {
-  const banner = bannersNormalized.value.find((item) => item.id === id);
-  const confirmado = await mostrarDialogoEliminar({ banner, count: 1 });
-  if (!confirmado) return;
+  const banner =
+    bannersNormalized.value.find(
+      (item) => item.id === id
+    );
+
+  const confirmed =
+    await mostrarDialogoEliminar({
+      banner,
+    });
+
+  if (!confirmed) {
+    return;
+  }
 
   deletingId.value = id;
+
   clearPanelError();
 
-  const currentActiveId = activeBannerItem.value?.id ?? null;
-  const preferredBannerId = currentActiveId === id ? null : currentActiveId;
+  const currentActiveId =
+    activeBannerItem.value?.id ??
+    null;
+
+  const preferredBannerId =
+    currentActiveId === id
+      ? null
+      : currentActiveId;
 
   try {
-    await api.delete(`banners/${id}/`);
-    selectedBannerIds.value = selectedBannerIds.value.filter((item) => item !== id);
+    await api.delete(
+      `banners/${id}/`
+    );
+
+    selectedBannerIds.value =
+      selectedBannerIds.value.filter(
+        (item) => item !== id
+      );
 
     await cargarBanners({
       preserveActive: true,
@@ -2091,302 +2988,261 @@ const eliminarBanner = async (id) => {
       preferredBannerId,
     });
 
-    setEditorStatus("Aviso eliminado.");
+    setEditorStatus(
+      "Aviso eliminado."
+    );
+
+    await requestVersionSync();
   } catch (error) {
     console.error(error);
-    setPanelError("No fue posible eliminar el aviso seleccionado.");
+
+    setPanelError(
+      "No fue posible eliminar el aviso seleccionado."
+    );
   } finally {
     deletingId.value = null;
   }
 };
 
-const eliminarSeleccionados = async () => {
-  if (!selectedBannerIds.value.length || deletingBulk.value || uploading.value) return;
-
-  const ids = [...selectedBannerIds.value];
-  const confirmado = await mostrarDialogoEliminar({ count: ids.length });
-  if (!confirmado) return;
-
-  deletingBulk.value = true;
-  bulkDeleteProgress.value = 0;
-  bulkDeleteTotal.value = ids.length;
-  clearPanelError();
-
-  const currentActiveId = activeBannerItem.value?.id ?? null;
-  const preferredBannerId = ids.includes(currentActiveId) ? null : currentActiveId;
-
-  let failed = 0;
-
-  try {
-    for (let i = 0; i < ids.length; i += 1) {
-      bulkDeleteProgress.value = i + 1;
-
-      try {
-        await api.delete(`banners/${ids[i]}/`);
-      } catch {
-        failed += 1;
-      }
+const eliminarSeleccionados =
+  async () => {
+    if (
+      !selectedBannerIds.value
+        .length ||
+      deletingBulk.value ||
+      uploading.value
+    ) {
+      return;
     }
 
-    if (failed > 0) {
-      setPanelError(
-        failed === ids.length
-          ? "No fue posible eliminar los avisos seleccionados."
-          : `Se eliminaron algunos avisos, pero ${failed} no pudieron eliminarse.`
-      );
+    const ids = [
+      ...selectedBannerIds.value,
+    ];
+
+    const confirmed =
+      await mostrarDialogoEliminar({
+        count: ids.length,
+      });
+
+    if (!confirmed) {
+      return;
     }
 
-    selectedBannerIds.value = [];
+    deletingBulk.value = true;
 
-    await cargarBanners({
-      preserveActive: true,
-      showLoading: false,
-      preferredBannerId,
-    });
-
-    if (failed === 0) {
-      setEditorStatus("Avisos eliminados.");
-    }
-  } finally {
-    deletingBulk.value = false;
     bulkDeleteProgress.value = 0;
-    bulkDeleteTotal.value = 0;
-  }
-};
+    bulkDeleteTotal.value =
+      ids.length;
 
-const onCarouselKeydown = (event) => {
-  if (event.key === "ArrowLeft") {
+    clearPanelError();
+
+    const activeId =
+      activeBannerItem.value?.id ??
+      null;
+
+    const preferredBannerId =
+      ids.includes(activeId)
+        ? null
+        : activeId;
+
+    let failed = 0;
+
+    try {
+      for (
+        let index = 0;
+        index < ids.length;
+        index += 1
+      ) {
+        bulkDeleteProgress.value =
+          index + 1;
+
+        try {
+          await api.delete(
+            `banners/${ids[index]}/`
+          );
+        } catch {
+          failed += 1;
+        }
+      }
+
+      selectedBannerIds.value = [];
+
+      await cargarBanners({
+        preserveActive: true,
+        showLoading: false,
+        preferredBannerId,
+      });
+
+      if (failed) {
+        setPanelError(
+          failed === ids.length
+            ? "No fue posible eliminar los avisos seleccionados."
+            : `${failed} aviso${
+                failed !== 1 ? "s" : ""
+              } no pudo${
+                failed !== 1
+                  ? "ieron"
+                  : ""
+              } eliminarse.`
+        );
+      } else {
+        setEditorStatus(
+          "Avisos eliminados."
+        );
+
+        await requestVersionSync();
+      }
+    } finally {
+      deletingBulk.value = false;
+
+      bulkDeleteProgress.value = 0;
+      bulkDeleteTotal.value = 0;
+    }
+  };
+
+const getModalFocusableElements =
+  () => {
+    if (!modalCard.value) {
+      return [];
+    }
+
+    return [
+      ...modalCard.value.querySelectorAll(
+        FOCUSABLE_SELECTOR
+      ),
+    ];
+  };
+
+const onConfirmKeydown = (event) => {
+  if (event.key === "Escape") {
     event.preventDefault();
-    prev();
+
+    cerrarDialogo(false);
+
     return;
   }
 
-  if (event.key === "ArrowRight") {
-    event.preventDefault();
-    next();
+  if (event.key !== "Tab") {
+    return;
   }
-};
 
-const getModalFocusableElements = () => {
-  const root = modalCard.value;
-  if (!root) return [];
+  const focusable =
+    getModalFocusableElements();
 
-  return [...root.querySelectorAll(FOCUSABLE_SELECTOR)].filter((element) => {
-    return !element.hasAttribute("disabled") && !element.getAttribute("aria-hidden");
-  });
-};
-
-const trapFocusInModal = (event) => {
-  if (event.key !== "Tab") return;
-
-  const focusable = getModalFocusableElements();
   if (!focusable.length) {
     event.preventDefault();
+
+    modalCard.value?.focus();
+
     return;
   }
 
   const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const active = document.activeElement;
 
-  if (event.shiftKey && active === first) {
+  const last =
+    focusable[
+      focusable.length - 1
+    ];
+
+  const active =
+    document.activeElement;
+
+  if (
+    event.shiftKey &&
+    active === first
+  ) {
     event.preventDefault();
     last.focus();
-  } else if (!event.shiftKey && active === last) {
+
+    return;
+  }
+
+  if (
+    !event.shiftKey &&
+    active === last
+  ) {
     event.preventDefault();
     first.focus();
   }
 };
 
-const isEditableTarget = (target) => {
-  if (!(target instanceof HTMLElement)) return false;
-  return !!target.closest("input, textarea, [contenteditable='true']");
-};
-
-const onGlobalKeydown = (event) => {
-  if (dialogData.value.visible) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cerrarDialogo(false);
-      return;
-    }
-
-    trapFocusInModal(event);
-    return;
-  }
-
-  if (event.key === "Escape") {
-    if (manageModeActive.value && isEditableTarget(event.target)) {
-      return;
-    }
-
-    event.preventDefault();
-    handleContinue();
-  }
-};
-
-const stopLayoutInteraction = () => {
-  if (!activeLayoutInteraction) return;
-
-  window.removeEventListener("pointermove", onLayoutPointerMove);
-  window.removeEventListener("pointerup", stopLayoutInteraction);
-  activeLayoutInteraction = null;
-};
-
-const startContainerResize = (direction, event) => {
-  if (!showContainerResizeHandles.value) return;
-  if (event.button !== undefined && event.button !== 0) return;
-
-  activeLayoutInteraction = {
-    type: "container",
-    direction,
-    startX: event.clientX,
-    startY: event.clientY,
-    width: stageWidth.value,
-    height: stageHeight.value,
-  };
-
-  window.addEventListener("pointermove", onLayoutPointerMove);
-  window.addEventListener("pointerup", stopLayoutInteraction);
-};
-
-const startPaneResize = (event) => {
-  if (!showContainerResizeHandles.value || !isMixedMode.value) return;
-  if (event.button !== undefined && event.button !== 0) return;
-
-  activeLayoutInteraction = {
-    type: "divider",
-    startX: event.clientX,
-    mediaWidth: mediaPaneWidth.value,
-  };
-
-  window.addEventListener("pointermove", onLayoutPointerMove);
-  window.addEventListener("pointerup", stopLayoutInteraction);
-};
-
-const onLayoutPointerMove = (event) => {
-  if (!activeLayoutInteraction) return;
-
-  if (activeLayoutInteraction.type === "container") {
-    const dx = event.clientX - activeLayoutInteraction.startX;
-    const dy = event.clientY - activeLayoutInteraction.startY;
-
-    const isEast = activeLayoutInteraction.direction.includes("e");
-    const isWest = activeLayoutInteraction.direction.includes("w");
-    const isNorth = activeLayoutInteraction.direction.includes("n");
-    const isSouth = activeLayoutInteraction.direction.includes("s");
-
-    const nextWidth = sanitizeStageWidth(
-      activeLayoutInteraction.width + (isEast ? dx : 0) - (isWest ? dx : 0)
-    );
-
-    const nextHeight = sanitizeStageHeight(
-      activeLayoutInteraction.height + (isSouth ? dy : 0) - (isNorth ? dy : 0)
-    );
-
-    stageWidth.value = nextWidth;
-    stageHeight.value = nextHeight;
-
-    if (isMixedMode.value) {
-      mediaPaneWidth.value = sanitizeMediaWidth(mediaPaneWidth.value, nextWidth);
-    }
-
-    return;
-  }
-
-  if (activeLayoutInteraction.type === "divider" && isMixedMode.value) {
-    const dx = event.clientX - activeLayoutInteraction.startX;
-    mediaPaneWidth.value = sanitizeMediaWidth(
-      activeLayoutInteraction.mediaWidth + dx,
-      stageWidth.value
-    );
-  }
-};
-
-const getResizeAriaLabel = (direction) => {
-  const labels = {
-    n: "Redimensionar contenedor desde borde superior",
-    e: "Redimensionar contenedor desde borde derecho",
-    s: "Redimensionar contenedor desde borde inferior",
-    w: "Redimensionar contenedor desde borde izquierdo",
-    nw: "Redimensionar contenedor desde esquina superior izquierda",
-    ne: "Redimensionar contenedor desde esquina superior derecha",
-    sw: "Redimensionar contenedor desde esquina inferior izquierda",
-    se: "Redimensionar contenedor desde esquina inferior derecha",
-  };
-
-  return labels[direction] || "Redimensionar contenedor";
-};
-
 watch(
   () => props.user,
   (value) => {
-    usuario.value = value || null;
+    usuario.value =
+      value || null;
   },
-  { immediate: true, deep: true }
+  {
+    immediate: true,
+    deep: true,
+  }
 );
 
 watch(
   () => props.version,
-  async (nextVersion, prevVersion) => {
-    const next = String(nextVersion || "");
-    const prev = String(prevVersion || "");
+  async (
+    nextVersion,
+    previousVersion
+  ) => {
+    const next = String(
+      nextVersion || ""
+    );
 
-    if (!next || next === prev) return;
-    await refreshRemoteStateFromVersion();
+    const previous = String(
+      previousVersion || ""
+    );
+
+    if (
+      next &&
+      next !== previous
+    ) {
+      await refreshRemoteStateFromVersion();
+    }
   }
 );
 
 watch(
   () => manageModeActive.value,
   async (active) => {
-    paused.value = active || document.hidden || dialogData.value.visible;
+    paused.value =
+      active ||
+      document.hidden ||
+      dialogData.value.visible;
+
     syncActiveBannerEditor();
 
-    if (!active) {
-      stopLayoutInteraction();
-
-      if (!document.hidden && !dialogData.value.visible) {
-        paused.value = false;
-      }
-
-      if (pendingRemoteVersionSync.value) {
-        await requestVersionSync({ force: true });
-      }
+    if (
+      !active &&
+      pendingRemoteVersionSync.value
+    ) {
+      await requestVersionSync({
+        force: true,
+      });
     }
   },
-  { immediate: true }
-);
-
-watch(
-  () => isCompactScreen.value,
-  (compact) => {
-    if (compact) {
-      stopLayoutInteraction();
-    }
+  {
+    immediate: true,
   }
 );
 
 watch(
-  () => stageWidth.value,
-  (width) => {
-    if (isMixedMode.value) {
-      mediaPaneWidth.value = sanitizeMediaWidth(mediaPaneWidth.value, width);
-    }
-  }
-);
-
-watch(
-  () => bannersNormalized.value.length,
+  () =>
+    bannersNormalized.value.length,
   (length) => {
     if (!length) {
       currentBanner.value = 0;
+
       stopCarousel();
       syncActiveBannerEditor();
+
       return;
     }
 
-    currentBanner.value = Math.min(currentBanner.value, length - 1);
+    currentBanner.value =
+      Math.min(
+        currentBanner.value,
+        length - 1
+      );
 
     if (length > 1) {
       startCarousel();
@@ -2394,7 +3250,9 @@ watch(
       stopCarousel();
     }
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 
 watch(
@@ -2410,7 +3268,10 @@ watch(
   () => {
     syncSelectionWithBanners();
   },
-  { deep: true, immediate: true }
+  {
+    deep: true,
+    immediate: true,
+  }
 );
 
 watch(
@@ -2418,22 +3279,28 @@ watch(
   async (visible) => {
     if (visible) {
       lastFocusedElement =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        document.activeElement instanceof
+        HTMLElement
+          ? document.activeElement
+          : null;
 
       paused.value = true;
 
       await nextTick();
-      modalCard.value?.focus?.();
+
+      modalCard.value?.focus();
+
       return;
     }
 
-    if (lastFocusedElement?.focus) {
-      lastFocusedElement.focus();
-    }
+    lastFocusedElement?.focus?.();
 
     lastFocusedElement = null;
 
-    if (!document.hidden && !manageModeActive.value) {
+    if (
+      !document.hidden &&
+      !manageModeActive.value
+    ) {
       paused.value = false;
     }
   }
@@ -2442,63 +3309,114 @@ watch(
 onMounted(async () => {
   updateCompactScreen();
 
-  document.addEventListener("visibilitychange", onVisibilityChange);
-  window.addEventListener("keydown", onGlobalKeydown);
-  window.addEventListener("resize", updateCompactScreen);
+  document.addEventListener(
+    "visibilitychange",
+    onVisibilityChange
+  );
 
-  const token = localStorage.getItem("access_token");
+  window.addEventListener(
+    "resize",
+    updateCompactScreen
+  );
 
-  const profilePromise = props.user
-    ? Promise.resolve().then(() => {
-        usuario.value = props.user;
-      })
-    : token
-      ? api
-          .get("auth/profile/")
-          .then((response) => {
-            usuario.value = response.data;
-          })
-          .catch(() => {
-            usuario.value = null;
-          })
-      : Promise.resolve().then(() => {
-          usuario.value = null;
-        });
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
 
-  const layout = getAvisosLayout();
+  const profilePromise =
+    props.user
+      ? Promise.resolve().then(() => {
+          usuario.value =
+            props.user;
+        })
+      : token
+        ? api
+            .get("auth/profile/")
+            .then(({ data }) => {
+              usuario.value = data;
+            })
+            .catch(() => {
+              usuario.value = null;
+            })
+        : Promise.resolve().then(
+            () => {
+              usuario.value = null;
+            }
+          );
 
-  stageWidth.value = sanitizeStageWidth(layout.stageWidth);
-  stageHeight.value = sanitizeStageHeight(layout.stageHeight);
-  mediaPaneWidth.value = sanitizeMediaWidth(layout.mediaPaneWidth, stageWidth.value);
-  displayMode.value = sanitizeDisplayMode(layout.displayMode);
+  const layout =
+    getAvisosLayout();
 
-  syncPersistedLayout({
-    stageWidth: stageWidth.value,
-    stageHeight: stageHeight.value,
-    mediaPaneWidth: mediaPaneWidth.value,
-    displayMode: displayMode.value,
-  });
+  stageWidth.value =
+    sanitizeStageWidth(
+      layout?.stageWidth
+    );
 
-  await Promise.allSettled([profilePromise, loadRemoteConfig(), cargarBanners()]);
+  stageHeight.value =
+    sanitizeStageHeight(
+      layout?.stageHeight
+    );
+
+  mediaPaneWidth.value =
+    sanitizeMediaWidth(
+      layout?.mediaPaneWidth,
+      stageWidth.value
+    );
+
+  displayMode.value =
+    sanitizeDisplayMode(
+      layout?.displayMode
+    );
+
+  syncPersistedLayout();
+
+  await Promise.allSettled([
+    profilePromise,
+    loadRemoteConfig(),
+    cargarBanners(),
+  ]);
+
   syncActiveBannerEditor();
 
-  if (props.initialManage && isAdmin.value) {
+  if (
+    props.initialManage &&
+    isAdmin.value
+  ) {
     panelAbierto.value = true;
+
+    activeAdminTab.value =
+      hasBanners.value
+        ? "published"
+        : "publish";
   }
 });
 
 onUnmounted(() => {
   stopCarousel();
-  stopLayoutInteraction();
   revokeAllPreviews();
 
-  clearTimeout(pauseTimeout);
-  clearTimeout(panelErrorTimeout);
-  clearTimeout(editorStatusTimeout);
+  window.clearTimeout(
+    pauseTimeout
+  );
 
-  document.removeEventListener("visibilitychange", onVisibilityChange);
-  window.removeEventListener("keydown", onGlobalKeydown);
-  window.removeEventListener("resize", updateCompactScreen);
+  window.clearTimeout(
+    panelErrorTimeout
+  );
+
+  window.clearTimeout(
+    editorStatusTimeout
+  );
+
+  document.removeEventListener(
+    "visibilitychange",
+    onVisibilityChange
+  );
+
+  window.removeEventListener(
+    "resize",
+    updateCompactScreen
+  );
 });
 </script>
 

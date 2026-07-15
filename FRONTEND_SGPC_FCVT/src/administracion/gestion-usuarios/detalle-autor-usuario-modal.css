@@ -1,43 +1,132 @@
-/* =========================================================
-   SGPC ULEAM — Detalle usuario/autor modal
-   Compacto y absorbido desde theme.css
-========================================================= */
+/* ============================================================
+   SGPC ULEAM — DETALLE DE USUARIO Y AUTOR
+   Consulta administrativa de cuenta y producción científica
+============================================================ */
 
 .modal--author-detail {
-  --ad-card: var(--adm-card, var(--bg-card));
-  --ad-soft: var(--adm-soft, var(--bg-elevated));
-  --ad-line: var(--adm-line, var(--border-color));
-  --ad-line-strong: var(--adm-line-strong, var(--border-strong));
-  --ad-text: var(--adm-text, var(--text-primary));
-  --ad-muted: var(--adm-muted, var(--text-secondary));
-  --ad-primary: var(--adm-primary, var(--color-primary));
-  --ad-success: var(--adm-success, #17803d);
-  --ad-warning: var(--adm-warning, #9a6700);
-  --ad-danger: var(--adm-danger, #b42318);
+  --ad-card: var(
+    --adm-card,
+    var(--bg-card, #ffffff)
+  );
 
-  width: min(780px, calc(100vw - 28px));
-  max-height: min(86vh, 820px);
+  --ad-soft: var(
+    --adm-soft,
+    var(--bg-elevated, #f5f7fb)
+  );
+
+  --ad-line: var(
+    --adm-line,
+    var(
+      --border-color,
+      rgba(23, 32, 51, 0.1)
+    )
+  );
+
+  --ad-line-strong: var(
+    --adm-line-strong,
+    var(
+      --border-strong,
+      rgba(23, 32, 51, 0.16)
+    )
+  );
+
+  --ad-text: var(
+    --adm-text,
+    var(--text-primary, #172033)
+  );
+
+  --ad-muted: var(
+    --adm-muted,
+    var(--text-secondary, #667085)
+  );
+
+  --ad-primary: var(
+    --adm-primary,
+    var(--color-primary, #315fcb)
+  );
+
+  --ad-success: var(
+    --adm-success,
+    var(--success, #17803d)
+  );
+
+  --ad-warning: var(
+    --adm-warning,
+    var(--warning, #9a6700)
+  );
+
+  --ad-danger: var(
+    --adm-danger,
+    var(--danger, #b42318)
+  );
+
+  width: min(840px, 100%);
+  max-height: min(92dvh, 880px);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
   overflow: hidden;
-  font-family: inherit;
+  font-family: var(--adm-font-body);
+}
+
+.modal--author-detail:focus {
+  outline: none;
 }
 
 .modal--author-detail,
-.modal--author-detail * {
-  font-family: inherit;
+.modal--author-detail *,
+.modal--author-detail *::before,
+.modal--author-detail *::after {
+  box-sizing: border-box;
 }
 
+/* ============================================================
+   ENCABEZADO
+============================================================ */
+
 .authordetail-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 4;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
+  margin-bottom: 0;
+  padding-bottom: 15px;
   background: var(--ad-card);
-  border-bottom: 1px solid color-mix(in srgb, var(--ad-line) 84%, transparent);
+}
+
+.authordetail-avatar {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-primary) 24%,
+    var(--ad-line)
+  );
+  border-radius: 15px;
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 10%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 86%,
+    var(--ad-text)
+  );
+  font-family: var(--adm-font-ui);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .authordetail-headcopy {
@@ -48,187 +137,502 @@
 
 .authordetail-topline {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .authordetail-kicker,
 .authordetail-badge {
-  min-height: 28px;
-  padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid var(--ad-line);
+  min-height: 27px;
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
+  justify-content: center;
+  border: 1px solid var(--ad-line);
+  border-radius: 999px;
+  font-family: var(--adm-font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .authordetail-kicker {
-  border-color: color-mix(in srgb, var(--ad-primary) 34%, var(--ad-line));
-  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
-  color: color-mix(in srgb, var(--ad-primary) 78%, var(--ad-text));
+  border-color: color-mix(
+    in srgb,
+    var(--ad-primary) 22%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 84%,
+    var(--ad-text)
+  );
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
 }
 
-.authordetail-badge {
-  background: color-mix(in srgb, var(--ad-card) 90%, transparent);
-  color: var(--ad-text);
-  letter-spacing: 0;
-  text-transform: none;
+.authordetail-badge--type,
+.authordetail-badge--neutral {
+  background: color-mix(
+    in srgb,
+    var(--ad-card) 92%,
+    var(--ad-soft)
+  );
+  color: var(--ad-muted);
+}
+
+.authordetail-badge--admin {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-primary) 26%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 9%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 86%,
+    var(--ad-text)
+  );
+}
+
+.authordetail-badge--active {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-success) 28%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-success) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-success) 86%,
+    var(--ad-text)
+  );
+}
+
+.authordetail-badge--pending {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-warning) 30%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-warning) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-warning) 88%,
+    var(--ad-text)
+  );
+}
+
+.authordetail-badge--inactive {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-danger) 28%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-danger) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-danger) 88%,
+    var(--ad-text)
+  );
 }
 
 .authordetail-title {
   margin: 0;
   color: var(--ad-text);
-  font-size: clamp(1.5rem, 2vw, 2rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-  font-weight: 760;
+  font-family: var(--adm-font-heading);
+  font-size: clamp(
+    1.4rem,
+    1.2rem + 0.7vw,
+    1.8rem
+  );
+  font-weight: 740;
+  line-height: 1.14;
+  letter-spacing: -0.026em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .authordetail-subtitle {
+  max-width: 68ch;
   margin: 0;
   color: var(--ad-muted);
-  font-size: 0.92rem;
-  line-height: 1.5;
+  font-family: var(--adm-font-body);
+  font-size: 0.86rem;
+  line-height: 1.52;
 }
 
 .authordetail-close {
   flex: 0 0 auto;
-  border: 1px solid var(--ad-line);
-  background: transparent;
-  color: var(--ad-muted);
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    border-color 160ms ease,
-    transform 160ms ease;
 }
 
-.authordetail-close:hover {
-  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
-  color: var(--ad-primary);
-  border-color: color-mix(in srgb, var(--ad-primary) 22%, var(--ad-line));
-  transform: translateY(-1px);
-}
+/* ============================================================
+   CONTENIDO
+============================================================ */
 
 .authordetail-body {
   min-height: 0;
-  overflow: auto;
+  padding: 16px 4px 16px 0;
   display: grid;
-  gap: 16px;
-  padding-right: 4px;
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(
+      in srgb,
+      var(--ad-muted) 30%,
+      transparent
+    )
+    transparent;
 }
 
 .authordetail-body::-webkit-scrollbar {
   width: 8px;
 }
 
-.authordetail-body::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ad-muted) 32%, transparent);
+.authordetail-body::-webkit-scrollbar-track {
+  background: transparent;
 }
+
+.authordetail-body::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--ad-muted) 30%,
+    transparent
+  );
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   SECCIONES
+============================================================ */
 
 .authordetail-section {
   display: grid;
-  gap: 12px;
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 90%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    var(--ad-card) 96%,
+    var(--ad-soft)
+  );
 }
 
 .authordetail-sectionrow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 .authordetail-sectiontitle {
   margin: 0;
   color: var(--ad-text);
-  font-size: 1.05rem;
-  font-weight: 760;
-  letter-spacing: -0.018em;
+  font-family: var(--adm-font-heading);
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.016em;
+}
+
+.authordetail-sectionsub {
+  max-width: 68ch;
+  margin: 4px 0 0;
+  color: var(--ad-muted);
+  font-family: var(--adm-font-body);
+  font-size: 0.8rem;
+  line-height: 1.48;
 }
 
 .authordetail-count {
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--ad-line);
-  background: color-mix(in srgb, var(--ad-card) 88%, transparent);
-  color: var(--ad-muted);
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  font-size: 0.76rem;
-  font-weight: 850;
+  justify-content: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-primary) 22%,
+    var(--ad-line)
+  );
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 84%,
+    var(--ad-text)
+  );
+  font-family: var(--adm-font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
 }
 
+.authordetail-count--muted {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-line) 92%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-card) 92%,
+    var(--ad-soft)
+  );
+  color: var(--ad-muted);
+}
+
+/* ============================================================
+   RESUMEN
+============================================================ */
+
 .authordetail-summary {
+  margin: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .authordetail-item {
   min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--ad-line);
-  border-radius: 15px;
-  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
+  min-height: 76px;
+  padding: 11px 12px;
   display: grid;
+  align-content: center;
   gap: 5px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 90%,
+    transparent
+  );
+  border-radius: 14px;
+  background: var(--ad-card);
 }
 
 .authordetail-item--wide {
-  grid-column: span 1;
+  grid-column: span 2;
 }
 
-.authordetail-item span {
+.authordetail-item dt {
+  margin: 0;
   color: var(--ad-muted);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.065em;
+  font-family: var(--adm-font-ui);
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.authordetail-item strong {
+.authordetail-item dd {
   min-width: 0;
+  margin: 0;
   color: var(--ad-text);
-  font-size: 0.92rem;
-  font-weight: 820;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: var(--adm-font-body);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.authordetail-empty {
-  padding: 14px;
-  border: 1px dashed color-mix(in srgb, var(--ad-line-strong) 82%, transparent);
+/* ============================================================
+   AUTOR VINCULADO
+============================================================ */
+
+.authordetail-author-card {
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 90%,
+    transparent
+  );
   border-radius: 15px;
-  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
-  color: var(--ad-muted);
-  font-size: 0.9rem;
-  line-height: 1.45;
+  background: var(--ad-card);
 }
+
+.authordetail-author-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-primary) 20%,
+    var(--ad-line)
+  );
+  border-radius: 13px;
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 84%,
+    var(--ad-text)
+  );
+}
+
+.authordetail-author-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.authordetail-author-copy,
+.authordetail-author-total {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.authordetail-author-copy span,
+.authordetail-author-total span {
+  color: var(--ad-muted);
+  font-family: var(--adm-font-ui);
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.authordetail-author-copy strong,
+.authordetail-author-total strong {
+  min-width: 0;
+  color: var(--ad-text);
+  font-family: var(--adm-font-body);
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+}
+
+.authordetail-author-total {
+  min-width: 92px;
+  padding-left: 13px;
+  border-left: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 78%,
+    transparent
+  );
+  text-align: right;
+}
+
+/* ============================================================
+   PUBLICACIONES
+============================================================ */
 
 .authordetail-pubs {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .authordetail-pub {
+  min-width: 0;
+  padding: 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr)
+    auto;
   align-items: center;
-  padding: 13px;
-  border: 1px solid var(--ad-line);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--ad-card) 94%, var(--ad-soft));
+  gap: 11px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 90%,
+    transparent
+  );
+  border-radius: 14px;
+  background: var(--ad-card);
+  transition:
+    border-color
+      calc(140ms * var(--animate-speed, 1))
+      ease,
+    background
+      calc(140ms * var(--animate-speed, 1))
+      ease;
+}
+
+.authordetail-pub:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--ad-primary) 16%,
+    var(--ad-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 3%,
+    var(--ad-card)
+  );
+}
+
+.authordetail-pubindex {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 92%,
+    transparent
+  );
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--ad-card) 90%,
+    var(--ad-soft)
+  );
+  color: var(--ad-muted);
+  font-family: var(--adm-font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .authordetail-pubmain {
@@ -237,107 +641,283 @@
   gap: 6px;
 }
 
-.authordetail-pubmain strong {
+.authordetail-pubtitle {
   min-width: 0;
   color: var(--ad-text);
-  font-size: 0.96rem;
-  font-weight: 820;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: var(--adm-font-body);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
 }
 
 .authordetail-pubmeta {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 5px;
   color: var(--ad-muted);
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-family: var(--adm-font-body);
+  font-size: 0.73rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .authordetail-pill {
-  min-height: 30px;
-  padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ad-primary) 34%, var(--ad-line));
-  background: color-mix(in srgb, var(--ad-primary) 10%, transparent);
-  color: color-mix(in srgb, var(--ad-primary) 78%, var(--ad-text));
+  min-height: 28px;
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.78rem;
-  font-weight: 850;
+  justify-content: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-primary) 24%,
+    var(--ad-line)
+  );
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--ad-primary) 8%,
+    var(--ad-card)
+  );
+  color: color-mix(
+    in srgb,
+    var(--ad-primary) 84%,
+    var(--ad-text)
+  );
+  font-family: var(--adm-font-ui);
+  font-size: 0.69rem;
+  font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.authordetail-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
+/* ============================================================
+   ESTADO VACÍO
+============================================================ */
+
+.authordetail-empty {
+  min-height: 104px;
+  padding: 14px;
   display: flex;
-  justify-content: flex-end;
-  padding-top: 15px;
+  align-items: center;
+  gap: 12px;
+  border: 1px dashed color-mix(
+    in srgb,
+    var(--ad-line-strong) 82%,
+    transparent
+  );
+  border-radius: 15px;
   background: var(--ad-card);
-  border-top: 1px solid color-mix(in srgb, var(--ad-line) 84%, transparent);
+}
+
+.authordetail-empty__icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--ad-line) 92%,
+    transparent
+  );
+  border-radius: 13px;
+  background: color-mix(
+    in srgb,
+    var(--ad-card) 90%,
+    var(--ad-soft)
+  );
+  color: var(--ad-muted);
+}
+
+.authordetail-empty__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.authordetail-empty strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ad-text);
+  font-family: var(--adm-font-ui);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.authordetail-empty p {
+  margin: 0;
+  color: var(--ad-muted);
+  font-family: var(--adm-font-body);
+  font-size: 0.78rem;
+  line-height: 1.48;
+}
+
+/* ============================================================
+   PIE
+============================================================ */
+
+.authordetail-footer {
+  position: relative;
+  z-index: 4;
+  margin-top: 0;
+  padding-top: 14px;
+  background: var(--ad-card);
 }
 
 .authordetail-btn {
-  min-height: 42px;
   min-width: 130px;
-  padding: 0 16px;
-  border: 1px solid var(--ad-line);
-  background: color-mix(in srgb, var(--ad-card) 86%, transparent);
-  color: var(--ad-text);
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 850;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
 }
 
-.authordetail-btn:hover {
-  transform: translateY(-1px);
-  background: color-mix(in srgb, var(--ad-card) 92%, var(--ad-soft));
-  border-color: var(--ad-line-strong);
-  box-shadow: var(--ad-shadow-soft, var(--shadow-soft, 0 16px 38px rgba(0, 0, 0, 0.14)));
+/* ============================================================
+   MODO OSCURO
+============================================================ */
+
+html.dark .modal--author-detail,
+body.dark .modal--author-detail,
+.dark .modal--author-detail,
+[data-theme="dark"] .modal--author-detail {
+  color-scheme: dark;
 }
 
-/* =========================================================
+/* ============================================================
    RESPONSIVE
-========================================================= */
+============================================================ */
 
 @media (max-width: 760px) {
   .modal--author-detail {
-    width: min(100%, calc(100vw - 18px));
-    max-height: 92vh;
+    width: 100%;
+    max-height: calc(100dvh - 20px);
   }
 
   .authordetail-header {
-    gap: 12px;
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+    gap: 11px;
+  }
+
+  .authordetail-body {
+    padding-right: 0;
+  }
+
+  .authordetail-sectionrow {
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .authordetail-count {
+    align-self: flex-start;
+  }
+
+  .authordetail-author-card {
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
+  }
+
+  .authordetail-author-total {
+    grid-column: 2;
+    min-width: 0;
+    padding-top: 9px;
+    padding-left: 0;
+    border-top: 1px solid color-mix(
+      in srgb,
+      var(--ad-line) 76%,
+      transparent
+    );
+    border-left: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 580px) {
+  .authordetail-header {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .authordetail-avatar {
+    display: none;
   }
 
   .authordetail-summary {
     grid-template-columns: 1fr;
   }
 
+  .authordetail-item--wide {
+    grid-column: span 1;
+  }
+
+  .authordetail-section {
+    padding: 13px;
+    border-radius: 16px;
+  }
+
   .authordetail-pub {
-    grid-template-columns: 1fr;
-    align-items: start;
+    grid-template-columns:
+      30px
+      minmax(0, 1fr);
+    align-items: flex-start;
   }
 
   .authordetail-pill {
+    grid-column: 2;
     width: fit-content;
   }
 
   .authordetail-footer {
-    justify-content: stretch;
+    width: 100%;
   }
 
   .authordetail-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .authordetail-topline {
+    align-items: flex-start;
+  }
+
+  .authordetail-kicker,
+  .authordetail-badge {
+    min-height: 25px;
+    padding: 0 8px;
+    font-size: 0.64rem;
+  }
+
+  .authordetail-title {
+    font-size: 1.3rem;
+  }
+
+  .authordetail-author-card {
+    grid-template-columns: 1fr;
+  }
+
+  .authordetail-author-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .authordetail-author-total {
+    grid-column: auto;
+  }
+
+  .authordetail-empty {
+    align-items: flex-start;
+  }
+}
+
+/* ============================================================
+   MOVIMIENTO REDUCIDO
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .authordetail-pub {
+    transition: none;
   }
 }

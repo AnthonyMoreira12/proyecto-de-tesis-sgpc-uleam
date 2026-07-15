@@ -1,0 +1,16 @@
+/* ============================================================
+   SGPC ULEAM
+   Registro de Artículo Regional
+   Ajustes exclusivos del formulario AR
+
+   La estructura visual compartida se encuentra en:
+   ../componentes/sgpc-fcvt.css
+============================================================ */
+
+.sgpc-form-page--articulo-regional {
+  /*
+   * Punto de extensión visual del formulario regional.
+   * Mantiene actualmente el color institucional general.
+   */
+  --sgpc-primary: var(--color-primary, #315fcb);
+}

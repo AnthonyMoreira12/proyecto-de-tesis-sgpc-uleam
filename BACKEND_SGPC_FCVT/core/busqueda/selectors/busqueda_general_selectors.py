@@ -1,6 +1,9 @@
 from django.db.models import Q
 
 from core.models import Autor, Proyecto, Publicacion, Usuario
+from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
+    annotate_tipo_publicacion_final,
+)
 
 SEARCH_LIMIT = 8
 
@@ -11,11 +14,13 @@ def buscar_usuarios(q, *, limit=SEARCH_LIMIT):
         return Usuario.objects.none()
 
     return (
-        Usuario.objects.select_related("facultad", "carrera")
+        Usuario.objects.select_related("carrera", "carrera__facultad")
         .filter(
             Q(nombres__icontains=q)
             | Q(apellidos__icontains=q)
             | Q(email__icontains=q)
+            | Q(carrera__nombre__icontains=q)
+            | Q(carrera__facultad__nombre__icontains=q)
         )
         .order_by("apellidos", "nombres", "id")[:limit]
     )
@@ -38,18 +43,22 @@ def buscar_proyectos(q, *, limit=SEARCH_LIMIT):
     )
 
 
-def buscar_publicaciones(q, *, limit=SEARCH_LIMIT):
+def buscar_publicaciones(q, *, limit=SEARCH_LIMIT, solo_con_pdf=False):
     q = (q or "").strip()
     if not q:
         return Publicacion.objects.none()
 
-    return (
+    publicaciones = (
         Publicacion.objects.select_related(
             "tipo",
             "usuario_creador",
             "proyecto",
-            "facultad",
             "carrera",
+            "carrera__facultad",
+            "articulo",
+            "ponencia",
+            "libro",
+            "capitulo_libro",
         )
         .filter(
             Q(titulo__icontains=q)
@@ -58,12 +67,24 @@ def buscar_publicaciones(q, *, limit=SEARCH_LIMIT):
             | Q(proyecto__nombre__icontains=q)
             | Q(usuario_creador__nombres__icontains=q)
             | Q(usuario_creador__apellidos__icontains=q)
-            | Q(facultad__nombre__icontains=q)
+            | Q(carrera__facultad__nombre__icontains=q)
             | Q(carrera__nombre__icontains=q)
         )
         .distinct()
-        .order_by("-fecha_publicacion", "-id")[:limit]
     )
+
+    publicaciones = annotate_tipo_publicacion_final(publicaciones).exclude(
+        tipo_publicacion_final="sin_clasificar"
+    )
+
+    if solo_con_pdf:
+        publicaciones = publicaciones.exclude(
+            archivo_pdf__isnull=True,
+        ).exclude(
+            archivo_pdf="",
+        )
+
+    return publicaciones.order_by("-fecha_publicacion", "-id")[:limit]
 
 
 def buscar_autores(q, *, limit=SEARCH_LIMIT):

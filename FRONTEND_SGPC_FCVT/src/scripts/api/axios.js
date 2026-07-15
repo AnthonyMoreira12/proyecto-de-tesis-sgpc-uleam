@@ -1,29 +1,58 @@
 import axios from "axios";
+
 import {
   clearAuthStorage,
   getAccessToken,
-  getRefreshToken,
   isAccessTokenExpired,
-  isRefreshTokenExpired,
   setAccessToken,
   setRefreshToken,
 } from "../utils/authStorage";
 
 /**
  * BaseURL robusto:
- * - VITE_API_URL = http://localhost:8000      -> http://localhost:8000/api
- * - VITE_API_URL = http://localhost:8000/api  -> http://localhost:8000/api
- * - Evita duplicados /api/api y elimina "/" final
+ *
+ * VITE_API_URL = http://localhost:8000
+ * Resultado      http://localhost:8000/api
+ *
+ * VITE_API_URL = http://localhost:8000/api
+ * Resultado      http://localhost:8000/api
  */
 function buildBaseURL() {
-  const raw = import.meta.env.VITE_API_URL || "http://localhost:8000";
-  const clean = String(raw).replace(/\/+$/, "");
-  return clean.endsWith("/api") ? clean : `${clean}/api`;
+  const raw =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8000";
+
+  const clean = String(raw)
+    .trim()
+    .replace(/\/+$/, "");
+
+  return clean.endsWith("/api")
+    ? clean
+    : `${clean}/api`;
 }
 
+const baseURL = buildBaseURL();
+
+/**
+ * Cliente principal.
+ *
+ * withCredentials debe permanecer activo porque el refresh
+ * token se administra mediante una cookie HttpOnly.
+ */
 const api = axios.create({
-  baseURL: buildBaseURL(),
-  withCredentials: true, 
+  baseURL,
+  withCredentials: true,
+});
+
+/**
+ * Cliente independiente para la renovación.
+ *
+ * No utiliza los interceptores del cliente principal, por lo
+ * que evita recursión y bucles sobre /auth/refresh/.
+ */
+const refreshClient = axios.create({
+  baseURL,
+  withCredentials: true,
 });
 
 const AUTH_ROUTES = [
@@ -36,263 +65,640 @@ const AUTH_ROUTES = [
   "auth/password-reset/confirm/",
 ];
 
-const REFRESH_ROUTE = "auth/refresh/";
+const REFRESH_ROUTE =
+  "auth/refresh/";
+
+const PUBLIC_FRONTEND_PATHS =
+  new Set([
+    "/login",
+    "/recuperar-contrasena",
+    "/restablecer-contrasena",
+    "/reset-password",
+  ]);
 
 function getRequestUrl(configOrUrl) {
   const raw =
-    typeof configOrUrl === "string" ? configOrUrl : configOrUrl?.url || "";
+    typeof configOrUrl === "string"
+      ? configOrUrl
+      : configOrUrl?.url || "";
 
   return String(raw)
-    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(
+      /^https?:\/\/[^/]+/i,
+      ""
+    )
     .replace(/^\/+/, "");
 }
 
-function isAuthRoute(url) {
-  const normalized = getRequestUrl(url);
-  return AUTH_ROUTES.some((route) => normalized.includes(route));
+function isAuthRoute(configOrUrl) {
+  const normalized =
+    getRequestUrl(configOrUrl);
+
+  return AUTH_ROUTES.some(
+    (route) =>
+      normalized.includes(route)
+  );
 }
 
-function isRefreshRoute(url) {
-  const normalized = getRequestUrl(url);
-  return normalized.includes(REFRESH_ROUTE);
+function isRefreshRoute(
+  configOrUrl
+) {
+  const normalized =
+    getRequestUrl(configOrUrl);
+
+  return normalized.includes(
+    REFRESH_ROUTE
+  );
 }
 
-function ensurePlainHeaders(config) {
-  config.headers = { ...(config.headers || {}) };
-  return config;
+function ensureHeaders(config) {
+  if (!config.headers) {
+    config.headers = {};
+  }
+
+  return config.headers;
+}
+
+function hasHeader(headers, name) {
+  if (!headers) {
+    return false;
+  }
+
+  if (
+    typeof headers.has ===
+    "function"
+  ) {
+    return headers.has(name);
+  }
+
+  const normalizedName =
+    String(name).toLowerCase();
+
+  return Object.keys(headers).some(
+    (key) =>
+      String(key).toLowerCase() ===
+      normalizedName
+  );
+}
+
+function setHeader(
+  headers,
+  name,
+  value
+) {
+  if (!headers) {
+    return;
+  }
+
+  if (
+    typeof headers.set ===
+    "function"
+  ) {
+    headers.set(name, value);
+    return;
+  }
+
+  headers[name] = value;
+}
+
+function removeHeader(
+  headers,
+  name
+) {
+  if (!headers) {
+    return;
+  }
+
+  if (
+    typeof headers.delete ===
+    "function"
+  ) {
+    headers.delete(name);
+    return;
+  }
+
+  const normalizedName =
+    String(name).toLowerCase();
+
+  Object.keys(headers).forEach(
+    (key) => {
+      if (
+        String(key).toLowerCase() ===
+        normalizedName
+      ) {
+        delete headers[key];
+      }
+    }
+  );
 }
 
 function normalizeContentType(config) {
-  config.headers = config.headers || {};
+  const headers =
+    ensureHeaders(config);
 
-  const method = String(config.method || "get").toLowerCase();
-  const methodsWithBody = ["post", "put", "patch"];
-  const hasBodyMethod = methodsWithBody.includes(method);
+  const method = String(
+    config.method || "get"
+  ).toLowerCase();
+
+  const hasBodyMethod = [
+    "post",
+    "put",
+    "patch",
+  ].includes(method);
 
   const isFormData =
-    typeof FormData !== "undefined" && config.data instanceof FormData;
-
-  const removeContentType = (obj) => {
-    if (!obj) return;
-    delete obj["Content-Type"];
-    delete obj["content-type"];
-  };
+    typeof FormData !==
+      "undefined" &&
+    config.data instanceof
+      FormData;
 
   if (isFormData) {
-    removeContentType(config.headers);
-    removeContentType(config.headers?.common);
+    /*
+     * El navegador genera automáticamente el boundary
+     * correcto para multipart/form-data.
+     */
+    removeHeader(
+      headers,
+      "Content-Type"
+    );
+
     return config;
   }
 
   if (
     hasBodyMethod &&
-    !config.headers["Content-Type"] &&
-    !config.headers["content-type"]
+    !hasHeader(
+      headers,
+      "Content-Type"
+    )
   ) {
-    config.headers["Content-Type"] = "application/json";
+    setHeader(
+      headers,
+      "Content-Type",
+      "application/json"
+    );
   }
 
   return config;
 }
 
-async function forceLogout() {
-  clearAuthStorage();
+function removeAuthorization(config) {
+  const headers =
+    ensureHeaders(config);
 
-  try {
-    const mod = await import("../../router/index.js");
-    const router = mod?.default;
+  removeHeader(
+    headers,
+    "Authorization"
+  );
 
-    if (router) {
-      await router.replace("/login");
-      return;
-    }
-  } catch {
-    // fallback abajo
+  return config;
+}
+
+function applyAccessToken(
+  config,
+  token
+) {
+  const headers =
+    ensureHeaders(config);
+
+  setHeader(
+    headers,
+    "Authorization",
+    `Bearer ${token}`
+  );
+
+  return config;
+}
+
+function createSessionExpiredError(
+  cause = null
+) {
+  const error =
+    new Error(
+      "La sesión ha vencido."
+    );
+
+  error.name =
+    "SessionExpiredError";
+
+  if (cause) {
+    error.cause = cause;
   }
 
-  window.location.href = "/login";
+  return error;
 }
+
+function getLoginRedirectUrl() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return "/login";
+  }
+
+  const currentPath =
+    window.location.pathname ||
+    "/";
+
+  if (
+    PUBLIC_FRONTEND_PATHS.has(
+      currentPath
+    )
+  ) {
+    return "/login";
+  }
+
+  const currentLocation =
+    `${currentPath}` +
+    `${window.location.search || ""}` +
+    `${window.location.hash || ""}`;
+
+  return (
+    "/login?redirect=" +
+    encodeURIComponent(
+      currentLocation
+    )
+  );
+}
+
+/* =========================================================
+   CIERRE DE SESIÓN FORZADO
+========================================================= */
+
+let logoutPromise = null;
+
+async function forceLogout() {
+  if (logoutPromise) {
+    return logoutPromise;
+  }
+
+  logoutPromise =
+    Promise.resolve().then(() => {
+      clearAuthStorage();
+
+      if (
+        typeof window ===
+        "undefined"
+      ) {
+        return;
+      }
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "sgpc:auth-expired"
+        )
+      );
+
+      const target =
+        getLoginRedirectUrl();
+
+      const current =
+        `${window.location.pathname}` +
+        `${window.location.search}`;
+
+      if (current !== target) {
+        /*
+         * Se usa location.replace para reiniciar Pinia y evitar
+         * que permanezca un estado autenticado obsoleto.
+         */
+        window.location.replace(
+          target
+        );
+      }
+    });
+
+  return logoutPromise;
+}
+
+/* =========================================================
+   COLA DE RENOVACIÓN
+========================================================= */
 
 let isRefreshing = false;
 let failedQueue = [];
 
-function processQueue(error, token = null) {
-  failedQueue.forEach((item) => {
-    if (token) item.resolve(token);
-    else item.reject(error);
-  });
+function processQueue(
+  error,
+  token = null
+) {
+  failedQueue.forEach(
+    ({ resolve, reject }) => {
+      if (token) {
+        resolve(token);
+      } else {
+        reject(error);
+      }
+    }
+  );
 
   failedQueue = [];
 }
 
-async function refreshAccessToken() {
-  const refresh = getRefreshToken();
-
-  if (!refresh || isRefreshTokenExpired(30_000)) {
-    throw new Error("La sesión ha vencido.");
-  }
-
-  const { data } = await api.post(
-    REFRESH_ROUTE,
-    { refresh },
-    { withCredentials: false }
+function waitForRefresh() {
+  return new Promise(
+    (resolve, reject) => {
+      failedQueue.push({
+        resolve,
+        reject,
+      });
+    }
   );
+}
 
-  const newAccess = data?.access;
-  const newRefresh = data?.refresh;
+/**
+ * Renueva el access token mediante la cookie HttpOnly.
+ *
+ * No envía "cookie-managed" en el cuerpo. El navegador adjunta
+ * la cookie porque withCredentials está habilitado.
+ */
+async function refreshAccessToken() {
+  const { data } =
+    await refreshClient.post(
+      REFRESH_ROUTE,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+
+  const newAccess =
+    data?.access ||
+    data?.access_token ||
+    "";
+
+  const rotatedRefresh =
+    data?.refresh ||
+    data?.refresh_token ||
+    "";
 
   if (!newAccess) {
-    throw new Error("No llegó access en refresh.");
+    throw new Error(
+      "El servidor no devolvió un nuevo access token."
+    );
   }
 
   setAccessToken(newAccess);
 
-  if (newRefresh) {
-    setRefreshToken(newRefresh);
+  /*
+   * En modo HttpOnly no se persiste el refresh en JavaScript.
+   * Se conserva la llamada por compatibilidad.
+   */
+  if (rotatedRefresh) {
+    setRefreshToken(
+      rotatedRefresh
+    );
   }
 
   return newAccess;
 }
 
+async function getRefreshedToken() {
+  if (isRefreshing) {
+    return waitForRefresh();
+  }
+
+  isRefreshing = true;
+
+  try {
+    const newAccess =
+      await refreshAccessToken();
+
+    processQueue(
+      null,
+      newAccess
+    );
+
+    return newAccess;
+  } catch (error) {
+    const sessionError =
+      createSessionExpiredError(
+        error
+      );
+
+    processQueue(
+      sessionError,
+      null
+    );
+
+    await forceLogout();
+
+    throw sessionError;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+/* =========================================================
+   INTERCEPTOR DE SOLICITUD
+========================================================= */
+
 api.interceptors.request.use(
   async (config) => {
-    ensurePlainHeaders(config);
+    /*
+     * No debe establecerse en false. El login, Microsoft y
+     * refresh pueden necesitar recibir o enviar cookies.
+     */
+    config.withCredentials = true;
 
-    config.withCredentials = false;
+    ensureHeaders(config);
 
-    if (isAuthRoute(config) || isRefreshRoute(config)) {
-      return normalizeContentType(config);
+    /*
+     * Las rutas de autenticación no deben recibir un token
+     * Authorization antiguo o vencido.
+     */
+    if (
+      isAuthRoute(config) ||
+      isRefreshRoute(config)
+    ) {
+      removeAuthorization(config);
+
+      return normalizeContentType(
+        config
+      );
     }
 
-    const access = getAccessToken();
-    const refresh = getRefreshToken();
+    const access =
+      getAccessToken();
 
-    if (!access || !refresh) {
-      return normalizeContentType(config);
+    if (!access) {
+      return normalizeContentType(
+        config
+      );
     }
 
-    if (isRefreshTokenExpired(30_000)) {
-      await forceLogout();
-      return Promise.reject(new Error("La sesión ha vencido."));
+    /*
+     * Renovación preventiva antes de enviar una petición con
+     * un access token próximo a vencer.
+     */
+    if (
+      isAccessTokenExpired(
+        30_000
+      )
+    ) {
+      const newAccess =
+        await getRefreshedToken();
+
+      applyAccessToken(
+        config,
+        newAccess
+      );
+
+      return normalizeContentType(
+        config
+      );
     }
 
-    if (isAccessTokenExpired(30_000)) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((newToken) => {
-          ensurePlainHeaders(config);
-          config.withCredentials = false;
-          config.headers.Authorization = `Bearer ${newToken}`;
-          return normalizeContentType(config);
-        });
-      }
-
-      isRefreshing = true;
-
-      try {
-        const newToken = await refreshAccessToken();
-
-        isRefreshing = false;
-        processQueue(null, newToken);
-
-        config.headers.Authorization = `Bearer ${newToken}`;
-        return normalizeContentType(config);
-      } catch (error) {
-        isRefreshing = false;
-        processQueue(error, null);
-        await forceLogout();
-        return Promise.reject(error);
-      }
+    if (
+      !hasHeader(
+        config.headers,
+        "Authorization"
+      )
+    ) {
+      applyAccessToken(
+        config,
+        access
+      );
     }
 
-    if (!config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${access}`;
-    }
-
-    return normalizeContentType(config);
+    return normalizeContentType(
+      config
+    );
   },
-  (error) => Promise.reject(error)
+
+  (error) =>
+    Promise.reject(error)
 );
+
+/* =========================================================
+   INTERCEPTOR DE RESPUESTA
+========================================================= */
 
 api.interceptors.response.use(
   (response) => response,
+
   async (error) => {
-    const originalRequest = error?.config;
+    const originalRequest =
+      error?.config;
 
     if (!originalRequest) {
-      return Promise.reject(error);
+      return Promise.reject(
+        error
+      );
     }
 
-    if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
-      return Promise.reject(error);
+    if (
+      axios.isCancel?.(error) ||
+      error?.code ===
+        "ERR_CANCELED"
+    ) {
+      return Promise.reject(
+        error
+      );
     }
 
     if (!error?.response) {
-      return Promise.reject(error);
+      return Promise.reject(
+        error
+      );
     }
 
-    const status = Number(error.response.status);
+    const status = Number(
+      error.response.status
+    );
+
+    const detail =
+      typeof error.response?.data
+        ?.detail === "string"
+        ? error.response.data.detail
+            .toLowerCase()
+        : "";
 
     const invalidToken =
-      error.response?.data?.code === "token_not_valid" ||
-      (typeof error.response?.data?.detail === "string" &&
-        error.response.data.detail.toLowerCase().includes("token"));
+      error.response?.data?.code ===
+        "token_not_valid" ||
+      detail.includes("token");
 
-    if (isAuthRoute(originalRequest)) {
-      return Promise.reject(error);
+    /*
+     * Los errores del login, Microsoft y recuperación deben
+     * llegar al componente que realizó la solicitud.
+     */
+    if (
+      isAuthRoute(
+        originalRequest
+      )
+    ) {
+      return Promise.reject(
+        error
+      );
     }
 
-    if (isRefreshRoute(originalRequest)) {
+    /*
+     * El refresh nunca debe intentar renovarse a sí mismo.
+     */
+    if (
+      isRefreshRoute(
+        originalRequest
+      )
+    ) {
       await forceLogout();
-      return Promise.reject(error);
+
+      return Promise.reject(
+        createSessionExpiredError(
+          error
+        )
+      );
     }
 
-    if ((status === 401 || invalidToken) && !originalRequest._retry) {
-      originalRequest._retry = true;
+    const requiresRefresh =
+      status === 401 ||
+      invalidToken;
 
-      const refresh = getRefreshToken();
-
-      if (!refresh || isRefreshTokenExpired(30_000)) {
-        await forceLogout();
-        return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((newToken) => {
-          ensurePlainHeaders(originalRequest);
-          originalRequest.withCredentials = false;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          normalizeContentType(originalRequest);
-          return api(originalRequest);
-        });
-      }
-
-      isRefreshing = true;
-
-      try {
-        const newAccess = await refreshAccessToken();
-
-        isRefreshing = false;
-        processQueue(null, newAccess);
-
-        ensurePlainHeaders(originalRequest);
-        originalRequest.withCredentials = false;
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-        normalizeContentType(originalRequest);
-
-        return api(originalRequest);
-      } catch (refreshError) {
-        isRefreshing = false;
-        processQueue(refreshError, null);
-        await forceLogout();
-        return Promise.reject(refreshError);
-      }
+    if (!requiresRefresh) {
+      return Promise.reject(
+        error
+      );
     }
 
-    return Promise.reject(error);
+    /*
+     * Una petición solo se reintenta una vez.
+     */
+    if (
+      originalRequest._retry
+    ) {
+      await forceLogout();
+
+      return Promise.reject(
+        createSessionExpiredError(
+          error
+        )
+      );
+    }
+
+    originalRequest._retry = true;
+    originalRequest.withCredentials =
+      true;
+
+    try {
+      const newAccess =
+        await getRefreshedToken();
+
+      applyAccessToken(
+        originalRequest,
+        newAccess
+      );
+
+      normalizeContentType(
+        originalRequest
+      );
+
+      return api(
+        originalRequest
+      );
+    } catch (refreshError) {
+      return Promise.reject(
+        refreshError
+      );
+    }
   }
 );
 
