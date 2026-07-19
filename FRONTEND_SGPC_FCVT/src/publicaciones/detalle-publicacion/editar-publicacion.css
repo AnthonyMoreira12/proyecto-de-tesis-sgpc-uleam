@@ -1,609 +1,1052 @@
-:where(.pub-edit, .pub-modalOverlay) {
-  --pub-bg: var(--bg-main);
-  --pub-card: var(--bg-card);
-  --pub-elev: var(--bg-elevated);
-  --pub-soft: var(--surface-2);
-  --pub-soft-2: var(--surface-3);
-  --pub-input-bg: var(--bg-input);
+/* ============================================================
+   SGPC ULEAM — EDITAR PUBLICACIÓN
+   Diseño institucional unificado
+============================================================ */
 
-  --pub-text: var(--text-primary);
-  --pub-muted: var(--text-secondary);
+.pedit,
+.pedit-modalOverlay {
+  --pe-bg: var(--bg-main, #f2f5fa);
+  --pe-card: var(--bg-card, #ffffff);
+  --pe-input: var(--bg-input, #ffffff);
+  --pe-elev: var(--bg-elevated, #f8faff);
 
-  --pub-line: var(--border-color);
-  --pub-line-strong: var(--border-strong);
+  --pe-text: var(--text-primary, #172033);
+  --pe-muted: var(--text-secondary, #637187);
+  --pe-disabled: var(
+    --text-disabled,
+    rgba(23, 32, 51, 0.42)
+  );
 
-  --pub-primary: var(--color-primary);
-  --pub-primary-soft: var(--primary-soft);
-  --pub-primary-line: var(--primary-soft-strong);
+  --pe-line: var(--border-color, #dce4ef);
+  --pe-line-strong: var(
+    --border-strong,
+    #c6d2e1
+  );
 
-  --pub-success: var(--success);
-  --pub-warning: var(--warning);
-  --pub-danger: var(--danger);
-  --pub-danger-solid: #b91c1c;
-  --pub-info: var(--info);
+  --pe-primary: var(
+    --color-primary-effective,
+    var(--color-primary, #245f98)
+  );
 
-  --pub-radius-2xl: var(--radius-2xl);
-  --pub-radius-xl: var(--radius-xl);
-  --pub-radius-lg: var(--radius-lg);
-  --pub-radius-md: var(--radius-md);
-  --pub-radius-pill: var(--radius-pill);
+  --pe-primary-soft: color-mix(
+    in srgb,
+    var(--pe-primary) 8%,
+    var(--pe-card)
+  );
 
-  --pub-shadow-sm: var(--shadow-soft);
-  --pub-shadow-modal: var(--shadow-strong);
-  --pub-ring: var(--ring-primary);
+  --pe-primary-line: color-mix(
+    in srgb,
+    var(--pe-primary) 20%,
+    var(--pe-line)
+  );
 
-  --pub-gap: clamp(14px, 1.25vw, 18px);
-  --pub-gap-lg: clamp(18px, 1.8vw, 24px);
-  --pub-section-pad: clamp(18px, 1.7vw, 24px);
-}
+  --pe-success: var(--success, #287957);
+  --pe-warning: var(--warning, #a66a1c);
+  --pe-danger: var(--danger, #b64d45);
+  --pe-info: var(--info, #356f9f);
 
-.pub-edit {
-  display: grid;
-  gap: var(--pub-gap);
-  color: var(--pub-text);
-  font-family: var(--font-body);
-  min-width: 0;
-  align-content: start;
-}
+  --pe-success-soft: var(
+    --success-soft,
+    color-mix(
+      in srgb,
+      var(--pe-success) 10%,
+      var(--pe-card)
+    )
+  );
 
-.pub-edit *,
-.pub-edit *::before,
-.pub-edit *::after,
-.pub-modalOverlay *,
-.pub-modalOverlay *::before,
-.pub-modalOverlay *::after {
-  box-sizing: border-box;
-  font-family: var(--font-body) !important;
-}
+  --pe-warning-soft: var(
+    --warning-soft,
+    color-mix(
+      in srgb,
+      var(--pe-warning) 11%,
+      var(--pe-card)
+    )
+  );
 
-.pub-edit :where(h1, h2, h3, h4, h5, h6),
-.pub-modalOverlay :where(h1, h2, h3, h4, h5, h6) {
-  font-family: var(--font-heading) !important;
-}
+  --pe-danger-soft: var(
+    --danger-soft,
+    color-mix(
+      in srgb,
+      var(--pe-danger) 10%,
+      var(--pe-card)
+    )
+  );
 
-.pub-edit :where(button, input, select, textarea, option),
-.pub-modalOverlay :where(button, input, select, textarea, option) {
-  font-family: var(--font-control) !important;
-}
+  --pe-info-soft: var(
+    --info-soft,
+    color-mix(
+      in srgb,
+      var(--pe-info) 10%,
+      var(--pe-card)
+    )
+  );
 
-/* =========================================================
-   MENSAJES
-========================================================= */
+  --pe-radius-sm: var(--radius-sm, 10px);
+  --pe-radius-md: var(--radius-md, 12px);
+  --pe-radius-lg: var(--radius-lg, 16px);
+  --pe-radius-xl: var(--radius-xl, 20px);
+  --pe-radius-2xl: var(--radius-2xl, 24px);
+  --pe-radius-pill: var(--radius-pill, 999px);
 
-.pub-msg {
-  margin: 0;
-  padding: 13px 14px;
-  border-radius: var(--pub-radius-lg);
-  border: 1px solid transparent;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.55;
-  white-space: pre-line;
-}
+  --pe-shadow-soft: var(
+    --shadow-soft,
+    0 8px 24px rgba(31, 45, 68, 0.055)
+  );
 
-.pub-msg.info {
-  background: var(--info-soft);
-  border-color: var(--info-line);
-  color: color-mix(in srgb, var(--pub-info) 86%, var(--pub-text));
-}
+  --pe-shadow-strong: var(
+    --shadow-strong,
+    0 18px 42px rgba(31, 45, 68, 0.09)
+  );
 
-.pub-msg.success {
-  background: var(--success-soft);
-  border-color: var(--success-line);
-  color: color-mix(in srgb, var(--pub-success) 86%, var(--pub-text));
-}
+  color: var(--pe-text);
 
-.pub-msg.error {
-  background: var(--danger-soft);
-  border-color: var(--danger-line);
-  color: color-mix(in srgb, var(--pub-danger) 86%, var(--pub-text));
-}
-
-/* =========================================================
-   SECCIONES
-========================================================= */
-
-.pub-section {
-  position: relative;
-  display: grid;
-  gap: 16px;
-  padding: var(--pub-section-pad);
-  border: 1px solid var(--pub-line);
-  border-radius: var(--pub-radius-2xl);
-  background: var(--pub-card);
-  box-shadow: var(--pub-shadow-sm);
-  overflow: hidden;
-}
-
-.pub-section::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--pub-primary) 18%, transparent),
-    transparent 48%
+  font-family: var(
+    --font-body,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
   );
 }
 
-.pub-section__head {
+/* ============================================================
+   CONTENEDOR
+============================================================ */
+
+.pedit {
+  min-width: 0;
+
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.pedit *,
+.pedit *::before,
+.pedit *::after,
+.pedit-modalOverlay *,
+.pedit-modalOverlay *::before,
+.pedit-modalOverlay *::after {
+  box-sizing: border-box;
+}
+
+.pedit button,
+.pedit input,
+.pedit select,
+.pedit textarea,
+.pedit-modalOverlay button {
+  font-family: var(
+    --font-control,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+}
+
+/* ============================================================
+   MENSAJES
+============================================================ */
+
+.pedit-msg {
+  margin: 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-md);
+
+  background: var(--pe-card);
+  color: var(--pe-text);
+
+  font-size: 0.82rem;
+  line-height: 1.52;
+  font-weight: 650;
+
+  white-space: pre-line;
+}
+
+.pedit-msg.is-info {
+  border-color: var(
+    --info-line,
+    color-mix(
+      in srgb,
+      var(--pe-info) 22%,
+      var(--pe-line)
+    )
+  );
+
+  background: var(--pe-info-soft);
+
+  color: color-mix(
+    in srgb,
+    var(--pe-info) 84%,
+    var(--pe-text)
+  );
+}
+
+.pedit-msg.is-success {
+  border-color: var(
+    --success-line,
+    color-mix(
+      in srgb,
+      var(--pe-success) 22%,
+      var(--pe-line)
+    )
+  );
+
+  background: var(--pe-success-soft);
+
+  color: color-mix(
+    in srgb,
+    var(--pe-success) 84%,
+    var(--pe-text)
+  );
+}
+
+.pedit-msg.is-error {
+  border-color: var(
+    --danger-line,
+    color-mix(
+      in srgb,
+      var(--pe-danger) 22%,
+      var(--pe-line)
+    )
+  );
+
+  background: var(--pe-danger-soft);
+
+  color: color-mix(
+    in srgb,
+    var(--pe-danger) 84%,
+    var(--pe-text)
+  );
+}
+
+/* ============================================================
+   SECCIONES
+============================================================ */
+
+.pedit-section {
+  position: relative;
+
+  min-width: 0;
+
+  display: grid;
+  gap: 15px;
+
+  padding: 17px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-xl);
+
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--pe-card) 98%,
+        var(--pe-bg)
+      ),
+      var(--pe-card)
+    );
+
+  box-shadow: var(--pe-shadow-soft);
+
+  overflow: hidden;
+}
+
+.pedit-section::before {
+  content: "";
+
+  position: absolute;
+  inset: 0 0 auto 0;
+
+  height: 3px;
+
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--pe-primary) 70%,
+        transparent
+      ),
+      color-mix(
+        in srgb,
+        var(--pe-primary) 16%,
+        transparent
+      )
+    );
+
+  opacity: 0.65;
+}
+
+.pedit-section__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+
+  gap: 16px;
+
+  padding-bottom: 11px;
+
+  border-bottom:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--pe-line) 75%,
+      transparent
+    );
 }
 
-.pub-section__head--compact {
-  align-items: center;
-}
-
-.pub-section__head > div:first-child {
+.pedit-section__copy {
   min-width: 0;
+
+  display: grid;
+  gap: 5px;
 }
 
-.pub-section__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pub-kicker {
-  margin: 0 0 4px;
-  color: var(--pub-primary);
-  font-family: var(--font-heading) !important;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.pub-h2 {
-  margin: 0;
-  color: var(--pub-text);
-  font-family: var(--font-heading) !important;
-  font-size: clamp(1.08rem, 1.3vw, 1.34rem);
-  line-height: 1.05;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-.pub-section__text {
-  margin: 6px 0 0;
-  color: var(--pub-muted);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  max-width: 78ch;
-}
-
-.pub-chip {
+.pedit-section__eyebrow,
+.pedit-filePanel__eyebrow,
+.pedit-modal__eyebrow {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: var(--pub-radius-pill);
-  border: 1px solid var(--pub-line);
-  background: var(--pub-soft);
-  color: var(--pub-text);
-  font-family: var(--font-control) !important;
-  font-size: 0.72rem;
-  font-weight: 700;
+
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.64rem;
   line-height: 1;
-}
-
-/* =========================================================
-   EMBEDS
-========================================================= */
-
-.pub-embed {
-  min-width: 0;
-}
-
-.pub-embed--context,
-.pub-embed--authors {
-  border: 1px solid var(--pub-line);
-  border-radius: var(--pub-radius-xl);
-  background: var(--pub-soft);
-  padding: 14px;
-}
-
-.pub-embed--plain {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-/* =========================================================
-   FORM GRID
-========================================================= */
-
-.pub-form-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.pub-field {
-  grid-column: span 6;
-  display: grid;
-  gap: 7px;
-  min-width: 0;
-}
-
-.pub-field.full {
-  grid-column: span 12;
-}
-
-.pub-label {
-  margin: 0;
-  color: var(--pub-text);
-  font-family: var(--font-label) !important;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.req {
-  color: var(--pub-danger);
-  font-weight: 900;
-}
-
-.pub-input {
-  width: 100%;
-  min-height: var(--control-height-md);
-  padding: 0 13px;
-  border-radius: var(--input-radius);
-  border: 1px solid var(--pub-line) !important;
-  background: var(--pub-input-bg) !important;
-  color: var(--pub-text) !important;
-  font-family: var(--font-control) !important;
-  font-size: 0.92rem;
-  font-weight: 600;
-  line-height: 1.2;
-  outline: none;
-  box-shadow: none;
-  transition:
-    border-color var(--t-fast),
-    box-shadow var(--t-fast),
-    background var(--t-fast),
-    color var(--t-fast);
-}
-
-.pub-input:hover {
-  border-color: var(--pub-line-strong) !important;
-}
-
-.pub-input:focus,
-.pub-input:focus-visible {
-  border-color: var(--pub-primary) !important;
-  box-shadow: var(--pub-ring) !important;
-}
-
-.pub-input:focus:not(:focus-visible) {
-  box-shadow: none !important;
-}
-
-.pub-input:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  color: var(--text-disabled) !important;
-}
-
-.pub-input::placeholder {
-  color: var(--pub-muted);
-  opacity: 0.8;
-}
-
-.pub-help,
-.pub-muted,
-.pub-inlineNote,
-.pub-filePanel__text {
-  margin: 0;
-  color: var(--pub-muted);
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
-
-.pub-inlineNote {
-  grid-column: span 12;
-  padding: 12px 13px;
-  border-radius: var(--pub-radius-md);
-  border: 1px solid var(--warning-line);
-  background: var(--warning-soft);
-  color: color-mix(in srgb, var(--pub-warning) 86%, var(--pub-text));
-  font-weight: 600;
-}
-
-/* =========================================================
-   FILE PANEL
-========================================================= */
-
-.pub-filePanel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid var(--pub-line);
-  border-radius: var(--pub-radius-xl);
-  background: var(--pub-soft);
-}
-
-.pub-filePanel__meta {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.pub-filePanel__eyebrow {
-  color: var(--pub-muted);
-  font-family: var(--font-label) !important;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 850;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.pub-filePanel__name {
+.pedit-section__title {
   margin: 0;
-  color: var(--pub-text);
-  font-family: var(--font-heading) !important;
-  font-size: 1.02rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  overflow-wrap: anywhere;
+
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
+  font-size: clamp(
+    1.02rem,
+    1.2vw,
+    1.18rem
+  );
+
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 720;
 }
 
-.pub-filePanel__actions {
+.pedit-section__text {
+  max-width: 74ch;
+
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.82rem;
+  line-height: 1.48;
+  font-weight: 520;
+}
+
+.pedit-section__meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+
+  gap: 7px;
   flex-wrap: wrap;
 }
 
-/* =========================================================
-   BOTONES
-========================================================= */
+/* ============================================================
+   CHIPS
+============================================================ */
 
-.pub-btn {
-  appearance: none;
-  min-height: var(--control-height-sm);
-  padding: 0 14px;
-  border-radius: var(--pub-radius-pill);
-  border: 1px solid var(--pub-line);
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-text);
-  font-family: var(--font-control) !important;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
+.pedit-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  cursor: pointer;
+
+  min-height: 29px;
+
+  padding: 0 10px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-pill);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 91%,
+    var(--pe-bg)
+  );
+
+  color: var(--pe-muted);
+
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.pedit-chip--permission,
+.pedit-chip--type,
+.pedit-chip--available {
+  border-color: var(--pe-primary-line);
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+}
+
+/* ============================================================
+   COMPONENTES INTEGRADOS
+============================================================ */
+
+.pedit-embed {
+  min-width: 0;
+}
+
+.pedit-embed--general,
+.pedit-embed--authors,
+.pedit-uploader {
+  min-width: 0;
+
+  padding: 13px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-lg);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 92%,
+    var(--pe-bg)
+  );
+}
+
+/* ============================================================
+   FORMULARIO
+============================================================ */
+
+.pedit-formGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(12, minmax(0, 1fr));
+
+  gap: 13px;
+}
+
+.pedit-field {
+  min-width: 0;
+
+  grid-column: span 6;
+
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.pedit-field--full {
+  grid-column: span 12;
+}
+
+.pedit-label {
+  margin: 0;
+
+  color: color-mix(
+    in srgb,
+    var(--pe-text) 86%,
+    var(--pe-muted)
+  );
+
+  font-size: 0.72rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.pedit-required {
+  color: var(--pe-danger);
+  font-weight: 900;
+}
+
+.pedit-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+
+  padding: 0 12px;
+
+  border:
+    1px solid
+    var(--pe-line) !important;
+
+  border-radius:
+    var(--pe-radius-md) !important;
+
+  background:
+    var(--pe-input) !important;
+
+  color:
+    var(--pe-text) !important;
+
+  outline: none;
+  box-shadow: none;
+
+  font-size: 0.84rem;
+  line-height: 1.25;
+  font-weight: 620;
+
   transition:
-    transform var(--t-fast),
-    border-color var(--t-fast),
-    background var(--t-fast),
-    color var(--t-fast),
-    box-shadow var(--t-fast),
-    opacity var(--t-fast);
+    border-color var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease);
 }
 
-.pub-btn:hover {
+.pedit-input:hover:not(:disabled) {
+  border-color:
+    var(--pe-line-strong) !important;
+}
+
+.pedit-input:focus {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pe-primary) 35%,
+      var(--pe-line)
+    ) !important;
+
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--pe-primary) 16%,
+        transparent
+      )
+    ) !important;
+}
+
+.pedit-input:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.pedit-input::placeholder {
+  color: color-mix(
+    in srgb,
+    var(--pe-muted) 78%,
+    transparent
+  );
+}
+
+.pedit-help {
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.pedit-help strong {
+  color: var(--pe-text);
+  font-weight: 750;
+}
+
+/* ============================================================
+   NOTAS Y ESTADOS VACÍOS
+============================================================ */
+
+.pedit-inlineNote,
+.pedit-empty {
+  grid-column: span 12;
+
+  margin: 0;
+  padding: 11px 12px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-md);
+
+  color: var(--pe-muted);
+
+  font-size: 0.78rem;
+  line-height: 1.48;
+  font-weight: 600;
+}
+
+.pedit-inlineNote {
+  border-color: var(
+    --warning-line,
+    color-mix(
+      in srgb,
+      var(--pe-warning) 24%,
+      var(--pe-line)
+    )
+  );
+
+  background: var(--pe-warning-soft);
+
+  color: color-mix(
+    in srgb,
+    var(--pe-warning) 84%,
+    var(--pe-text)
+  );
+}
+
+.pedit-empty {
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 92%,
+    var(--pe-bg)
+  );
+}
+
+/* ============================================================
+   ARCHIVO PDF
+============================================================ */
+
+.pedit-filePanel {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-lg);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 92%,
+    var(--pe-bg)
+  );
+}
+
+.pedit-filePanel__icon {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid var(--pe-primary-line);
+  border-radius: var(--pe-radius-lg);
+
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.pedit-filePanel__meta {
+  min-width: 0;
+
+  display: grid;
+  gap: 4px;
+}
+
+.pedit-filePanel__name {
+  margin: 0;
+
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 720;
+
+  overflow-wrap: anywhere;
+}
+
+.pedit-filePanel__text {
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.76rem;
+  line-height: 1.46;
+}
+
+.pedit-filePanel__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.pedit-btn {
+  appearance: none;
+
+  min-height: 38px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 0 13px;
+
+  border: 1px solid transparent;
+  border-radius: var(--pe-radius-md);
+
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 780;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  transition:
+    border-color var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease),
+    color var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease),
+    opacity var(--t-fast, 0.18s ease),
+    transform var(--t-fast, 0.18s ease);
+}
+
+.pedit-btn--primary {
+  border-color: var(
+    --button-border,
+    transparent
+  );
+
+  background: var(
+    --button-bg,
+    var(--pe-primary)
+  );
+
+  color: var(
+    --button-text,
+    #ffffff
+  );
+
+  box-shadow:
+    0 8px 18px
+    color-mix(
+      in srgb,
+      var(--pe-primary) 14%,
+      transparent
+    );
+}
+
+.pedit-btn--ghost {
+  border-color: var(--pe-line);
+
+  background: var(--pe-input);
+  color: var(--pe-text);
+}
+
+.pedit-btn--danger {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 76%,
+    transparent
+  );
+
+  background: var(--pe-danger);
+  color: #ffffff;
+}
+
+.pedit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: var(--pub-line-strong);
-  background: color-mix(in srgb, var(--button-secondary-bg) 95%, var(--hover));
 }
 
-.pub-btn:focus-visible {
-  box-shadow: var(--pub-ring);
+.pedit-btn--ghost:hover:not(:disabled) {
+  border-color: var(--pe-line-strong);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 92%,
+    var(--pe-bg)
+  );
 }
 
-.pub-btn:disabled {
-  opacity: 0.62;
+.pedit-btn--danger:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 86%,
+    #000000
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--pe-danger) 88%,
+    #000000
+  );
+}
+
+.pedit-btn:disabled {
+  opacity: 0.58;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
-.pub-btn--primary {
-  background: var(--button-bg);
-  color: var(--button-text);
-  border-color: var(--button-border);
+/* ============================================================
+   PIE DE ACCIONES
+============================================================ */
+
+.pedit-footer {
+  position: sticky;
+
+  bottom: 12px;
+  z-index: 8;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 13px 14px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-lg);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 94%,
+    transparent
+  );
+
+  box-shadow: var(--pe-shadow-strong);
+
+  backdrop-filter: blur(12px);
 }
 
-.pub-btn--primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--button-bg) 92%, var(--bg-card) 8%);
+.pedit-footer__copy {
+  min-width: 0;
+
+  display: grid;
+  gap: 3px;
 }
 
-.pub-btn--ghost {
-  background: transparent;
+.pedit-footer__copy strong {
+  color: var(--pe-text);
+
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
-.pub-btn--danger {
-  background: var(--pub-danger-solid);
-  color: #ffffff;
-  border-color: var(--pub-danger-solid);
+.pedit-footer__copy span {
+  color: var(--pe-muted);
+
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
-.pub-btn--danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--pub-danger-solid) 86%, #000000 14%);
-  border-color: color-mix(in srgb, var(--pub-danger-solid) 86%, #000000 14%);
-  color: #ffffff;
-}
-
-.pub-btn--danger:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pub-danger-solid) 22%, transparent);
-}
-
-/* =========================================================
-   FOOTER
-========================================================= */
-
-.pub-footer {
+.pedit-footer__actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-top: 2px;
+
+  gap: 8px;
 }
 
-/* =========================================================
-   MODAL PDF
-========================================================= */
+/* ============================================================
+   MODAL
+============================================================ */
 
-.pub-modalOverlay {
+.pedit-modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: var(--z-modal);
+
+  z-index: var(--z-modal, 100);
+
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: var(--overlay);
-  backdrop-filter: blur(5px);
-  color: var(--pub-text);
-  font-family: var(--font-body) !important;
-  font-size: var(--font-base);
+
+  padding: 22px;
+
+  background: var(
+    --overlay,
+    rgba(15, 23, 42, 0.52)
+  );
+
+  backdrop-filter: blur(6px);
 }
 
-.pub-modal {
-  width: min(500px, calc(100vw - 32px));
+.pedit-modal {
+  position: relative;
+
+  width: min(500px, 100%);
+
   display: grid;
-  grid-template-columns: 54px 1fr;
-  align-items: flex-start;
-  gap: 18px;
-  padding: 26px;
-  border: 1px solid var(--pub-line);
-  border-radius: var(--radius-2xl);
-  background: var(--pub-card);
-  color: var(--pub-text);
-  box-shadow: var(--shadow-strong);
+
+  grid-template-columns:
+    52px
+    minmax(0, 1fr);
+
+  align-items: start;
+  gap: 16px;
+
+  padding: 23px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-xl);
+
+  background: var(--pe-card);
+  color: var(--pe-text);
+
+  box-shadow: var(--pe-shadow-strong);
+
+  overflow: hidden;
 }
 
-.pub-modal__icon {
-  width: 54px;
-  height: 54px;
+.pedit-modal::before {
+  content: "";
+
+  position: absolute;
+  inset: 0 0 auto 0;
+
+  height: 3px;
+
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--pe-danger) 78%,
+        transparent
+      ),
+      color-mix(
+        in srgb,
+        var(--pe-danger) 16%,
+        transparent
+      )
+    );
+}
+
+.pedit-modal__icon {
+  width: 50px;
+  height: 50px;
+
   display: grid;
   place-items: center;
-  margin-top: 2px;
-  border-radius: var(--radius-lg);
-  background: var(--danger-soft);
-  color: var(--pub-danger-solid);
-  font-family: var(--font-heading) !important;
-  font-size: 1.02rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--pe-danger) 22%,
+    var(--pe-line)
+  );
+
+  border-radius: var(--pe-radius-lg);
+
+  background: var(--pe-danger-soft);
+  color: var(--pe-danger);
+
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
 }
 
-.pub-modal__body {
+.pedit-modal__body {
   min-width: 0;
-  text-align: left;
+
+  display: grid;
+  gap: 7px;
 }
 
-.pub-modal__eyebrow {
-  margin: 0 0 6px;
-  color: var(--pub-danger-solid);
-  font-family: var(--font-heading) !important;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1.2;
-  text-transform: uppercase;
+.pedit-modal__eyebrow {
+  color: var(--pe-danger);
 }
 
-.pub-modal__title {
+.pedit-modal__title {
   margin: 0;
-  color: var(--pub-text);
-  font-family: var(--font-heading) !important;
-  font-size: 1.32rem;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
+  font-size: 1.22rem;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 730;
 }
 
-.pub-modal__text {
-  margin: 12px 0 0;
-  max-width: 42ch;
-  color: var(--pub-muted);
-  font-family: var(--font-body) !important;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.55;
+.pedit-modal__text {
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.82rem;
+  line-height: 1.52;
 }
 
-.pub-modal__warning {
-  margin: 14px 0 0;
-  padding: 11px 13px;
-  border: 1px solid var(--warning-line);
-  border-radius: var(--radius-lg);
-  background: var(--warning-soft);
-  color: color-mix(in srgb, var(--pub-warning) 86%, var(--pub-text));
-  font-family: var(--font-body) !important;
-  font-size: 0.9rem;
-  font-weight: 400;
+.pedit-modal__warning {
+  margin: 4px 0 0;
+  padding: 10px 11px;
+
+  border: 1px solid var(
+    --warning-line,
+    color-mix(
+      in srgb,
+      var(--pe-warning) 24%,
+      var(--pe-line)
+    )
+  );
+
+  border-radius: var(--pe-radius-md);
+
+  background: var(--pe-warning-soft);
+
+  color: color-mix(
+    in srgb,
+    var(--pe-warning) 84%,
+    var(--pe-text)
+  );
+
+  font-size: 0.76rem;
   line-height: 1.45;
+  font-weight: 600;
 }
 
-.pub-modal__actions {
+.pedit-modal__actions {
   grid-column: 1 / -1;
+
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  padding-top: 2px;
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  padding-top: 3px;
 }
 
-.pub-modal__actions .pub-btn {
-  min-height: var(--control-height-sm);
-  padding: 0 17px;
-  font-size: 0.92rem;
-  font-weight: 700;
-}
+/* ============================================================
+   INTEGRACIÓN CON DATOS GENERALES
+============================================================ */
 
-.pub-modal__actions .pub-btn--danger {
-  padding-inline: 20px;
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--pub-danger-solid) 18%, transparent);
-}
-
-.pub-modal__actions .pub-btn--danger:hover:not(:disabled) {
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--pub-danger-solid) 22%, transparent);
-}
-
-/* =========================================================
-   ALINEACIÓN TOTAL DE COMPONENTES HIJOS AL TEMA GLOBAL
-   DatosGenerales, AutoresSelector, uploader y controles internos
-========================================================= */
-
-.pub-edit :where(
+.pedit :where(
   .dg,
-  .dg *,
-  .datos-generales,
-  .datos-generales *,
-  .autsel,
-  .autsel *,
-  .autor-selector,
-  .autor-selector *,
-  .as,
-  .as *,
-  .sgpc-upload,
-  .sgpc-upload *,
-  .sgpc-file-list,
-  .sgpc-file-list *
+  .datos-generales
 ) {
-  font-family: var(--font-body) !important;
+  min-width: 0;
+  color: var(--pe-text);
 }
 
-.pub-edit :where(
+.pedit :where(
   .dg h1,
   .dg h2,
   .dg h3,
@@ -611,7 +1054,107 @@
   .datos-generales h1,
   .datos-generales h2,
   .datos-generales h3,
-  .datos-generales h4,
+  .datos-generales h4
+) {
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
+}
+
+.pedit :where(
+  .dg label,
+  .datos-generales label,
+  .dg-label
+) {
+  color: color-mix(
+    in srgb,
+    var(--pe-text) 86%,
+    var(--pe-muted)
+  );
+
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pedit :where(
+  .dg input,
+  .dg select,
+  .dg textarea,
+  .datos-generales input,
+  .datos-generales select,
+  .datos-generales textarea,
+  .dg-input,
+  .dg-select,
+  .dg-control
+) {
+  min-height: 42px;
+
+  border:
+    1px solid
+    var(--pe-line) !important;
+
+  border-radius:
+    var(--pe-radius-md) !important;
+
+  background:
+    var(--pe-input) !important;
+
+  color:
+    var(--pe-text) !important;
+
+  box-shadow: none !important;
+}
+
+.pedit :where(
+  .dg input:hover,
+  .dg select:hover,
+  .dg textarea:hover,
+  .datos-generales input:hover,
+  .datos-generales select:hover,
+  .datos-generales textarea:hover,
+  .dg-input:hover,
+  .dg-select:hover,
+  .dg-control:hover
+) {
+  border-color:
+    var(--pe-line-strong) !important;
+}
+
+.pedit :where(
+  .dg input:focus,
+  .dg select:focus,
+  .dg textarea:focus,
+  .datos-generales input:focus,
+  .datos-generales select:focus,
+  .datos-generales textarea:focus,
+  .dg-input:focus,
+  .dg-select:focus,
+  .dg-control:focus
+) {
+  border-color:
+    var(--pe-primary) !important;
+
+  box-shadow:
+    var(--ring-primary) !important;
+
+  outline: none !important;
+}
+
+/* ============================================================
+   INTEGRACIÓN CON AUTORES
+============================================================ */
+
+.pedit :where(
+  .autsel,
+  .autor-selector,
+  .as
+) {
+  min-width: 0;
+  color: var(--pe-text);
+}
+
+.pedit :where(
   .autsel h1,
   .autsel h2,
   .autsel h3,
@@ -623,263 +1166,300 @@
   .as h1,
   .as h2,
   .as h3,
-  .as h4,
-  .sgpc-upload__title
+  .as h4
 ) {
-  font-family: var(--font-heading) !important;
-  color: var(--text-primary) !important;
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
 }
 
-.pub-edit :where(
-  .dg label,
-  .datos-generales label,
-  .autsel label,
-  .autor-selector label,
-  .as label,
-  .dg-label,
-  .autsel-label,
-  .autor-label,
-  .as-label,
-  .sgpc-upload__eyebrow
-) {
-  font-family: var(--font-label) !important;
-  color: var(--text-primary) !important;
-}
-
-.pub-edit :where(
-  .dg button,
-  .dg input,
-  .dg select,
-  .dg textarea,
-  .datos-generales button,
-  .datos-generales input,
-  .datos-generales select,
-  .datos-generales textarea,
-  .autsel button,
+.pedit :where(
   .autsel input,
   .autsel select,
   .autsel textarea,
-  .autor-selector button,
   .autor-selector input,
   .autor-selector select,
   .autor-selector textarea,
-  .as button,
   .as input,
   .as select,
-  .as textarea,
-  .sgpc-upload button,
-  .sgpc-upload input,
-  .sgpc-upload select,
-  .sgpc-upload textarea
+  .as textarea
 ) {
-  font-family: var(--font-control) !important;
-}
+  min-height: 42px;
 
-.pub-edit :where(
-  input,
-  select,
-  textarea,
-  .pub-input,
-  .dg-input,
-  .dg-select,
-  .dg-control,
-  .select-control,
-  .form-control
-) {
-  min-height: var(--control-height-md) !important;
-  background: var(--bg-input) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--input-radius) !important;
+  border:
+    1px solid
+    var(--pe-line) !important;
+
+  border-radius:
+    var(--pe-radius-md) !important;
+
+  background:
+    var(--pe-input) !important;
+
+  color:
+    var(--pe-text) !important;
+
   box-shadow: none !important;
 }
 
-.pub-edit :where(
-  input:hover,
-  select:hover,
-  textarea:hover,
-  .pub-input:hover,
-  .dg-input:hover,
-  .dg-select:hover,
-  .dg-control:hover,
-  .select-control:hover,
-  .form-control:hover
+.pedit :where(
+  .autsel input:focus,
+  .autsel select:focus,
+  .autsel textarea:focus,
+  .autor-selector input:focus,
+  .autor-selector select:focus,
+  .autor-selector textarea:focus,
+  .as input:focus,
+  .as select:focus,
+  .as textarea:focus
 ) {
-  border-color: var(--border-strong) !important;
-}
+  border-color:
+    var(--pe-primary) !important;
 
-.pub-edit :where(
-  input:focus,
-  select:focus,
-  textarea:focus,
-  .pub-input:focus,
-  .dg-input:focus,
-  .dg-select:focus,
-  .dg-control:focus,
-  .select-control:focus,
-  .form-control:focus
-) {
-  border-color: var(--color-primary) !important;
-  box-shadow: var(--ring-primary) !important;
+  box-shadow:
+    var(--ring-primary) !important;
+
   outline: none !important;
 }
 
-.pub-edit :where(
-  .dg-card,
-  .dg-panel,
-  .dg-box,
-  .dg-section,
-  .datos-card,
-  .datos-panel,
-  .autsel-card,
-  .autor-card,
-  .as-card,
-  .author-card,
-  .panel,
-  .box,
-  .item,
-  .row
+/* ============================================================
+   INTEGRACIÓN CON UPLOADER
+============================================================ */
+
+.pedit :where(
+  .sgpc-upload,
+  .sgpc-file-list
 ) {
-  background: var(--bg-card) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-color) !important;
-  box-shadow: var(--shadow-soft) !important;
+  min-width: 0;
+  color: var(--pe-text);
 }
 
-.pub-edit :where(
-  .muted,
-  .text-muted,
-  .help,
-  .hint,
-  .description,
-  .desc,
-  .meta,
-  .subtitle,
+.pedit :where(
+  .sgpc-upload__title
+) {
+  color: var(--pe-text);
+
+  font-family: var(--font-heading);
+}
+
+.pedit :where(
   .sgpc-upload__desc,
   .sgpc-upload__hint,
   .sgpc-file-chip__meta
 ) {
-  color: var(--text-secondary) !important;
+  color: var(--pe-muted);
 }
 
-.pub-edit :where(
-  .badge,
-  .chip,
-  .pill,
-  .tag,
-  .pub-chip
+.pedit :where(
+  .sgpc-upload input,
+  .sgpc-upload select,
+  .sgpc-upload textarea
 ) {
-  font-family: var(--font-control) !important;
-  background: var(--surface-2) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-color) !important;
+  font-family: var(--font-control);
 }
 
-/* =========================================================
-   ESTADO GUARDANDO
-========================================================= */
+/* ============================================================
+   FOCO
+============================================================ */
 
-.pub-edit.is-saving {
-  pointer-events: auto;
+.pedit
+  :where(
+    .pedit-btn,
+    .pedit-input
+  ):focus-visible,
+.pedit-modalOverlay
+  .pedit-btn:focus-visible {
+  outline: none;
+
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--pe-primary) 16%,
+        transparent
+      )
+    );
 }
 
-/* =========================================================
+.pedit-modalOverlay
+  .pedit-btn--danger:focus-visible {
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--pe-danger) 22%,
+      transparent
+    );
+}
+
+/* ============================================================
+   ESTADO DE GUARDADO
+============================================================ */
+
+.pedit.is-saving {
+  cursor: progress;
+}
+
+/* ============================================================
    RESPONSIVE
-========================================================= */
+============================================================ */
 
 @media (max-width: 960px) {
-  .pub-field {
+  .pedit-field {
     grid-column: span 12;
   }
 
-  .pub-section__head,
-  .pub-filePanel {
-    flex-direction: column;
-    align-items: flex-start;
+  .pedit-filePanel {
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
   }
 
-  .pub-filePanel__actions {
+  .pedit-filePanel__actions {
+    grid-column: 1 / -1;
+
     width: 100%;
-  }
-}
 
-@media (max-width: 640px) {
-  .pub-btn {
-    width: 100%;
-  }
-
-  .pub-footer,
-  .pub-filePanel__actions,
-  .pub-section__meta {
-    width: 100%;
-  }
-
-  .pub-footer {
     display: grid;
-    grid-template-columns: 1fr;
+
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 560px) {
-  .pub-modalOverlay {
-    padding: 18px;
+@media (max-width: 720px) {
+  .pedit {
+    gap: 12px;
   }
 
-  .pub-modal {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    padding: 22px;
-    border-radius: var(--radius-xl);
+  .pedit-section {
+    padding: 15px;
+    border-radius: var(--pe-radius-lg);
   }
 
-  .pub-modal__icon {
-    width: 48px;
-    height: 48px;
-    margin-top: 0;
-  }
-
-  .pub-modal__title {
-    font-size: 1.18rem;
-  }
-
-  .pub-modal__text {
-    max-width: none;
-    font-size: 0.96rem;
-  }
-
-  .pub-modal__actions {
-    flex-direction: column-reverse;
+  .pedit-section__head {
+    flex-direction: column;
     align-items: stretch;
   }
 
-  .pub-modal__actions .pub-btn {
-    width: 100%;
+  .pedit-section__meta {
+    justify-content: flex-start;
+  }
+
+  .pedit-embed--general,
+  .pedit-embed--authors,
+  .pedit-uploader {
+    padding: 11px;
+    border-radius: var(--pe-radius-md);
+  }
+
+  .pedit-filePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .pedit-filePanel__icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .pedit-filePanel__actions {
+    grid-column: auto;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .pedit-filePanel__actions
+    .pedit-btn--danger {
+    grid-column: 1 / -1;
+  }
+
+  .pedit-footer {
+    position: static;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    backdrop-filter: none;
+  }
+
+  .pedit-footer__actions {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 }
 
-/* =========================================================
-   REDUCED MOTION
-========================================================= */
+@media (max-width: 520px) {
+  .pedit-filePanel__actions,
+  .pedit-footer__actions,
+  .pedit-modal__actions {
+    grid-template-columns: 1fr;
+  }
 
-.reduced-motion .pub-edit *,
-.reduced-motion .pub-edit *::before,
-.reduced-motion .pub-edit *::after,
-.reduced-motion .pub-modalOverlay *,
-.reduced-motion .pub-modalOverlay *::before,
-.reduced-motion .pub-modalOverlay *::after {
+  .pedit-filePanel__actions
+    .pedit-btn--danger {
+    grid-column: auto;
+  }
+
+  .pedit-btn {
+    width: 100%;
+  }
+
+  .pedit-modalOverlay {
+    padding: 14px;
+  }
+
+  .pedit-modal {
+    grid-template-columns: 1fr;
+
+    gap: 13px;
+
+    padding: 20px;
+
+    border-radius: var(--pe-radius-lg);
+  }
+
+  .pedit-modal__icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .pedit-modal__actions {
+    display: grid;
+  }
+}
+
+/* ============================================================
+   MOVIMIENTO REDUCIDO
+============================================================ */
+
+.reduced-motion .pedit *,
+.reduced-motion .pedit *::before,
+.reduced-motion .pedit *::after,
+.reduced-motion .pedit-modalOverlay *,
+.reduced-motion .pedit-modalOverlay *::before,
+.reduced-motion .pedit-modalOverlay *::after {
   animation: none !important;
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pub-edit *,
-  .pub-edit *::before,
-  .pub-edit *::after,
-  .pub-modalOverlay *,
-  .pub-modalOverlay *::before,
-  .pub-modalOverlay *::after {
+  .pedit *,
+  .pedit *::before,
+  .pedit *::after,
+  .pedit-modalOverlay *,
+  .pedit-modalOverlay *::before,
+  .pedit-modalOverlay *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+
+  .pedit-btn:hover {
+    transform: none;
   }
 }

@@ -277,65 +277,87 @@
                 :aria-label="`Seleccionar a ${fullUserName(user)}`"
                 @click="selectUser(user)"
               >
+                <span
+                  v-if="userBadgeLabel(user)"
+                  class="adm-del-badge adm-del-user-card__badge"
+                  :class="badgeScopeClass(user)"
+                >
+                  {{ userBadgeLabel(user) }}
+                </span>
+
                 <div class="adm-del-user-card__identity">
-                  <div
-                    class="adm-del-user-card__avatar"
-                    aria-hidden="true"
-                  >
-                    {{ initialsFromUser(user) }}
+                  <div class="adm-del-user-card__avatar">
+                    <img
+                      v-if="hasUsableAvatar(user)"
+                      :src="resolveAvatarUrl(user)"
+                      :alt="`Foto de perfil de ${fullUserName(user)}`"
+                      loading="lazy"
+                      decoding="async"
+                      @error="markAvatarBroken(user)"
+                    />
+
+                    <span v-else aria-hidden="true">
+                      {{ initialsFromUser(user) }}
+                    </span>
                   </div>
 
                   <div class="adm-del-user-card__identity-copy">
-                    <div class="adm-del-user-card__top">
-                      <strong>
-                        {{ fullUserName(user) }}
-                      </strong>
-
-                      <span
-                        v-if="userBadgeLabel(user)"
-                        class="adm-del-badge"
-                        :class="badgeScopeClass(user)"
-                      >
-                        {{ userBadgeLabel(user) }}
-                      </span>
-                    </div>
+                    <strong class="adm-del-user-card__name">
+                      {{ fullUserName(user) }}
+                    </strong>
 
                     <p class="adm-del-user-card__meta">
-                      {{ user.email || "Sin correo registrado" }}
+                      {{
+                        user.carrera_nombre ||
+                        user.facultad_nombre ||
+                        user.email ||
+                        "Sin unidad académica registrada"
+                      }}
                     </p>
 
-                    <p class="adm-del-user-card__submeta">
-                      <span>
-                        {{
-                          user.identificacion
-                            ? `CI: ${user.identificacion}`
-                            : "Sin identificación"
-                        }}
-                      </span>
-
-                      <span v-if="user.facultad_nombre">
-                        {{ user.facultad_nombre }}
-                      </span>
-
-                      <span v-if="user.carrera_nombre">
-                        {{ user.carrera_nombre }}
-                      </span>
+                    <p
+                      v-if="user.email && (user.carrera_nombre || user.facultad_nombre)"
+                      class="adm-del-user-card__email"
+                    >
+                      {{ user.email }}
                     </p>
                   </div>
                 </div>
 
-                <div class="adm-del-user-card__metrics">
-                  <span class="adm-del-mini-pill">
+                <div class="adm-del-user-card__publication-row">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2v5h5M8 13h8M8 17h8"
+                    />
+                  </svg>
+
+                  <span>
                     {{ publicationTotalLabel(user.total_publicaciones) }}
                   </span>
+                </div>
 
+                <div class="adm-del-user-card__footer">
                   <span
-                    v-if="
-                      Number(selectedUser?.id) === Number(user.id)
-                    "
-                    class="adm-del-mini-pill adm-del-mini-pill--selected"
+                    class="adm-del-user-card__action"
+                    :class="{
+                      'is-selected':
+                        Number(selectedUser?.id) === Number(user.id),
+                    }"
                   >
-                    Seleccionado
+                    {{
+                      Number(selectedUser?.id) === Number(user.id)
+                        ? "Usuario seleccionado"
+                        : "Seleccionar usuario"
+                    }}
+
+                    <span aria-hidden="true">
+                      {{
+                        Number(selectedUser?.id) === Number(user.id)
+                          ? "✓"
+                          : "→"
+                      }}
+                    </span>
                   </span>
                 </div>
               </button>
@@ -411,11 +433,18 @@
 
             <div class="adm-del-target-panel">
               <div class="adm-del-target-panel__identity">
-                <div
-                  class="adm-del-target-avatar"
-                  aria-hidden="true"
-                >
-                  {{ selectedInitials }}
+                <div class="adm-del-target-avatar">
+                  <img
+                    v-if="hasUsableAvatar(selectedUser)"
+                    :src="resolveAvatarUrl(selectedUser)"
+                    :alt="`Foto de perfil de ${fullUserName(selectedUser)}`"
+                    decoding="async"
+                    @error="markAvatarBroken(selectedUser)"
+                  />
+
+                  <span v-else aria-hidden="true">
+                    {{ selectedInitials }}
+                  </span>
                 </div>
 
                 <div class="adm-del-target-copy">
@@ -756,6 +785,7 @@ const loadingUsers = ref(false);
 const userError = ref("");
 const users = ref([]);
 const selectedUser = ref(null);
+const brokenAvatarKeys = ref(new Set());
 
 const loadingPublicaciones = ref(false);
 const publicacionesError = ref("");
@@ -816,6 +846,128 @@ const normalizeText = (value) => {
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .trim();
+};
+
+const getBackendOrigin = () => {
+  const configuredApiUrl = String(
+    import.meta.env.VITE_API_URL || ""
+  ).trim();
+
+  const fallbackOrigin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "";
+
+  const candidate = configuredApiUrl || fallbackOrigin;
+
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return fallbackOrigin;
+  }
+};
+
+const normalizeAvatarPath = (value) => {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(raw)) {
+    return raw;
+  }
+
+  if (raw.startsWith("//")) {
+    const protocol =
+      typeof window !== "undefined"
+        ? window.location.protocol
+        : "https:";
+
+    return `${protocol}${raw}`;
+  }
+
+  const backendOrigin = getBackendOrigin();
+
+  if (!backendOrigin) {
+    return raw;
+  }
+
+  let normalizedPath = raw;
+
+  if (!normalizedPath.startsWith("/")) {
+    normalizedPath = normalizedPath.startsWith("media/")
+      ? `/${normalizedPath}`
+      : `/media/${normalizedPath}`;
+  }
+
+  try {
+    return new URL(normalizedPath, `${backendOrigin}/`).href;
+  } catch {
+    return raw;
+  }
+};
+
+const resolveAvatarUrl = (user) => {
+  if (!user) {
+    return "";
+  }
+
+  const candidate =
+    user.avatar_url ||
+    user.avatar ||
+    user.foto_perfil_url ||
+    user.foto_perfil ||
+    user.foto_url ||
+    user.imagen_url ||
+    user.imagen ||
+    user.photo_url ||
+    user.photo ||
+    user.profile_picture_url ||
+    user.profile_picture ||
+    user.usuario?.avatar_url ||
+    user.usuario?.avatar ||
+    user.autor?.avatar_url ||
+    user.autor?.avatar ||
+    user.perfil?.avatar_url ||
+    user.perfil?.avatar ||
+    user.perfil_academico?.avatar_url ||
+    user.perfil_academico?.avatar ||
+    "";
+
+  return normalizeAvatarPath(candidate);
+};
+
+const avatarFailureKey = (user) => {
+  const identity = String(
+    user?.id || user?.email || "usuario"
+  ).trim();
+
+  return `${identity}|${resolveAvatarUrl(user)}`;
+};
+
+const hasUsableAvatar = (user) => {
+  const avatarUrl = resolveAvatarUrl(user);
+
+  if (!avatarUrl) {
+    return false;
+  }
+
+  return !brokenAvatarKeys.value.has(
+    avatarFailureKey(user)
+  );
+};
+
+const markAvatarBroken = (user) => {
+  const key = avatarFailureKey(user);
+
+  if (!key || key.endsWith("|")) {
+    return;
+  }
+
+  const next = new Set(brokenAvatarKeys.value);
+  next.add(key);
+  brokenAvatarKeys.value = next;
 };
 
 const hasSearch = computed(() => {

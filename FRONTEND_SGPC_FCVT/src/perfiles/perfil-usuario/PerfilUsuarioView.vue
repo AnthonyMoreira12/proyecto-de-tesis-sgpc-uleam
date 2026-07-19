@@ -98,17 +98,21 @@
           <button
             class="perfil-primary-button"
             :class="{
-              'is-disabled': !canEditProfile,
+              'is-request': !canEditProfile,
             }"
             type="button"
             :title="
               canEditProfile
                 ? 'Editar información del perfil'
-                : editDisabledReason
+                : 'Solicitar al administrador una extensión del plazo de edición'
             "
             @click="handleEditAction"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
+            <svg
+              v-if="canEditProfile"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+            >
               <path
                 d="m12.7 4.2 3.1 3.1M4 16l2.8-.6 8.4-8.4a1.6 1.6 0 0 0 0-2.3 1.6 1.6 0 0 0-2.3 0L4.6 13.2 4 16Z"
                 fill="none"
@@ -119,11 +123,33 @@
               />
             </svg>
 
+            <svg
+              v-else
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+            >
+              <path
+                d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 15 16H5a1.5 1.5 0 0 1-1.5-1.5v-9Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+
+              <path
+                d="m4 6 6 4.5L16 6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
             <span>
               {{
                 canEditProfile
                   ? "Editar perfil"
-                  : "Edición no disponible"
+                  : "Solicitar extensión"
               }}
             </span>
           </button>
@@ -520,6 +546,186 @@
                   </p>
                 </div>
               </article>
+            </div>
+
+            <div
+              v-if="!canEditProfile"
+              ref="extensionRequestSectionRef"
+              class="perfil-extension-request"
+              :class="{
+                'is-expanded': extensionRequestExpanded,
+              }"
+            >
+              <div class="perfil-extension-request__summary">
+                <span
+                  class="perfil-extension-request__icon"
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+
+                    <path
+                      d="m5 7 7 5 7-5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+
+                <div class="perfil-extension-request__content">
+                  <span class="perfil-extension-request__eyebrow">
+                    Plazo finalizado
+                  </span>
+
+                  <h3>Solicite una extensión de edición</h3>
+
+                  <p v-if="extensionRequestExpanded">
+                    Explique por qué necesita ampliar el plazo. SGPC enviará la
+                    solicitud directamente al correo del administrador.
+                  </p>
+
+                  <p v-else>
+                    Abra el formulario solo cuando necesite enviar una solicitud.
+                  </p>
+                </div>
+
+                <button
+                  class="perfil-extension-request__toggle"
+                  type="button"
+                  :disabled="sendingExtensionRequest"
+                  :aria-expanded="extensionRequestExpanded ? 'true' : 'false'"
+                  aria-controls="perfil-extension-form"
+                  @click="toggleExtensionRequest"
+                >
+                  <span>
+                    {{
+                      extensionRequestExpanded
+                        ? "Ocultar formulario"
+                        : "Abrir solicitud"
+                    }}
+                  </span>
+
+                  <svg
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m6 8 4 4 4-4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <Transition name="perfil-extension-collapse">
+                <form
+                  v-if="extensionRequestExpanded"
+                  id="perfil-extension-form"
+                  class="perfil-extension-request__form"
+                  @submit.prevent="requestEditExtension"
+                >
+                  <label class="perfil-extension-request__field">
+                    <span>Tiempo solicitado</span>
+
+                    <select
+                      v-model.number="extensionRequestHours"
+                      :disabled="sendingExtensionRequest"
+                    >
+                      <option :value="24">24 horas</option>
+                      <option :value="48">48 horas</option>
+                      <option :value="72">72 horas</option>
+                    </select>
+                  </label>
+
+                  <label class="perfil-extension-request__field is-wide">
+                    <span>Motivo de la solicitud</span>
+
+                    <textarea
+                      ref="extensionReasonInputRef"
+                      v-model="extensionRequestReason"
+                      rows="4"
+                      minlength="20"
+                      maxlength="1000"
+                      :disabled="sendingExtensionRequest"
+                      placeholder="Explique brevemente por qué necesita ampliar el plazo de edición."
+                    ></textarea>
+                  </label>
+
+                  <div class="perfil-extension-request__footer">
+                    <small>
+                      {{ extensionRequestReason.trim().length }}/1000 caracteres
+                    </small>
+
+                    <div class="perfil-extension-request__footer-actions">
+                      <button
+                        class="perfil-extension-request__secondary"
+                        type="button"
+                        :disabled="sendingExtensionRequest"
+                        @click="closeExtensionRequest"
+                      >
+                        Ocultar
+                      </button>
+
+                      <button
+                        class="perfil-extension-request__submit"
+                        type="submit"
+                        :disabled="
+                          sendingExtensionRequest ||
+                          extensionRequestReason.trim().length < 20
+                        "
+                      >
+                        <span
+                          v-if="sendingExtensionRequest"
+                          class="perfil-edit-spinner"
+                          aria-hidden="true"
+                        ></span>
+
+                        <svg
+                          v-else
+                          viewBox="0 0 20 20"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 15 16H5a1.5 1.5 0 0 1-1.5-1.5v-9Z"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                          />
+
+                          <path
+                            d="m4 6 6 4.5L16 6"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+
+                        <span>
+                          {{
+                            sendingExtensionRequest
+                              ? "Enviando solicitud..."
+                              : "Enviar solicitud"
+                          }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </Transition>
             </div>
           </section>
 
@@ -1101,8 +1307,15 @@ const showEditModal = ref(false);
 const savingProfile = ref(false);
 const editError = ref("");
 
+const sendingExtensionRequest = ref(false);
+const extensionRequestExpanded = ref(false);
+const extensionRequestReason = ref("");
+const extensionRequestHours = ref(48);
+
 const editModalRef = ref(null);
 const identificationInputRef = ref(null);
+const extensionRequestSectionRef = ref(null);
+const extensionReasonInputRef = ref(null);
 
 const facultades = ref([]);
 const carreras = ref([]);
@@ -1773,14 +1986,122 @@ const closeEditModal = () => {
   editError.value = "";
 };
 
-const handleEditAction = async () => {
-  if (!canEditProfile.value) {
+const resolveApiErrorMessage = (error, fallback) => {
+  const data = error?.response?.data;
+
+  if (typeof data?.detail === "string" && data.detail) {
+    return data.detail;
+  }
+
+  if (Array.isArray(data?.motivo) && data.motivo[0]) {
+    return String(data.motivo[0]);
+  }
+
+  if (typeof data?.motivo === "string" && data.motivo) {
+    return data.motivo;
+  }
+
+  return fallback;
+};
+
+const openExtensionRequest = async () => {
+  extensionRequestExpanded.value = true;
+
+  await nextTick();
+
+  extensionRequestSectionRef.value?.scrollIntoView?.({
+    behavior: "smooth",
+    block: "center",
+  });
+
+  window.setTimeout(() => {
+    extensionReasonInputRef.value?.focus?.({
+      preventScroll: true,
+    });
+  }, 240);
+};
+
+const closeExtensionRequest = () => {
+  if (sendingExtensionRequest.value) {
+    return;
+  }
+
+  extensionRequestExpanded.value = false;
+};
+
+const toggleExtensionRequest = async () => {
+  if (extensionRequestExpanded.value) {
+    closeExtensionRequest();
+    return;
+  }
+
+  await openExtensionRequest();
+};
+
+const focusExtensionRequest = async () => {
+  await openExtensionRequest();
+};
+
+const requestEditExtension = async () => {
+  if (sendingExtensionRequest.value) {
+    return;
+  }
+
+  const motivo = String(
+    extensionRequestReason.value || ""
+  ).trim();
+
+  if (motivo.length < 20) {
     showToast(
-      "info",
-      editDisabledReason.value,
-      3800
+      "error",
+      "El motivo debe contener al menos 20 caracteres.",
+      4200
     );
 
+    await focusExtensionRequest();
+    return;
+  }
+
+  sendingExtensionRequest.value = true;
+
+  try {
+    const response = await api.post(
+      "auth/profile/solicitar-extension/",
+      {
+        motivo,
+        horas_solicitadas:
+          Number(extensionRequestHours.value) || 48,
+      }
+    );
+
+    extensionRequestReason.value = "";
+    extensionRequestExpanded.value = false;
+
+    showToast(
+      "success",
+      response?.data?.detail ||
+        "La solicitud fue enviada correctamente al administrador.",
+      5200
+    );
+  } catch (error) {
+    console.error(error);
+
+    showToast(
+      "error",
+      resolveApiErrorMessage(
+        error,
+        "No se pudo enviar la solicitud al administrador."
+      ),
+      5200
+    );
+  } finally {
+    sendingExtensionRequest.value = false;
+  }
+};
+
+const handleEditAction = async () => {
+  if (!canEditProfile.value) {
+    await focusExtensionRequest();
     return;
   }
 
@@ -2129,11 +2450,17 @@ const reloadProfile = async () => {
 };
 
 const onKeyDown = (event) => {
-  if (
-    event.key === "Escape" &&
-    showEditModal.value
-  ) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  if (showEditModal.value) {
     closeEditModal();
+    return;
+  }
+
+  if (extensionRequestExpanded.value) {
+    closeExtensionRequest();
   }
 };
 

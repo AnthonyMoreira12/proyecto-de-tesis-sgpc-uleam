@@ -747,39 +747,111 @@
   min-width: 0;
   display: grid;
   grid-template-columns:
-    auto
+    58px
     minmax(0, 1fr);
-  align-items: flex-start;
-  gap: 11px;
+  align-items: center;
+  gap: 14px;
 }
 
 .adm-del-user-card__avatar,
 .adm-del-target-avatar {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  isolation: isolate;
+  width: 58px;
+  height: 58px;
+  aspect-ratio: 1;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(
+  overflow: hidden;
+  border: 2px solid color-mix(
     in srgb,
-    var(--del-primary) 22%,
+    var(--del-primary) 28%,
     var(--del-line)
   );
-  border-radius: 13px;
-  background: color-mix(
-    in srgb,
-    var(--del-primary) 9%,
-    var(--del-card)
+  border-radius: 50%;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--del-primary) 13%, var(--del-card)),
+    color-mix(in srgb, var(--del-primary) 5%, var(--del-soft))
   );
   color: color-mix(
     in srgb,
-    var(--del-primary) 86%,
+    var(--del-primary) 88%,
     var(--del-text)
   );
+  box-shadow:
+    0 7px 18px color-mix(in srgb, var(--del-primary) 14%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--del-card) 84%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #ffffff 20%, transparent);
   font-family: var(--adm-font-ui);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.88rem;
+  font-weight: 750;
   line-height: 1;
+  transition:
+    border-color calc(160ms * var(--animate-speed, 1)) ease,
+    box-shadow calc(160ms * var(--animate-speed, 1)) ease,
+    transform calc(160ms * var(--animate-speed, 1)) ease;
+}
+
+.adm-del-user-card__avatar::after,
+.adm-del-target-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: 2;
+  border: 1px solid color-mix(in srgb, #ffffff 34%, transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.adm-del-user-card__avatar img,
+.adm-del-target-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 28%;
+  transform: scale(1.12);
+  transform-origin: center;
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transition:
+    transform calc(220ms * var(--animate-speed, 1)) ease,
+    filter calc(180ms * var(--animate-speed, 1)) ease;
+}
+
+.adm-del-user-card:hover .adm-del-user-card__avatar,
+.adm-del-user-card.is-active .adm-del-user-card__avatar {
+  border-color: color-mix(
+    in srgb,
+    var(--del-primary) 52%,
+    var(--del-line)
+  );
+  box-shadow:
+    0 10px 22px color-mix(in srgb, var(--del-primary) 20%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--del-primary) 9%, var(--del-card));
+  transform: translateY(-1px);
+}
+
+.adm-del-user-card:hover .adm-del-user-card__avatar img,
+.adm-del-user-card.is-active .adm-del-user-card__avatar img {
+  transform: scale(1.18);
+  filter: saturate(1.03) contrast(1.02);
+}
+
+.adm-del-user-card__avatar > span,
+.adm-del-target-avatar > span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    circle at 35% 25%,
+    color-mix(in srgb, #ffffff 24%, transparent),
+    transparent 52%
+  );
+  letter-spacing: 0.02em;
 }
 
 .adm-del-user-card__identity-copy {
@@ -1007,9 +1079,9 @@
 }
 
 .adm-del-skeleton--avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
 }
 
 .adm-del-skeleton--name {
@@ -1131,17 +1203,25 @@
   min-width: 0;
   display: grid;
   grid-template-columns:
-    auto
+    72px
     minmax(0, 1fr);
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 17px;
 }
 
 .adm-del-target-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
-  font-size: 0.9rem;
+  width: 72px;
+  height: 72px;
+  border-width: 2px;
+  font-size: 1rem;
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--del-primary) 18%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--del-primary) 7%, var(--del-card));
+}
+
+.adm-del-target-avatar img {
+  object-position: center 26%;
+  transform: scale(1.1);
 }
 
 .adm-del-target-copy {
@@ -1586,15 +1666,24 @@ body.dark .adm-del-page,
     justify-content: flex-start;
   }
 
-  .adm-del-user-card__identity,
+  .adm-del-user-card__identity {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 11px;
+  }
+
   .adm-del-target-panel__identity {
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 13px;
   }
 
   .adm-del-user-card__avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .adm-del-target-avatar {
+    width: 60px;
+    height: 60px;
   }
 
   .adm-del-user-card__metrics {
@@ -1663,6 +1752,284 @@ body.dark .adm-del-page,
     .adm-del-action-card__arrow,
   .adm-del-action-card:focus-visible
     .adm-del-action-card__arrow {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   AJUSTE VISUAL — RESULTADOS DE BÚSQUEDA TIPO PERFIL
+   Tarjetas inspiradas en la búsqueda académica institucional
+============================================================ */
+
+.adm-del-results-grid {
+  max-height: 520px;
+  padding: 2px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.adm-del-results-grid__item {
+  display: flex;
+}
+
+.adm-del-user-card {
+  min-height: 190px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 17px;
+  background: var(--del-card);
+}
+
+.adm-del-user-card::before {
+  inset: 0 0 auto 0;
+  width: 100%;
+  height: 3px;
+  transform: scaleX(0.55);
+  transform-origin: center;
+}
+
+.adm-del-user-card:hover,
+.adm-del-user-card.is-active {
+  transform: translateY(-2px);
+}
+
+.adm-del-user-card.is-active::before {
+  transform: scaleX(1);
+}
+
+.adm-del-user-card__badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  min-height: 24px;
+  padding-inline: 8px;
+  font-size: 0.62rem;
+}
+
+.adm-del-user-card__identity {
+  min-width: 0;
+  display: block;
+  padding-right: 112px;
+}
+
+.adm-del-user-card__avatar {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--del-line-strong) 78%,
+    transparent
+  );
+  border-radius: 13px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--del-primary) 16%, var(--del-card)),
+    color-mix(in srgb, var(--del-primary) 7%, var(--del-soft))
+  );
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--del-primary) 10%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent);
+  transform: none;
+}
+
+.adm-del-user-card__avatar::after {
+  inset: 1px;
+  border-radius: 11px;
+}
+
+.adm-del-user-card__avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  transform: none;
+  filter: none;
+}
+
+.adm-del-user-card:hover .adm-del-user-card__avatar,
+.adm-del-user-card.is-active .adm-del-user-card__avatar {
+  border-color: color-mix(
+    in srgb,
+    var(--del-primary) 38%,
+    var(--del-line)
+  );
+  box-shadow:
+    0 8px 18px color-mix(in srgb, var(--del-primary) 14%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--del-primary) 7%, transparent);
+  transform: none;
+}
+
+.adm-del-user-card:hover .adm-del-user-card__avatar img,
+.adm-del-user-card.is-active .adm-del-user-card__avatar img {
+  object-position: center;
+  transform: none;
+  filter: none;
+}
+
+.adm-del-user-card__identity-copy {
+  min-width: 0;
+  margin-top: 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.adm-del-user-card__name {
+  display: block;
+  color: var(--del-text);
+  font-family: var(--adm-font-heading);
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+  overflow-wrap: anywhere;
+}
+
+.adm-del-user-card__meta,
+.adm-del-user-card__email {
+  margin: 0;
+  color: var(--del-muted);
+  font-family: var(--adm-font-body);
+  overflow-wrap: anywhere;
+}
+
+.adm-del-user-card__meta {
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.adm-del-user-card__email {
+  font-size: 0.66rem;
+  line-height: 1.38;
+}
+
+.adm-del-user-card__publication-row {
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--del-muted);
+  font-family: var(--adm-font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.adm-del-user-card__publication-row svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.adm-del-user-card__footer {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--del-line) 76%,
+    transparent
+  );
+}
+
+.adm-del-user-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: color-mix(
+    in srgb,
+    var(--del-primary) 88%,
+    var(--del-text)
+  );
+  font-family: var(--adm-font-ui);
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.adm-del-user-card__action > span {
+  transition: transform calc(140ms * var(--animate-speed, 1)) ease;
+}
+
+.adm-del-user-card:hover .adm-del-user-card__action > span {
+  transform: translateX(2px);
+}
+
+.adm-del-user-card__action.is-selected {
+  color: var(--del-success);
+}
+
+.adm-del-user-skeleton {
+  min-height: 190px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.adm-del-user-skeleton__copy {
+  width: 100%;
+  padding-top: 0;
+}
+
+.adm-del-skeleton--avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+}
+
+.adm-del-skeleton--pill {
+  width: 96px;
+  height: 12px;
+  margin-top: auto;
+  align-self: flex-end;
+}
+
+@media (max-width: 780px) {
+  .adm-del-results-grid {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .adm-del-user-card {
+    min-height: 184px;
+  }
+
+  .adm-del-user-card__identity {
+    padding-right: 92px;
+  }
+
+  .adm-del-user-card__badge {
+    max-width: 86px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-del-user-card,
+  .adm-del-user-card::before,
+  .adm-del-user-card__action > span {
+    transition: none;
+  }
+
+  .adm-del-user-card:hover,
+  .adm-del-user-card.is-active,
+  .adm-del-user-card:hover .adm-del-user-card__action > span {
     transform: none;
   }
 }

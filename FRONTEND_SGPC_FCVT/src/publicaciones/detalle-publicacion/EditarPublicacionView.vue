@@ -1,11 +1,62 @@
 <template>
-  <div class="pub-edit" :class="{ 'is-saving': savingLocal }">
-    <p v-if="editMsg" :class="['pub-msg', editMsgType]">
+  <div
+    class="pedit"
+    :class="{ 'is-saving': savingLocal }"
+  >
+    <!-- =====================================================
+      MENSAJES
+    ====================================================== -->
+    <p
+      v-if="editMsg"
+      :class="['pedit-msg', `is-${editMsgType || 'info'}`]"
+      role="status"
+      aria-live="polite"
+    >
       {{ editMsg }}
     </p>
 
-    <section class="pub-section">
-      <div class="pub-embed pub-embed--context pub-embed--plain">
+    <!-- =====================================================
+      DATOS GENERALES
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Clasificación institucional
+          </span>
+
+          <h2 class="pedit-section__title">
+            Datos generales
+          </h2>
+
+          <p class="pedit-section__text">
+            Actualice la adscripción académica y el proyecto relacionado con
+            esta publicación.
+          </p>
+        </div>
+
+        <div class="pedit-section__meta">
+          <span class="pedit-chip">
+            {{ tipoLabel }}
+          </span>
+
+          <span
+            v-if="isAdmin"
+            class="pedit-chip pedit-chip--permission"
+          >
+            Administrador
+          </span>
+
+          <span
+            v-else-if="canEdit"
+            class="pedit-chip pedit-chip--permission"
+          >
+            Autor vinculado
+          </span>
+        </div>
+      </header>
+
+      <div class="pedit-embed pedit-embed--general">
         <DatosGenerales
           v-model="form.datos_generales"
           :hideUbicacion="!isPonencia"
@@ -14,158 +65,255 @@
       </div>
     </section>
 
-    <section class="pub-section">
-      <div class="pub-section__head pub-section__head--compact">
-        <div>
-          <h3 class="pub-h2">Información general</h3>
-        </div>
+    <!-- =====================================================
+      INFORMACIÓN GENERAL
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Información temporal
+          </span>
 
-        <div class="pub-section__meta">
-          <span class="pub-chip">{{ tipoLabel }}</span>
-          <span v-if="isAdmin" class="pub-chip">Administrador</span>
-          <span v-else-if="canEdit" class="pub-chip">Autor vinculado</span>
-        </div>
-      </div>
+          <h2 class="pedit-section__title">
+            Información general
+          </h2>
 
-      <div class="pub-form-grid">
-        <div class="pub-field">
-          <label class="pub-label">
+          <p class="pedit-section__text">
+            Registre la fecha oficial asociada a la publicación.
+          </p>
+        </div>
+      </header>
+
+      <div class="pedit-formGrid">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-fecha-publicacion"
+          >
             Fecha de publicación
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
-            type="date"
+            id="pedit-fecha-publicacion"
             v-model="form.fecha_publicacion"
+            class="pedit-input"
+            type="date"
             required
             :disabled="savingLocal || removingPdf"
           />
-          <p v-if="form.fecha_publicacion" class="pub-help">
-            {{ formatFecha(form.fecha_publicacion) }}
+
+          <p
+            v-if="form.fecha_publicacion"
+            class="pedit-help"
+          >
+            Fecha seleccionada:
+            <strong>{{ formatFecha(form.fecha_publicacion) }}</strong>
           </p>
         </div>
       </div>
     </section>
 
-    <section class="pub-section">
-      <div class="pub-section__head pub-section__head--compact">
-        <div>
-          <h3 class="pub-h2">Campos específicos</h3>
+    <!-- =====================================================
+      CAMPOS ESPECÍFICOS
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Metadatos especializados
+          </span>
+
+          <h2 class="pedit-section__title">
+            Campos específicos
+          </h2>
+
+          <p class="pedit-section__text">
+            Complete la información correspondiente al tipo de publicación.
+          </p>
         </div>
 
-        <div class="pub-section__meta">
-          <span class="pub-chip">{{ tipoLabel }}</span>
+        <div class="pedit-section__meta">
+          <span class="pedit-chip pedit-chip--type">
+            {{ tipoLabel }}
+          </span>
         </div>
-      </div>
+      </header>
 
-      <div v-if="isPonencia" class="pub-form-grid">
-        <div class="pub-field">
-          <label class="pub-label">
+      <!-- Ponencia -->
+      <div
+        v-if="isPonencia"
+        class="pedit-formGrid"
+      >
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-evento"
+          >
             Evento
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-evento"
             v-model.trim="form.nombre_evento"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-ponencia"
+          >
             Ponencia
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-ponencia"
             v-model.trim="form.nombre_ponencia"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field full">
-          <label class="pub-label">ISSN / ISBN</label>
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-issn-isbn"
+          >
+            ISSN o ISBN
+          </label>
+
           <input
-            class="pub-input"
+            id="pedit-issn-isbn"
             v-model.trim="form.codigo_issn_isbn"
+            class="pedit-input"
+            type="text"
             :disabled="savingLocal || removingPdf"
           />
         </div>
       </div>
 
-      <div v-else-if="isArticulo" class="pub-form-grid">
-        <div class="pub-field full">
-          <label class="pub-label">
+      <!-- Artículo -->
+      <div
+        v-else-if="isArticulo"
+        class="pedit-formGrid"
+      >
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-nombre-articulo"
+          >
             Nombre del artículo
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-nombre-articulo"
             v-model.trim="form.nombre_articulo"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
-            Base de datos / indexación
-            <span class="req">*</span>
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-indexacion"
+          >
+            Base de datos o indexación
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-indexacion"
             v-model.trim="form.base_datos_indexada"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-revista"
+          >
             Nombre de la revista
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-revista"
             v-model.trim="form.nombre_revista"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-doi"
+          >
             DOI
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-doi"
             v-model.trim="form.codigo_doi"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-issn"
+          >
             ISSN
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-issn"
             v-model.trim="form.codigo_issn"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field full">
-          <label class="pub-label">Enlace de la publicación</label>
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-link-publicacion"
+          >
+            Enlace de la publicación
+          </label>
+
           <input
-            class="pub-input"
+            id="pedit-link-publicacion"
             v-model.trim="form.link_publicacion"
+            class="pedit-input"
             type="url"
             placeholder="https://..."
             :disabled="savingLocal || removingPdf"
@@ -173,11 +321,18 @@
         </div>
 
         <template v-if="!isArticuloRegional">
-          <div class="pub-field full">
-            <label class="pub-label">Enlace de la revista</label>
+          <div class="pedit-field pedit-field--full">
+            <label
+              class="pedit-label"
+              for="pedit-link-revista"
+            >
+              Enlace de la revista
+            </label>
+
             <input
-              class="pub-input"
+              id="pedit-link-revista"
               v-model.trim="form.link_revista"
+              class="pedit-input"
               type="url"
               placeholder="https://..."
               :disabled="savingLocal || removingPdf"
@@ -185,104 +340,177 @@
           </div>
 
           <template v-if="isAdmin">
-            <div class="pub-field">
-              <label class="pub-label">Factor de impacto</label>
+            <div class="pedit-field">
+              <label
+                class="pedit-label"
+                for="pedit-factor-impacto"
+              >
+                Factor de impacto
+              </label>
+
               <input
-                class="pub-input"
+                id="pedit-factor-impacto"
                 v-model.trim="form.factor_impacto"
+                class="pedit-input"
+                type="text"
                 :disabled="savingLocal || removingPdf"
               />
             </div>
 
-            <div class="pub-field">
-              <label class="pub-label">Cuartil</label>
+            <div class="pedit-field">
+              <label
+                class="pedit-label"
+                for="pedit-cuartil"
+              >
+                Cuartil
+              </label>
+
               <input
-                class="pub-input"
+                id="pedit-cuartil"
                 v-model.trim="form.cuartil"
-                placeholder="Ej. Q1, Q2"
+                class="pedit-input"
+                type="text"
+                placeholder="Ejemplo: Q1 o Q2"
                 :disabled="savingLocal || removingPdf"
               />
             </div>
 
-            <div class="pub-field">
-              <label class="pub-label">SJR</label>
+            <div class="pedit-field">
+              <label
+                class="pedit-label"
+                for="pedit-sjr"
+              >
+                SJR
+              </label>
+
               <input
-                class="pub-input"
+                id="pedit-sjr"
                 v-model.trim="form.sjr"
+                class="pedit-input"
+                type="text"
                 :disabled="savingLocal || removingPdf"
               />
             </div>
 
-            <div class="pub-field">
-              <label class="pub-label">Número de revista</label>
+            <div class="pedit-field">
+              <label
+                class="pedit-label"
+                for="pedit-numero-revista"
+              >
+                Número de revista
+              </label>
+
               <input
-                class="pub-input"
+                id="pedit-numero-revista"
                 v-model.trim="form.numero_revista"
+                class="pedit-input"
+                type="text"
                 :disabled="savingLocal || removingPdf"
               />
             </div>
           </template>
         </template>
 
-        <div v-if="isArticuloRegional" class="pub-inlineNote">
-          Artículo regional: los indicadores avanzados no aplican.
+        <div
+          v-if="isArticuloRegional"
+          class="pedit-inlineNote"
+        >
+          Los indicadores avanzados de impacto, cuartil, SJR y número de revista
+          no se aplican a los artículos regionales.
         </div>
       </div>
 
-      <div v-else-if="isCapitulo" class="pub-form-grid">
-        <div class="pub-field">
-          <label class="pub-label">
+      <!-- Capítulo -->
+      <div
+        v-else-if="isCapitulo"
+        class="pedit-formGrid"
+      >
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-nombre-capitulo"
+          >
             Nombre del capítulo
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-nombre-capitulo"
             v-model.trim="form.nombre_capitulo"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-nombre-libro"
+          >
             Nombre del libro
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-nombre-libro"
             v-model.trim="form.nombre_libro"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-isbn"
+          >
             ISBN
-            <span class="req">*</span>
+            <span class="pedit-required">*</span>
           </label>
+
           <input
-            class="pub-input"
+            id="pedit-isbn"
             v-model.trim="form.codigo_isbn"
+            class="pedit-input"
+            type="text"
             required
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field">
-          <label class="pub-label">Editor / Compilador</label>
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-editor"
+          >
+            Editor o compilador
+          </label>
+
           <input
-            class="pub-input"
+            id="pedit-editor"
             v-model.trim="form.editor_compilador"
+            class="pedit-input"
+            type="text"
             :disabled="savingLocal || removingPdf"
           />
         </div>
 
-        <div class="pub-field full">
-          <label class="pub-label">Enlace</label>
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-link-capitulo"
+          >
+            Enlace del capítulo
+          </label>
+
           <input
-            class="pub-input"
+            id="pedit-link-capitulo"
             v-model.trim="form.link_capitulo"
+            class="pedit-input"
             type="url"
             placeholder="https://..."
             :disabled="savingLocal || removingPdf"
@@ -290,144 +518,233 @@
         </div>
       </div>
 
-      <div v-else class="pub-muted">
-        No hay campos editables para este tipo.
+      <div
+        v-else
+        class="pedit-empty"
+      >
+        No existen campos específicos editables para este tipo de publicación.
       </div>
     </section>
 
-    <section class="pub-section">
-      <div class="pub-section__head pub-section__head--compact">
-        <div>
-          <h3 class="pub-h2">Autores</h3>
-        </div>
-      </div>
+    <!-- =====================================================
+      AUTORES
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Participación académica
+          </span>
 
-      <div class="pub-embed pub-embed--authors">
+          <h2 class="pedit-section__title">
+            Autores
+          </h2>
+
+          <p class="pedit-section__text">
+            Organice el autor principal y los coautores vinculados al registro.
+          </p>
+        </div>
+
+        <div class="pedit-section__meta">
+          <span class="pedit-chip">
+            {{ form.autores.length }}
+            {{ form.autores.length === 1 ? "autor" : "autores" }}
+          </span>
+        </div>
+      </header>
+
+      <div class="pedit-embed pedit-embed--authors">
         <AutoresSelector v-model="form.autores" />
       </div>
     </section>
 
-    <section class="pub-section">
-      <div class="pub-section__head pub-section__head--compact">
-        <div>
-          <h3 class="pub-h2">Archivo PDF</h3>
-          <p class="pub-section__text">
-            Desde esta sección puedes consultar, reemplazar o quitar el PDF de la publicación.
+    <!-- =====================================================
+      ARCHIVO PDF
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Evidencia documental
+          </span>
+
+          <h2 class="pedit-section__title">
+            Archivo PDF
+          </h2>
+
+          <p class="pedit-section__text">
+            Consulte, descargue, reemplace o quite el documento principal de la
+            publicación.
           </p>
         </div>
-      </div>
 
-      <div v-if="hasCurrentPdf" class="pub-filePanel">
-        <div class="pub-filePanel__meta">
-          <span class="pub-filePanel__eyebrow">Documento actual</span>
-          <h4 class="pub-filePanel__name">
-            {{ currentPdfName }}
-          </h4>
-          <p class="pub-filePanel__text">
-            Puedes conservar este archivo, reemplazarlo por uno nuevo o quitarlo del registro.
-          </p>
-        </div>
-
-        <div class="pub-filePanel__actions">
-          <button
-            class="pub-btn pub-btn--ghost"
-            type="button"
-            @click="openCurrentPdf"
-            :disabled="savingLocal || removingPdf"
+        <div class="pedit-section__meta">
+          <span
+            class="pedit-chip"
+            :class="{
+              'pedit-chip--available': hasCurrentPdf,
+            }"
           >
-            Ver PDF actual
+            {{ hasCurrentPdf ? "PDF disponible" : "Sin PDF" }}
+          </span>
+        </div>
+      </header>
+
+      <div
+        v-if="hasCurrentPdf"
+        class="pedit-filePanel"
+      >
+        <div
+          class="pedit-filePanel__icon"
+          aria-hidden="true"
+        >
+          PDF
+        </div>
+
+        <div class="pedit-filePanel__meta">
+          <span class="pedit-filePanel__eyebrow">
+            Documento actual
+          </span>
+
+          <h3 class="pedit-filePanel__name">
+            {{ currentPdfName }}
+          </h3>
+
+          <p class="pedit-filePanel__text">
+            Puede conservar este archivo, descargarlo o reemplazarlo al guardar
+            los cambios.
+          </p>
+        </div>
+
+        <div class="pedit-filePanel__actions">
+          <button
+            class="pedit-btn pedit-btn--ghost"
+            type="button"
+            :disabled="savingLocal || removingPdf"
+            @click="openCurrentPdf"
+          >
+            Ver PDF
           </button>
 
           <button
-            class="pub-btn pub-btn--ghost"
+            class="pedit-btn pedit-btn--ghost"
             type="button"
-            @click="downloadCurrentPdf"
             :disabled="savingLocal || removingPdf"
+            @click="downloadCurrentPdf"
           >
-            Descargar PDF actual
+            Descargar
           </button>
 
           <button
             v-if="canEdit"
-            class="pub-btn pub-btn--danger"
+            class="pedit-btn pedit-btn--danger"
             type="button"
-            @click="requestRemovePdf"
             :disabled="savingLocal || removingPdf"
+            @click="requestRemovePdf"
           >
             {{ removingPdf ? "Quitando..." : "Quitar PDF" }}
           </button>
         </div>
       </div>
 
-      <AdjuntosPdfUploader
-        v-model="pdfUploadItems"
-        :error="fileError"
-        input-id="pub-edit-archivo-pdf"
-        title="Actualizar archivo PDF"
-        description="Seleccione el PDF principal del registro. Si carga uno nuevo, reemplazará el actual al guardar."
-        helper-text="Formato permitido: PDF. Puede arrastrar y soltar un solo archivo."
-        :multiple="false"
-        :max-files="1"
-      />
+      <div class="pedit-uploader">
+        <AdjuntosPdfUploader
+          v-model="pdfUploadItems"
+          :error="fileError"
+          input-id="pub-edit-archivo-pdf"
+          title="Actualizar archivo PDF"
+          description="Seleccione el PDF principal del registro. Si carga uno nuevo, reemplazará el archivo actual al guardar."
+          helper-text="Formato permitido: PDF. Puede arrastrar y soltar un solo archivo."
+          :multiple="false"
+          :max-files="1"
+        />
+      </div>
     </section>
 
-    <div class="pub-footer" role="group" aria-label="Acciones de edición">
-      <button
-        class="pub-btn pub-btn--primary"
-        type="button"
-        @click="guardar"
-        :disabled="savingLocal || removingPdf"
-      >
-        {{ savingLocal ? "Guardando..." : "Guardar cambios" }}
-      </button>
+    <!-- =====================================================
+      ACCIONES
+    ====================================================== -->
+    <footer
+      class="pedit-footer"
+      role="group"
+      aria-label="Acciones de edición"
+    >
+      <div class="pedit-footer__copy">
+        <strong>Edición de publicación</strong>
 
-      <button
-        class="pub-btn pub-btn--ghost"
-        type="button"
-        @click="$emit('cancel')"
-        :disabled="savingLocal || removingPdf"
-      >
-        Volver al detalle
-      </button>
-    </div>
+        <span>
+          Revise los datos antes de guardar los cambios.
+        </span>
+      </div>
+
+      <div class="pedit-footer__actions">
+        <button
+          class="pedit-btn pedit-btn--ghost"
+          type="button"
+          :disabled="savingLocal || removingPdf"
+          @click="$emit('cancel')"
+        >
+          Volver al detalle
+        </button>
+
+        <button
+          class="pedit-btn pedit-btn--primary"
+          type="button"
+          :disabled="savingLocal || removingPdf"
+          @click="guardar"
+        >
+          {{ savingLocal ? "Guardando..." : "Guardar cambios" }}
+        </button>
+      </div>
+    </footer>
   </div>
 
+  <!-- =======================================================
+    MODAL PARA QUITAR PDF
+  ======================================================== -->
   <Teleport to="body">
     <div
       v-if="showRemovePdfModal"
-      class="pub-modalOverlay"
+      class="pedit-modalOverlay"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="pub-remove-pdf-title"
+      aria-labelledby="pedit-remove-pdf-title"
       @click.self="cancelRemovePdf"
     >
-      <section class="pub-modal">
-        <div class="pub-modal__icon">
+      <section class="pedit-modal">
+        <div
+          class="pedit-modal__icon"
+          aria-hidden="true"
+        >
           PDF
         </div>
 
-        <div class="pub-modal__body">
-          <p class="pub-modal__eyebrow">
+        <div class="pedit-modal__body">
+          <span class="pedit-modal__eyebrow">
             Confirmación requerida
-          </p>
+          </span>
 
-          <h2 id="pub-remove-pdf-title" class="pub-modal__title">
+          <h2
+            id="pedit-remove-pdf-title"
+            class="pedit-modal__title"
+          >
             Quitar archivo PDF
           </h2>
 
-          <p class="pub-modal__text">
-            Estás por quitar el PDF asociado a esta publicación. Esta acción
-            eliminará el documento actual del registro académico.
+          <p class="pedit-modal__text">
+            Esta acción eliminará el documento actual asociado al registro
+            académico.
           </p>
 
-          <p class="pub-modal__warning">
-            Si necesitas conservar una copia, descarga el archivo antes de continuar.
+          <p class="pedit-modal__warning">
+            Descargue una copia antes de continuar cuando necesite conservar el
+            archivo.
           </p>
         </div>
 
-        <div class="pub-modal__actions">
+        <div class="pedit-modal__actions">
           <button
-            class="pub-btn pub-btn--ghost"
+            class="pedit-btn pedit-btn--ghost"
             type="button"
             :disabled="removingPdf"
             @click="cancelRemovePdf"
@@ -436,7 +753,7 @@
           </button>
 
           <button
-            class="pub-btn pub-btn--danger"
+            class="pedit-btn pedit-btn--danger"
             type="button"
             :disabled="removingPdf"
             @click="removeCurrentPdf"
@@ -450,126 +767,287 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
+
 import api from "../../scripts/api/axios";
 
 import DatosGenerales from "../componentes/DatosGenerales.vue";
 import AutoresSelector from "../componentes/AutoresSelector.vue";
 import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
 
+/* ============================================================
+  PROPIEDADES Y EVENTOS
+============================================================ */
+
 const props = defineProps({
-  detalle: { type: Object, required: true },
-  saving: { type: Boolean, default: false },
-  canEdit: { type: Boolean, default: false },
-  isAdmin: { type: Boolean, default: false },
+  detalle: {
+    type: Object,
+    required: true,
+  },
+
+  saving: {
+    type: Boolean,
+    default: false,
+  },
+
+  canEdit: {
+    type: Boolean,
+    default: false,
+  },
+
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["saving", "updated", "cancel"]);
+const emit = defineEmits([
+  "saving",
+  "updated",
+  "cancel",
+]);
 
 const route = useRoute();
 
+/* ============================================================
+  ESTADOS
+============================================================ */
+
 const editMsg = ref("");
 const editMsgType = ref("");
+
 const fileError = ref("");
 const pdfUploadItems = ref([]);
+
 const removingPdf = ref(false);
 const showRemovePdfModal = ref(false);
+
 const preserveFeedbackOnNextDetalle = ref(false);
+
+/* ============================================================
+  PROPIEDADES COMPUTADAS
+============================================================ */
 
 const savingLocal = computed({
   get: () => props.saving,
-  set: (value) => emit("saving", !!value),
+
+  set: (value) => {
+    emit("saving", Boolean(value));
+  },
 });
 
-const canEdit = computed(() => !!props.canEdit);
-const isAdmin = computed(() => !!props.isAdmin);
+const canEdit = computed(() => {
+  return Boolean(props.canEdit);
+});
 
-const firstFilled = (...values) =>
-  values
-    .map((value) => (value == null ? "" : String(value).trim()))
-    .find(Boolean) || "";
+const isAdmin = computed(() => {
+  return Boolean(props.isAdmin);
+});
 
-const normalizeText = (value) =>
-  String(value || "")
+/* ============================================================
+  HELPERS
+============================================================ */
+
+const firstFilled = (...values) => {
+  return (
+    values
+      .map((value) => {
+        return value == null
+          ? ""
+          : String(value).trim();
+      })
+      .find(Boolean) || ""
+  );
+};
+
+const normalizeText = (value) => {
+  return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+};
 
-const currentId = computed(() => firstFilled(route.params.id, props.detalle?.id));
-const tipoLabel = computed(() => firstFilled(props.detalle?.tipo, "Publicación"));
+const currentId = computed(() => {
+  return firstFilled(
+    route.params.id,
+    props.detalle?.id
+  );
+});
 
-const tipoStr = computed(() => String(props.detalle?.tipo || ""));
-const tipoCodigo = computed(() =>
-  String(props.detalle?.tipo_codigo || props.detalle?.tipoCodigo || "")
-);
-const tipoNormalized = computed(() => normalizeText(tipoStr.value));
+const tipoLabel = computed(() => {
+  return firstFilled(
+    props.detalle?.tipo,
+    props.detalle?.tipo_publicacion_final_label,
+    props.detalle?.tipo_publicacion_final,
+    "Publicación"
+  );
+});
 
-const isPonencia = computed(() => tipoNormalized.value.includes("ponencia"));
-const isArticulo = computed(() => tipoNormalized.value.includes("articulo"));
-const isCapitulo = computed(() => tipoNormalized.value.includes("capitulo"));
+const tipoStr = computed(() => {
+  return String(
+    props.detalle?.tipo ||
+      props.detalle?.tipo_publicacion_final_label ||
+      props.detalle?.tipo_publicacion_final ||
+      ""
+  );
+});
+
+const tipoCodigo = computed(() => {
+  return String(
+    props.detalle?.tipo_codigo ||
+      props.detalle?.tipoCodigo ||
+      props.detalle?.tipo_publicacion_final ||
+      ""
+  );
+});
+
+const tipoNormalized = computed(() => {
+  return normalizeText(tipoStr.value);
+});
+
+const isPonencia = computed(() => {
+  return tipoNormalized.value.includes("ponencia");
+});
+
+const isArticulo = computed(() => {
+  return tipoNormalized.value.includes("articulo");
+});
+
+const isCapitulo = computed(() => {
+  return tipoNormalized.value.includes("capitulo");
+});
 
 const isArticuloRegional = computed(() => {
-  const tc = normalizeText(tipoCodigo.value);
-  if (tc) return tc === "articulo_regional";
+  const normalizedCode = normalizeText(
+    tipoCodigo.value
+  );
+
+  if (normalizedCode) {
+    return [
+      "articulo regional",
+      "articulo_regional",
+      "ar",
+    ].includes(normalizedCode);
+  }
+
   return tipoNormalized.value.includes("regional");
 });
 
+/* ============================================================
+  FECHA
+============================================================ */
+
 const formatFecha = (value) => {
   const fecha = String(value || "").trim();
-  if (!fecha) return "";
+
+  if (!fecha) {
+    return "";
+  }
 
   try {
     if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      const [year, month, day] = fecha.split("-").map(Number);
-      const localDate = new Date(year, month - 1, day);
-      return localDate.toLocaleDateString("es-EC", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
+      const [year, month, day] = fecha
+        .split("-")
+        .map(Number);
+
+      const localDate = new Date(
+        year,
+        month - 1,
+        day
+      );
+
+      return localDate.toLocaleDateString(
+        "es-EC",
+        {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }
+      );
     }
 
     const parsed = new Date(fecha);
-    if (Number.isNaN(parsed.getTime())) return fecha;
 
-    return parsed.toLocaleDateString("es-EC", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
+    if (Number.isNaN(parsed.getTime())) {
+      return fecha;
+    }
+
+    return parsed.toLocaleDateString(
+      "es-EC",
+      {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }
+    );
   } catch {
     return fecha;
   }
 };
 
+/* ============================================================
+  ARCHIVO PDF ACTUAL
+============================================================ */
+
 const fileNameFromValue = (value) => {
   const raw = String(value || "").trim();
-  if (!raw) return "archivo.pdf";
+
+  if (!raw) {
+    return "archivo.pdf";
+  }
 
   try {
-    const parsed = new URL(raw, window.location.origin);
-    const last = parsed.pathname.split("/").filter(Boolean).pop();
-    return decodeURIComponent(last || "archivo.pdf");
+    const parsed = new URL(
+      raw,
+      window.location.origin
+    );
+
+    const last = parsed.pathname
+      .split("/")
+      .filter(Boolean)
+      .pop();
+
+    return decodeURIComponent(
+      last || "archivo.pdf"
+    );
   } catch {
-    return raw.split("/").filter(Boolean).pop() || "archivo.pdf";
+    return (
+      raw
+        .split("/")
+        .filter(Boolean)
+        .pop() ||
+      "archivo.pdf"
+    );
   }
 };
 
 const getBackendBase = () => {
-  const envBase =
+  const environmentBase =
     firstFilled(
       import.meta.env.VITE_API_URL,
       import.meta.env.VITE_API_BASE_URL,
       import.meta.env.VITE_AXIOS_BASE_URL
     ) || "";
 
-  const axiosBase = firstFilled(api?.defaults?.baseURL);
-  const base = envBase || axiosBase;
+  const axiosBase = firstFilled(
+    api?.defaults?.baseURL
+  );
+
+  const base =
+    environmentBase ||
+    axiosBase;
 
   if (/^https?:\/\//i.test(base)) {
-    return base.replace(/\/api\/?$/i, "").replace(/\/$/, "");
+    return base
+      .replace(/\/api\/?$/i, "")
+      .replace(/\/$/, "");
   }
 
   return window.location.origin;
@@ -577,18 +1055,33 @@ const getBackendBase = () => {
 
 const resolveFileUrl = (value) => {
   const raw = String(value || "").trim();
-  if (!raw) return "";
 
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("blob:") || raw.startsWith("data:")) return raw;
+  if (!raw) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+
+  if (
+    raw.startsWith("blob:") ||
+    raw.startsWith("data:")
+  ) {
+    return raw;
+  }
 
   const base = getBackendBase();
-  const clean = raw.startsWith("/") ? raw : `/${raw.replace(/^\.?\//, "")}`;
+
+  const clean = raw.startsWith("/")
+    ? raw
+    : `/${raw.replace(/^\.?\//, "")}`;
+
   return `${base}${clean}`;
 };
 
-const currentPdfValue = computed(() =>
-  firstFilled(
+const currentPdfValue = computed(() => {
+  return firstFilled(
     props.detalle?.archivo_pdf_url,
     props.detalle?.pdf_url,
     props.detalle?.archivo_pdf,
@@ -600,11 +1093,16 @@ const currentPdfValue = computed(() =>
     props.detalle?.adjuntos?.[0]?.url,
     props.detalle?.adjuntos?.[0]?.archivo,
     props.detalle?.adjuntos?.[0]?.archivo_url
-  )
-);
+  );
+});
 
 const hasPdfInPayload = (payload = {}) => {
-  if (!payload || typeof payload !== "object") return false;
+  if (
+    !payload ||
+    typeof payload !== "object"
+  ) {
+    return false;
+  }
 
   return Boolean(
     payload.tiene_pdf ||
@@ -621,19 +1119,47 @@ const hasPdfInPayload = (payload = {}) => {
   );
 };
 
-const currentPdfHref = computed(() => resolveFileUrl(currentPdfValue.value));
-const hasCurrentPdf = computed(() =>
-  Boolean(currentPdfHref.value || hasPdfInPayload(props.detalle || {}))
-);
+const currentPdfHref = computed(() => {
+  return resolveFileUrl(
+    currentPdfValue.value
+  );
+});
+
+const hasCurrentPdf = computed(() => {
+  return Boolean(
+    currentPdfHref.value ||
+      hasPdfInPayload(
+        props.detalle || {}
+      )
+  );
+});
+
 const currentPdfName = computed(() => {
-  const name = fileNameFromValue(currentPdfValue.value);
-  return name && name !== "archivo.pdf" ? name : "publicacion.pdf";
+  const name = fileNameFromValue(
+    currentPdfValue.value
+  );
+
+  return name && name !== "archivo.pdf"
+    ? name
+    : "publicacion.pdf";
 });
 
 const selectedPdfItem = computed(() => {
-  const items = Array.isArray(pdfUploadItems.value) ? pdfUploadItems.value : [];
-  return items.find((it) => it?.file) || null;
+  const items = Array.isArray(
+    pdfUploadItems.value
+  )
+    ? pdfUploadItems.value
+    : [];
+
+  return (
+    items.find((item) => item?.file) ||
+    null
+  );
 });
+
+/* ============================================================
+  FORMULARIO
+============================================================ */
 
 const form = reactive({
   tipo: "",
@@ -674,66 +1200,163 @@ const form = reactive({
   autores: [],
 });
 
-const normalizeAutoresForSelector = (arr) => {
-  const base = Array.isArray(arr) ? arr : [];
+/* ============================================================
+  NORMALIZACIÓN DE AUTORES
+============================================================ */
+
+const normalizeAutoresForSelector = (authors) => {
+  const base = Array.isArray(authors)
+    ? authors
+    : [];
 
   return base
     .map((autor, index) => {
-      const autorId = autor?.autor_id ?? autor?.id ?? null;
-      if (!autorId) return null;
+      const autorId =
+        autor?.autor_id ??
+        autor?.id ??
+        autor?.autor?.id ??
+        null;
+
+      if (!autorId) {
+        return null;
+      }
 
       return {
         autor_id: Number(autorId),
-        orden: autor?.orden ?? index + 1,
-        rol_autoria: autor?.rol_autoria ?? (index === 0 ? "principal" : "coautor"),
-        nombre_completo: autor?.nombre_completo || autor?.nombre || "",
+
+        orden:
+          autor?.orden ??
+          index + 1,
+
+        rol_autoria:
+          autor?.rol_autoria ??
+          (index === 0
+            ? "principal"
+            : "coautor"),
+
+        nombre_completo:
+          autor?.nombre_completo ||
+          autor?.nombre ||
+          "",
       };
     })
     .filter(Boolean)
     .map((item, index) => ({
       ...item,
+
       orden: index + 1,
-      rol_autoria: index === 0 ? "principal" : "coautor",
+
+      rol_autoria:
+        index === 0
+          ? "principal"
+          : "coautor",
     }));
 };
 
+/* ============================================================
+  CARGA DEL DETALLE EN EL FORMULARIO
+============================================================ */
+
 const mapDetalleToForm = (detalle) => {
-  form.tipo = detalle?.tipo || "";
-  form.fecha_publicacion = String(detalle?.fecha_publicacion || "").substring(0, 10);
+  form.tipo =
+    detalle?.tipo ||
+    "";
+
+  form.fecha_publicacion = String(
+    detalle?.fecha_publicacion || ""
+  ).substring(0, 10);
 
   form.datos_generales = {
-    facultad: detalle?.facultad_id ?? null,
-    carrera: detalle?.carrera_id ?? null,
-    proyecto: detalle?.proyecto_id ?? null,
-    area: detalle?.area_id ?? null,
-    subarea: detalle?.subarea_id ?? null,
-    pais: detalle?.pais_id ?? null,
-    ciudad: detalle?.ciudad_id ?? null,
+    facultad:
+      detalle?.facultad_id ??
+      null,
+
+    carrera:
+      detalle?.carrera_id ??
+      null,
+
+    proyecto:
+      detalle?.proyecto_id ??
+      null,
+
+    area:
+      detalle?.area_id ??
+      null,
+
+    subarea:
+      detalle?.subarea_id ??
+      null,
+
+    pais:
+      detalle?.pais_id ??
+      null,
+
+    ciudad:
+      detalle?.ciudad_id ??
+      null,
   };
 
-  form.autores = normalizeAutoresForSelector(detalle?.autores);
+  form.autores =
+    normalizeAutoresForSelector(
+      detalle?.autores
+    );
 
-  form.nombre_evento = detalle?.nombre_evento || "";
-  form.nombre_ponencia = detalle?.nombre_ponencia || "";
-  form.codigo_issn_isbn = detalle?.codigo_issn_isbn || "";
+  form.nombre_evento =
+    detalle?.nombre_evento || "";
 
-  form.nombre_articulo = detalle?.nombre_articulo || "";
-  form.base_datos_indexada = detalle?.base_datos_indexada || "";
-  form.codigo_doi = detalle?.codigo_doi || "";
-  form.codigo_issn = detalle?.codigo_issn || "";
-  form.nombre_revista = detalle?.nombre_revista || "";
-  form.numero_revista = detalle?.numero_revista || "";
-  form.link_publicacion = detalle?.link_publicacion || "";
-  form.link_revista = detalle?.link_revista || "";
-  form.factor_impacto = detalle?.factor_impacto || "";
-  form.cuartil = detalle?.cuartil || "";
-  form.sjr = detalle?.sjr || "";
+  form.nombre_ponencia =
+    detalle?.nombre_ponencia || "";
 
-  form.nombre_capitulo = detalle?.nombre_capitulo || "";
-  form.nombre_libro = detalle?.nombre_libro || "";
-  form.codigo_isbn = detalle?.codigo_isbn || "";
-  form.editor_compilador = detalle?.editor_compilador || "";
-  form.link_capitulo = detalle?.link_capitulo || "";
+  form.codigo_issn_isbn =
+    detalle?.codigo_issn_isbn || "";
+
+  form.nombre_articulo =
+    detalle?.nombre_articulo || "";
+
+  form.base_datos_indexada =
+    detalle?.base_datos_indexada || "";
+
+  form.codigo_doi =
+    detalle?.codigo_doi || "";
+
+  form.codigo_issn =
+    detalle?.codigo_issn || "";
+
+  form.nombre_revista =
+    detalle?.nombre_revista || "";
+
+  form.numero_revista =
+    detalle?.numero_revista || "";
+
+  form.link_publicacion =
+    detalle?.link_publicacion || "";
+
+  form.link_revista =
+    detalle?.link_revista || "";
+
+  form.factor_impacto =
+    detalle?.factor_impacto || "";
+
+  form.cuartil =
+    detalle?.cuartil || "";
+
+  form.sjr =
+    detalle?.sjr || "";
+
+  form.nombre_capitulo =
+    detalle?.nombre_capitulo || "";
+
+  form.nombre_libro =
+    detalle?.nombre_libro || "";
+
+  form.codigo_isbn =
+    detalle?.codigo_isbn || "";
+
+  form.editor_compilador =
+    detalle?.editor_compilador || "";
+
+  form.link_capitulo =
+    detalle?.link_capitulo || "";
 
   if (isArticuloRegional.value) {
     form.factor_impacto = "";
@@ -746,13 +1369,18 @@ const mapDetalleToForm = (detalle) => {
 watch(
   () => props.detalle,
   (detalle) => {
-    if (!detalle) return;
+    if (!detalle) {
+      return;
+    }
 
     pdfUploadItems.value = [];
     fileError.value = "";
 
-    if (preserveFeedbackOnNextDetalle.value) {
-      preserveFeedbackOnNextDetalle.value = false;
+    if (
+      preserveFeedbackOnNextDetalle.value
+    ) {
+      preserveFeedbackOnNextDetalle.value =
+        false;
     } else {
       editMsg.value = "";
       editMsgType.value = "";
@@ -760,45 +1388,93 @@ watch(
 
     mapDetalleToForm(detalle);
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 
+/* ============================================================
+  ERRORES
+============================================================ */
+
 const prettyError = (value) => {
-  if (value == null) return "";
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(prettyError).join(", ");
+  if (value == null) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map(prettyError)
+      .join(", ");
+  }
+
   if (typeof value === "object") {
     return Object.entries(value)
-      .map(([key, nested]) => `${key}: ${prettyError(nested)}`)
+      .map(([key, nested]) => {
+        return `${key}: ${prettyError(nested)}`;
+      })
       .join(" | ");
   }
+
   return String(value);
 };
 
+/* ============================================================
+  PAYLOAD DE AUTORES
+============================================================ */
+
 const buildAutoresPayload = () => {
-  const raw = Array.isArray(form.autores) ? [...form.autores] : [];
+  const raw = Array.isArray(form.autores)
+    ? [...form.autores]
+    : [];
 
   return raw
     .map((autor, index) => {
-      const autorId = autor?.autor_id ?? autor?.id ?? autor?.autor?.id ?? null;
+      const autorId =
+        autor?.autor_id ??
+        autor?.id ??
+        autor?.autor?.id ??
+        null;
+
       const numericId = Number(autorId);
 
-      if (!Number.isFinite(numericId) || numericId <= 0) return null;
+      if (
+        !Number.isFinite(numericId) ||
+        numericId <= 0
+      ) {
+        return null;
+      }
 
       const orden = index + 1;
 
       return {
         autor_id: numericId,
         orden,
-        rol_autoria: orden === 1 ? "principal" : "coautor",
+
+        rol_autoria:
+          orden === 1
+            ? "principal"
+            : "coautor",
       };
     })
     .filter(Boolean);
 };
 
+/* ============================================================
+  CAMPOS PERMITIDOS
+============================================================ */
+
 const allowedSpecificFields = computed(() => {
   if (isPonencia.value) {
-    return ["nombre_evento", "nombre_ponencia", "codigo_issn_isbn"];
+    return [
+      "nombre_evento",
+      "nombre_ponencia",
+      "codigo_issn_isbn",
+    ];
   }
 
   if (isCapitulo.value) {
@@ -821,136 +1497,314 @@ const allowedSpecificFields = computed(() => {
       "link_publicacion",
     ];
 
-    if (isArticuloRegional.value) return base;
+    if (isArticuloRegional.value) {
+      return base;
+    }
 
-    const extras = ["link_revista"];
-    if (isAdmin.value) extras.push("numero_revista", "factor_impacto", "cuartil", "sjr");
+    const extras = [
+      "link_revista",
+    ];
 
-    return [...base, ...extras];
+    if (isAdmin.value) {
+      extras.push(
+        "numero_revista",
+        "factor_impacto",
+        "cuartil",
+        "sjr"
+      );
+    }
+
+    return [
+      ...base,
+      ...extras,
+    ];
   }
 
   return [];
 });
 
+/* ============================================================
+  FORMDATA
+============================================================ */
+
 const buildFormDataPayload = () => {
-  const fd = new FormData();
+  const formData = new FormData();
 
-  Object.entries(form.datos_generales || {}).forEach(([key, value]) => {
-    if (!isPonencia.value && (key === "pais" || key === "ciudad")) return;
-    if (key === "proyecto" && (value === "0" || !value)) return;
+  Object.entries(
+    form.datos_generales || {}
+  ).forEach(([key, value]) => {
+    if (
+      !isPonencia.value &&
+      (
+        key === "pais" ||
+        key === "ciudad"
+      )
+    ) {
+      return;
+    }
 
-    if (value !== null && value !== "" && value !== undefined) {
-      fd.append(key, value);
+    if (
+      key === "proyecto" &&
+      (
+        value === "0" ||
+        !value
+      )
+    ) {
+      return;
+    }
+
+    if (
+      value !== null &&
+      value !== "" &&
+      value !== undefined
+    ) {
+      formData.append(key, value);
     }
   });
 
   if (form.fecha_publicacion) {
-    fd.append("fecha_publicacion", form.fecha_publicacion);
+    formData.append(
+      "fecha_publicacion",
+      form.fecha_publicacion
+    );
   }
 
-  allowedSpecificFields.value.forEach((key) => {
-    const value = form[key];
-    if (value !== null && value !== "" && value !== undefined) {
-      fd.append(key, value);
-    }
-  });
+  allowedSpecificFields.value.forEach(
+    (key) => {
+      const value = form[key];
 
-  fd.set("autores", JSON.stringify(buildAutoresPayload()));
+      if (
+        value !== null &&
+        value !== "" &&
+        value !== undefined
+      ) {
+        formData.append(key, value);
+      }
+    }
+  );
+
+  formData.set(
+    "autores",
+    JSON.stringify(
+      buildAutoresPayload()
+    )
+  );
 
   if (selectedPdfItem.value?.file) {
-    fd.append("archivo_pdf", selectedPdfItem.value.file);
+    formData.append(
+      "archivo_pdf",
+      selectedPdfItem.value.file
+    );
   }
 
-  return fd;
+  return formData;
 };
+
+/* ============================================================
+  VALIDACIÓN
+============================================================ */
 
 const validarEdicion = () => {
   const autores = buildAutoresPayload();
-  if (!autores.length) return "Debe registrar al menos un autor.";
 
-  const dg = form.datos_generales || {};
-  const obligatorios = ["facultad", "carrera", "area", "subarea"];
-
-  if (!isArticulo.value && !isPonencia.value) {
-    obligatorios.push("proyecto");
+  if (!autores.length) {
+    return "Debe registrar al menos un autor.";
   }
 
-  const faltan = obligatorios.filter((key) => !dg[key] || dg[key] === "0");
-  if (faltan.length) return "Faltan campos obligatorios.";
+  const datosGenerales =
+    form.datos_generales || {};
 
-  if (isPonencia.value && (!dg.pais || !dg.ciudad)) {
-    return "Debe indicar país y ciudad.";
+  const requiredFields = [
+    "facultad",
+    "carrera",
+    "area",
+    "subarea",
+  ];
+
+  if (
+    !isArticulo.value &&
+    !isPonencia.value
+  ) {
+    requiredFields.push("proyecto");
+  }
+
+  const missingFields =
+    requiredFields.filter((key) => {
+      return (
+        !datosGenerales[key] ||
+        datosGenerales[key] === "0"
+      );
+    });
+
+  if (missingFields.length) {
+    return (
+      "Complete todos los campos obligatorios " +
+      "de la clasificación institucional."
+    );
+  }
+
+  if (
+    isPonencia.value &&
+    (
+      !datosGenerales.pais ||
+      !datosGenerales.ciudad
+    )
+  ) {
+    return (
+      "Debe indicar el país y la ciudad " +
+      "de la ponencia."
+    );
   }
 
   if (!form.fecha_publicacion) {
-    return "La fecha de publicación es obligatoria.";
+    return (
+      "La fecha de publicación es obligatoria."
+    );
   }
 
   if (isArticulo.value) {
-    if (!form.nombre_articulo) return "El nombre del artículo es obligatorio.";
-    if (!form.base_datos_indexada) return "La base de datos / indexación es obligatoria.";
-    if (!form.nombre_revista) return "El nombre de la revista es obligatoria.";
-    if (!form.codigo_doi) return "El DOI es obligatorio.";
-    if (!form.codigo_issn) return "El ISSN es obligatorio.";
+    if (!form.nombre_articulo) {
+      return (
+        "El nombre del artículo es obligatorio."
+      );
+    }
+
+    if (!form.base_datos_indexada) {
+      return (
+        "La base de datos o indexación es obligatoria."
+      );
+    }
+
+    if (!form.nombre_revista) {
+      return (
+        "El nombre de la revista es obligatorio."
+      );
+    }
+
+    if (!form.codigo_doi) {
+      return "El DOI es obligatorio.";
+    }
+
+    if (!form.codigo_issn) {
+      return "El ISSN es obligatorio.";
+    }
   }
 
   if (isPonencia.value) {
-    if (!form.nombre_evento) return "El nombre del evento es obligatorio.";
-    if (!form.nombre_ponencia) return "El nombre de la ponencia es obligatorio.";
+    if (!form.nombre_evento) {
+      return (
+        "El nombre del evento es obligatorio."
+      );
+    }
+
+    if (!form.nombre_ponencia) {
+      return (
+        "El nombre de la ponencia es obligatorio."
+      );
+    }
   }
 
   if (isCapitulo.value) {
-    if (!form.nombre_capitulo) return "El nombre del capítulo es obligatorio.";
-    if (!form.nombre_libro) return "El nombre del libro es obligatorio.";
-    if (!form.codigo_isbn) return "El ISBN es obligatorio.";
+    if (!form.nombre_capitulo) {
+      return (
+        "El nombre del capítulo es obligatorio."
+      );
+    }
+
+    if (!form.nombre_libro) {
+      return (
+        "El nombre del libro es obligatorio."
+      );
+    }
+
+    if (!form.codigo_isbn) {
+      return "El ISBN es obligatorio.";
+    }
   }
 
   return "";
 };
 
+/* ============================================================
+  VISUALIZACIÓN DEL PDF
+============================================================ */
+
 const writePdfLoading = (targetWindow) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>Cargando PDF...</title>
         <meta charset="utf-8" />
       </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
+
+      <body
+        style="
+          margin: 0;
+          padding: 32px;
+          background: #f2f5fa;
+          color: #172033;
+          font-family: Arial, sans-serif;
+        "
+      >
         <p>Cargando PDF...</p>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
-const writePdfError = (targetWindow, message = "No se pudo abrir el PDF.") => {
+const writePdfError = (
+  targetWindow,
+  message = "No se pudo abrir el PDF."
+) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>No se pudo abrir el PDF</title>
         <meta charset="utf-8" />
       </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
+
+      <body
+        style="
+          margin: 0;
+          padding: 32px;
+          background: #f2f5fa;
+          color: #172033;
+          font-family: Arial, sans-serif;
+        "
+      >
         <h2>${message}</h2>
-        <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+
+        <p>
+          Verifique que la publicación tenga un archivo PDF asociado.
+        </p>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
-const writePdfViewer = (targetWindow, blobUrl) => {
+const writePdfViewer = (
+  targetWindow,
+  blobUrl
+) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>Vista previa del PDF</title>
         <meta charset="utf-8" />
+
         <style>
           html,
           body {
@@ -959,7 +1813,7 @@ const writePdfViewer = (targetWindow, blobUrl) => {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #111827;
+            background: #101827;
           }
 
           iframe {
@@ -970,92 +1824,150 @@ const writePdfViewer = (targetWindow, blobUrl) => {
           }
         </style>
       </head>
+
       <body>
-        <iframe src="${blobUrl}" title="Vista previa del PDF"></iframe>
+        <iframe
+          src="${blobUrl}"
+          title="Vista previa del PDF"
+        ></iframe>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
 const fetchCurrentPdfBlob = async () => {
   if (!currentId.value) {
-    throw new Error("No se pudo determinar el identificador de la publicación.");
+    throw new Error(
+      "No se pudo determinar el identificador de la publicación."
+    );
   }
 
-  const response = await api.get(`/publicaciones/${currentId.value}/pdf/`, {
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  });
+  const response = await api.get(
+    `/publicaciones/${currentId.value}/pdf/`,
+    {
+      responseType: "blob",
 
-  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+      headers: {
+        Accept: "application/pdf",
+      },
+    }
+  );
 
-  if (contentType && !contentType.includes("application/pdf")) {
-    throw new Error("La respuesta recibida no es un PDF.");
+  const contentType = String(
+    response.headers?.["content-type"] || ""
+  ).toLowerCase();
+
+  if (
+    contentType &&
+    !contentType.includes("application/pdf")
+  ) {
+    throw new Error(
+      "La respuesta recibida no es un PDF."
+    );
   }
 
-  return new Blob([response.data], {
-    type: "application/pdf",
-  });
+  return new Blob(
+    [response.data],
+    {
+      type: "application/pdf",
+    }
+  );
 };
 
 const openCurrentPdf = async () => {
-  if (!currentId.value) return;
+  if (!currentId.value) {
+    return;
+  }
 
-  const previewWindow = window.open("about:blank", "_blank");
+  const previewWindow = window.open(
+    "about:blank",
+    "_blank"
+  );
 
   if (!previewWindow) {
-    alert(
-      "El navegador bloqueó la ventana emergente. Permite ventanas emergentes para ver el PDF."
+    window.alert(
+      "El navegador bloqueó la ventana emergente. " +
+      "Permita las ventanas emergentes para visualizar el PDF."
     );
+
     return;
   }
 
   writePdfLoading(previewWindow);
 
   try {
-    const blob = await fetchCurrentPdfBlob();
-    const blobUrl = URL.createObjectURL(blob);
+    const blob =
+      await fetchCurrentPdfBlob();
 
-    writePdfViewer(previewWindow, blobUrl);
+    const blobUrl =
+      URL.createObjectURL(blob);
 
-    setTimeout(() => {
+    writePdfViewer(
+      previewWindow,
+      blobUrl
+    );
+
+    window.setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
     }, 180000);
-  } catch (err) {
-    console.error(err);
+  } catch (pdfError) {
+    console.error(pdfError);
+
     writePdfError(previewWindow);
   }
 };
 
 const downloadCurrentPdf = async () => {
-  if (!currentId.value) return;
+  if (!currentId.value) {
+    return;
+  }
 
   try {
-    const blob = await fetchCurrentPdfBlob();
-    const blobUrl = URL.createObjectURL(blob);
+    const blob =
+      await fetchCurrentPdfBlob();
 
-    const link = document.createElement("a");
+    const blobUrl =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
     link.href = blobUrl;
-    link.download = currentPdfName.value || "publicacion.pdf";
+
+    link.download =
+      currentPdfName.value ||
+      "publicacion.pdf";
 
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
 
-    setTimeout(() => {
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
     }, 1000);
-  } catch (err) {
-    console.error(err);
-    alert("No se pudo descargar el PDF.");
+  } catch (pdfError) {
+    console.error(pdfError);
+
+    window.alert(
+      "No se pudo descargar el PDF."
+    );
   }
 };
 
+/* ============================================================
+  ELIMINACIÓN DEL PDF
+============================================================ */
+
 const requestRemovePdf = () => {
-  if (!canEdit.value || !hasCurrentPdf.value || savingLocal.value || removingPdf.value) {
+  if (
+    !canEdit.value ||
+    !hasCurrentPdf.value ||
+    savingLocal.value ||
+    removingPdf.value
+  ) {
     return;
   }
 
@@ -1063,24 +1975,36 @@ const requestRemovePdf = () => {
 };
 
 const cancelRemovePdf = () => {
-  if (removingPdf.value) return;
+  if (removingPdf.value) {
+    return;
+  }
+
   showRemovePdfModal.value = false;
 };
 
 const removeCurrentPdf = async () => {
-  if (!canEdit.value || !hasCurrentPdf.value || savingLocal.value || removingPdf.value) {
+  if (
+    !canEdit.value ||
+    !hasCurrentPdf.value ||
+    savingLocal.value ||
+    removingPdf.value
+  ) {
     return;
   }
 
   removingPdf.value = true;
+
   editMsg.value = "";
   editMsgType.value = "";
   fileError.value = "";
 
   try {
     if (!currentId.value) {
-      editMsg.value = "No se pudo determinar el identificador de la publicación.";
+      editMsg.value =
+        "No se pudo determinar el identificador de la publicación.";
+
       editMsgType.value = "error";
+
       return;
     }
 
@@ -1091,34 +2015,50 @@ const removeCurrentPdf = async () => {
       },
       {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
       }
     );
 
     pdfUploadItems.value = [];
     showRemovePdfModal.value = false;
-    editMsg.value = "PDF quitado correctamente.";
+
+    editMsg.value =
+      "El PDF fue quitado correctamente.";
+
     editMsgType.value = "success";
 
-    preserveFeedbackOnNextDetalle.value = true;
+    preserveFeedbackOnNextDetalle.value =
+      true;
+
     emit("updated");
-  } catch (err) {
-    console.error(err);
+  } catch (removeError) {
+    console.error(removeError);
 
-    const data = err?.response?.data;
+    const data =
+      removeError?.response?.data;
 
-    if (data && typeof data === "object") {
+    if (
+      data &&
+      typeof data === "object"
+    ) {
       const errores = Object.entries(data)
-        .map(([campo, detalle]) => `• ${campo}: ${prettyError(detalle)}`)
+        .map(([campo, detail]) => {
+          return (
+            `• ${campo}: ` +
+            prettyError(detail)
+          );
+        })
         .join("\n");
 
-      editMsg.value = `Error al quitar el PDF:\n${errores}`;
+      editMsg.value =
+        `Error al quitar el PDF:\n${errores}`;
     } else {
       editMsg.value =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+        removeError?.response?.data?.detail ||
+        removeError?.response?.data?.message ||
+        removeError?.response?.data?.error ||
         "No se pudo quitar el PDF de la publicación.";
     }
 
@@ -1128,62 +2068,100 @@ const removeCurrentPdf = async () => {
   }
 };
 
+/* ============================================================
+  GUARDADO
+============================================================ */
+
 const guardar = async () => {
   savingLocal.value = true;
+
   editMsg.value = "";
   editMsgType.value = "";
   fileError.value = "";
 
   try {
     if (!canEdit.value) {
-      editMsg.value = "No tienes permisos para editar esta publicación.";
+      editMsg.value =
+        "No tiene permisos para editar esta publicación.";
+
       editMsgType.value = "error";
-      savingLocal.value = false;
+
       return;
     }
 
     if (!currentId.value) {
-      editMsg.value = "No se pudo determinar el identificador de la publicación.";
+      editMsg.value =
+        "No se pudo determinar el identificador de la publicación.";
+
       editMsgType.value = "error";
-      savingLocal.value = false;
+
       return;
     }
 
-    const validationMessage = validarEdicion();
+    const validationMessage =
+      validarEdicion();
+
     if (validationMessage) {
-      editMsg.value = validationMessage;
+      editMsg.value =
+        validationMessage;
+
       editMsgType.value = "error";
-      savingLocal.value = false;
+
       return;
     }
 
-    const formData = buildFormDataPayload();
+    const formData =
+      buildFormDataPayload();
 
-    await api.put(`/publicaciones/${currentId.value}/`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    await api.put(
+      `/publicaciones/${currentId.value}/`,
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
 
-    editMsg.value = "Cambios guardados correctamente.";
+    editMsg.value =
+      "Los cambios fueron guardados correctamente.";
+
     editMsgType.value = "success";
 
-    preserveFeedbackOnNextDetalle.value = true;
+    preserveFeedbackOnNextDetalle.value =
+      true;
+
     emit("updated");
-  } catch (err) {
-    console.error(err);
-    const data = err?.response?.data;
+  } catch (saveError) {
+    console.error(saveError);
+
+    const data =
+      saveError?.response?.data;
 
     if (data?.archivo_pdf) {
-      fileError.value = prettyError(data.archivo_pdf);
+      fileError.value =
+        prettyError(data.archivo_pdf);
     }
 
-    if (data && typeof data === "object") {
+    if (
+      data &&
+      typeof data === "object"
+    ) {
       const errores = Object.entries(data)
-        .map(([campo, detalle]) => `• ${campo}: ${prettyError(detalle)}`)
+        .map(([campo, detail]) => {
+          return (
+            `• ${campo}: ` +
+            prettyError(detail)
+          );
+        })
         .join("\n");
 
-      editMsg.value = `Error al guardar:\n${errores}`;
+      editMsg.value =
+        `Error al guardar:\n${errores}`;
     } else {
-      editMsg.value = "No se pudieron guardar los cambios. Intenta nuevamente.";
+      editMsg.value =
+        "No se pudieron guardar los cambios. Intente nuevamente.";
     }
 
     editMsgType.value = "error";

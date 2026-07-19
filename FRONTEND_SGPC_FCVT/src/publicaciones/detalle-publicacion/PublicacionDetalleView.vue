@@ -1,11 +1,14 @@
 <template>
   <div class="pdet-page">
     <div class="pdet-wrap">
-      <!-- LOADING -->
-      <div
+      <!-- =====================================================
+        ESTADO DE CARGA
+      ====================================================== -->
+      <section
         v-if="loading"
         class="pdet-state pdet-state--loading"
         aria-label="Cargando detalle de publicación"
+        aria-live="polite"
       >
         <div class="pdet-skeleton">
           <div class="pdet-sk-topbar"></div>
@@ -14,19 +17,29 @@
           <div class="pdet-sk-section"></div>
           <div class="pdet-sk-section"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- ERROR -->
+      <!-- =====================================================
+        ESTADO DE ERROR
+      ====================================================== -->
       <section
         v-else-if="error"
-        class="pdet-state pdet-state--error"
+        class="pdet-state pdet-state--error page-stage page-stage-1"
         role="alert"
         aria-live="polite"
       >
         <div class="pdet-error">
-          <p class="pdet-error__eyebrow">Detalle de publicación</p>
-          <h1 class="pdet-error__title">No se pudo cargar la publicación</h1>
-          <p class="pdet-error__text">{{ error }}</p>
+          <span class="pdet-error__eyebrow">
+            Detalle de publicación
+          </span>
+
+          <h1 class="pdet-error__title">
+            No se pudo cargar la publicación
+          </h1>
+
+          <p class="pdet-error__text">
+            {{ error }}
+          </p>
 
           <div class="pdet-error__actions">
             <button
@@ -37,52 +50,91 @@
               Reintentar
             </button>
 
-            <button class="pdet-btn" type="button" @click="goBack">
+            <button
+              class="pdet-btn pdet-btn--ghost"
+              type="button"
+              @click="goBack"
+            >
               Volver
             </button>
           </div>
         </div>
       </section>
 
-      <!-- DETALLE -->
-      <article v-else-if="detalleNormalizado" class="pdet-shell page-stagger">
-        <!-- SOLO EN LECTURA -->
+      <!-- =====================================================
+        DETALLE PRINCIPAL
+      ====================================================== -->
+      <article
+        v-else-if="detalleNormalizado"
+        class="pdet-shell"
+      >
+        <!-- ===================================================
+          MODO LECTURA
+        ==================================================== -->
         <template v-if="!editMode">
-          <header class="pdet-topbar page-stage page-stage-1">
-            <button class="pdet-linkbtn" type="button" @click="goBack">
-              Volver a publicaciones
+          <!-- Barra de navegación y acciones -->
+          <header
+            class="pdet-topbar page-stage page-stage-1"
+            aria-label="Acciones del detalle"
+          >
+            <button
+              class="pdet-back"
+              type="button"
+              @click="goBack"
+            >
+              <span
+                class="pdet-back__icon"
+                aria-hidden="true"
+              >
+                ←
+              </span>
+
+              <span>Volver a publicaciones</span>
             </button>
 
             <div class="pdet-topbar__actions">
               <button
                 v-if="hasPdf"
-                class="pdet-btn"
+                class="pdet-btn pdet-btn--ghost"
                 type="button"
                 @click="openPdf"
               >
                 Ver PDF
               </button>
 
-              <template v-if="canEdit">
-                <button
-                  class="pdet-btn pdet-btn--primary"
-                  type="button"
-                  @click="openEditMode"
-                >
-                  Editar publicación
-                </button>
-              </template>
+              <button
+                v-if="canEdit"
+                class="pdet-btn pdet-btn--primary"
+                type="button"
+                @click="openEditMode"
+              >
+                Editar publicación
+              </button>
             </div>
           </header>
 
-          <section class="pdet-hero page-stage page-stage-2">
+          <!-- Encabezado principal -->
+          <section
+            class="pdet-hero page-stage page-stage-2"
+            aria-labelledby="pdet-title"
+          >
             <div class="pdet-hero__main">
-              <p class="pdet-kicker">Detalle de publicación</p>
+              <span class="pdet-kicker">
+                Producción científica
+              </span>
 
               <div class="pdet-titleRow">
-                <h1 class="pdet-title">{{ detalleNormalizado.titulo }}</h1>
+                <h1
+                  id="pdet-title"
+                  class="pdet-title"
+                >
+                  {{ detalleNormalizado.titulo }}
+                </h1>
 
-                <span class="pdet-badge" :class="toneClass">
+                <span
+                  class="pdet-badge"
+                  :class="toneClass"
+                >
                   {{ detalleNormalizado.tipoLabel }}
                 </span>
               </div>
@@ -91,35 +143,64 @@
                 {{ heroIntroText }}
               </p>
 
-              <div class="pdet-chipRow">
-                <span v-if="detalleNormalizado.fechaTexto" class="pdet-chip">
+              <div
+                class="pdet-chipRow"
+                aria-label="Información resumida"
+              >
+                <span
+                  v-if="detalleNormalizado.fechaTexto"
+                  class="pdet-chip"
+                >
                   {{ detalleNormalizado.fechaTexto }}
                 </span>
 
-                <span v-if="detalleNormalizado.facultad" class="pdet-chip">
+                <span
+                  v-if="detalleNormalizado.facultad"
+                  class="pdet-chip"
+                >
                   {{ detalleNormalizado.facultad }}
                 </span>
 
-                <span v-if="detalleNormalizado.carrera" class="pdet-chip">
+                <span
+                  v-if="detalleNormalizado.carrera"
+                  class="pdet-chip"
+                >
                   {{ detalleNormalizado.carrera }}
                 </span>
 
-                <span v-if="detalleNormalizado.autores.length" class="pdet-chip">
+                <span
+                  v-if="detalleNormalizado.autores.length"
+                  class="pdet-chip"
+                >
                   {{ detalleNormalizado.autores.length }}
-                  {{ detalleNormalizado.autores.length === 1 ? "autor" : "autores" }}
+                  {{
+                    detalleNormalizado.autores.length === 1
+                      ? "autor"
+                      : "autores"
+                  }}
                 </span>
 
-                <span v-if="isAdmin" class="pdet-chip">
+                <span
+                  v-if="isAdmin"
+                  class="pdet-chip pdet-chip--permission"
+                >
                   Administrador
                 </span>
 
-                <span v-else-if="userOwnsPublication" class="pdet-chip">
+                <span
+                  v-else-if="userOwnsPublication"
+                  class="pdet-chip pdet-chip--permission"
+                >
                   Autor vinculado
                 </span>
               </div>
 
-              <p v-if="detalleNormalizado.proyecto" class="pdet-project">
-                <strong>Proyecto:</strong> {{ detalleNormalizado.proyecto }}
+              <p
+                v-if="detalleNormalizado.proyecto"
+                class="pdet-project"
+              >
+                <span>Proyecto asociado</span>
+                <strong>{{ detalleNormalizado.proyecto }}</strong>
               </p>
             </div>
 
@@ -128,12 +209,19 @@
               class="pdet-hero__panel"
               aria-label="Resumen rápido"
             >
-              <div class="pdet-panelHead">
-                <h2 class="pdet-panelTitle">Resumen rápido</h2>
+              <header class="pdet-panelHead">
+                <span class="pdet-panelEyebrow">
+                  Resumen
+                </span>
+
+                <h2 class="pdet-panelTitle">
+                  Datos principales
+                </h2>
+
                 <p class="pdet-panelText">
-                  Lectura breve de los datos principales del registro.
+                  Lectura rápida de la información esencial del registro.
                 </p>
-              </div>
+              </header>
 
               <div class="pdet-summaryGrid">
                 <article
@@ -141,27 +229,45 @@
                   :key="item.label"
                   class="pdet-summaryItem"
                 >
-                  <span class="k">{{ item.label }}</span>
-                  <span class="v">{{ item.value }}</span>
+                  <span class="k">
+                    {{ item.label }}
+                  </span>
+
+                  <span class="v">
+                    {{ item.value }}
+                  </span>
                 </article>
               </div>
             </aside>
           </section>
-        </template>
 
-        <!-- MODO LECTURA -->
-        <template v-if="!editMode">
+          <!-- =================================================
+            CONTENIDO
+          ================================================== -->
           <div class="pdet-content page-stage page-stage-3">
+            <!-- Información principal -->
             <section
-              v-if="bloquePrincipal.length || clasificacionInstitucional.length"
+              v-if="
+                bloquePrincipal.length ||
+                clasificacionInstitucional.length
+              "
               class="pdet-section"
             >
-              <div class="pdet-sectionHead">
-                <h2 class="pdet-h2">{{ bloquePrincipalTitle }}</h2>
+              <header class="pdet-sectionHead">
+                <div>
+                  <span class="pdet-sectionEyebrow">
+                    Información académica
+                  </span>
+
+                  <h2 class="pdet-h2">
+                    {{ bloquePrincipalTitle }}
+                  </h2>
+                </div>
+
                 <p class="pdet-sectionText">
                   {{ bloquePrincipalText }}
                 </p>
-              </div>
+              </header>
 
               <div class="pdet-sectionBody">
                 <div
@@ -174,22 +280,26 @@
                     class="pdet-dataItem"
                     :class="`span-${campo.span || 4}`"
                   >
-                    <span class="k">{{ campo.label }}</span>
+                    <span class="k">
+                      {{ campo.label }}
+                    </span>
 
-                    <template v-if="campo.href">
-                      <a
-                        :href="campo.href"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="pdet-link"
-                      >
-                        {{ campo.value }}
-                      </a>
-                    </template>
+                    <a
+                      v-if="campo.href"
+                      :href="campo.href"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="pdet-link"
+                    >
+                      {{ campo.value }}
+                    </a>
 
-                    <template v-else>
-                      <span class="v">{{ campo.value }}</span>
-                    </template>
+                    <span
+                      v-else
+                      class="v"
+                    >
+                      {{ campo.value }}
+                    </span>
                   </article>
                 </div>
 
@@ -197,12 +307,15 @@
                   v-if="clasificacionInstitucional.length"
                   class="pdet-sectionSubgroup"
                 >
-                  <div class="pdet-subHead">
-                    <h3 class="pdet-h3">Clasificación institucional</h3>
+                  <header class="pdet-subHead">
+                    <h3 class="pdet-h3">
+                      Clasificación institucional
+                    </h3>
+
                     <p class="pdet-subText">
-                      Adscripción y contexto académico del registro.
+                      Adscripción y contexto académico de la publicación.
                     </p>
-                  </div>
+                  </header>
 
                   <div class="pdet-dataGrid pdet-dataGrid--tri">
                     <article
@@ -211,83 +324,154 @@
                       class="pdet-dataItem"
                       :class="`span-${campo.span || 4}`"
                     >
-                      <span class="k">{{ campo.label }}</span>
-                      <span class="v">{{ campo.value }}</span>
+                      <span class="k">
+                        {{ campo.label }}
+                      </span>
+
+                      <span class="v">
+                        {{ campo.value }}
+                      </span>
                     </article>
                   </div>
                 </div>
               </div>
             </section>
 
+            <!-- Autores -->
             <section class="pdet-section">
-              <div class="pdet-sectionHead">
-                <h2 class="pdet-h2">
-                  Autores
-                  <span v-if="detalleNormalizado.autores.length" class="pdet-count">
-                    ({{ detalleNormalizado.autores.length }})
+              <header class="pdet-sectionHead">
+                <div>
+                  <span class="pdet-sectionEyebrow">
+                    Participación
                   </span>
-                </h2>
-                <p class="pdet-sectionText">
-                  Autor principal y coautores registrados.
-                </p>
-              </div>
 
-              <div v-if="detalleNormalizado.autores.length" class="pdet-authorList">
+                  <h2 class="pdet-h2">
+                    Autores
+
+                    <span
+                      v-if="detalleNormalizado.autores.length"
+                      class="pdet-count"
+                    >
+                      {{ detalleNormalizado.autores.length }}
+                    </span>
+                  </h2>
+                </div>
+
+                <p class="pdet-sectionText">
+                  Autor principal y coautores vinculados a la publicación.
+                </p>
+              </header>
+
+              <div
+                v-if="detalleNormalizado.autores.length"
+                class="pdet-authorList"
+              >
                 <article
                   v-for="(autor, index) in detalleNormalizado.autores"
                   :key="autor.id || index"
                   class="pdet-authorRow"
                 >
-                  <div class="pdet-authorIndex">{{ index + 1 }}</div>
+                  <div
+                    class="pdet-authorIndex"
+                    aria-hidden="true"
+                  >
+                    {{ index + 1 }}
+                  </div>
 
                   <div class="pdet-authorBody">
-                    <h3 class="pdet-authorName">{{ autor.nombre }}</h3>
-                    <p class="pdet-authorMeta">{{ autor.rol }}</p>
+                    <h3 class="pdet-authorName">
+                      {{ autor.nombre }}
+                    </h3>
+
+                    <p class="pdet-authorMeta">
+                      {{ autor.rol }}
+                    </p>
                   </div>
                 </article>
               </div>
 
-              <p v-else class="pdet-muted">
+              <p
+                v-else
+                class="pdet-muted"
+              >
                 No hay autores registrados.
               </p>
             </section>
 
-            <section v-if="descripcionTexto" class="pdet-section">
-              <div class="pdet-sectionHead">
-                <h2 class="pdet-h2">Descripción</h2>
+            <!-- Descripción -->
+            <section
+              v-if="descripcionTexto"
+              class="pdet-section"
+            >
+              <header class="pdet-sectionHead">
+                <div>
+                  <span class="pdet-sectionEyebrow">
+                    Contenido
+                  </span>
+
+                  <h2 class="pdet-h2">
+                    Descripción
+                  </h2>
+                </div>
+
                 <p class="pdet-sectionText">
-                  Información complementaria del registro.
+                  Información complementaria registrada para esta publicación.
                 </p>
-              </div>
+              </header>
 
               <div class="pdet-notePanel">
-                <div class="pdet-note">
+                <p class="pdet-note">
                   {{ descripcionTexto }}
-                </div>
+                </p>
               </div>
             </section>
 
-            <section v-if="hasPdf" class="pdet-section">
-              <div class="pdet-sectionHead">
-                <h2 class="pdet-h2">Adjuntos</h2>
+            <!-- PDF -->
+            <section
+              v-if="hasPdf"
+              class="pdet-section"
+            >
+              <header class="pdet-sectionHead">
+                <div>
+                  <span class="pdet-sectionEyebrow">
+                    Evidencia documental
+                  </span>
+
+                  <h2 class="pdet-h2">
+                    Archivo PDF
+                  </h2>
+                </div>
+
                 <p class="pdet-sectionText">
-                  Archivo asociado a la publicación.
+                  Documento asociado al registro de la publicación.
                 </p>
-              </div>
+              </header>
 
               <div class="pdet-filePanel">
+                <div class="pdet-fileIcon">
+                  <span aria-hidden="true">PDF</span>
+                </div>
+
                 <div class="pdet-fileMeta">
-                  <span class="pdet-fileEyebrow">Documento</span>
+                  <span class="pdet-fileEyebrow">
+                    Documento disponible
+                  </span>
+
                   <h3 class="pdet-fileName">
                     {{ displayPdfName }}
                   </h3>
+
                   <p class="pdet-fileText">
-                    PDF adjunto al registro.
+                    Puede visualizar o descargar el archivo asociado.
                   </p>
                 </div>
 
                 <div class="pdet-fileActions">
-                  <button class="pdet-btn" type="button" @click="openPdf">
+                  <button
+                    class="pdet-btn pdet-btn--ghost"
+                    type="button"
+                    @click="openPdf"
+                  >
                     Ver PDF
                   </button>
 
@@ -296,19 +480,32 @@
                     type="button"
                     @click="downloadPdf"
                   >
-                    Descargar PDF
+                    Descargar
                   </button>
                 </div>
               </div>
             </section>
 
-            <section v-if="identificadoresAcademicos.length" class="pdet-section">
-              <div class="pdet-sectionHead">
-                <h2 class="pdet-h2">Identificadores</h2>
+            <!-- Identificadores -->
+            <section
+              v-if="identificadoresAcademicos.length"
+              class="pdet-section"
+            >
+              <header class="pdet-sectionHead">
+                <div>
+                  <span class="pdet-sectionEyebrow">
+                    Referencias académicas
+                  </span>
+
+                  <h2 class="pdet-h2">
+                    Identificadores
+                  </h2>
+                </div>
+
                 <p class="pdet-sectionText">
-                  Datos técnicos y académicos del registro.
+                  Códigos e indicadores técnicos de la publicación.
                 </p>
-              </div>
+              </header>
 
               <div class="pdet-dataGrid pdet-dataGrid--tri">
                 <article
@@ -317,30 +514,65 @@
                   class="pdet-dataItem"
                   :class="`span-${campo.span || 4}`"
                 >
-                  <span class="k">{{ campo.label }}</span>
+                  <span class="k">
+                    {{ campo.label }}
+                  </span>
 
-                  <template v-if="campo.href">
-                    <a
-                      :href="campo.href"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="pdet-link"
-                    >
-                      {{ campo.value }}
-                    </a>
-                  </template>
+                  <a
+                    v-if="campo.href"
+                    :href="campo.href"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="pdet-link"
+                  >
+                    {{ campo.value }}
+                  </a>
 
-                  <template v-else>
-                    <span class="v">{{ campo.value }}</span>
-                  </template>
+                  <span
+                    v-else
+                    class="v"
+                  >
+                    {{ campo.value }}
+                  </span>
                 </article>
               </div>
             </section>
           </div>
         </template>
 
-        <!-- MODO EDICIÓN -->
-        <section v-else-if="canEdit" class="pdet-editShell page-stage page-stage-3">
+        <!-- ===================================================
+          MODO EDICIÓN
+        ==================================================== -->
+        <section
+          v-else-if="canEdit"
+          class="pdet-editShell page-stage page-stage-2"
+          aria-label="Edición de publicación"
+        >
+          <header class="pdet-editHeader">
+            <div>
+              <span class="pdet-editHeader__eyebrow">
+                Gestión del registro
+              </span>
+
+              <h1 class="pdet-editHeader__title">
+                Editar publicación
+              </h1>
+
+              <p class="pdet-editHeader__text">
+                Actualice la información académica y documental del registro.
+              </p>
+            </div>
+
+            <button
+              class="pdet-btn pdet-btn--ghost"
+              type="button"
+              :disabled="saving"
+              @click="editMode = false"
+            >
+              Volver al detalle
+            </button>
+          </header>
+
           <PublicacionEditForm
             :detalle="detalle"
             :saving="saving"
@@ -359,13 +591,22 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+
 import api from "../../scripts/api/axios";
 import { useUserStore } from "../../scripts/stores/userStore";
 import PublicacionEditForm from "./EditarPublicacionView.vue";
 
+/* ============================================================
+  NAVEGACIÓN Y SESIÓN
+============================================================ */
+
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+
+/* ============================================================
+  ESTADO PRINCIPAL
+============================================================ */
 
 const detalle = ref(null);
 const loading = ref(true);
@@ -375,34 +616,81 @@ const saving = ref(false);
 
 let requestSeq = 0;
 
-const toStr = (value) => (value == null ? "" : String(value).trim());
+/* ============================================================
+  HELPERS GENERALES
+============================================================ */
 
-const firstFilled = (...values) => values.map(toStr).find(Boolean) || "";
-
-const stripAccents = (value) =>
-  toStr(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-const normalizeEmail = (value) => stripAccents(value).toLowerCase().trim();
-
-const toPositiveInt = (value) => {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : null;
+const toStr = (value) => {
+  return value == null
+    ? ""
+    : String(value).trim();
 };
 
-const uniqueNumbers = (values = []) => [
-  ...new Set(values.map(toPositiveInt).filter(Boolean)),
-];
+const firstFilled = (...values) => {
+  return values
+    .map(toStr)
+    .find(Boolean) || "";
+};
 
-const uniqueStrings = (values = []) => [
-  ...new Set(values.map((v) => toStr(v)).filter(Boolean)),
-];
+const stripAccents = (value) => {
+  return toStr(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+};
+
+const normalizeEmail = (value) => {
+  return stripAccents(value)
+    .toLowerCase()
+    .trim();
+};
+
+const toPositiveInt = (value) => {
+  const number = Number(value);
+
+  return Number.isFinite(number) && number > 0
+    ? number
+    : null;
+};
+
+const uniqueNumbers = (values = []) => {
+  return [
+    ...new Set(
+      values
+        .map(toPositiveInt)
+        .filter(Boolean)
+    ),
+  ];
+};
+
+const uniqueStrings = (values = []) => {
+  return [
+    ...new Set(
+      values
+        .map((value) => toStr(value))
+        .filter(Boolean)
+    ),
+  ];
+};
+
+/* ============================================================
+  USUARIO ACTUAL
+============================================================ */
 
 const readLocalUser = () => {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") {
+    return {};
+  }
 
   try {
-    const parsed = JSON.parse(localStorage.getItem("user") || "{}");
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    const parsed = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
+
+    return (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    )
       ? parsed
       : {};
   } catch {
@@ -410,8 +698,16 @@ const readLocalUser = () => {
   }
 };
 
-const pickFirstObject = (...values) =>
-  values.find((item) => item && typeof item === "object" && !Array.isArray(item)) || {};
+const pickFirstObject = (...values) => {
+  return (
+    values.find(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        !Array.isArray(item)
+    ) || {}
+  );
+};
 
 const currentUser = computed(() => {
   const fromStore = pickFirstObject(
@@ -436,29 +732,34 @@ const currentUser = computed(() => {
 });
 
 const isAdmin = computed(() => {
-  const u = currentUser.value || {};
+  const user = currentUser.value || {};
 
-  return !!(
+  return Boolean(
     userStore?.isAdmin ||
-    u?.is_staff ||
-    u?.is_superuser ||
-    firstFilled(u?.rol, u?.role).toLowerCase().includes("admin")
+      user?.is_staff ||
+      user?.is_superuser ||
+      firstFilled(
+        user?.rol,
+        user?.role
+      )
+        .toLowerCase()
+        .includes("admin")
   );
 });
 
-const currentUserIds = computed(() =>
-  uniqueNumbers([
+const currentUserIds = computed(() => {
+  return uniqueNumbers([
     currentUser.value?.id,
     currentUser.value?.pk,
     currentUser.value?.user_id,
     currentUser.value?.usuario_id,
     currentUser.value?.usuario?.id,
     currentUser.value?.user?.id,
-  ])
-);
+  ]);
+});
 
-const currentAuthorIds = computed(() =>
-  uniqueNumbers([
+const currentAuthorIds = computed(() => {
+  return uniqueNumbers([
     currentUser.value?.autor_id,
     currentUser.value?.autorId,
     currentUser.value?.author_id,
@@ -474,94 +775,158 @@ const currentAuthorIds = computed(() =>
     userStore?.user?.autor_id,
     userStore?.user?.autorId,
     userStore?.profile?.autor_id,
-  ])
-);
+  ]);
+});
 
-const currentEmails = computed(() =>
-  uniqueStrings([
+const currentEmails = computed(() => {
+  return uniqueStrings([
     normalizeEmail(currentUser.value?.email),
     normalizeEmail(currentUser.value?.correo),
     normalizeEmail(currentUser.value?.mail),
     normalizeEmail(currentUser.value?.usuario?.email),
     normalizeEmail(currentUser.value?.user?.email),
     normalizeEmail(currentUser.value?.profile?.email),
-  ])
-);
+  ]);
+});
+
+/* ============================================================
+  NORMALIZACIÓN DE TIPO Y FECHA
+============================================================ */
 
 const normalizeTipo = (tipo) => {
-  const t = stripAccents(tipo).toLowerCase();
+  const normalized = stripAccents(tipo).toLowerCase();
 
-  if (t.includes("ponencia")) return "ponencia";
-  if (t.includes("articulo")) return "articulo";
-  if (t.includes("capitulo")) return "capitulo";
-  if (t.includes("libro")) return "libro";
+  if (normalized.includes("ponencia")) {
+    return "ponencia";
+  }
+
+  if (normalized.includes("articulo")) {
+    return "articulo";
+  }
+
+  if (normalized.includes("capitulo")) {
+    return "capitulo";
+  }
+
+  if (normalized.includes("libro")) {
+    return "libro";
+  }
 
   return "general";
 };
 
 const formatFecha = (fecha) => {
   const value = toStr(fecha);
-  if (!value) return "";
+
+  if (!value) {
+    return "";
+  }
 
   try {
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const [y, m, d] = value.split("-").map(Number);
-      const localDate = new Date(y, m - 1, d);
+      const [year, month, day] = value
+        .split("-")
+        .map(Number);
 
-      return localDate.toLocaleDateString("es-EC", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
+      const localDate = new Date(
+        year,
+        month - 1,
+        day
+      );
+
+      return localDate.toLocaleDateString(
+        "es-EC",
+        {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }
+      );
     }
 
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
 
-    return parsed.toLocaleDateString("es-EC", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+
+    return parsed.toLocaleDateString(
+      "es-EC",
+      {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }
+    );
   } catch {
     return value;
   }
 };
 
+/* ============================================================
+  URLS
+============================================================ */
+
 const ensureUrl = (url) => {
   const value = toStr(url);
-  if (!value) return "";
 
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("mailto:") || value.startsWith("tel:")) return value;
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (
+    value.startsWith("mailto:") ||
+    value.startsWith("tel:")
+  ) {
+    return value;
+  }
 
   return `https://${value.replace(/^\/+/, "")}`;
 };
 
 const doiUrl = (doi) => {
   const value = toStr(doi);
-  if (!value) return "";
 
-  if (/^https?:\/\//i.test(value)) return value;
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
 
   return `https://doi.org/${value
     .replace(/^doi:\s*/i, "")
-    .replace(/^https?:\/\/(dx\.)?doi\.org\//i, "")}`;
+    .replace(
+      /^https?:\/\/(dx\.)?doi\.org\//i,
+      ""
+    )}`;
 };
 
 const getBackendBase = () => {
-  const envBase =
+  const environmentBase =
     firstFilled(
       import.meta.env.VITE_API_URL,
       import.meta.env.VITE_API_BASE_URL,
       import.meta.env.VITE_AXIOS_BASE_URL
     ) || "";
 
-  const axiosBase = firstFilled(api?.defaults?.baseURL);
-  const base = envBase || axiosBase;
+  const axiosBase = firstFilled(
+    api?.defaults?.baseURL
+  );
+
+  const base =
+    environmentBase ||
+    axiosBase;
 
   if (/^https?:\/\//i.test(base)) {
-    return base.replace(/\/api\/?$/i, "").replace(/\/$/, "");
+    return base
+      .replace(/\/api\/?$/i, "")
+      .replace(/\/$/, "");
   }
 
   return window.location.origin;
@@ -569,57 +934,109 @@ const getBackendBase = () => {
 
 const resolvePdfUrl = (url) => {
   const value = toStr(url);
-  if (!value) return "";
 
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("blob:") || value.startsWith("data:")) return value;
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (
+    value.startsWith("blob:") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
 
   const base = getBackendBase();
-  const clean = value.startsWith("/") ? value : `/${value.replace(/^\.?\//, "")}`;
+
+  const clean = value.startsWith("/")
+    ? value
+    : `/${value.replace(/^\.?\//, "")}`;
 
   return `${base}${clean}`;
 };
 
 const fileNameFromUrl = (url) => {
   const value = toStr(url);
-  if (!value) return "";
+
+  if (!value) {
+    return "";
+  }
 
   try {
-    const parsed = new URL(value, window.location.origin);
-    const last = parsed.pathname.split("/").filter(Boolean).pop();
+    const parsed = new URL(
+      value,
+      window.location.origin
+    );
+
+    const last = parsed.pathname
+      .split("/")
+      .filter(Boolean)
+      .pop();
+
     return decodeURIComponent(last || "");
   } catch {
     return "";
   }
 };
 
-const buildField = (label, value, extra = {}) => ({
+/* ============================================================
+  CAMPOS
+============================================================ */
+
+const buildField = (
+  label,
+  value,
+  extra = {}
+) => ({
   label,
   value: toStr(value),
   ...extra,
 });
 
-const visibleFields = (fields = []) =>
-  fields.filter((item) => item && toStr(item?.value));
+const visibleFields = (fields = []) => {
+  return fields.filter(
+    (item) =>
+      item &&
+      toStr(item?.value)
+  );
+};
+
+/* ============================================================
+  AUTORES
+============================================================ */
 
 const normalizeAuthors = (authors) => {
-  if (!Array.isArray(authors)) return [];
+  if (!Array.isArray(authors)) {
+    return [];
+  }
 
   return authors
     .map((autor, index) => {
-      const rolRaw = firstFilled(
+      const rawRole = firstFilled(
         autor?.rol_autoria,
         autor?.tipo_participacion,
         autor?.rol
       );
 
-      const rolNorm = stripAccents(rolRaw).toLowerCase();
+      const normalizedRole = stripAccents(
+        rawRole
+      ).toLowerCase();
 
-      let rol = "Autor";
+      let role = "Autor";
 
-      if (rolNorm.includes("principal")) rol = "Autor principal";
-      else if (rolNorm.includes("coautor")) rol = "Coautor";
-      else if (rolRaw) rol = rolRaw;
+      if (normalizedRole.includes("principal")) {
+        role = "Autor principal";
+      } else if (
+        normalizedRole.includes("coautor")
+      ) {
+        role = "Coautor";
+      } else if (rawRole) {
+        role = rawRole;
+      }
 
       const authorIds = uniqueNumbers([
         autor?.autor_id,
@@ -651,9 +1068,19 @@ const normalizeAuthors = (authors) => {
           autor?.id ??
           autor?.autor_id ??
           autor?.pk ??
-          `${index}-${firstFilled(autor?.nombre, autor?.nombre_completo, "autor")}`,
-        nombre: firstFilled(autor?.nombre, autor?.nombre_completo, "Autor"),
-        rol,
+          `${index}-${firstFilled(
+            autor?.nombre,
+            autor?.nombre_completo,
+            "autor"
+          )}`,
+
+        nombre: firstFilled(
+          autor?.nombre,
+          autor?.nombre_completo,
+          "Autor"
+        ),
+
+        rol: role,
         authorIds,
         userIds,
         emails,
@@ -662,256 +1089,513 @@ const normalizeAuthors = (authors) => {
     .filter((autor) => autor.nombre);
 };
 
+/* ============================================================
+  DETALLE NORMALIZADO
+============================================================ */
+
 const detalleNormalizado = computed(() => {
-  const d = detalle.value || {};
+  const data = detalle.value || {};
 
   const tipoLabel = firstFilled(
-    d.tipo,
-    d.tipo_publicacion,
-    d.tipo_publicacion_final_label,
-    d.tipo_publicacion_final,
+    data.tipo,
+    data.tipo_publicacion,
+    data.tipo_publicacion_final_label,
+    data.tipo_publicacion_final,
     "Publicación"
   );
 
   const tipoNorm = normalizeTipo(tipoLabel);
 
   const titulo = firstFilled(
-    d.titulo,
-    d.nombre_publicacion,
-    d.titulo_publicacion,
-    d.nombre_articulo,
-    d.nombre_ponencia,
-    d.nombre_capitulo,
-    d.nombre_libro,
-    d.proyecto,
+    data.titulo,
+    data.nombre_publicacion,
+    data.titulo_publicacion,
+    data.nombre_articulo,
+    data.nombre_ponencia,
+    data.nombre_capitulo,
+    data.nombre_libro,
+    data.proyecto,
     "Publicación"
   );
 
-  const proyecto = firstFilled(d.proyecto, d.nombre_proyecto);
-  const fechaTexto = formatFecha(d.fecha_publicacion);
+  const proyecto = firstFilled(
+    data.proyecto,
+    data.nombre_proyecto
+  );
 
-  const pais = firstFilled(d.pais, d.pais_nombre);
-  const ciudad = firstFilled(d.ciudad, d.ciudad_nombre);
+  const fechaTexto = formatFecha(
+    data.fecha_publicacion
+  );
+
+  const pais = firstFilled(
+    data.pais,
+    data.pais_nombre
+  );
+
+  const ciudad = firstFilled(
+    data.ciudad,
+    data.ciudad_nombre
+  );
 
   const archivoPdfUrl = resolvePdfUrl(
     firstFilled(
-      d.archivo_pdf_url,
-      d.pdf_url,
-      d.archivo_pdf,
-      d.pdf,
-      d.archivo,
-      d.archivos?.[0]?.url,
-      d.archivos?.[0]?.archivo,
-      d.archivos?.[0]?.archivo_url,
-      d.adjuntos?.[0]?.url,
-      d.adjuntos?.[0]?.archivo,
-      d.adjuntos?.[0]?.archivo_url
+      data.archivo_pdf_url,
+      data.pdf_url,
+      data.archivo_pdf,
+      data.pdf,
+      data.archivo,
+      data.archivos?.[0]?.url,
+      data.archivos?.[0]?.archivo,
+      data.archivos?.[0]?.archivo_url,
+      data.adjuntos?.[0]?.url,
+      data.adjuntos?.[0]?.archivo,
+      data.adjuntos?.[0]?.archivo_url
     )
   );
 
   return {
-    raw: d,
+    raw: data,
     titulo,
     tipoLabel,
     tipoNorm,
-    proyecto: proyecto && proyecto !== titulo ? proyecto : "",
+
+    proyecto:
+      proyecto && proyecto !== titulo
+        ? proyecto
+        : "",
+
     fechaTexto,
-    facultad: firstFilled(d.facultad, d.facultad_nombre),
-    carrera: firstFilled(d.carrera, d.carrera_nombre),
-    area: firstFilled(d.area, d.area_nombre),
-    subarea: firstFilled(d.subarea, d.subarea_nombre),
+
+    facultad: firstFilled(
+      data.facultad,
+      data.facultad_nombre
+    ),
+
+    carrera: firstFilled(
+      data.carrera,
+      data.carrera_nombre
+    ),
+
+    area: firstFilled(
+      data.area,
+      data.area_nombre
+    ),
+
+    subarea: firstFilled(
+      data.subarea,
+      data.subarea_nombre
+    ),
+
     pais,
     ciudad,
-    ubicacion: [pais, ciudad].filter(Boolean).join(", "),
+
+    ubicacion: [
+      pais,
+      ciudad,
+    ]
+      .filter(Boolean)
+      .join(", "),
+
     archivoPdfUrl,
-    autores: normalizeAuthors(d.autores),
+    autores: normalizeAuthors(data.autores),
   };
 });
 
+/* ============================================================
+  PDF Y PERMISOS
+============================================================ */
+
 const hasPdf = computed(() => {
-  const d = detalle.value || {};
+  const data = detalle.value || {};
 
   return Boolean(
     detalleNormalizado.value.archivoPdfUrl ||
-      d.tiene_pdf ||
-      d.has_pdf ||
-      d.archivo_pdf_url ||
-      d.pdf_url ||
-      d.archivo_pdf ||
-      d.pdf ||
-      d.archivo ||
-      d.archivos?.length ||
-      d.adjuntos?.length
+      data.tiene_pdf ||
+      data.has_pdf ||
+      data.archivo_pdf_url ||
+      data.pdf_url ||
+      data.archivo_pdf ||
+      data.pdf ||
+      data.archivo ||
+      data.archivos?.length ||
+      data.adjuntos?.length
   );
 });
 
 const displayPdfName = computed(() => {
-  return fileNameFromUrl(detalleNormalizado.value.archivoPdfUrl) || "publicacion.pdf";
+  return (
+    fileNameFromUrl(
+      detalleNormalizado.value.archivoPdfUrl
+    ) ||
+    "publicacion.pdf"
+  );
 });
 
 const userOwnsPublication = computed(() => {
-  const authors = detalleNormalizado.value.autores || [];
+  const authors =
+    detalleNormalizado.value.autores || [];
 
-  if (!authors.length) return false;
+  if (!authors.length) {
+    return false;
+  }
 
-  const myAuthorIds = currentAuthorIds.value;
-  const myUserIds = currentUserIds.value;
-  const myEmails = currentEmails.value;
+  const myAuthorIds =
+    currentAuthorIds.value;
+
+  const myUserIds =
+    currentUserIds.value;
+
+  const myEmails =
+    currentEmails.value;
 
   return authors.some((autor) => {
-    const matchAuthorId =
+    const matchesAuthorId =
       myAuthorIds.length > 0 &&
-      autor.authorIds.some((id) => myAuthorIds.includes(id));
+      autor.authorIds.some((id) =>
+        myAuthorIds.includes(id)
+      );
 
-    const matchUserId =
+    const matchesUserId =
       myUserIds.length > 0 &&
-      autor.userIds.some((id) => myUserIds.includes(id));
+      autor.userIds.some((id) =>
+        myUserIds.includes(id)
+      );
 
-    const matchEmail =
+    const matchesEmail =
       myEmails.length > 0 &&
-      autor.emails.some((email) => myEmails.includes(email));
+      autor.emails.some((email) =>
+        myEmails.includes(email)
+      );
 
-    return matchAuthorId || matchUserId || matchEmail;
+    return (
+      matchesAuthorId ||
+      matchesUserId ||
+      matchesEmail
+    );
   });
 });
 
-const canEdit = computed(() => isAdmin.value || userOwnsPublication.value);
+const canEdit = computed(() => {
+  return (
+    isAdmin.value ||
+    userOwnsPublication.value
+  );
+});
+
+/* ============================================================
+  TEXTOS Y TONOS
+============================================================ */
 
 const heroIntroText = computed(() => {
   if (isAdmin.value) {
-    return "Consulta y administra esta publicación con acceso completo.";
+    return (
+      "Consulte y administre la información académica, " +
+      "documental y autoral de esta publicación."
+    );
   }
 
   if (userOwnsPublication.value) {
-    return "Consulta y edita esta publicación porque estás vinculado como autor.";
+    return (
+      "Consulte y actualice esta publicación porque se " +
+      "encuentra vinculado como autor."
+    );
   }
 
-  return "Consulta su clasificación, metadatos, autores y evidencias disponibles.";
+  return (
+    "Consulte la clasificación, los metadatos, los autores " +
+    "y las evidencias disponibles."
+  );
 });
 
 const toneClass = computed(() => {
-  switch (detalleNormalizado.value.tipoNorm) {
+  switch (
+    detalleNormalizado.value.tipoNorm
+  ) {
     case "articulo":
       return "is-primary";
+
     case "ponencia":
       return "is-warning";
+
     case "capitulo":
       return "is-success";
+
     case "libro":
       return "is-neutral";
+
     default:
       return "";
   }
 });
 
 const bloquePrincipalTitle = computed(() => {
-  switch (detalleNormalizado.value.tipoNorm) {
+  switch (
+    detalleNormalizado.value.tipoNorm
+  ) {
     case "ponencia":
       return "Evento y ponencia";
+
     case "articulo":
-      return "Artículo";
+      return "Información del artículo";
+
     case "capitulo":
       return "Capítulo y libro";
+
     case "libro":
-      return "Libro";
+      return "Información del libro";
+
     default:
-      return "Detalle de publicación";
+      return "Información principal";
   }
 });
 
 const bloquePrincipalText = computed(() => {
-  switch (detalleNormalizado.value.tipoNorm) {
+  switch (
+    detalleNormalizado.value.tipoNorm
+  ) {
     case "ponencia":
-      return "Información principal del evento y de la presentación.";
+      return (
+        "Datos principales del evento y de la " +
+        "presentación registrada."
+      );
+
     case "articulo":
-      return "Información principal del artículo y de su indexación.";
+      return (
+        "Datos editoriales, publicación e indexación " +
+        "del artículo."
+      );
+
     case "capitulo":
-      return "Información principal del capítulo y de la obra relacionada.";
+      return (
+        "Datos del capítulo y de la obra académica " +
+        "relacionada."
+      );
+
     case "libro":
-      return "Información principal del libro registrado.";
+      return (
+        "Datos editoriales y académicos del libro " +
+        "registrado."
+      );
+
     default:
-      return "Información principal del registro.";
+      return (
+        "Información principal asociada al registro."
+      );
   }
 });
 
-const descripcionTexto = computed(() =>
-  firstFilled(
+/* ============================================================
+  DESCRIPCIÓN Y RESUMEN
+============================================================ */
+
+const descripcionTexto = computed(() => {
+  return firstFilled(
     detalle.value?.resumen,
     detalle.value?.descripcion,
     detalle.value?.abstract,
     detalle.value?.detalle
-  )
-);
+  );
+});
 
 const heroResumen = computed(() => {
-  const d = detalleNormalizado.value;
-  const totalAutores = d.autores.length;
+  const normalized =
+    detalleNormalizado.value;
+
+  const totalAutores =
+    normalized.autores.length;
 
   return visibleFields([
-    buildField("Tipo", d.tipoLabel),
-    buildField("Fecha", d.fechaTexto),
+    buildField(
+      "Tipo",
+      normalized.tipoLabel
+    ),
+
+    buildField(
+      "Fecha",
+      normalized.fechaTexto
+    ),
+
     buildField(
       "Autores",
-      totalAutores ? `${totalAutores} ${totalAutores === 1 ? "autor" : "autores"}` : ""
+      totalAutores
+        ? `${totalAutores} ${
+            totalAutores === 1
+              ? "autor"
+              : "autores"
+          }`
+        : ""
     ),
-    buildField("Documento", hasPdf.value ? "Disponible" : "Sin PDF"),
+
+    buildField(
+      "Documento",
+      hasPdf.value
+        ? "Disponible"
+        : "Sin PDF"
+    ),
   ]);
 });
+
+/* ============================================================
+  CLASIFICACIÓN
+============================================================ */
 
 const clasificacionInstitucional = computed(() => {
-  const d = detalleNormalizado.value;
+  const normalized =
+    detalleNormalizado.value;
 
   return visibleFields([
-    buildField("Facultad", d.facultad, { span: 4 }),
-    buildField("Carrera", d.carrera, { span: 4 }),
-    buildField("Área del conocimiento", d.area, { span: 4 }),
-    buildField("Subárea del conocimiento", d.subarea, { span: 4 }),
-    buildField("País", d.pais, { span: 4 }),
-    buildField("Ciudad", d.ciudad, { span: 4 }),
+    buildField(
+      "Facultad",
+      normalized.facultad,
+      { span: 4 }
+    ),
+
+    buildField(
+      "Carrera",
+      normalized.carrera,
+      { span: 4 }
+    ),
+
+    buildField(
+      "Área del conocimiento",
+      normalized.area,
+      { span: 4 }
+    ),
+
+    buildField(
+      "Subárea del conocimiento",
+      normalized.subarea,
+      { span: 4 }
+    ),
+
+    buildField(
+      "País",
+      normalized.pais,
+      { span: 4 }
+    ),
+
+    buildField(
+      "Ciudad",
+      normalized.ciudad,
+      { span: 4 }
+    ),
   ]);
 });
 
+/* ============================================================
+  BLOQUE PRINCIPAL POR TIPO
+============================================================ */
+
 const bloquePrincipal = computed(() => {
-  const d = detalle.value || {};
-  const tipo = detalleNormalizado.value.tipoNorm;
-  const titulo = detalleNormalizado.value.titulo;
+  const data = detalle.value || {};
+
+  const tipo =
+    detalleNormalizado.value.tipoNorm;
+
+  const titulo =
+    detalleNormalizado.value.titulo;
 
   if (tipo === "ponencia") {
-    const nombrePonencia = firstFilled(d.nombre_ponencia, d.titulo_ponencia);
+    const nombrePonencia = firstFilled(
+      data.nombre_ponencia,
+      data.titulo_ponencia
+    );
 
     return visibleFields([
-      buildField("Nombre del evento", firstFilled(d.nombre_evento, d.evento), { span: 6 }),
-      nombrePonencia && nombrePonencia !== titulo
-        ? buildField("Nombre de la ponencia", nombrePonencia, { span: 6 })
+      buildField(
+        "Nombre del evento",
+        firstFilled(
+          data.nombre_evento,
+          data.evento
+        ),
+        { span: 6 }
+      ),
+
+      nombrePonencia &&
+      nombrePonencia !== titulo
+        ? buildField(
+            "Nombre de la ponencia",
+            nombrePonencia,
+            { span: 6 }
+          )
         : null,
-      buildField("Fecha de presentación", formatFecha(d.fecha_publicacion), { span: 4 }),
-      buildField("Tipo de presentación", firstFilled(d.tipo_presentacion), { span: 4 }),
-      buildField("Enlace del evento", firstFilled(d.link_evento), {
-        href: ensureUrl(d.link_evento),
-        span: 12,
-      }),
+
+      buildField(
+        "Fecha de presentación",
+        formatFecha(data.fecha_publicacion),
+        { span: 4 }
+      ),
+
+      buildField(
+        "Tipo de presentación",
+        firstFilled(
+          data.tipo_presentacion
+        ),
+        { span: 4 }
+      ),
+
+      buildField(
+        "Enlace del evento",
+        firstFilled(data.link_evento),
+        {
+          href: ensureUrl(
+            data.link_evento
+          ),
+          span: 12,
+        }
+      ),
     ]);
   }
 
   if (tipo === "articulo") {
-    const nombreArticulo = firstFilled(d.nombre_articulo, d.titulo_articulo);
+    const nombreArticulo = firstFilled(
+      data.nombre_articulo,
+      data.titulo_articulo
+    );
 
     return visibleFields([
-      nombreArticulo && nombreArticulo !== titulo
-        ? buildField("Título del artículo", nombreArticulo, { span: 12 })
+      nombreArticulo &&
+      nombreArticulo !== titulo
+        ? buildField(
+            "Título del artículo",
+            nombreArticulo,
+            { span: 12 }
+          )
         : null,
-      buildField("Revista", firstFilled(d.nombre_revista, d.revista), { span: 6 }),
+
       buildField(
-        "Base de datos indexada",
-        firstFilled(d.base_datos_indexada, d.base_datos, d.indexacion),
+        "Revista",
+        firstFilled(
+          data.nombre_revista,
+          data.revista
+        ),
         { span: 6 }
       ),
+
+      buildField(
+        "Base de datos indexada",
+        firstFilled(
+          data.base_datos_indexada,
+          data.base_datos,
+          data.indexacion
+        ),
+        { span: 6 }
+      ),
+
       buildField(
         "Enlace del artículo",
-        firstFilled(d.link_articulo, d.link_publicacion, d.enlace_articulo),
+        firstFilled(
+          data.link_articulo,
+          data.link_publicacion,
+          data.enlace_articulo
+        ),
         {
           href: ensureUrl(
-            firstFilled(d.link_articulo, d.link_publicacion, d.enlace_articulo)
+            firstFilled(
+              data.link_articulo,
+              data.link_publicacion,
+              data.enlace_articulo
+            )
           ),
           span: 12,
         }
@@ -920,71 +1604,203 @@ const bloquePrincipal = computed(() => {
   }
 
   if (tipo === "capitulo") {
-    const nombreCapitulo = firstFilled(d.nombre_capitulo, d.titulo_capitulo);
+    const nombreCapitulo = firstFilled(
+      data.nombre_capitulo,
+      data.titulo_capitulo
+    );
 
     return visibleFields([
-      nombreCapitulo && nombreCapitulo !== titulo
-        ? buildField("Capítulo", nombreCapitulo, { span: 12 })
+      nombreCapitulo &&
+      nombreCapitulo !== titulo
+        ? buildField(
+            "Capítulo",
+            nombreCapitulo,
+            { span: 12 }
+          )
         : null,
-      buildField("Libro", firstFilled(d.nombre_libro, d.libro), { span: 6 }),
+
       buildField(
-        "Editor / Compilador",
-        firstFilled(d.editor_compilador, d.editor, d.compilador),
+        "Libro",
+        firstFilled(
+          data.nombre_libro,
+          data.libro
+        ),
         { span: 6 }
       ),
-      buildField("Enlace", firstFilled(d.link_capitulo), {
-        href: ensureUrl(d.link_capitulo),
-        span: 12,
-      }),
+
+      buildField(
+        "Editor o compilador",
+        firstFilled(
+          data.editor_compilador,
+          data.editor,
+          data.compilador
+        ),
+        { span: 6 }
+      ),
+
+      buildField(
+        "Enlace",
+        firstFilled(data.link_capitulo),
+        {
+          href: ensureUrl(
+            data.link_capitulo
+          ),
+          span: 12,
+        }
+      ),
     ]);
   }
 
   if (tipo === "libro") {
-    const nombreLibro = firstFilled(d.nombre_libro, d.titulo_libro);
+    const nombreLibro = firstFilled(
+      data.nombre_libro,
+      data.titulo_libro
+    );
 
     return visibleFields([
-      nombreLibro && nombreLibro !== titulo
-        ? buildField("Título del libro", nombreLibro, { span: 12 })
+      nombreLibro &&
+      nombreLibro !== titulo
+        ? buildField(
+            "Título del libro",
+            nombreLibro,
+            { span: 12 }
+          )
         : null,
-      buildField("Editorial", firstFilled(d.editorial, d.editorial_compilador), { span: 4 }),
-      buildField("Edición", firstFilled(d.edicion), { span: 4 }),
-      buildField("Fecha de publicación", formatFecha(d.fecha_publicacion), { span: 4 }),
-      buildField("Enlace", firstFilled(d.link_libro), {
-        href: ensureUrl(d.link_libro),
-        span: 12,
-      }),
+
+      buildField(
+        "Editorial",
+        firstFilled(
+          data.editorial,
+          data.editorial_compilador
+        ),
+        { span: 4 }
+      ),
+
+      buildField(
+        "Edición",
+        firstFilled(data.edicion),
+        { span: 4 }
+      ),
+
+      buildField(
+        "Fecha de publicación",
+        formatFecha(
+          data.fecha_publicacion
+        ),
+        { span: 4 }
+      ),
+
+      buildField(
+        "Enlace",
+        firstFilled(data.link_libro),
+        {
+          href: ensureUrl(
+            data.link_libro
+          ),
+          span: 12,
+        }
+      ),
     ]);
   }
 
   return visibleFields([
-    buildField("Fecha de publicación", formatFecha(d.fecha_publicacion), { span: 4 }),
-    buildField("Ubicación", detalleNormalizado.value.ubicacion, { span: 8 }),
+    buildField(
+      "Fecha de publicación",
+      formatFecha(
+        data.fecha_publicacion
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Ubicación",
+      detalleNormalizado.value.ubicacion,
+      { span: 8 }
+    ),
   ]);
 });
+
+/* ============================================================
+  IDENTIFICADORES ACADÉMICOS
+============================================================ */
 
 const identificadoresAcademicos = computed(() => {
-  const d = detalle.value || {};
-  const doi = firstFilled(d.codigo_doi, d.doi);
+  const data = detalle.value || {};
+
+  const doi = firstFilled(
+    data.codigo_doi,
+    data.doi
+  );
 
   return visibleFields([
-    buildField("DOI", doi, { href: doiUrl(doi), span: 4 }),
-    buildField("ISSN", firstFilled(d.codigo_issn, d.issn), { span: 4 }),
-    buildField("ISBN", firstFilled(d.codigo_isbn, d.isbn), { span: 4 }),
-    buildField("Código ISSN / ISBN", firstFilled(d.codigo_issn_isbn), { span: 4 }),
-    buildField("Cuartil", firstFilled(d.cuartil), { span: 4 }),
-    buildField("SJR", firstFilled(d.sjr), { span: 4 }),
+    buildField(
+      "DOI",
+      doi,
+      {
+        href: doiUrl(doi),
+        span: 4,
+      }
+    ),
+
+    buildField(
+      "ISSN",
+      firstFilled(
+        data.codigo_issn,
+        data.issn
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "ISBN",
+      firstFilled(
+        data.codigo_isbn,
+        data.isbn
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Código ISSN o ISBN",
+      firstFilled(
+        data.codigo_issn_isbn
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Cuartil",
+      firstFilled(data.cuartil),
+      { span: 4 }
+    ),
+
+    buildField(
+      "SJR",
+      firstFilled(data.sjr),
+      { span: 4 }
+    ),
   ]);
 });
 
+/* ============================================================
+  NAVEGACIÓN
+============================================================ */
+
 const goBack = () => {
-  const from = toStr(route.query?.from).toLowerCase();
+  const from = toStr(
+    route.query?.from
+  ).toLowerCase();
 
   if (window.history.length > 1) {
     router.back();
     return;
   }
 
-  if (from === "mis-publicaciones" || from === "mias" || from === "mis_publicaciones") {
+  if (
+    from === "mis-publicaciones" ||
+    from === "mias" ||
+    from === "mis_publicaciones"
+  ) {
     router.push("/mis-publicaciones");
     return;
   }
@@ -993,53 +1809,93 @@ const goBack = () => {
 };
 
 const openEditMode = () => {
-  if (!canEdit.value) return;
+  if (!canEdit.value) {
+    return;
+  }
+
   editMode.value = true;
 };
 
+/* ============================================================
+  VISUALIZACIÓN DEL PDF
+============================================================ */
+
 const writePdfLoading = (targetWindow) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>Cargando PDF...</title>
         <meta charset="utf-8" />
       </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
+
+      <body
+        style="
+          margin: 0;
+          padding: 32px;
+          background: #f2f5fa;
+          color: #172033;
+          font-family: Arial, sans-serif;
+        "
+      >
         <p>Cargando PDF...</p>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
-const writePdfError = (targetWindow, message = "No se pudo abrir el PDF.") => {
+const writePdfError = (
+  targetWindow,
+  message = "No se pudo abrir el PDF."
+) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>No se pudo abrir el PDF</title>
         <meta charset="utf-8" />
       </head>
-      <body style="font-family: Arial, sans-serif; padding: 24px;">
+
+      <body
+        style="
+          margin: 0;
+          padding: 32px;
+          background: #f2f5fa;
+          color: #172033;
+          font-family: Arial, sans-serif;
+        "
+      >
         <h2>${message}</h2>
-        <p>Verifica que la publicación tenga un archivo PDF asociado.</p>
+
+        <p>
+          Verifique que la publicación tenga un archivo PDF asociado.
+        </p>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
-const writePdfViewer = (targetWindow, blobUrl) => {
+const writePdfViewer = (
+  targetWindow,
+  blobUrl
+) => {
   targetWindow.document.open();
+
   targetWindow.document.write(`
     <!doctype html>
-    <html>
+    <html lang="es">
       <head>
         <title>Vista previa del PDF</title>
         <meta charset="utf-8" />
+
         <style>
           html,
           body {
@@ -1048,7 +1904,7 @@ const writePdfViewer = (targetWindow, blobUrl) => {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #111827;
+            background: #101827;
           }
 
           iframe {
@@ -1059,44 +1915,70 @@ const writePdfViewer = (targetWindow, blobUrl) => {
           }
         </style>
       </head>
+
       <body>
-        <iframe src="${blobUrl}" title="Vista previa del PDF"></iframe>
+        <iframe
+          src="${blobUrl}"
+          title="Vista previa del PDF"
+        ></iframe>
       </body>
     </html>
   `);
+
   targetWindow.document.close();
 };
 
 const fetchPdfBlob = async (id) => {
-  const response = await api.get(`/publicaciones/${id}/pdf/`, {
-    responseType: "blob",
-    headers: {
-      Accept: "application/pdf",
-    },
-  });
+  const response = await api.get(
+    `/publicaciones/${id}/pdf/`,
+    {
+      responseType: "blob",
 
-  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+      headers: {
+        Accept: "application/pdf",
+      },
+    }
+  );
 
-  if (contentType && !contentType.includes("application/pdf")) {
-    throw new Error("La respuesta recibida no es un PDF.");
+  const contentType = String(
+    response.headers?.["content-type"] || ""
+  ).toLowerCase();
+
+  if (
+    contentType &&
+    !contentType.includes("application/pdf")
+  ) {
+    throw new Error(
+      "La respuesta recibida no es un PDF."
+    );
   }
 
-  return new Blob([response.data], {
-    type: "application/pdf",
-  });
+  return new Blob(
+    [response.data],
+    {
+      type: "application/pdf",
+    }
+  );
 };
 
 const openPdf = async () => {
   const id = route.params.id;
 
-  if (!id) return;
+  if (!id) {
+    return;
+  }
 
-  const previewWindow = window.open("about:blank", "_blank");
+  const previewWindow = window.open(
+    "about:blank",
+    "_blank"
+  );
 
   if (!previewWindow) {
-    alert(
-      "El navegador bloqueó la ventana emergente. Permite ventanas emergentes para ver el PDF."
+    window.alert(
+      "El navegador bloqueó la ventana emergente. " +
+      "Permita las ventanas emergentes para visualizar el PDF."
     );
+
     return;
   }
 
@@ -1104,15 +1986,21 @@ const openPdf = async () => {
 
   try {
     const blob = await fetchPdfBlob(id);
-    const blobUrl = URL.createObjectURL(blob);
 
-    writePdfViewer(previewWindow, blobUrl);
+    const blobUrl =
+      URL.createObjectURL(blob);
 
-    setTimeout(() => {
+    writePdfViewer(
+      previewWindow,
+      blobUrl
+    );
+
+    window.setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
     }, 180000);
-  } catch (err) {
-    console.error(err);
+  } catch (pdfError) {
+    console.error(pdfError);
+
     writePdfError(previewWindow);
   }
 };
@@ -1120,40 +2008,69 @@ const openPdf = async () => {
 const downloadPdf = async () => {
   const id = route.params.id;
 
-  if (!id) return;
+  if (!id) {
+    return;
+  }
 
   try {
     const blob = await fetchPdfBlob(id);
-    const blobUrl = URL.createObjectURL(blob);
-    const filename = displayPdfName.value || "publicacion.pdf";
 
-    const link = document.createElement("a");
+    const blobUrl =
+      URL.createObjectURL(blob);
+
+    const filename =
+      displayPdfName.value ||
+      "publicacion.pdf";
+
+    const link =
+      document.createElement("a");
+
     link.href = blobUrl;
     link.download = filename;
 
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
 
-    setTimeout(() => {
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
     }, 1000);
-  } catch (err) {
-    console.error(err);
-    alert("No se pudo descargar el PDF.");
+  } catch (pdfError) {
+    console.error(pdfError);
+
+    window.alert(
+      "No se pudo descargar el PDF."
+    );
   }
 };
 
-const cargarDetalle = async (forcedId = route.params.id, options = {}) => {
+/* ============================================================
+  CARGA DEL DETALLE
+============================================================ */
+
+const cargarDetalle = async (
+  forcedId = route.params.id,
+  options = {}
+) => {
   const id = toStr(forcedId);
+
   const requestId = ++requestSeq;
-  const keepEditMode = !!options.keepEditMode;
-  const silent = !!options.silent;
+
+  const keepEditMode =
+    Boolean(options.keepEditMode);
+
+  const silent =
+    Boolean(options.silent);
 
   if (!id) {
     detalle.value = null;
-    error.value = "El identificador de la publicación no es válido.";
+
+    error.value =
+      "El identificador de la publicación no es válido.";
+
     loading.value = false;
+
     return;
   }
 
@@ -1168,35 +2085,53 @@ const cargarDetalle = async (forcedId = route.params.id, options = {}) => {
   }
 
   try {
-    const response = await api.get(`/publicaciones/${id}/`);
+    const response = await api.get(
+      `/publicaciones/${id}/`
+    );
 
-    if (requestId !== requestSeq) return;
+    if (requestId !== requestSeq) {
+      return;
+    }
 
     detalle.value = response.data;
-  } catch (err) {
-    if (requestId !== requestSeq) return;
+  } catch (requestError) {
+    if (requestId !== requestSeq) {
+      return;
+    }
 
-    console.error(err);
+    console.error(requestError);
+
     detalle.value = null;
+
     error.value =
-      err?.response?.data?.detail ||
-      err?.response?.data?.message ||
+      requestError?.response?.data?.detail ||
+      requestError?.response?.data?.message ||
       "Ocurrió un problema al obtener el detalle de la publicación.";
   } finally {
-    if (requestId === requestSeq && !silent) {
+    if (
+      requestId === requestSeq &&
+      !silent
+    ) {
       loading.value = false;
     }
   }
 };
 
 const onUpdated = async () => {
-  await cargarDetalle(route.params.id, {
-    keepEditMode: true,
-    silent: true,
-  });
+  await cargarDetalle(
+    route.params.id,
+    {
+      keepEditMode: true,
+      silent: true,
+    }
+  );
 
-  editMode.value = true;
+  editMode.value = false;
 };
+
+/* ============================================================
+  WATCHERS
+============================================================ */
 
 watch(
   () => canEdit.value,
@@ -1205,7 +2140,9 @@ watch(
       editMode.value = false;
     }
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 
 watch(
@@ -1213,7 +2150,9 @@ watch(
   async (newId) => {
     await cargarDetalle(newId);
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 </script>
 

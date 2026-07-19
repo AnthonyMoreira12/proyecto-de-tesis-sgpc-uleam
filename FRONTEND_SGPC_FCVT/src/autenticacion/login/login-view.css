@@ -231,14 +231,116 @@
     );
 }
 
+.login-panel__topbar {
+  position: relative;
+  z-index: 2;
+
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
 .login-panel__brand {
   position: relative;
   z-index: 1;
+
+  min-width: 0;
 
   display: flex;
   align-items: center;
 
   gap: 14px;
+}
+
+.login-theme-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+
+  display: inline-grid;
+  place-items: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--login-line-strong) 88%,
+      transparent
+    );
+
+  border-radius: 14px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--login-card) 88%,
+      var(--login-soft) 12%
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--login-text) 78%,
+      var(--login-primary) 22%
+    );
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px
+    color-mix(
+      in srgb,
+      var(--login-text) 8%,
+      transparent
+    );
+
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    background-color 170ms ease,
+    color 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.login-theme-toggle:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--login-primary) 34%,
+      var(--login-line)
+    );
+
+  background:
+    var(--login-primary-soft);
+
+  color:
+    var(--login-primary);
+
+  box-shadow:
+    0 11px 24px
+    color-mix(
+      in srgb,
+      var(--login-primary) 14%,
+      transparent
+    );
+}
+
+.login-theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--login-ring);
+}
+
+.login-theme-toggle svg {
+  width: 21px;
+  height: 21px;
 }
 
 .login-panel__brand-logo {
@@ -994,6 +1096,75 @@ body.dark .auth-container--login,
 
   --login-line-strong:
     var(--border-strong, rgba(255, 255, 255, 0.2));
+
+  --login-button-secondary:
+    color-mix(
+      in srgb,
+      var(--login-primary) 66%,
+      #0b1324 34%
+    );
+
+  color-scheme: dark;
+}
+
+:root.dark .login-shell,
+html.dark .login-shell,
+body.dark .login-shell,
+.dark .login-shell,
+[data-theme="dark"] .login-shell {
+  box-shadow:
+    0 30px 90px
+    rgba(0, 0, 0, 0.42);
+}
+
+:root.dark .login-theme-toggle,
+html.dark .login-theme-toggle,
+body.dark .login-theme-toggle,
+.dark .login-theme-toggle,
+[data-theme="dark"] .login-theme-toggle {
+  background:
+    color-mix(
+      in srgb,
+      var(--login-input) 88%,
+      transparent
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--login-text) 84%,
+      var(--login-primary) 16%
+    );
+
+  box-shadow:
+    0 10px 24px
+    rgba(0, 0, 0, 0.24);
+}
+
+:root.dark .login-panel,
+html.dark .login-panel,
+body.dark .login-panel,
+.dark .login-panel,
+[data-theme="dark"] .login-panel {
+  background:
+    radial-gradient(
+      circle at 0 0,
+      color-mix(
+        in srgb,
+        var(--login-primary) 10%,
+        transparent
+      ),
+      transparent 36%
+    ),
+    var(--login-card);
+}
+
+:root.dark .login-visual__logo-surface,
+html.dark .login-visual__logo-surface,
+body.dark .login-visual__logo-surface,
+.dark .login-visual__logo-surface,
+[data-theme="dark"] .login-visual__logo-surface {
+  background: rgba(255, 255, 255, 0.96);
 }
 
 /* =========================================================
@@ -1094,6 +1265,17 @@ body.dark .auth-container--login,
 
     width: 100%;
     height: 4px;
+  }
+
+  .login-panel__topbar {
+    gap: 12px;
+  }
+
+  .login-theme-toggle {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    border-radius: 13px;
   }
 
   .login-panel__brand-logo {

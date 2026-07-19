@@ -57,16 +57,25 @@
         <div v-else class="ivbi-dashboard">
           <header class="ivbi-header">
             <section class="ivbi-header__top" aria-labelledby="ivbi-dashboard-title">
-              <div class="ivbi-header__titlebox">
-                <span class="ivbi-header__kicker">SGPC ULEAM</span>
+              <div class="ivbi-header__identity">
+                <div class="ivbi-header__brandmark" aria-hidden="true">
+                  <img
+                    src="../../assets/LOGO-ULEAM-VERTICAL.png"
+                    alt=""
+                  />
+                </div>
 
-                <h1 id="ivbi-dashboard-title" class="ivbi-header__title">
-                  Panel analítico institucional
-                </h1>
+                <div class="ivbi-header__titlebox">
+                  <span class="ivbi-header__kicker">SGPC ULEAM</span>
 
-                <p class="ivbi-header__meta">
-                  {{ dashboardMetaLine }}
-                </p>
+                  <h1 id="ivbi-dashboard-title" class="ivbi-header__title">
+                    Panel analítico institucional
+                  </h1>
+
+                  <p class="ivbi-header__meta">
+                    {{ dashboardMetaLine }}
+                  </p>
+                </div>
               </div>
 
               <div class="ivbi-header__actions">
@@ -120,20 +129,65 @@
                 </button>
               </nav>
 
-              <p class="ivbi-header__view-help">
-                <strong>{{ activeViewLabel }}:</strong>
-                {{ activeViewDescription }}
-              </p>
+              <div class="ivbi-header__view-context">
+                <span class="ivbi-header__view-icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20">
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="7.4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <path
+                      d="M10 8.8v4.6M10 6.3h.01"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+
+                <p class="ivbi-header__view-help">
+                  <strong>{{ activeViewLabel }}:</strong>
+                  {{ activeViewDescription }}
+                </p>
+              </div>
             </section>
 
             <section class="ivbi-filterbar" aria-labelledby="ivbi-filters-title">
               <header class="ivbi-filterbar__head">
-                <div>
-                  <span class="ivbi-filterbar__eyebrow">Refinar información</span>
-                  <h2 id="ivbi-filters-title">Filtros de {{ activeViewLabel.toLowerCase() }}</h2>
+                <div class="ivbi-filterbar__heading">
+                  <span class="ivbi-filterbar__icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20">
+                      <path
+                        d="M3 4h14l-5.2 6.1v4.6l-3.6 1.8v-6.4L3 4Z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+
+                  <div>
+                    <span class="ivbi-filterbar__eyebrow">Refinar información</span>
+                    <h2 id="ivbi-filters-title">
+                      Filtros de {{ activeViewLabel.toLowerCase() }}
+                    </h2>
+                  </div>
                 </div>
 
-                <span class="ivbi-filterbar__status" aria-live="polite">
+                <span
+                  class="ivbi-filterbar__status"
+                  :class="{
+                    'is-live': !isRefreshing,
+                    'is-updating': isRefreshing,
+                  }"
+                  aria-live="polite"
+                >
                   {{ isRefreshing ? "Actualizando…" : "Aplicación automática" }}
                 </span>
               </header>
@@ -314,30 +368,55 @@
                 key="resumen"
                 class="ivbi-view-shell"
               >
-                <section class="ivbi-kpi-strip" aria-label="Indicadores principales">
+                <section
+                  :key="`kpi-strip-${visualRevision}`"
+                  class="ivbi-kpi-strip"
+                  aria-label="Indicadores principales"
+                >
                   <article
-                    v-for="kpi in headlineKpis"
+                    v-for="(kpi, kpiIndex) in headlineKpis"
                     :key="kpi.key"
                     class="ivbi-kpi-card"
                     :class="[
                       `ivbi-kpi-card--${kpi.key}`,
                       {
                         'is-primary': ['publicaciones', 'alto-impacto'].includes(kpi.key),
-                        'is-coverage': ['facultades', 'carreras'].includes(kpi.key)
-                      }
+                        'is-coverage': ['facultades', 'carreras'].includes(kpi.key),
+                      },
                     ]"
+                    :style="{
+                      '--kpi-delay': `${kpiIndex * 55}ms`,
+                    }"
                   >
-                    <span class="ivbi-kpi-card__label">{{ kpi.label }}</span>
+                    <span class="ivbi-kpi-card__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          :d="kpi.iconPath"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
 
-                    <strong class="ivbi-kpi-card__value">
-                      {{ formatNumber(kpi.value) }}
-                    </strong>
+                    <div class="ivbi-kpi-card__copy">
+                      <span class="ivbi-kpi-card__label">{{ kpi.label }}</span>
 
-                    <span class="ivbi-kpi-card__hint">{{ kpi.hint }}</span>
+                      <strong class="ivbi-kpi-card__value">
+                        {{ formatNumber(kpi.value) }}
+                      </strong>
+
+                      <span class="ivbi-kpi-card__hint">{{ kpi.hint }}</span>
+                    </div>
                   </article>
                 </section>
 
-                <section class="ivbi-summary-grid">
+                <section
+                  :key="`summary-grid-${visualRevision}`"
+                  class="ivbi-summary-grid"
+                >
                   <article class="ivbi-card ivbi-card--distribution">
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
@@ -442,15 +521,21 @@
                               v-for="(serie, serieIndex) in publicacionesPorTipoAnual.series"
                               :key="`${serie.codigo}-${category}`"
                               class="ivbi-grouped__barbox"
+                              :style="{
+                                '--grouped-h': groupedBarHeight(
+                                  publicacionesPorTipoAnual.series,
+                                  serie.data?.[catIndex] || 0
+                                ),
+                                '--grouped-delay': `${serieIndex * 45 + catIndex * 20}ms`,
+                              }"
                             >
+                              <span class="ivbi-grouped__value">
+                                {{ serie.data?.[catIndex] || 0 }}
+                              </span>
+
                               <div
                                 class="ivbi-grouped__bar"
                                 :style="{
-                                  '--grouped-h': groupedBarHeight(
-                                    publicacionesPorTipoAnual.series,
-                                    serie.data?.[catIndex] || 0
-                                  ),
-                                  '--grouped-delay': `${serieIndex * 45 + catIndex * 20}ms`,
                                   background: getTypeColor(serie.codigo, serieIndex)
                                 }"
                                 :title="`${serie.label}: ${serie.data?.[catIndex] || 0}`"
@@ -583,7 +668,10 @@
                 key="tendencia"
                 class="ivbi-view-shell"
               >
-                <section class="ivbi-trend-grid">
+                <section
+                  :key="`trend-grid-${visualRevision}`"
+                  class="ivbi-trend-grid"
+                >
                   <article class="ivbi-card ivbi-card--historica">
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
@@ -657,15 +745,21 @@
                               v-for="(serie, serieIndex) in publicacionesPorTipoAnual.series"
                               :key="`trend-${serie.codigo}-${category}`"
                               class="ivbi-grouped__barbox"
+                              :style="{
+                                '--grouped-h': groupedBarHeight(
+                                  publicacionesPorTipoAnual.series,
+                                  serie.data?.[catIndex] || 0
+                                ),
+                                '--grouped-delay': `${serieIndex * 45 + catIndex * 20}ms`,
+                              }"
                             >
+                              <span class="ivbi-grouped__value">
+                                {{ serie.data?.[catIndex] || 0 }}
+                              </span>
+
                               <div
                                 class="ivbi-grouped__bar"
                                 :style="{
-                                  '--grouped-h': groupedBarHeight(
-                                    publicacionesPorTipoAnual.series,
-                                    serie.data?.[catIndex] || 0
-                                  ),
-                                  '--grouped-delay': `${serieIndex * 45 + catIndex * 20}ms`,
                                   background: getTypeColor(serie.codigo, serieIndex)
                                 }"
                               ></div>
@@ -743,7 +837,10 @@
                 key="rankings"
                 class="ivbi-view-shell"
               >
-                <section class="ivbi-rankings-grid">
+                <section
+                  :key="`rankings-grid-${visualRevision}`"
+                  class="ivbi-rankings-grid"
+                >
                   <article class="ivbi-card ivbi-card--facultades-rank">
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
@@ -1039,6 +1136,32 @@
           <div v-else class="ivbi-empty ivbi-empty--state">
             Sin datos para los filtros seleccionados.
           </div>
+
+          <footer v-if="hasData" class="ivbi-dashboard-note">
+            <span class="ivbi-dashboard-note__icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20">
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="7.4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M10 8.8v4.6M10 6.3h.01"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+
+            <span>
+              Los datos se actualizan automáticamente según los filtros seleccionados.
+            </span>
+          </footer>
         </div>
       </section>
     </section>
@@ -1048,6 +1171,7 @@
 <script setup>
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   reactive,
@@ -1166,6 +1290,7 @@ const hasLoadedOnce = ref(false);
 const suppressAutoApply = ref(false);
 const vistaActiva = ref("resumen");
 const hoveredTypeCode = ref("");
+const visualRevision = ref(0);
 
 const vistaOpciones = Object.freeze([
   { key: "resumen", label: "Resumen" },
@@ -1471,6 +1596,11 @@ function scheduleAutoApply(delay = 220) {
   }, delay);
 }
 
+async function replayDashboardMotion() {
+  await nextTick();
+  visualRevision.value += 1;
+}
+
 function buildParams() {
   const currentViewFilters = viewFilters[vistaActiva.value] || {};
 
@@ -1599,6 +1729,7 @@ async function loadDashboard() {
     }
 
     response.value = data;
+    await replayDashboardMotion();
 
     const carrerasValidas = new Set(
       (data?.filtros_disponibles?.carreras || []).map((item) => String(item.id))
@@ -1621,6 +1752,7 @@ async function loadDashboard() {
       "No fue posible cargar el panel analítico.";
 
     response.value = EMPTY_RESPONSE;
+    await replayDashboardMotion();
   } finally {
     if (currentRequestId === requestId) {
       loading.value = false;
@@ -1997,36 +2129,42 @@ const headlineKpis = computed(() => [
     label: "Publicaciones",
     value: totalPublicacionesTween.value,
     hint: periodoResumen.value,
+    iconPath: "M6 3h8l4 4v14H6V3Zm8 0v5h5M9 13h6M9 17h6",
   },
   {
     key: "autores",
     label: "Autores",
     value: totalAutoresTween.value,
     hint: "Autores vinculados",
+    iconPath: "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7-1a3 3 0 1 0 0-6M2.5 21c.6-4.2 3-6.5 6-6.5s5.4 2.3 6 6.5M14 14.8c3.6.4 5.7 2.4 6 6.2",
   },
   {
     key: "facultades",
     label: "Facultades",
     value: totalFacultadesTween.value,
     hint: "Cobertura institucional",
+    iconPath: "M3 9 12 4l9 5M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18",
   },
   {
     key: "carreras",
     label: "Carreras",
     value: totalCarrerasTween.value,
     hint: "Oferta académica",
+    iconPath: "M3 8l9-5 9 5-9 5-9-5Zm4 3v5c3 2 7 2 10 0v-5M21 8v6",
   },
   {
     key: "proyectos",
     label: "Proyectos",
     value: totalProyectosTween.value,
     hint: "Proyectos asociados",
+    iconPath: "M8 6V4h8v2M4 7h16v13H4V7Zm0 5h16M9 12v2h6v-2",
   },
   {
     key: "alto-impacto",
     label: "Alto impacto",
     value: totalAltoImpactoTween.value,
     hint: "Artículos indexados",
+    iconPath: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2-4.5-4.4 6.2-.9L12 3Z",
   },
 ]);
 

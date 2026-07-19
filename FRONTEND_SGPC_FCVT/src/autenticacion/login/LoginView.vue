@@ -6,22 +6,77 @@
           class="login-panel page-stage page-stage-1"
           aria-labelledby="login-title"
         >
-          <div class="login-panel__brand">
-            <img
-              src="../../assets/LOGO-ULEAM-VERTICAL.png"
-              class="login-panel__brand-logo"
-              alt="Logo de la Universidad Laica Eloy Alfaro de Manabí"
-            />
+          <div class="login-panel__topbar">
+            <div class="login-panel__brand">
+              <img
+                src="../../assets/LOGO-ULEAM-VERTICAL.png"
+                class="login-panel__brand-logo"
+                alt="Logo de la Universidad Laica Eloy Alfaro de Manabí"
+              />
 
-            <div class="login-panel__brand-copy">
-              <p class="login-panel__brand-kicker">
-                Universidad Laica Eloy Alfaro de Manabí
-              </p>
+              <div class="login-panel__brand-copy">
+                <p class="login-panel__brand-kicker">
+                  Universidad Laica Eloy Alfaro de Manabí
+                </p>
 
-              <p class="login-panel__brand-system">
-                SGPC ULEAM
-              </p>
+                <p class="login-panel__brand-system">
+                  SGPC ULEAM
+                </p>
+              </div>
             </div>
+
+            <button
+              class="login-theme-toggle"
+              type="button"
+              :aria-label="themeToggleLabel"
+              :title="themeToggleLabel"
+              :aria-pressed="darkMode ? 'true' : 'false'"
+              @click="toggleTheme"
+            >
+              <svg
+                v-if="darkMode"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+
+                <path
+                  d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M5.3 5.3 3.9 3.9M20.1 20.1l-1.4-1.4M18.7 5.3l1.4-1.4M3.9 20.1l1.4-1.4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M21 14.4A8.6 8.6 0 0 1 9.6 3a7.5 7.5 0 1 0 11.4 11.4Z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+              <span class="sr-only">
+                {{ themeToggleLabel }}
+              </span>
+            </button>
           </div>
 
           <div class="login-panel__content">
@@ -297,15 +352,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 
 import api from "../../scripts/api/axios";
 import { useUserStore } from "../../scripts/stores/userStore";
+import { useThemeStore } from "../../scripts/stores/themeStore";
 
 const router = useRouter();
 const route = useRoute();
+
 const userStore = useUserStore();
+const themeStore = useThemeStore();
+
+const { darkMode } = storeToRefs(themeStore);
+
+const themeToggleLabel = computed(() => {
+  return darkMode.value
+    ? "Activar modo claro"
+    : "Activar modo oscuro";
+});
+
+const toggleTheme = () => {
+  themeStore.toggleTheme();
+};
 
 const AUTH_HOME_ROUTE = "/home";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
