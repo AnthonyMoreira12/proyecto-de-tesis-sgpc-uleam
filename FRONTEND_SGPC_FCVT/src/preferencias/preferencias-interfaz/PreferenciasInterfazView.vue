@@ -1,34 +1,13 @@
 <template>
-  <div class="sgpc-config-page">
-    <div class="config-shell">
-      <!-- =====================================================
-           ENCABEZADO
-      ====================================================== -->
+  <div class="preferences-page">
+    <div class="preferences-shell">
       <header
-        class="config-hero page-stage page-hero page-stage-1"
+        class="preferences-hero page-stage page-stage-1"
         aria-labelledby="preferences-title"
       >
-        <div class="config-hero__copy">
-          <h1
-            id="preferences-title"
-            class="config-title"
-          >
-            Preferencias de interfaz
-          </h1>
-
-          <p class="config-lead">
-            Personalice la apariencia, el tamaño del texto y el movimiento del
-            sistema.
-          </p>
-        </div>
-
-        <div
-          class="config-autosave"
-          role="status"
-          aria-label="Los cambios se guardan automáticamente"
-        >
+        <div class="preferences-hero__identity">
           <span
-            class="config-autosave__icon"
+            class="preferences-hero__icon"
             aria-hidden="true"
           >
             <svg
@@ -36,10 +15,10 @@
               focusable="false"
             >
               <path
-                d="m7.5 12.5 3 3 6-7"
+                d="M12 3.5a2.2 2.2 0 0 1 2.1 1.5l.2.7a2.2 2.2 0 0 0 2.7 1.4l.7-.2a2.2 2.2 0 0 1 2.5 1.1 2.2 2.2 0 0 1-.4 2.7l-.5.5a2.2 2.2 0 0 0 0 3.1l.5.5a2.2 2.2 0 0 1 .4 2.7 2.2 2.2 0 0 1-2.5 1.1l-.7-.2a2.2 2.2 0 0 0-2.7 1.4l-.2.7a2.2 2.2 0 0 1-4.2 0l-.2-.7A2.2 2.2 0 0 0 7 18.3l-.7.2a2.2 2.2 0 0 1-2.5-1.1 2.2 2.2 0 0 1 .4-2.7l.5-.5a2.2 2.2 0 0 0 0-3.1l-.5-.5A2.2 2.2 0 0 1 3.8 8a2.2 2.2 0 0 1 2.5-1.1l.7.2a2.2 2.2 0 0 0 2.7-1.4l.2-.7A2.2 2.2 0 0 1 12 3.5Z"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="1.7"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
@@ -47,7 +26,7 @@
               <circle
                 cx="12"
                 cy="12"
-                r="9"
+                r="3"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.7"
@@ -55,716 +34,754 @@
             </svg>
           </span>
 
+          <div class="preferences-hero__copy">
+            <span class="preferences-eyebrow">
+              Configuración personal
+            </span>
+
+            <h1
+              id="preferences-title"
+              class="preferences-title"
+            >
+              Preferencias de interfaz
+            </h1>
+
+            <p class="preferences-lead">
+              Ajuste la apariencia, la legibilidad y el movimiento del sistema.
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="autosave-status"
+          role="status"
+          aria-label="Los cambios se guardan automáticamente"
+        >
+          <span
+            class="autosave-status__dot"
+            aria-hidden="true"
+          ></span>
+
           <span>Guardado automático</span>
         </div>
       </header>
 
-      <!-- =====================================================
-           CONTENIDO
-      ====================================================== -->
-      <main class="config-layout page-stage page-content page-stage-2">
-        <section
-          class="config-primary page-stage page-main page-stage-3"
-          aria-label="Configuración de la interfaz"
-        >
-          <!-- =================================================
-               APARIENCIA
-          ================================================== -->
-          <article class="config-card config-card--appearance">
-            <header class="section-head">
-              <div class="section-head__copy">
-                <span class="section-label">
-                  Apariencia
-                </span>
-
-                <h2 class="card-title">
-                  Estilo visual
-                </h2>
-
-                <p class="section-description">
-                  Seleccione la identidad visual y el tema que desea utilizar.
-                </p>
-              </div>
-            </header>
-
-            <div class="config-sections">
-              <!-- Perfil visual -->
-              <section
-                class="editor-block"
-                aria-labelledby="profile-title"
-              >
-                <div class="editor-block__head">
-                  <h3
-                    id="profile-title"
-                    class="editor-block__title"
+      <main class="preferences-layout page-stage page-stage-2">
+        <div class="preferences-main">
+          <!-- APARIENCIA -->
+          <section
+            class="settings-card settings-card--appearance"
+            aria-labelledby="appearance-title"
+          >
+            <header class="settings-card__header">
+              <div class="settings-card__heading">
+                <span
+                  class="settings-card__icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    focusable="false"
                   >
-                    Perfil
-                  </h3>
-
-                  <p class="editor-block__description">
-                    Define el estilo general de la interfaz.
-                  </p>
-                </div>
-
-                <div class="profile-options">
-                  <button
-                    v-for="profile in visualProfiles"
-                    :key="profile.value"
-                    class="profile-option"
-                    :class="[
-                      `profile-option--${profile.value}`,
-                      {
-                        active:
-                          uiThemeProfile === profile.value,
-                      },
-                    ]"
-                    type="button"
-                    :aria-pressed="
-                      uiThemeProfile === profile.value
-                    "
-                    @click="
-                      uiThemeProfile = profile.value
-                    "
-                  >
-                    <span
-                      class="profile-option__preview"
-                      aria-hidden="true"
-                    >
-                      <span class="profile-option__preview-top"></span>
-
-                      <span class="profile-option__preview-layout">
-                        <span class="profile-option__preview-sidebar"></span>
-
-                        <span class="profile-option__preview-content">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </span>
-                      </span>
-                    </span>
-
-                    <span class="profile-option__copy">
-                      <span class="profile-option__title">
-                        {{ profile.label }}
-                      </span>
-
-                      <span class="profile-option__desc">
-                        {{ profile.desc }}
-                      </span>
-                    </span>
-
-                    <span
-                      class="option-check"
-                      aria-hidden="true"
-                    >
-                      <svg
-                        viewBox="0 0 20 20"
-                        focusable="false"
-                      >
-                        <path
-                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                </div>
-              </section>
-
-              <!-- Tema -->
-              <section
-                class="editor-block"
-                aria-labelledby="theme-title"
-              >
-                <div class="editor-block__head">
-                  <h3
-                    id="theme-title"
-                    class="editor-block__title"
-                  >
-                    Tema
-                  </h3>
-
-                  <p class="editor-block__description">
-                    Cambie entre una interfaz clara u oscura.
-                  </p>
-                </div>
-
-                <div class="mode-row">
-                  <div class="mode-state">
-                    <span
-                      class="mode-state__icon"
-                      aria-hidden="true"
-                    >
-                      <svg
-                        v-if="uiDarkMode"
-                        viewBox="0 0 24 24"
-                        focusable="false"
-                      >
-                        <path
-                          d="M20 15.4A8 8 0 0 1 8.6 4a8.2 8.2 0 1 0 11.4 11.4Z"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-
-                      <svg
-                        v-else
-                        viewBox="0 0 24 24"
-                        focusable="false"
-                      >
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="4"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                        />
-
-                        <path
-                          d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </span>
-
-                    <span class="mode-state__copy">
-                      <strong>
-                        {{ currentModeLabel }}
-                      </strong>
-
-                      <span>
-                        {{
-                          uiDarkMode
-                            ? "Reduce el brillo y utiliza superficies oscuras."
-                            : "Utiliza fondos claros y mayor luminosidad."
-                        }}
-                      </span>
-                    </span>
-                  </div>
-
-                  <label class="toggle toggle--large">
-                    <span class="sr-only">
-                      Activar modo oscuro
-                    </span>
-
-                    <input
-                      v-model="uiDarkMode"
-                      type="checkbox"
+                    <path
+                      d="M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 .4-3.5l-.9-.2a1.6 1.6 0 0 1 .4-3.1h2.5A5.4 5.4 0 0 0 21 8.8C21 5.6 17 3 12 3Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     />
 
-                    <span
-                      class="track"
-                      aria-hidden="true"
-                    >
-                      <span class="thumb"></span>
-                    </span>
-                  </label>
-                </div>
-              </section>
+                    <circle
+                      cx="7.5"
+                      cy="10"
+                      r="1"
+                      fill="currentColor"
+                    />
 
-              <!-- Variante editorial -->
-              <section
-                v-if="isEditorialProfile"
-                class="editor-block"
-                aria-labelledby="variant-title"
-              >
-                <div class="editor-block__head">
-                  <h3
-                    id="variant-title"
-                    class="editor-block__title"
-                  >
-                    Variante visual
-                  </h3>
+                    <circle
+                      cx="10"
+                      cy="6.8"
+                      r="1"
+                      fill="currentColor"
+                    />
 
-                  <p class="editor-block__description">
-                    Seleccione la combinación de superficies que mejor se
-                    adapte a su lectura.
+                    <circle
+                      cx="14"
+                      cy="6.5"
+                      r="1"
+                      fill="currentColor"
+                    />
+
+                    <circle
+                      cx="17"
+                      cy="9"
+                      r="1"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="section-kicker">
+                    Apariencia
+                  </span>
+
+                  <h2 id="appearance-title">
+                    Seleccione un tema
+                  </h2>
+
+                  <p>
+                    Cada opción utiliza colores sólidos, sin degradados ni
+                    superficies difuminadas.
                   </p>
                 </div>
+              </div>
 
-                <div class="surface-options">
-                  <button
-                    v-for="variant in variantOptions"
-                    :key="variant.value"
-                    class="surface-option"
-                    type="button"
-                    :class="{
-                      active:
-                        currentVariantValue === variant.value,
-                    }"
-                    :aria-pressed="
-                      currentVariantValue === variant.value
-                    "
-                    :style="{
-                      '--surface-bg': variant.preview.bg,
-                      '--surface-card': variant.preview.card,
-                      '--surface-line': variant.preview.line,
-                    }"
-                    @click="changeVariant(variant.value)"
-                  >
-                    <span
-                      class="surface-option__preview"
-                      aria-hidden="true"
-                    >
-                      <span class="surface-option__preview-shell">
-                        <span class="surface-option__preview-top"></span>
+              <span class="current-setting">
+                {{ currentAppearance.label }}
+              </span>
+            </header>
 
-                        <span class="surface-option__preview-layout">
-                          <span class="surface-option__preview-sidebar"></span>
+            <div
+              class="appearance-grid"
+              role="radiogroup"
+              aria-label="Temas disponibles"
+            >
+              <button
+                v-for="option in appearanceOptions"
+                :key="option.value"
+                class="appearance-option"
+                :class="{
+                  'is-selected': selectedAppearance === option.value,
+                  'is-dark-option': option.mode === 'dark',
+                }"
+                type="button"
+                role="radio"
+                :aria-checked="selectedAppearance === option.value"
+                :style="getOptionStyle(option)"
+                @click="selectAppearance(option.value)"
+              >
+                <span
+                  class="appearance-option__preview"
+                  aria-hidden="true"
+                >
+                  <span class="theme-preview">
+                    <span class="theme-preview__sidebar">
+                      <span class="theme-preview__brand"></span>
+                      <span class="theme-preview__nav is-active"></span>
+                      <span class="theme-preview__nav"></span>
+                      <span class="theme-preview__nav"></span>
+                    </span>
 
-                          <span class="surface-option__preview-body">
-                            <span class="surface-option__preview-card"></span>
+                    <span class="theme-preview__content">
+                      <span class="theme-preview__topbar">
+                        <span></span>
+                        <span></span>
+                      </span>
 
-                            <span class="surface-option__preview-row">
-                              <span></span>
-                              <span></span>
-                            </span>
-                          </span>
+                      <span class="theme-preview__body">
+                        <span class="theme-preview__headline"></span>
+
+                        <span class="theme-preview__metrics">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </span>
+
+                        <span class="theme-preview__panel">
+                          <span></span>
+                          <span></span>
                         </span>
                       </span>
                     </span>
-
-                    <span class="surface-option__copy">
-                      <span class="surface-option__title">
-                        {{ variant.label }}
-                      </span>
-
-                      <span class="surface-option__desc">
-                        {{ variant.desc }}
-                      </span>
-                    </span>
-
-                    <span
-                      class="option-check"
-                      aria-hidden="true"
-                    >
-                      <svg
-                        viewBox="0 0 20 20"
-                        focusable="false"
-                      >
-                        <path
-                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                </div>
-              </section>
-            </div>
-          </article>
-
-          <!-- =================================================
-               ACCESIBILIDAD
-          ================================================== -->
-          <article class="config-card config-card--accessibility">
-            <header class="section-head">
-              <div class="section-head__copy">
-                <span class="section-label">
-                  Accesibilidad
+                  </span>
                 </span>
 
-                <h2 class="card-title">
-                  Texto y movimiento
-                </h2>
+                <span class="appearance-option__footer">
+                  <span class="appearance-option__copy">
+                    <strong>{{ option.label }}</strong>
+                    <span>{{ option.desc }}</span>
+                  </span>
 
-                <p class="section-description">
-                  Ajuste la lectura y reduzca los efectos visuales cuando sea
-                  necesario.
-                </p>
-              </div>
-            </header>
-
-            <div class="config-sections">
-              <!-- Tamaño del texto -->
-              <section
-                class="editor-block"
-                aria-labelledby="font-title"
-              >
-                <div class="editor-block__head">
-                  <h3
-                    id="font-title"
-                    class="editor-block__title"
+                  <span
+                    class="appearance-option__check"
+                    aria-hidden="true"
                   >
-                    Tamaño del texto
-                  </h3>
+                    <svg
+                      viewBox="0 0 20 20"
+                      focusable="false"
+                    >
+                      <path
+                        d="m5 10.3 3 3 7-7"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.1"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </span>
+              </button>
+            </div>
+          </section>
 
-                  <p class="editor-block__description">
-                    El cambio se aplicará en las principales interfaces del
-                    sistema.
+          <!-- LEGIBILIDAD -->
+          <section
+            class="settings-card"
+            aria-labelledby="readability-title"
+          >
+            <header class="settings-card__header">
+              <div class="settings-card__heading">
+                <span
+                  class="settings-card__icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    focusable="false"
+                  >
+                    <path
+                      d="M4 6.5h16M8 6.5v11M5.5 17.5h5M15 10.5h4M17 10.5v7M14.5 17.5h5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="section-kicker">
+                    Legibilidad
+                  </span>
+
+                  <h2 id="readability-title">
+                    Tamaño del texto
+                  </h2>
+
+                  <p>
+                    Cambia el tamaño base de la tipografía en toda la aplicación.
                   </p>
                 </div>
+              </div>
 
-                <div class="font-options">
-                  <button
-                    v-for="option in fontOptions"
-                    :key="option.value"
-                    type="button"
-                    class="font-option"
-                    :class="{
-                      active:
-                        uiFontSize === option.value,
-                    }"
-                    :aria-pressed="
-                      uiFontSize === option.value
-                    "
-                    @click="
-                      uiFontSize = option.value
-                    "
-                  >
-                    <span class="font-option__sample">
-                      Aa
-                    </span>
+              <span class="current-setting">
+                {{ currentFont.label }}
+              </span>
+            </header>
 
-                    <span class="font-option__copy">
-                      <span class="font-option__label">
-                        {{ option.label }}
-                      </span>
-
-                      <span class="font-option__value">
-                        {{ option.value }}
-                      </span>
-                    </span>
-
-                    <span
-                      class="option-check"
-                      aria-hidden="true"
-                    >
-                      <svg
-                        viewBox="0 0 20 20"
-                        focusable="false"
-                      >
-                        <path
-                          d="m5.5 10.2 2.8 2.8 6.2-6.2"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                </div>
-              </section>
-
-              <!-- Movimiento -->
-              <section
-                class="editor-block"
-                aria-labelledby="motion-title"
+            <div
+              class="font-size-grid"
+              role="radiogroup"
+              aria-label="Tamaño del texto"
+            >
+              <button
+                v-for="option in fontOptions"
+                :key="option.value"
+                class="font-size-option"
+                :class="{
+                  'is-selected': uiFontSize === option.value,
+                }"
+                type="button"
+                role="radio"
+                :aria-checked="uiFontSize === option.value"
+                @click="uiFontSize = option.value"
               >
-                <div class="motion-row">
-                  <div class="motion-row__content">
-                    <span
-                      class="motion-row__icon"
-                      aria-hidden="true"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        focusable="false"
-                      >
-                        <path
-                          d="M4 12h16M15 7l5 5-5 5M9 17l-5-5 5-5"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </span>
+                <span
+                  class="font-size-option__sample"
+                  :style="{ fontSize: option.sampleSize }"
+                  aria-hidden="true"
+                >
+                  Aa
+                </span>
 
-                    <span class="motion-row__copy">
-                      <h3
-                        id="motion-title"
-                        class="editor-block__title"
-                      >
-                        Reducir movimiento
-                      </h3>
-
-                      <span>
-                        Limita animaciones y transiciones decorativas.
-                      </span>
-                    </span>
-                  </div>
-
-                  <div class="motion-row__action">
-                    <span class="motion-row__state">
-                      {{ currentMotionLabel }}
-                    </span>
-
-                    <label class="toggle">
-                      <span class="sr-only">
-                        Reducir movimiento
-                      </span>
-
-                      <input
-                        v-model="uiReduceMotion"
-                        type="checkbox"
-                      />
-
-                      <span
-                        class="track"
-                        aria-hidden="true"
-                      >
-                        <span class="thumb"></span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </section>
+                <span class="font-size-option__copy">
+                  <strong>{{ option.label }}</strong>
+                  <span>{{ option.detail }}</span>
+                </span>
+              </button>
             </div>
-          </article>
-        </section>
+          </section>
 
-        <!-- =================================================
-             VISTA PREVIA Y RESTABLECIMIENTO
-        ================================================== -->
-        <aside
-          class="config-sidebar page-stage page-sidebar page-stage-4"
-          aria-label="Vista previa de preferencias"
-        >
-          <article class="config-card config-card--preview">
-            <header class="section-head">
-              <div class="section-head__copy">
-                <span class="section-label">
+          <!-- MOVIMIENTO -->
+          <section
+            class="settings-card"
+            aria-labelledby="motion-title"
+          >
+            <header class="settings-card__header settings-card__header--compact">
+              <div class="settings-card__heading">
+                <span
+                  class="settings-card__icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    focusable="false"
+                  >
+                    <path
+                      d="M4 12h3l2.2-5 4.1 10 2.2-5H20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <span class="section-kicker">
+                    Movimiento
+                  </span>
+
+                  <h2 id="motion-title">
+                    Animaciones de interfaz
+                  </h2>
+
+                  <p>
+                    Mantenga transiciones breves o desactívelas para una
+                    navegación inmediata.
+                  </p>
+                </div>
+              </div>
+
+              <label class="switch-control">
+                <span class="sr-only">
+                  Activar animaciones de interfaz
+                </span>
+
+                <input
+                  v-model="uiAnimations"
+                  type="checkbox"
+                />
+
+                <span
+                  class="switch-control__track"
+                  aria-hidden="true"
+                >
+                  <span class="switch-control__thumb"></span>
+                </span>
+              </label>
+            </header>
+
+            <div class="motion-state">
+              <span
+                class="motion-state__indicator"
+                :class="{
+                  'is-enabled': uiAnimations,
+                }"
+                aria-hidden="true"
+              ></span>
+
+              <span>
+                <strong>
+                  {{
+                    uiAnimations
+                      ? "Animaciones activas"
+                      : "Movimiento reducido"
+                  }}
+                </strong>
+
+                <small>
+                  {{
+                    uiAnimations
+                      ? "Se aplican transiciones cortas y discretas."
+                      : "Los cambios de pantalla se muestran sin animación."
+                  }}
+                </small>
+              </span>
+            </div>
+          </section>
+        </div>
+
+        <!-- VISTA PREVIA -->
+        <aside class="preferences-sidebar">
+          <section
+            class="preview-card"
+            aria-labelledby="preview-title"
+          >
+            <header class="preview-card__header">
+              <div>
+                <span class="section-kicker">
                   Vista previa
                 </span>
 
-                <h2 class="card-title">
-                  Resultado aproximado
+                <h2 id="preview-title">
+                  Resultado actual
                 </h2>
               </div>
+
+              <span
+                class="preview-live"
+                aria-label="Vista previa actualizada"
+              >
+                <span aria-hidden="true"></span>
+                En vivo
+              </span>
             </header>
 
             <div
               class="interface-preview"
               :class="{
-                'is-dark': uiDarkMode,
-                'is-editorial': isEditorialProfile,
+                'is-dark': currentAppearance.mode === 'dark',
               }"
               :style="previewStyle"
               aria-hidden="true"
             >
-              <div class="preview-app">
-                <div class="preview-app__sidebar">
-                  <div class="preview-app__brand">
-                    <span></span>
+              <div class="preview-dashboard">
+                <aside class="preview-dashboard__sidebar">
+                  <div class="preview-dashboard__logo">
+                    <span>S</span>
                     <strong>SGPC</strong>
                   </div>
 
-                  <div class="preview-app__menu">
-                    <span class="is-active"></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
+                  <nav class="preview-dashboard__nav">
+                    <span class="is-active">
+                      <i></i>
+                      <b></b>
+                    </span>
 
-                <div class="preview-app__main">
-                  <div class="preview-app__topbar">
-                    <span class="preview-app__topbar-title"></span>
+                    <span>
+                      <i></i>
+                      <b></b>
+                    </span>
 
-                    <span class="preview-app__avatar"></span>
-                  </div>
+                    <span>
+                      <i></i>
+                      <b></b>
+                    </span>
 
-                  <div class="preview-app__content">
-                    <div class="preview-app__heading">
-                      <strong class="preview-app__title">
-                        Producción científica
-                      </strong>
+                    <span>
+                      <i></i>
+                      <b></b>
+                    </span>
+                  </nav>
+                </aside>
 
-                      <span class="preview-app__subtitle">
-                        Resumen institucional
-                      </span>
+                <div class="preview-dashboard__main">
+                  <header class="preview-dashboard__topbar">
+                    <div>
+                      <strong>Dashboard</strong>
+                      <span>Panel institucional</span>
                     </div>
 
-                    <div class="preview-app__cards">
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                    <span class="preview-dashboard__avatar"></span>
+                  </header>
+
+                  <div class="preview-dashboard__content">
+                    <div class="preview-dashboard__welcome">
+                      <div>
+                        <span>Resumen institucional</span>
+                        <strong>Producción científica</strong>
+                      </div>
+
+                      <button
+                        type="button"
+                        tabindex="-1"
+                      >
+                        Reporte
+                      </button>
                     </div>
 
-                    <div class="preview-app__panel">
-                      <span class="preview-app__panel-line"></span>
-                      <span class="preview-app__panel-line is-short"></span>
+                    <div class="preview-dashboard__stats">
+                      <article>
+                        <span>Publicaciones</span>
+                        <strong>128</strong>
+                      </article>
 
-                      <span class="preview-app__button">
-                        Acción principal
-                      </span>
+                      <article>
+                        <span>Autores</span>
+                        <strong>64</strong>
+                      </article>
+
+                      <article>
+                        <span>Proyectos</span>
+                        <strong>24</strong>
+                      </article>
+                    </div>
+
+                    <div class="preview-dashboard__chart">
+                      <div class="preview-dashboard__chart-head">
+                        <span></span>
+                        <span></span>
+                      </div>
+
+                      <div class="preview-dashboard__bars">
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <p class="preview-help">
-              La vista previa representa los cambios principales. Algunas
-              pantallas pueden presentar variaciones.
-            </p>
+            <dl class="current-summary">
+              <div>
+                <dt>Tema</dt>
+                <dd>{{ currentAppearance.label }}</dd>
+              </div>
 
-            <div class="preview-current">
-              <span>
-                {{ currentProfileLabel }}
-              </span>
+              <div>
+                <dt>Texto</dt>
+                <dd>{{ currentFont.label }}</dd>
+              </div>
 
-              <span aria-hidden="true">•</span>
+              <div>
+                <dt>Movimiento</dt>
+                <dd>
+                  {{ uiAnimations ? "Activo" : "Reducido" }}
+                </dd>
+              </div>
+            </dl>
+          </section>
 
-              <span>
-                {{ currentModeLabel }}
-              </span>
-
-              <span aria-hidden="true">•</span>
-
-              <span>
-                {{ currentFontLabel }}
-              </span>
-            </div>
-          </article>
-
+          <!-- RESTAURAR -->
           <section
-            class="config-reset-panel"
+            class="reset-card"
             aria-labelledby="reset-title"
           >
-            <div class="config-reset-panel__copy">
-              <h2 id="reset-title">
-                Restaurar preferencias
-              </h2>
+            <div class="reset-card__copy">
+              <span
+                class="reset-card__icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                >
+                  <path
+                    d="M4 4v6h6M4.8 9.4A8 8 0 1 1 6.2 17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
 
-              <p>
-                Recupera la apariencia y configuración inicial del sistema.
-              </p>
+              <div>
+                <h2 id="reset-title">
+                  Restaurar preferencias
+                </h2>
+
+                <p>
+                  Recupera el tema claro, el texto estándar y las animaciones.
+                </p>
+              </div>
             </div>
 
             <button
-              class="btn-reset"
+              ref="resetTrigger"
+              class="reset-button"
               type="button"
-              @click="resetConfig"
+              @click="openResetConfirm"
             >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path
-                  d="M4 4v6h6M4.7 9.5A8 8 0 1 1 6 17.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-
-              <span>
-                Restaurar valores predeterminados
-              </span>
+              Restaurar valores iniciales
             </button>
           </section>
         </aside>
       </main>
     </div>
+
+    <!-- MODAL PERSONALIZADO -->
+    <Teleport to="body">
+      <Transition name="confirm-modal">
+        <div
+          v-if="showResetConfirm"
+          class="confirm-modal-backdrop"
+          role="presentation"
+          @click.self="closeResetConfirm"
+        >
+          <section
+            ref="resetDialog"
+            class="confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-dialog-title"
+            aria-describedby="reset-dialog-description"
+            tabindex="-1"
+            @keydown="handleDialogKeydown"
+          >
+            <header class="confirm-dialog__header">
+              <span
+                class="confirm-dialog__icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                >
+                  <path
+                    d="M4 4v6h6M4.8 9.4A8 8 0 1 1 6.2 17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+
+              <div class="confirm-dialog__heading">
+                <span class="confirm-dialog__eyebrow">
+                  Confirmación
+                </span>
+
+                <h2 id="reset-dialog-title">
+                  Restaurar preferencias
+                </h2>
+              </div>
+
+              <button
+                class="confirm-dialog__close"
+                type="button"
+                aria-label="Cerrar ventana"
+                @click="closeResetConfirm"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m7 7 10 10M17 7 7 17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </header>
+
+            <div class="confirm-dialog__body">
+              <p id="reset-dialog-description">
+                Se aplicará nuevamente la configuración inicial de la interfaz.
+              </p>
+
+              <ul class="confirm-dialog__changes">
+                <li>Tema claro estándar</li>
+                <li>Tamaño de texto estándar</li>
+                <li>Animaciones activadas</li>
+              </ul>
+
+              <p class="confirm-dialog__note">
+                El cambio se aplicará inmediatamente. Después podrá volver a
+                personalizar estas opciones.
+              </p>
+            </div>
+
+            <footer class="confirm-dialog__actions">
+              <button
+                ref="cancelResetButton"
+                class="confirm-dialog__button confirm-dialog__button--secondary"
+                type="button"
+                @click="closeResetConfirm"
+              >
+                Cancelar
+              </button>
+
+              <button
+                class="confirm-dialog__button confirm-dialog__button--danger"
+                type="button"
+                @click="confirmReset"
+              >
+                Restaurar preferencias
+              </button>
+            </footer>
+          </section>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+} from "vue";
+
 import { storeToRefs } from "pinia";
 
 import {
+  APPEARANCE_PRESETS,
   useThemeStore,
-  SURFACE_PRESETS_LIGHT,
-  UNIFIED_DARK_STYLE_PRESETS,
 } from "../../scripts/stores/themeStore";
 
 const themeStore = useThemeStore();
 
 const {
   darkMode,
-  themeProfile,
-  primaryColor,
   fontSize,
   animations,
-  surfacePresetLight,
 } = storeToRefs(themeStore);
 
-/* =========================================================
-   OPCIONES
-========================================================= */
+const showResetConfirm = ref(false);
+const resetDialog = ref(null);
+const resetTrigger = ref(null);
+const cancelResetButton = ref(null);
 
-const visualProfiles = [
-  {
-    value: "institutional",
-    label: "Institucional",
-    desc: "Diseño administrativo con acento azul y alta claridad visual.",
-  },
-  {
-    value: "editorial",
-    label: "Editorial",
-    desc: "Diseño sobrio con superficies suaves y mayor contraste tipográfico.",
-  },
-];
+let previousBodyOverflow = "";
 
-const fontOptions = [
+const appearanceOptions = APPEARANCE_PRESETS;
+
+const fontOptions = Object.freeze([
+  {
+    value: "15px",
+    label: "Compacto",
+    detail: "Más contenido visible",
+    sampleSize: "1.15rem",
+  },
   {
     value: "16px",
-    label: "Compacto",
+    label: "Estándar",
+    detail: "Equilibrio recomendado",
+    sampleSize: "1.3rem",
   },
   {
-    value: "17px",
-    label: "Estándar",
+    value: "18px",
+    label: "Cómodo",
+    detail: "Lectura más amplia",
+    sampleSize: "1.5rem",
   },
   {
     value: "20px",
     label: "Grande",
+    detail: "Máxima legibilidad",
+    sampleSize: "1.7rem",
   },
-  {
-    value: "22px",
-    label: "Muy grande",
-  },
-];
+]);
 
-/* =========================================================
-   MODELOS
-========================================================= */
-
-const uiDarkMode = computed({
-  get: () => darkMode.value,
-
-  set: (value) => {
-    themeStore.setDark(value);
-  },
+const selectedAppearance = computed(() => {
+  return darkMode.value
+    ? themeStore.currentUnifiedDarkStyle
+    : "light";
 });
 
-const uiThemeProfile = computed({
-  get: () => themeProfile.value,
-
-  set: (value) => {
-    themeStore.setThemeProfile(value);
-  },
+const currentAppearance = computed(() => {
+  return (
+    appearanceOptions.find(
+      (option) => option.value === selectedAppearance.value
+    ) || appearanceOptions[0]
+  );
 });
 
-const uiSurfacePreset = computed({
-  get: () => surfacePresetLight.value,
-
-  set: (value) => {
-    themeStore.setSurfacePreset(value);
-  },
+const currentFont = computed(() => {
+  return (
+    fontOptions.find(
+      (option) => option.value === fontSize.value
+    ) || fontOptions[1]
+  );
 });
 
 const uiFontSize = computed({
@@ -775,218 +792,146 @@ const uiFontSize = computed({
   },
 });
 
-const uiReduceMotion = computed({
-  get: () => !animations.value,
+const uiAnimations = computed({
+  get: () => animations.value,
 
   set: (value) => {
-    themeStore.setAnimations(!value);
+    themeStore.setAnimations(value);
   },
 });
 
-/* =========================================================
-   PERFIL Y VARIANTES
-========================================================= */
-
-const isInstitutionalProfile = computed(() => {
-  return uiThemeProfile.value === "institutional";
-});
-
-const isEditorialProfile = computed(() => {
-  return uiThemeProfile.value === "editorial";
-});
-
-const surfaceOptions = computed(() => {
-  return SURFACE_PRESETS_LIGHT;
-});
-
-const unifiedDarkStyleOptions = computed(() => {
-  return UNIFIED_DARK_STYLE_PRESETS;
-});
-
-const currentUnifiedDarkStyle = computed(() => {
-  return themeStore.currentUnifiedDarkStyle;
-});
-
-const variantOptions = computed(() => {
-  if (!isEditorialProfile.value) {
-    return [];
-  }
-
-  return uiDarkMode.value
-    ? unifiedDarkStyleOptions.value
-    : surfaceOptions.value;
-});
-
-const currentVariantValue = computed(() => {
-  if (uiDarkMode.value) {
-    return currentUnifiedDarkStyle.value;
-  }
-
-  return uiSurfacePreset.value;
-});
-
-const currentVariantMeta = computed(() => {
-  return (
-    variantOptions.value.find(
-      (item) =>
-        item.value === currentVariantValue.value
-    ) ||
-    variantOptions.value[0] ||
-    null
-  );
-});
-
-const changeVariant = (value) => {
-  if (uiDarkMode.value) {
-    themeStore.setUnifiedDarkStyle(value);
-    return;
-  }
-
-  themeStore.setSurfacePreset(value);
-};
-
-/* =========================================================
-   ETIQUETAS
-========================================================= */
-
-const currentProfileLabel = computed(() => {
-  return isInstitutionalProfile.value
-    ? "Institucional"
-    : "Editorial";
-});
-
-const currentModeLabel = computed(() => {
-  return uiDarkMode.value
-    ? "Modo oscuro"
-    : "Modo claro";
-});
-
-const currentFontLabel = computed(() => {
-  return (
-    fontOptions.find(
-      (option) =>
-        option.value === uiFontSize.value
-    )?.label ||
-    "Personalizado"
-  );
-});
-
-const currentMotionLabel = computed(() => {
-  return uiReduceMotion.value
-    ? "Reducido"
-    : "Activo";
-});
-
-/* =========================================================
-   VISTA PREVIA
-========================================================= */
-
-const previewAccent = computed(() => {
-  const selectedColor = String(
-    primaryColor.value || ""
-  ).trim();
-
-  if (selectedColor) {
-    return selectedColor;
-  }
-
-  if (isInstitutionalProfile.value) {
-    return "#315fcb";
-  }
-
-  return uiDarkMode.value
-    ? "#98a98d"
-    : "#111111";
-});
-
-const previewSurface = computed(() => {
-  if (isInstitutionalProfile.value) {
-    if (uiDarkMode.value) {
-      return {
-        bg: "#0f1728",
-        card: "#18243a",
-        line: "rgba(255, 255, 255, 0.12)",
-      };
-    }
-
-    return {
-      bg: "#f3f6fb",
-      card: "#ffffff",
-      line: "rgba(23, 32, 51, 0.12)",
-    };
-  }
-
-  const preview =
-    currentVariantMeta.value?.preview;
-
-  if (preview) {
-    return preview;
-  }
-
-  if (uiDarkMode.value) {
-    return {
-      bg: "#111827",
-      card: "#1f2937",
-      line: "rgba(255, 255, 255, 0.12)",
-    };
-  }
-
-  return {
-    bg: "#f4f2ed",
-    card: "#ffffff",
-    line: "rgba(17, 17, 17, 0.12)",
-  };
-});
-
 const previewStyle = computed(() => {
+  const preview = currentAppearance.value.preview;
+
   return {
-    "--preview-bg":
-      previewSurface.value.bg,
-
-    "--preview-card":
-      previewSurface.value.card,
-
-    "--preview-line":
-      previewSurface.value.line,
-
-    "--preview-accent":
-      previewAccent.value,
-
-    "--preview-font-size":
-      uiFontSize.value,
-
-    "--preview-ink":
-      uiDarkMode.value
-        ? "#f4f7fc"
-        : "#172033",
-
-    "--preview-muted":
-      uiDarkMode.value
-        ? "#aeb8ca"
-        : "#667085",
+    "--preview-bg": preview.bg,
+    "--preview-card": preview.card,
+    "--preview-line": preview.line,
+    "--preview-text": preview.text,
+    "--preview-muted": preview.muted,
+    "--preview-accent": preview.accent,
+    "--preview-font-size": uiFontSize.value,
   };
 });
 
-/* =========================================================
-   RESTABLECER
-========================================================= */
+const getOptionStyle = (option) => {
+  return {
+    "--option-bg": option.preview.bg,
+    "--option-card": option.preview.card,
+    "--option-line": option.preview.line,
+    "--option-text": option.preview.text,
+    "--option-muted": option.preview.muted,
+    "--option-accent": option.preview.accent,
+  };
+};
 
-const resetConfig = () => {
-  const accepted =
-    typeof window === "undefined" ||
-    window.confirm(
-      "¿Desea restaurar las preferencias iniciales de la interfaz?"
-    );
+const selectAppearance = (value) => {
+  themeStore.setAppearance(value);
+};
 
-  if (!accepted) {
+const lockPageScroll = () => {
+  if (typeof document === "undefined") return;
+
+  previousBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+};
+
+const unlockPageScroll = () => {
+  if (typeof document === "undefined") return;
+
+  document.body.style.overflow = previousBodyOverflow;
+};
+
+const openResetConfirm = async () => {
+  if (showResetConfirm.value) return;
+
+  showResetConfirm.value = true;
+  lockPageScroll();
+
+  await nextTick();
+
+  cancelResetButton.value?.focus();
+};
+
+const closeResetConfirm = async () => {
+  if (!showResetConfirm.value) return;
+
+  showResetConfirm.value = false;
+  unlockPageScroll();
+
+  await nextTick();
+
+  resetTrigger.value?.focus();
+};
+
+const confirmReset = () => {
+  themeStore.reset();
+  closeResetConfirm();
+};
+
+const handleDialogKeydown = (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeResetConfirm();
     return;
   }
 
-  themeStore.reset();
+  if (event.key !== "Tab") return;
+
+  const dialog = resetDialog.value;
+
+  if (!dialog) return;
+
+  const focusableElements = Array.from(
+    dialog.querySelectorAll(
+      [
+        "button:not([disabled])",
+        "[href]",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(",")
+    )
+  );
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    dialog.focus();
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement =
+    focusableElements[focusableElements.length - 1];
+
+  const activeElement = document.activeElement;
+
+  if (
+    event.shiftKey &&
+    activeElement === firstElement
+  ) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (
+    !event.shiftKey &&
+    activeElement === lastElement
+  ) {
+    event.preventDefault();
+    firstElement.focus();
+  }
 };
+
+onBeforeUnmount(() => {
+  unlockPageScroll();
+});
 </script>
 
 <style
   scoped
   src="./preferencias-interfaz.css"
 ></style>
+

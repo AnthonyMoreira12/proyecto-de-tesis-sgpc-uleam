@@ -6,46 +6,74 @@ import {
   normalizeRouteTransition,
 } from "../utils/transicionesRuta";
 
-const LS = {
+/* ============================================================
+   SGPC ULEAM — STORE GLOBAL DE APARIENCIA
+============================================================ */
+
+const STORAGE = Object.freeze({
   theme: "sgpc-theme",
-  color: "sgpc-color",
-  font: "sgpc-fontSize",
-  anim: "sgpc-animations",
   darkVariant: "sgpc-dark-variant",
+  fontSize: "sgpc-fontSize",
+  animations: "sgpc-animations",
   routeTransition: "sgpc-route-transition",
   surfaceLight: "sgpc-surface-light",
   surfaceDark: "sgpc-surface-dark",
   themeProfile: "sgpc-theme-profile",
-};
+  oldColor: "sgpc-color",
+});
 
-const LEGACY = {
-  dark: "darkMode",
-  color: "themeColor",
-  font: "fontSize",
-  anim: "animations",
-};
+const LEGACY_STORAGE = Object.freeze([
+  "darkMode",
+  "themeColor",
+  "fontSize",
+  "animations",
+  "sgpc-mono-dark",
+]);
 
-const DARK_VARIANTS = ["obsidian", "slate-pro", "oled-black"];
-
-const THEME_PROFILES = ["editorial", "institutional"];
+const DEFAULT_THEME = "light";
+const DEFAULT_DARK_VARIANT = "black-white";
+const DEFAULT_FONT_SIZE = "16px";
 const DEFAULT_THEME_PROFILE = "institutional";
+const DEFAULT_LIGHT_SURFACE = "standard-light";
 
-const DEFAULT_PRIMARY_LIGHT = "#111111";
-const DEFAULT_PRIMARY_DARK = "#111111";
-const LEGACY_EDITORIAL_DARK = "#f3ede5";
-const DEFAULT_FONT_SIZE = "17px";
+const FONT_SIZES = Object.freeze([
+  "15px",
+  "16px",
+  "18px",
+  "20px",
+]);
 
-const DEFAULT_SURFACE_LIGHT = "editorial-paper";
-const DEFAULT_SURFACE_DARK = "obsidian-warm";
+const DARK_VARIANTS = Object.freeze([
+  "black-white",
+  "dark-gray",
+  "electric-blue",
+  "institutional-blue",
+  "crimson-black",
+]);
 
-const INSTITUTIONAL_PRIMARY_LIGHT = "#1d4ed8";
-const INSTITUTIONAL_PRIMARY_DARK = "#8ab4ff";
+const DARK_VARIANT_CLASSES = Object.freeze([
+  "dark-black-white",
+  "dark-dark-gray",
+  "dark-electric-blue",
+  "dark-institutional-blue",
+  "dark-crimson-black",
 
-const ACCENT_CRIMSON = "#7d2230";
-const ACCENT_SAGE = "#4f6b52";
-const ACCENT_TEAL = "#0f766e";
+  /* Compatibilidad con clases antiguas. */
+  "dark-obsidian",
+  "dark-slate-pro",
+  "dark-midnight-blue",
+  "dark-graphite",
+  "dark-neon-noir",
+  "dark-oled-black",
+  "dark-plum-night",
+  "dark-forest-night",
+  "mono-dark",
+]);
 
-const SURFACE_STYLE_VAR_MAP = Object.freeze({
+const CSS_VARIABLE_MAP = Object.freeze({
+  accent: "--color-primary-default",
+  accentContrast: "--accent-contrast",
+
   bgMain: "--bg-main",
   bgCard: "--bg-card",
   bgNavbar: "--bg-navbar",
@@ -54,982 +82,1248 @@ const SURFACE_STYLE_VAR_MAP = Object.freeze({
   bgSoft: "--bg-soft",
   overlay: "--overlay",
   cardHoverBg: "--card-hover-bg",
-});
 
-const INSTITUTIONAL_PROFILE_VAR_MAP = Object.freeze({
-  colorPrimaryDefault: "--color-primary-default",
   textPrimary: "--text-primary",
   textSecondary: "--text-secondary",
   textInverse: "--text-inverse",
   textDisabled: "--text-disabled",
+
   borderColor: "--border-color",
   borderStrong: "--border-strong",
+  lineSoft: "--line-soft",
+
   shadowSoft: "--shadow-soft",
   shadowStrong: "--shadow-strong",
   shadowHover: "--shadow-hover",
+
   hover: "--hover",
   active: "--active",
+
+  focusOutline: "--focus-outline",
+  focusRing: "--focus-ring",
+
   footerBg: "--footer-bg",
   footerText: "--footer-text",
   footerMuted: "--footer-muted",
 });
 
-const INSTITUTIONAL_PROFILE_VAR_KEYS = Object.freeze(
-  Object.values(INSTITUTIONAL_PROFILE_VAR_MAP)
-);
+function createPreset({
+  value,
+  label,
+  desc,
+  mode,
+  variant,
+  accent,
+  accentContrast,
+  preview,
+  palette,
+}) {
+  const surface =
+    mode === "light"
+      ? DEFAULT_LIGHT_SURFACE
+      : `${variant}-surface`;
 
-const INSTITUTIONAL_THEME_LIGHT = Object.freeze({
-  colorPrimaryDefault: INSTITUTIONAL_PRIMARY_LIGHT,
-  bgMain: "#ffffff",
-  bgCard: "#ffffff",
-  bgNavbar: "rgba(255, 255, 255, 0.98)",
-  bgInput: "#ffffff",
-  bgElevated: "#ffffff",
-  bgSoft: "rgba(29, 78, 216, 0.035)",
-  overlay: "rgba(17, 17, 17, 0.42)",
-  cardHoverBg: "#ffffff",
-  textPrimary: "#111111",
-  textSecondary: "#4b5563",
-  textInverse: "#ffffff",
-  textDisabled: "rgba(17, 17, 17, 0.42)",
-  borderColor: "rgba(17, 17, 17, 0.10)",
-  borderStrong: "rgba(17, 17, 17, 0.18)",
-  shadowSoft: "0 8px 22px rgba(17, 17, 17, 0.04)",
-  shadowStrong: "0 18px 42px rgba(17, 17, 17, 0.08)",
-  shadowHover: "0 14px 32px rgba(17, 17, 17, 0.07)",
-  hover: "rgba(17, 17, 17, 0.035)",
-  active: "rgba(17, 17, 17, 0.06)",
-  footerBg: "#0f3d91",
-  footerText: "#ffffff",
-  footerMuted: "rgba(255, 255, 255, 0.82)",
+  return Object.freeze({
+    value,
+    label,
+    desc,
+    mode,
+    variant,
+    surface,
+    accent,
+    accentContrast,
+    accentLabel: label,
+
+    preview: Object.freeze(preview),
+
+    palette: Object.freeze({
+      ...palette,
+      accent,
+      accentContrast,
+    }),
+
+    vars: Object.freeze({
+      bgMain: palette.bgMain,
+      bgCard: palette.bgCard,
+      bgNavbar: palette.bgNavbar,
+      bgInput: palette.bgInput,
+      bgElevated: palette.bgElevated,
+      bgSoft: palette.bgSoft,
+      overlay: palette.overlay,
+      cardHoverBg: palette.cardHoverBg,
+    }),
+
+    profile: Object.freeze({
+      colorPrimaryDefault: accent,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
+      textInverse: palette.textInverse,
+      textDisabled: palette.textDisabled,
+      borderColor: palette.borderColor,
+      borderStrong: palette.borderStrong,
+      lineSoft: palette.lineSoft,
+      shadowSoft: palette.shadowSoft,
+      shadowStrong: palette.shadowStrong,
+      shadowHover: palette.shadowHover,
+      hover: palette.hover,
+      active: palette.active,
+      footerBg: palette.footerBg,
+      footerText: palette.footerText,
+      footerMuted: palette.footerMuted,
+    }),
+  });
+}
+
+/* ============================================================
+   TEMA CLARO
+============================================================ */
+
+const LIGHT_PRESET = createPreset({
+  value: "light",
+  label: "Claro estándar",
+  desc: "Blanco, gris claro y azul institucional",
+  mode: "light",
+  variant: null,
+
+  accent: "#1d4ed8",
+  accentContrast: "#ffffff",
+
+  preview: {
+    bg: "#f4f6f8",
+    card: "#ffffff",
+    line: "#d9e0e8",
+    text: "#111827",
+    muted: "#5f6b7a",
+    accent: "#1d4ed8",
+  },
+
+  palette: {
+    bgMain: "#f4f6f8",
+    bgCard: "#ffffff",
+    bgNavbar: "#ffffff",
+    bgInput: "#ffffff",
+    bgElevated: "#ffffff",
+    bgSoft: "#eef2f6",
+    overlay: "rgba(15, 23, 42, 0.55)",
+    cardHoverBg: "#ffffff",
+
+    textPrimary: "#111827",
+    textSecondary: "#5f6b7a",
+    textInverse: "#ffffff",
+    textDisabled: "#9aa3af",
+
+    borderColor: "#d9e0e8",
+    borderStrong: "#bdc8d5",
+    lineSoft: "#e8edf2",
+
+    shadowSoft:
+      "0 6px 18px rgba(15, 23, 42, 0.06)",
+
+    shadowStrong:
+      "0 18px 40px rgba(15, 23, 42, 0.12)",
+
+    shadowHover:
+      "0 10px 24px rgba(15, 23, 42, 0.09)",
+
+    hover: "#f1f5f9",
+    active: "#e7eef8",
+
+    focusOutline: "#1d4ed8",
+    focusRing: "rgba(29, 78, 216, 0.18)",
+
+    footerBg: "#12233d",
+    footerText: "#ffffff",
+    footerMuted: "#c5d0df",
+  },
 });
 
-const INSTITUTIONAL_THEME_DARK = Object.freeze({
-  colorPrimaryDefault: INSTITUTIONAL_PRIMARY_DARK,
-  bgMain: "#0f172a",
-  bgCard: "#172033",
-  bgNavbar: "rgba(15, 23, 42, 0.96)",
-  bgInput: "#1d2940",
-  bgElevated: "#1a2438",
-  bgSoft: "rgba(255, 255, 255, 0.045)",
-  overlay: "rgba(0, 0, 0, 0.68)",
-  cardHoverBg: "#172033",
-  textPrimary: "#f8fafc",
-  textSecondary: "#dbe4f3",
-  textInverse: "#111111",
-  textDisabled: "rgba(248, 250, 252, 0.42)",
-  borderColor: "rgba(255, 255, 255, 0.10)",
-  borderStrong: "rgba(255, 255, 255, 0.18)",
-  shadowSoft: "0 12px 30px rgba(0, 0, 0, 0.34)",
-  shadowStrong: "0 18px 44px rgba(0, 0, 0, 0.46)",
-  shadowHover: "0 16px 34px rgba(0, 0, 0, 0.34)",
-  hover: "rgba(255, 255, 255, 0.045)",
-  active: "rgba(255, 255, 255, 0.08)",
-  footerBg: "#0b1120",
-  footerText: "#ffffff",
-  footerMuted: "rgba(255, 255, 255, 0.82)",
-});
+/* ============================================================
+   TEMAS OSCUROS
+============================================================ */
+
+const DARK_PRESETS = Object.freeze([
+  createPreset({
+    value: "black-white",
+    label: "Negro y blanco",
+    desc: "Negro absoluto, blanco puro y grises neutros",
+    mode: "dark",
+    variant: "black-white",
+
+    accent: "#ffffff",
+    accentContrast: "#000000",
+
+    preview: {
+      bg: "#000000",
+      card: "#0b0b0b",
+      line: "#292929",
+      text: "#ffffff",
+      muted: "#b8b8b8",
+      accent: "#ffffff",
+    },
+
+    palette: {
+      bgMain: "#000000",
+      bgCard: "#0b0b0b",
+      bgNavbar: "#000000",
+      bgInput: "#161616",
+      bgElevated: "#111111",
+      bgSoft: "#151515",
+      overlay: "rgba(0, 0, 0, 0.82)",
+      cardHoverBg: "#111111",
+
+      textPrimary: "#ffffff",
+      textSecondary: "#b8b8b8",
+      textInverse: "#000000",
+      textDisabled: "#737373",
+
+      borderColor: "#292929",
+      borderStrong: "#444444",
+      lineSoft: "#1d1d1d",
+
+      shadowSoft: "none",
+
+      shadowStrong:
+        "0 18px 42px rgba(0, 0, 0, 0.80)",
+
+      shadowHover: "none",
+
+      hover: "#151515",
+      active: "#242424",
+
+      focusOutline: "#ffffff",
+      focusRing: "rgba(255, 255, 255, 0.20)",
+
+      footerBg: "#000000",
+      footerText: "#ffffff",
+      footerMuted: "#b8b8b8",
+    },
+  }),
+
+  createPreset({
+    value: "dark-gray",
+    label: "Gris oscuro",
+    desc: "Modo oscuro convencional y completamente neutro",
+    mode: "dark",
+    variant: "dark-gray",
+
+    accent: "#ffffff",
+    accentContrast: "#111111",
+
+    preview: {
+      bg: "#121212",
+      card: "#1b1b1b",
+      line: "#373737",
+      text: "#ffffff",
+      muted: "#bdbdbd",
+      accent: "#ffffff",
+    },
+
+    palette: {
+      bgMain: "#121212",
+      bgCard: "#1b1b1b",
+      bgNavbar: "#171717",
+      bgInput: "#242424",
+      bgElevated: "#202020",
+      bgSoft: "#252525",
+      overlay: "rgba(0, 0, 0, 0.76)",
+      cardHoverBg: "#202020",
+
+      textPrimary: "#ffffff",
+      textSecondary: "#bdbdbd",
+      textInverse: "#111111",
+      textDisabled: "#777777",
+
+      borderColor: "#373737",
+      borderStrong: "#505050",
+      lineSoft: "#2a2a2a",
+
+      shadowSoft: "none",
+
+      shadowStrong:
+        "0 18px 42px rgba(0, 0, 0, 0.62)",
+
+      shadowHover: "none",
+
+      hover: "#292929",
+      active: "#343434",
+
+      focusOutline: "#ffffff",
+      focusRing: "rgba(255, 255, 255, 0.18)",
+
+      footerBg: "#0d0d0d",
+      footerText: "#ffffff",
+      footerMuted: "#bdbdbd",
+    },
+  }),
+
+  createPreset({
+    value: "electric-blue",
+    label: "Azul eléctrico",
+    desc: "Negro neutro con azul eléctrico y texto blanco",
+    mode: "dark",
+    variant: "electric-blue",
+
+    accent: "#0066ff",
+    accentContrast: "#ffffff",
+
+    preview: {
+      bg: "#000000",
+      card: "#0d0d0d",
+      line: "#2d2d2d",
+      text: "#ffffff",
+      muted: "#b8b8b8",
+      accent: "#0066ff",
+    },
+
+    palette: {
+      bgMain: "#000000",
+      bgCard: "#0d0d0d",
+      bgNavbar: "#000000",
+      bgInput: "#171717",
+      bgElevated: "#121212",
+      bgSoft: "#151515",
+      overlay: "rgba(0, 0, 0, 0.82)",
+      cardHoverBg: "#121212",
+
+      textPrimary: "#ffffff",
+      textSecondary: "#b8b8b8",
+      textInverse: "#ffffff",
+      textDisabled: "#737373",
+
+      borderColor: "#2d2d2d",
+      borderStrong: "#484848",
+      lineSoft: "#1d1d1d",
+
+      shadowSoft: "none",
+
+      shadowStrong:
+        "0 18px 42px rgba(0, 0, 0, 0.80)",
+
+      shadowHover: "none",
+
+      hover: "#101722",
+      active: "#112440",
+
+      focusOutline: "#0066ff",
+      focusRing: "rgba(0, 102, 255, 0.25)",
+
+      footerBg: "#000000",
+      footerText: "#ffffff",
+      footerMuted: "#b8b8b8",
+    },
+  }),
+
+  createPreset({
+    value: "institutional-blue",
+    label: "Azul institucional",
+    desc: "Azul oscuro sólido con acento azul brillante",
+    mode: "dark",
+    variant: "institutional-blue",
+
+    accent: "#1683ff",
+    accentContrast: "#ffffff",
+
+    preview: {
+      bg: "#07111f",
+      card: "#0d1a2b",
+      line: "#29405f",
+      text: "#ffffff",
+      muted: "#b9c5d6",
+      accent: "#1683ff",
+    },
+
+    palette: {
+      bgMain: "#07111f",
+      bgCard: "#0d1a2b",
+      bgNavbar: "#091525",
+      bgInput: "#132238",
+      bgElevated: "#102038",
+      bgSoft: "#102038",
+      overlay: "rgba(0, 5, 14, 0.82)",
+      cardHoverBg: "#102038",
+
+      textPrimary: "#ffffff",
+      textSecondary: "#b9c5d6",
+      textInverse: "#ffffff",
+      textDisabled: "#73829a",
+
+      borderColor: "#29405f",
+      borderStrong: "#3c5d87",
+      lineSoft: "#1a2d48",
+
+      shadowSoft: "none",
+
+      shadowStrong:
+        "0 18px 42px rgba(0, 5, 14, 0.66)",
+
+      shadowHover: "none",
+
+      hover: "#10233c",
+      active: "#153052",
+
+      focusOutline: "#1683ff",
+      focusRing: "rgba(22, 131, 255, 0.26)",
+
+      footerBg: "#030a13",
+      footerText: "#ffffff",
+      footerMuted: "#b9c5d6",
+    },
+  }),
+
+  createPreset({
+    value: "crimson-black",
+    label: "Negro y rojo intenso",
+    desc: "Negro absoluto con rojo sólido e intenso",
+    mode: "dark",
+    variant: "crimson-black",
+
+    accent: "#ff1744",
+    accentContrast: "#ffffff",
+
+    preview: {
+      bg: "#000000",
+      card: "#080808",
+      line: "#7a0018",
+      text: "#ffffff",
+      muted: "#c8c8c8",
+      accent: "#ff1744",
+    },
+
+    palette: {
+      bgMain: "#000000",
+      bgCard: "#080808",
+      bgNavbar: "#000000",
+      bgInput: "#111111",
+      bgElevated: "#0d0d0d",
+      bgSoft: "#151515",
+      overlay: "rgba(0, 0, 0, 0.86)",
+      cardHoverBg: "#101010",
+
+      textPrimary: "#ffffff",
+      textSecondary: "#c8c8c8",
+      textInverse: "#ffffff",
+      textDisabled: "#777777",
+
+      borderColor: "#7a0018",
+      borderStrong: "#c4002f",
+      lineSoft: "#2b0009",
+
+      shadowSoft: "none",
+
+      shadowStrong:
+        "0 18px 42px rgba(0, 0, 0, 0.84)",
+
+      shadowHover: "none",
+
+      hover: "#190006",
+      active: "#ff1744",
+
+      focusOutline: "#ff3159",
+      focusRing: "rgba(255, 23, 68, 0.34)",
+
+      footerBg: "#000000",
+      footerText: "#ffffff",
+      footerMuted: "#c8c8c8",
+    },
+  }),
+]);
+
+/* ============================================================
+   EXPORTACIONES PARA PREFERENCIAS
+============================================================ */
 
 export const SURFACE_PRESETS_LIGHT = Object.freeze([
   {
-    value: "editorial-paper",
-    label: "Editorial",
-    desc: "Marfil sobrio",
-    preview: {
-      bg: "#f4f2ed",
-      card: "#ffffff",
-      line: "rgba(17,17,17,0.10)",
-    },
-    vars: {
-      bgMain: "#f4f2ed",
-      bgCard: "#ffffff",
-      bgNavbar: "rgba(255, 255, 255, 0.98)",
-      bgInput: "#ffffff",
-      bgElevated: "#ffffff",
-      bgSoft: "rgba(17, 17, 17, 0.028)",
-      overlay: "rgba(17, 17, 17, 0.34)",
-      cardHoverBg: "#ffffff",
-    },
-  },
-  {
-    value: "sage-paper",
-    label: "Sage",
-    desc: "Verde papel",
-    preview: {
-      bg: "#edf1eb",
-      card: "#fbfdf9",
-      line: "rgba(20,35,22,0.10)",
-    },
-    vars: {
-      bgMain: "#edf1eb",
-      bgCard: "#fbfdf9",
-      bgNavbar: "rgba(251, 253, 249, 0.98)",
-      bgInput: "#fbfdf9",
-      bgElevated: "#fbfdf9",
-      bgSoft: "rgba(17, 35, 20, 0.03)",
-      overlay: "rgba(17, 17, 17, 0.34)",
-      cardHoverBg: "#fbfdf9",
-    },
-  },
-  {
-    value: "mist-paper",
-    label: "Mist",
-    desc: "Azul grisáceo",
-    preview: {
-      bg: "#eef2f7",
-      card: "#fcfdff",
-      line: "rgba(20,30,45,0.10)",
-    },
-    vars: {
-      bgMain: "#eef2f7",
-      bgCard: "#fcfdff",
-      bgNavbar: "rgba(252, 253, 255, 0.98)",
-      bgInput: "#fcfdff",
-      bgElevated: "#fcfdff",
-      bgSoft: "rgba(20, 30, 45, 0.03)",
-      overlay: "rgba(17, 17, 17, 0.34)",
-      cardHoverBg: "#fcfdff",
-    },
-  },
-  {
-    value: "rose-paper",
-    label: "Rose",
-    desc: "Rosa muy suave",
-    preview: {
-      bg: "#f5edef",
-      card: "#fffafb",
-      line: "rgba(45,20,24,0.09)",
-    },
-    vars: {
-      bgMain: "#f5edef",
-      bgCard: "#fffafb",
-      bgNavbar: "rgba(255, 250, 251, 0.98)",
-      bgInput: "#fffafb",
-      bgElevated: "#fffafb",
-      bgSoft: "rgba(45, 20, 24, 0.03)",
-      overlay: "rgba(17, 17, 17, 0.34)",
-      cardHoverBg: "#fffafb",
-    },
+    value: DEFAULT_LIGHT_SURFACE,
+    label: LIGHT_PRESET.label,
+    desc: LIGHT_PRESET.desc,
+    preview: LIGHT_PRESET.preview,
+    vars: LIGHT_PRESET.vars,
   },
 ]);
 
-export const SURFACE_PRESETS_DARK = Object.freeze([
-  {
-    value: "obsidian-warm",
-    label: "Obsidian",
-    desc: "Oscuro editorial",
-    preview: {
-      bg: "#1c1917",
-      card: "#26221f",
-      line: "rgba(255,255,255,0.10)",
-    },
-    vars: {
-      bgMain: "#1c1917",
-      bgCard: "#26221f",
-      bgNavbar: "rgba(33, 29, 27, 0.97)",
-      bgInput: "#2e2926",
-      bgElevated: "#2a2522",
-      bgSoft: "rgba(255, 255, 255, 0.045)",
-      overlay: "rgba(0, 0, 0, 0.58)",
-      cardHoverBg: "#26221f",
-    },
-  },
-  {
-    value: "deep-ocean-night",
-    label: "Ocean",
-    desc: "Azul profundo",
-    preview: {
-      bg: "#101820",
-      card: "#182330",
-      line: "rgba(255,255,255,0.10)",
-    },
-    vars: {
-      bgMain: "#101820",
-      bgCard: "#182330",
-      bgNavbar: "rgba(19, 29, 40, 0.97)",
-      bgInput: "#202c39",
-      bgElevated: "#1c2834",
-      bgSoft: "rgba(255, 255, 255, 0.04)",
-      overlay: "rgba(0, 0, 0, 0.72)",
-      cardHoverBg: "#182330",
-    },
-  },
-  {
-    value: "oled-black-surface",
-    label: "OLED Black",
-    desc: "Negro profundo",
-    preview: {
-      bg: "#0a0a0a",
-      card: "#141414",
-      line: "rgba(255,255,255,0.10)",
-    },
-    vars: {
-      bgMain: "#0a0a0a",
-      bgCard: "#141414",
-      bgNavbar: "rgba(10, 10, 10, 0.97)",
-      bgInput: "#1d1d1d",
-      bgElevated: "#181818",
-      bgSoft: "rgba(255, 255, 255, 0.04)",
-      overlay: "rgba(0, 0, 0, 0.76)",
-      cardHoverBg: "#141414",
-    },
-  },
+export const SURFACE_PRESETS_DARK = Object.freeze(
+  DARK_PRESETS.map((preset) => ({
+    value: preset.surface,
+    label: preset.label,
+    desc: preset.desc,
+    preview: preset.preview,
+    vars: preset.vars,
+  }))
+);
+
+export const UNIFIED_DARK_STYLE_PRESETS =
+  DARK_PRESETS;
+
+export const APPEARANCE_PRESETS = Object.freeze([
+  LIGHT_PRESET,
+  ...DARK_PRESETS,
 ]);
 
-export const UNIFIED_DARK_STYLE_PRESETS = Object.freeze([
-  {
-    value: "obsidian",
-    label: "Obsidian + Sage",
-    desc: "Sage por defecto",
-    surface: "obsidian-warm",
-    variant: "obsidian",
-    accent: ACCENT_SAGE,
-    accentLabel: "Sage",
-    preview: {
-      bg: "#1c1917",
-      card: "#26221f",
-      line: "rgba(255,255,255,0.10)",
-    },
-  },
-  {
-    value: "ocean",
-    label: "Ocean + Carmesí",
-    desc: "Carmesí por defecto",
-    surface: "deep-ocean-night",
-    variant: "slate-pro",
-    accent: ACCENT_CRIMSON,
-    accentLabel: "Carmesí",
-    preview: {
-      bg: "#101820",
-      card: "#182330",
-      line: "rgba(255,255,255,0.10)",
-    },
-  },
-  {
-    value: "oled-black",
-    label: "OLED Black + Teal",
-    desc: "Teal por defecto",
-    surface: "oled-black-surface",
-    variant: "oled-black",
-    accent: ACCENT_TEAL,
-    accentLabel: "Teal",
-    preview: {
-      bg: "#0a0a0a",
-      card: "#141414",
-      line: "rgba(255,255,255,0.10)",
-    },
-  },
-]);
+/* ============================================================
+   UTILIDADES
+============================================================ */
 
-function getLS(key, fallback = null) {
+function getStorage(key, fallback = null) {
   try {
-    const value = localStorage.getItem(key);
-    return value ?? fallback;
+    return localStorage.getItem(key) ?? fallback;
   } catch {
     return fallback;
   }
 }
 
-function setLS(key, value) {
+function setStorage(key, value) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(key, String(value));
   } catch {
-    // noop
+    // El navegador puede bloquear localStorage.
   }
 }
 
-function removeLS(key) {
+function removeStorage(key) {
   try {
     localStorage.removeItem(key);
   } catch {
-    // noop
+    // Sin acción.
   }
 }
 
-function normalizeHexColor(value, fallback) {
-  const raw = String(value ?? "").trim();
-  if (!raw) return fallback;
-
-  if (/^#([0-9a-fA-F]{3}){1,2}$/.test(raw)) {
-    if (raw.length === 4) {
-      const expanded = raw
-        .slice(1)
-        .split("")
-        .map((char) => char + char)
-        .join("");
-      return `#${expanded}`.toLowerCase();
-    }
-
-    return raw.toLowerCase();
-  }
-
-  return fallback;
+function getRoot() {
+  return typeof document === "undefined"
+    ? null
+    : document.documentElement;
 }
 
-function isEditorialAccent(value) {
-  const normalized = normalizeHexColor(value, null);
-
-  return (
-    normalized === DEFAULT_PRIMARY_LIGHT ||
-    normalized === DEFAULT_PRIMARY_DARK ||
-    normalized === LEGACY_EDITORIAL_DARK
-  );
-}
-
-function getStoredEditorialAccent(value) {
-  const normalized = normalizeHexColor(value, null);
-
-  if (!isEditorialAccent(normalized)) {
-    return null;
-  }
-
-  return DEFAULT_PRIMARY_LIGHT;
-}
-
-function hexToRgb(hex) {
-  const normalized = normalizeHexColor(hex, null);
-  if (!normalized) return null;
-
-  const value = normalized.replace("#", "");
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-
-  if ([r, g, b].some((channel) => Number.isNaN(channel))) {
-    return null;
-  }
-
-  return { r, g, b };
-}
-
-function getRelativeLuminance({ r, g, b }) {
-  const normalize = (channel) => {
-    const c = channel / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-
-  const R = normalize(r);
-  const G = normalize(g);
-  const B = normalize(b);
-
-  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
-}
-
-function getContrastText(hex, fallback = "#ffffff") {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return fallback;
-
-  return getRelativeLuminance(rgb) > 0.5 ? "#111111" : "#ffffff";
+function normalizeFontSize(value) {
+  return FONT_SIZES.includes(value)
+    ? value
+    : DEFAULT_FONT_SIZE;
 }
 
 function normalizeDarkVariant(value) {
-  if (value === "base") return "obsidian";
-  if (value === "soft") return "slate-pro";
-  if (value === "deep") return "obsidian";
-  if (value === "contrast") return "obsidian";
-  if (value === "graphite") return "oled-black";
-  if (value === "midnight-blue" || value === "neon-noir") return "obsidian";
+  const aliases = {
+    obsidian: "black-white",
+    "oled-black": "black-white",
+    "oled-black-surface": "black-white",
 
-  return DARK_VARIANTS.includes(value) ? value : "obsidian";
+    graphite: "dark-gray",
+    "slate-pro": "dark-gray",
+
+    ocean: "institutional-blue",
+    "deep-ocean-night": "institutional-blue",
+    "midnight-blue": "institutional-blue",
+
+    neon: "electric-blue",
+
+    crimson: "crimson-black",
+    wine: "crimson-black",
+    "red-black": "crimson-black",
+    "dark-red": "crimson-black",
+  };
+
+  const raw = String(value ?? "")
+    .replace(/-surface$/, "");
+
+  const normalized = aliases[raw] ?? raw;
+
+  return DARK_VARIANTS.includes(normalized)
+    ? normalized
+    : DEFAULT_DARK_VARIANT;
 }
 
-function normalizeThemeProfile(value) {
-  if (value === "generic") return "institutional";
-  return THEME_PROFILES.includes(value) ? value : DEFAULT_THEME_PROFILE;
-}
+function getDarkPreset(value) {
+  const normalized = normalizeDarkVariant(value);
 
-function getDarkVariantClass(variant) {
-  switch (variant) {
-    case "obsidian":
-      return "dark-obsidian";
-    case "slate-pro":
-      return "dark-slate-pro";
-    case "oled-black":
-      return "dark-oled-black";
-    default:
-      return "dark-obsidian";
-  }
-}
-
-function removeDarkVariantClasses(root) {
-  root.classList.remove(
-    "dark-obsidian",
-    "dark-slate-pro",
-    "dark-midnight-blue",
-    "dark-graphite",
-    "dark-neon-noir",
-    "dark-oled-black",
-    "dark-plum-night",
-    "dark-forest-night",
-    "mono-dark"
+  return (
+    DARK_PRESETS.find(
+      (preset) => preset.variant === normalized
+    ) ?? DARK_PRESETS[0]
   );
 }
 
-function applyCssVars(root, map, vars) {
-  Object.entries(map).forEach(([key, cssVar]) => {
-    const value = vars?.[key];
+function getCurrentPreset(store) {
+  return store.darkMode
+    ? getDarkPreset(store.darkVariant)
+    : LIGHT_PRESET;
+}
 
-    if (value === undefined || value === null || value === "") {
-      root.style.removeProperty(cssVar);
-    } else {
-      root.style.setProperty(cssVar, value);
-    }
+function removeDarkClasses(root) {
+  DARK_VARIANT_CLASSES.forEach((className) => {
+    root.classList.remove(className);
   });
 }
 
-function clearCssVars(root, cssVars) {
-  cssVars.forEach((cssVar) => root.style.removeProperty(cssVar));
-}
+function applyPresetVariables(root, preset) {
+  Object.entries(CSS_VARIABLE_MAP).forEach(
+    ([key, cssName]) => {
+      const value =
+        key === "accent" ||
+        key === "accentContrast"
+          ? preset[key]
+          : preset.palette[key];
 
-function getInstitutionalThemeTokens(isDark) {
-  return isDark ? INSTITUTIONAL_THEME_DARK : INSTITUTIONAL_THEME_LIGHT;
-}
+      if (value != null) {
+        root.style.setProperty(cssName, value);
+      }
+    }
+  );
 
-function getSurfaceCatalog(isDark) {
-  return isDark ? SURFACE_PRESETS_DARK : SURFACE_PRESETS_LIGHT;
-}
+  root.style.setProperty(
+    "--color-primary",
+    preset.accent
+  );
 
-function getDefaultSurfacePreset(isDark) {
-  return isDark ? DEFAULT_SURFACE_DARK : DEFAULT_SURFACE_LIGHT;
-}
+  root.style.setProperty(
+    "--color-primary-effective",
+    preset.accent
+  );
 
-function normalizeSurfacePreset(value, isDark) {
-  const catalog = getSurfaceCatalog(isDark);
+  root.style.setProperty(
+    "--accent-user",
+    preset.accent
+  );
 
-  return catalog.some((item) => item.value === value)
-    ? value
-    : getDefaultSurfacePreset(isDark);
-}
+  root.style.setProperty(
+    "--bg-elev",
+    preset.palette.bgElevated
+  );
 
-function getSurfacePresetMeta(value, isDark) {
-  const normalized = normalizeSurfacePreset(value, isDark);
+  root.style.setProperty(
+    "--ring-primary",
+    `0 0 0 3px ${preset.palette.focusRing}`
+  );
 
-  return (
-    getSurfaceCatalog(isDark).find((item) => item.value === normalized) ||
-    getSurfaceCatalog(isDark)[0]
+  /* Alias utilizados por estilos anteriores. */
+  root.style.setProperty(
+    "--background",
+    preset.palette.bgMain
+  );
+
+  root.style.setProperty(
+    "--surface",
+    preset.palette.bgCard
+  );
+
+  root.style.setProperty(
+    "--surface-card",
+    preset.palette.bgCard
+  );
+
+  root.style.setProperty(
+    "--surface-panel",
+    preset.palette.bgElevated
+  );
+
+  root.style.setProperty(
+    "--panel-bg",
+    preset.palette.bgCard
+  );
+
+  root.style.setProperty(
+    "--sidebar-bg",
+    preset.palette.bgNavbar
+  );
+
+  root.style.setProperty(
+    "--topbar-bg",
+    preset.palette.bgNavbar
+  );
+
+  root.style.setProperty(
+    "--input-bg",
+    preset.palette.bgInput
+  );
+
+  root.style.setProperty(
+    "--text-color",
+    preset.palette.textPrimary
+  );
+
+  root.style.setProperty(
+    "--muted-color",
+    preset.palette.textSecondary
+  );
+
+  root.style.setProperty(
+    "--border",
+    preset.palette.borderColor
+  );
+
+  root.style.setProperty(
+    "--primary",
+    preset.accent
   );
 }
 
-function findUnifiedDarkStyleByValue(value) {
-  return UNIFIED_DARK_STYLE_PRESETS.find((item) => item.value === value) || null;
-}
+function migrateLegacySettings() {
+  const oldDark = getStorage("darkMode");
+  const oldFont = getStorage("fontSize");
+  const oldAnimations = getStorage("animations");
+  const oldMono = getStorage("sgpc-mono-dark");
 
-function resolveUnifiedDarkStyle(surface, variant) {
-  const exact = UNIFIED_DARK_STYLE_PRESETS.find(
-    (item) => item.surface === surface && item.variant === variant
-  );
-  if (exact) return exact;
-
-  const bySurface = UNIFIED_DARK_STYLE_PRESETS.find((item) => item.surface === surface);
-  if (bySurface) return bySurface;
-
-  const byVariant = UNIFIED_DARK_STYLE_PRESETS.find((item) => item.variant === variant);
-  if (byVariant) return byVariant;
-
-  return UNIFIED_DARK_STYLE_PRESETS[0];
-}
-
-function getDefaultPrimaryForContext(isDark, profile, surfaceDark, darkVariant) {
-  if (profile === "institutional") {
-    return isDark ? INSTITUTIONAL_PRIMARY_DARK : INSTITUTIONAL_PRIMARY_LIGHT;
+  if (
+    getStorage(STORAGE.theme) === null &&
+    oldDark !== null
+  ) {
+    setStorage(
+      STORAGE.theme,
+      oldDark === "true" ? "dark" : "light"
+    );
   }
 
-  if (isDark) {
-    return resolveUnifiedDarkStyle(surfaceDark, darkVariant).accent;
+  if (
+    getStorage(STORAGE.fontSize) === null &&
+    oldFont !== null
+  ) {
+    setStorage(
+      STORAGE.fontSize,
+      normalizeFontSize(oldFont)
+    );
   }
 
-  return DEFAULT_PRIMARY_LIGHT;
+  if (
+    getStorage(STORAGE.animations) === null &&
+    oldAnimations !== null
+  ) {
+    setStorage(
+      STORAGE.animations,
+      oldAnimations === "false"
+        ? "false"
+        : "true"
+    );
+  }
+
+  if (
+    getStorage(STORAGE.darkVariant) === null &&
+    oldMono === "true"
+  ) {
+    setStorage(
+      STORAGE.darkVariant,
+      "black-white"
+    );
+  }
+
+  LEGACY_STORAGE.forEach(removeStorage);
+  removeStorage(STORAGE.oldColor);
 }
 
-export const useThemeStore = defineStore("theme", {
-  state: () => {
-    const storedTheme = getLS(LS.theme);
-    const initialDark = storedTheme === "dark";
+/* ============================================================
+   STORE
+============================================================ */
 
-    const initialThemeProfile = normalizeThemeProfile(
-      getLS(LS.themeProfile, DEFAULT_THEME_PROFILE)
-    );
+export const useThemeStore = defineStore(
+  "theme",
+  {
+    state: () => {
+      const darkMode =
+        getStorage(
+          STORAGE.theme,
+          DEFAULT_THEME
+        ) === "dark";
 
-    const initialDarkVariant = normalizeDarkVariant(getLS(LS.darkVariant, "obsidian"));
-
-    const initialSurfaceDark = normalizeSurfacePreset(
-      getLS(LS.surfaceDark, DEFAULT_SURFACE_DARK),
-      true
-    );
-
-    const initialSurfaceLight = normalizeSurfacePreset(
-      getLS(LS.surfaceLight, DEFAULT_SURFACE_LIGHT),
-      false
-    );
-
-    const storedEditorialAccent = getStoredEditorialAccent(getLS(LS.color, null));
-
-    return {
-      darkMode: initialDark,
-      darkVariant: initialDarkVariant,
-      themeProfile: initialThemeProfile,
-      routeTransition: normalizeRouteTransition(
-        getLS(LS.routeTransition, TRANSICION_RUTA_DEFAULT)
-      ),
-      hasCustomPrimary:
-        initialThemeProfile === "editorial" && storedEditorialAccent !== null,
-      primaryColor:
-        initialThemeProfile === "editorial" && storedEditorialAccent !== null
-          ? storedEditorialAccent
-          : getDefaultPrimaryForContext(
-              initialDark,
-              initialThemeProfile,
-              initialSurfaceDark,
-              initialDarkVariant
-            ),
-      fontSize: getLS(LS.font, DEFAULT_FONT_SIZE),
-      animations: getLS(LS.anim, "true") !== "false",
-      surfacePresetLight: initialSurfaceLight,
-      surfacePresetDark: initialSurfaceDark,
-      ready: false,
-    };
-  },
-
-  getters: {
-    currentSurfacePreset(state) {
-      return state.darkMode ? state.surfacePresetDark : state.surfacePresetLight;
-    },
-
-    currentSurfaceMeta(state) {
-      return getSurfacePresetMeta(
-        state.darkMode ? state.surfacePresetDark : state.surfacePresetLight,
-        state.darkMode
+      const preset = getDarkPreset(
+        getStorage(
+          STORAGE.darkVariant,
+          DEFAULT_DARK_VARIANT
+        )
       );
+
+      return {
+        darkMode,
+        darkVariant: preset.variant,
+
+        themeProfile:
+          DEFAULT_THEME_PROFILE,
+
+        routeTransition:
+          normalizeRouteTransition(
+            getStorage(
+              STORAGE.routeTransition,
+              TRANSICION_RUTA_DEFAULT
+            )
+          ),
+
+        hasCustomPrimary: false,
+
+        primaryColor: darkMode
+          ? preset.accent
+          : LIGHT_PRESET.accent,
+
+        fontSize: normalizeFontSize(
+          getStorage(
+            STORAGE.fontSize,
+            DEFAULT_FONT_SIZE
+          )
+        ),
+
+        animations:
+          getStorage(
+            STORAGE.animations,
+            "true"
+          ) !== "false",
+
+        surfacePresetLight:
+          DEFAULT_LIGHT_SURFACE,
+
+        surfacePresetDark:
+          preset.surface,
+
+        ready: false,
+      };
     },
 
-    isInstitutionalTheme(state) {
-      return state.themeProfile === "institutional";
-    },
+    getters: {
+      currentSurfacePreset(state) {
+        return state.darkMode
+          ? state.surfacePresetDark
+          : state.surfacePresetLight;
+      },
 
-    currentUnifiedDarkStyleMeta(state) {
-      return resolveUnifiedDarkStyle(state.surfacePresetDark, state.darkVariant);
-    },
-
-    currentUnifiedDarkStyle(state) {
-      return resolveUnifiedDarkStyle(state.surfacePresetDark, state.darkVariant).value;
-    },
-  },
-
-  actions: {
-    init() {
-      const legacyDark = getLS(LEGACY.dark);
-      const legacyColor = getLS(LEGACY.color);
-      const legacyFont = getLS(LEGACY.font);
-      const legacyAnim = getLS(LEGACY.anim);
-
-      if (
-        legacyDark !== null ||
-        legacyColor !== null ||
-        legacyFont !== null ||
-        legacyAnim !== null
-      ) {
-        if (legacyDark !== null && !getLS(LS.theme)) {
-          const isDark = legacyDark === "true";
-          setLS(LS.theme, isDark ? "dark" : "light");
+      currentSurfaceMeta(state) {
+        if (!state.darkMode) {
+          return SURFACE_PRESETS_LIGHT[0];
         }
 
-        if (legacyColor !== null && !getLS(LS.color)) {
-          const normalized = normalizeHexColor(legacyColor, null);
-          if (isEditorialAccent(normalized)) {
-            setLS(LS.color, DEFAULT_PRIMARY_LIGHT);
-          }
-        }
+        const preset = getDarkPreset(
+          state.darkVariant
+        );
 
-        if (legacyFont !== null && !getLS(LS.font)) {
-          setLS(LS.font, legacyFont);
-        }
+        return SURFACE_PRESETS_DARK.find(
+          (item) =>
+            item.value === preset.surface
+        );
+      },
 
-        if (legacyAnim !== null && !getLS(LS.anim)) {
-          setLS(LS.anim, legacyAnim === "true" ? "true" : "false");
-        }
+      isInstitutionalTheme() {
+        return true;
+      },
 
-        removeLS(LEGACY.dark);
-        removeLS(LEGACY.color);
-        removeLS(LEGACY.font);
-        removeLS(LEGACY.anim);
-      }
+      currentUnifiedDarkStyleMeta(state) {
+        return getDarkPreset(
+          state.darkVariant
+        );
+      },
 
-      const legacyMonoDark = getLS("sgpc-mono-dark");
-      if (legacyMonoDark === "true" && !getLS(LS.darkVariant)) {
-        setLS(LS.darkVariant, "oled-black");
-      }
-      removeLS("sgpc-mono-dark");
+      currentUnifiedDarkStyle(state) {
+        return getDarkPreset(
+          state.darkVariant
+        ).value;
+      },
 
-      if (!getLS(LS.theme)) {
-        const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
-        this.darkMode = !!prefersDark;
-        setLS(LS.theme, this.darkMode ? "dark" : "light");
-      } else {
-        this.darkMode = getLS(LS.theme) === "dark";
-      }
+      currentAppearance(state) {
+        return state.darkMode
+          ? getDarkPreset(
+              state.darkVariant
+            ).value
+          : "light";
+      },
+    },
 
-      this.darkVariant = normalizeDarkVariant(getLS(LS.darkVariant, "obsidian"));
+    actions: {
+      init() {
+        migrateLegacySettings();
 
-      this.themeProfile = normalizeThemeProfile(
-        getLS(LS.themeProfile, DEFAULT_THEME_PROFILE)
-      );
+        this.darkMode =
+          getStorage(
+            STORAGE.theme,
+            DEFAULT_THEME
+          ) === "dark";
 
-      this.routeTransition = normalizeRouteTransition(
-        getLS(LS.routeTransition, TRANSICION_RUTA_DEFAULT)
-      );
+        this.darkVariant =
+          normalizeDarkVariant(
+            getStorage(
+              STORAGE.darkVariant,
+              DEFAULT_DARK_VARIANT
+            )
+          );
 
-      this.fontSize = getLS(LS.font, DEFAULT_FONT_SIZE);
-      this.animations = getLS(LS.anim, "true") !== "false";
+        this.surfacePresetDark =
+          `${this.darkVariant}-surface`;
 
-      this.surfacePresetLight = normalizeSurfacePreset(
-        getLS(LS.surfaceLight, DEFAULT_SURFACE_LIGHT),
-        false
-      );
+        this.surfacePresetLight =
+          DEFAULT_LIGHT_SURFACE;
 
-      this.surfacePresetDark = normalizeSurfacePreset(
-        getLS(LS.surfaceDark, DEFAULT_SURFACE_DARK),
-        true
-      );
+        this.themeProfile =
+          DEFAULT_THEME_PROFILE;
 
-      const resolvedStyle = resolveUnifiedDarkStyle(
-        this.surfacePresetDark,
-        this.darkVariant
-      );
+        this.fontSize =
+          normalizeFontSize(
+            getStorage(
+              STORAGE.fontSize,
+              DEFAULT_FONT_SIZE
+            )
+          );
 
-      this.surfacePresetDark = resolvedStyle.surface;
-      this.darkVariant = resolvedStyle.variant;
+        this.animations =
+          getStorage(
+            STORAGE.animations,
+            "true"
+          ) !== "false";
 
-      const storedColor = getLS(LS.color, null);
-      const storedEditorialAccent = getStoredEditorialAccent(storedColor);
+        this.routeTransition =
+          normalizeRouteTransition(
+            getStorage(
+              STORAGE.routeTransition,
+              TRANSICION_RUTA_DEFAULT
+            )
+          );
 
-      if (storedColor !== null && storedEditorialAccent === null) {
-        removeLS(LS.color);
-      }
+        this.primaryColor =
+          getCurrentPreset(this).accent;
 
-      if (this.themeProfile === "institutional") {
         this.hasCustomPrimary = false;
-        removeLS(LS.color);
-      } else {
-        this.hasCustomPrimary = storedEditorialAccent !== null;
-      }
 
-      this.primaryColor = this.hasCustomPrimary
-        ? DEFAULT_PRIMARY_LIGHT
-        : getDefaultPrimaryForContext(
-            this.darkMode,
-            this.themeProfile,
-            this.surfacePresetDark,
-            this.darkVariant
-          );
+        this.persist();
+        this.applyAll();
 
-      setLS(LS.darkVariant, this.darkVariant);
-      setLS(LS.themeProfile, this.themeProfile);
-      setLS(LS.routeTransition, this.routeTransition);
-      setLS(LS.surfaceLight, this.surfacePresetLight);
-      setLS(LS.surfaceDark, this.surfacePresetDark);
+        this.ready = true;
+      },
 
-      this.applyAll();
-      this.ready = true;
-    },
+      persist() {
+        setStorage(
+          STORAGE.theme,
+          this.darkMode
+            ? "dark"
+            : "light"
+        );
 
-    applyAll() {
-      this.applyTheme();
-      this.applyRouteTransition();
-      this.applyPrimaryColor();
-      this.applyFontSize();
-      this.applyAnimations();
-      this.applySurfacePalette();
-    },
-
-    setDark(value) {
-      this.darkMode = !!value;
-      setLS(LS.theme, this.darkMode ? "dark" : "light");
-
-      if (this.themeProfile !== "institutional") {
-        if (this.hasCustomPrimary) {
-          this.primaryColor = DEFAULT_PRIMARY_LIGHT;
-          setLS(LS.color, DEFAULT_PRIMARY_LIGHT);
-        } else {
-          this.primaryColor = getDefaultPrimaryForContext(
-            this.darkMode,
-            this.themeProfile,
-            this.surfacePresetDark,
-            this.darkVariant
-          );
-        }
-      }
-
-      this.applyTheme();
-      this.applyPrimaryColor();
-      this.applySurfacePalette();
-    },
-
-    toggleTheme() {
-      this.setDark(!this.darkMode);
-    },
-
-    setThemeProfile(profile) {
-      this.themeProfile = normalizeThemeProfile(profile);
-      setLS(LS.themeProfile, this.themeProfile);
-
-      if (this.themeProfile === "institutional") {
-        this.hasCustomPrimary = false;
-        removeLS(LS.color);
-      }
-
-      this.primaryColor = this.hasCustomPrimary
-        ? DEFAULT_PRIMARY_LIGHT
-        : getDefaultPrimaryForContext(
-            this.darkMode,
-            this.themeProfile,
-            this.surfacePresetDark,
-            this.darkVariant
-          );
-
-      this.applyAll();
-    },
-
-    setDarkVariant(variant) {
-      this.darkVariant = normalizeDarkVariant(variant);
-
-      const resolvedStyle = resolveUnifiedDarkStyle(
-        this.surfacePresetDark,
-        this.darkVariant
-      );
-
-      this.surfacePresetDark = resolvedStyle.surface;
-      this.darkVariant = resolvedStyle.variant;
-      this.hasCustomPrimary = false;
-      this.primaryColor = resolvedStyle.accent;
-
-      removeLS(LS.color);
-      setLS(LS.surfaceDark, this.surfacePresetDark);
-      setLS(LS.darkVariant, this.darkVariant);
-
-      this.applyTheme();
-      this.applyPrimaryColor();
-      this.applySurfacePalette();
-    },
-
-    setUnifiedDarkStyle(styleValue) {
-      const preset = findUnifiedDarkStyleByValue(styleValue);
-      if (!preset) return;
-
-      this.surfacePresetDark = normalizeSurfacePreset(preset.surface, true);
-      this.darkVariant = normalizeDarkVariant(preset.variant);
-
-      this.hasCustomPrimary = false;
-      this.primaryColor = preset.accent;
-
-      removeLS(LS.color);
-      setLS(LS.surfaceDark, this.surfacePresetDark);
-      setLS(LS.darkVariant, this.darkVariant);
-
-      this.applyTheme();
-      this.applyPrimaryColor();
-      this.applySurfacePalette();
-    },
-
-    applyTheme() {
-      const root = document.documentElement;
-
-      root.classList.toggle("dark", this.darkMode);
-      removeDarkVariantClasses(root);
-
-      root.dataset.theme = this.darkMode ? "dark" : "light";
-      root.dataset.themeProfile = this.themeProfile;
-
-      if (this.darkMode && this.themeProfile !== "institutional") {
-        const variantClass = getDarkVariantClass(this.darkVariant);
-        if (variantClass) {
-          root.classList.add(variantClass);
-        }
-        root.dataset.darkVariant = this.darkVariant;
-      } else {
-        delete root.dataset.darkVariant;
-      }
-    },
-
-    setRouteTransition(value) {
-      this.routeTransition = normalizeRouteTransition(value);
-      setLS(LS.routeTransition, this.routeTransition);
-      this.applyRouteTransition();
-    },
-
-    applyRouteTransition() {
-      const root = document.documentElement;
-      const preset = getRouteTransitionPreset(this.routeTransition);
-
-      Object.entries(preset.vars).forEach(([key, value]) => {
-        root.style.setProperty(key, value);
-      });
-    },
-
-    setPrimaryColor(color) {
-      if (this.themeProfile === "institutional") return;
-
-      const normalized = normalizeHexColor(color, DEFAULT_PRIMARY_LIGHT);
-
-      if (!isEditorialAccent(normalized)) {
-        this.clearPrimaryColor();
-        return;
-      }
-
-      this.primaryColor = DEFAULT_PRIMARY_LIGHT;
-      this.hasCustomPrimary = true;
-
-      setLS(LS.color, DEFAULT_PRIMARY_LIGHT);
-      this.applyPrimaryColor();
-    },
-
-    clearPrimaryColor() {
-      this.hasCustomPrimary = false;
-      removeLS(LS.color);
-
-      this.primaryColor = getDefaultPrimaryForContext(
-        this.darkMode,
-        this.themeProfile,
-        this.surfacePresetDark,
-        this.darkVariant
-      );
-
-      this.applyPrimaryColor();
-    },
-
-    applyPrimaryColor() {
-      const root = document.documentElement;
-
-      let effectiveColor = getDefaultPrimaryForContext(
-        this.darkMode,
-        this.themeProfile,
-        this.surfacePresetDark,
-        this.darkVariant
-      );
-
-      if (this.themeProfile === "institutional") {
-        effectiveColor = this.darkMode
-          ? INSTITUTIONAL_PRIMARY_DARK
-          : INSTITUTIONAL_PRIMARY_LIGHT;
-      } else if (this.hasCustomPrimary) {
-        effectiveColor = DEFAULT_PRIMARY_LIGHT;
-        this.primaryColor = DEFAULT_PRIMARY_LIGHT;
-      } else {
-        this.primaryColor = effectiveColor;
-      }
-
-      root.style.removeProperty("--accent-user");
-
-      if (this.themeProfile !== "institutional") {
-        root.style.setProperty("--accent-user", effectiveColor);
-      }
-
-      root.style.setProperty("--accent-contrast", getContrastText(effectiveColor));
-      root.style.setProperty("--color-primary-effective", effectiveColor);
-    },
-
-    setFontSize(size) {
-      this.fontSize = size || DEFAULT_FONT_SIZE;
-      setLS(LS.font, this.fontSize);
-      this.applyFontSize();
-    },
-
-    applyFontSize() {
-      document.documentElement.style.setProperty("--font-base", this.fontSize);
-    },
-
-    setAnimations(value) {
-      this.animations = !!value;
-      setLS(LS.anim, this.animations ? "true" : "false");
-      this.applyAnimations();
-    },
-
-    applyAnimations() {
-      const root = document.documentElement;
-      root.style.setProperty("--animate-speed", this.animations ? "1" : "0");
-      root.classList.toggle("reduced-motion", !this.animations);
-    },
-
-    setSurfacePreset(value) {
-      if (this.darkMode) {
-        this.surfacePresetDark = normalizeSurfacePreset(value, true);
-        setLS(LS.surfaceDark, this.surfacePresetDark);
-
-        const resolvedStyle = resolveUnifiedDarkStyle(
-          this.surfacePresetDark,
+        setStorage(
+          STORAGE.darkVariant,
           this.darkVariant
         );
 
-        this.surfacePresetDark = resolvedStyle.surface;
-        this.darkVariant = resolvedStyle.variant;
+        setStorage(
+          STORAGE.fontSize,
+          this.fontSize
+        );
+
+        setStorage(
+          STORAGE.animations,
+          this.animations
+            ? "true"
+            : "false"
+        );
+
+        setStorage(
+          STORAGE.routeTransition,
+          this.routeTransition
+        );
+
+        setStorage(
+          STORAGE.surfaceLight,
+          DEFAULT_LIGHT_SURFACE
+        );
+
+        setStorage(
+          STORAGE.surfaceDark,
+          `${this.darkVariant}-surface`
+        );
+
+        setStorage(
+          STORAGE.themeProfile,
+          DEFAULT_THEME_PROFILE
+        );
+      },
+
+      applyAll() {
+        this.applyTheme();
+        this.applySurfacePalette();
+        this.applyRouteTransition();
+        this.applyFontSize();
+        this.applyAnimations();
+      },
+
+      setAppearance(value) {
+        if (value === "light") {
+          this.darkMode = false;
+
+          this.primaryColor =
+            LIGHT_PRESET.accent;
+        } else {
+          const preset =
+            getDarkPreset(value);
+
+          this.darkMode = true;
+          this.darkVariant =
+            preset.variant;
+
+          this.surfacePresetDark =
+            preset.surface;
+
+          this.primaryColor =
+            preset.accent;
+        }
+
         this.hasCustomPrimary = false;
-        this.primaryColor = resolvedStyle.accent;
 
-        removeLS(LS.color);
-        setLS(LS.surfaceDark, this.surfacePresetDark);
-        setLS(LS.darkVariant, this.darkVariant);
-      } else {
-        this.surfacePresetLight = normalizeSurfacePreset(value, false);
-        setLS(LS.surfaceLight, this.surfacePresetLight);
-      }
+        this.persist();
+        this.applyTheme();
+        this.applySurfacePalette();
+      },
 
-      this.applyTheme();
-      this.applyPrimaryColor();
-      this.applySurfacePalette();
+      setDark(value) {
+        this.setAppearance(
+          value
+            ? this.darkVariant ||
+                DEFAULT_DARK_VARIANT
+            : "light"
+        );
+      },
+
+      toggleTheme() {
+        this.setDark(!this.darkMode);
+      },
+
+      setThemeProfile() {
+        this.themeProfile =
+          DEFAULT_THEME_PROFILE;
+
+        this.hasCustomPrimary = false;
+
+        this.persist();
+        this.applyAll();
+      },
+
+      setDarkVariant(value) {
+        this.setAppearance(
+          normalizeDarkVariant(value)
+        );
+      },
+
+      setUnifiedDarkStyle(value) {
+        this.setAppearance(value);
+      },
+
+      applyTheme() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        root.classList.toggle(
+          "dark",
+          this.darkMode
+        );
+
+        removeDarkClasses(root);
+
+        root.dataset.theme =
+          this.darkMode
+            ? "dark"
+            : "light";
+
+        root.dataset.themeProfile =
+          DEFAULT_THEME_PROFILE;
+
+        if (this.darkMode) {
+          root.classList.add(
+            `dark-${this.darkVariant}`
+          );
+
+          root.dataset.darkVariant =
+            this.darkVariant;
+        } else {
+          delete root.dataset.darkVariant;
+        }
+      },
+
+      setRouteTransition(value) {
+        this.routeTransition =
+          normalizeRouteTransition(value);
+
+        this.persist();
+        this.applyRouteTransition();
+      },
+
+      applyRouteTransition() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        const preset =
+          getRouteTransitionPreset(
+            this.routeTransition
+          );
+
+        Object.entries(
+          preset.vars
+        ).forEach(([name, value]) => {
+          root.style.setProperty(
+            name,
+            value
+          );
+        });
+      },
+
+      setPrimaryColor() {
+        this.hasCustomPrimary = false;
+
+        removeStorage(
+          STORAGE.oldColor
+        );
+
+        this.applyPrimaryColor();
+      },
+
+      clearPrimaryColor() {
+        this.hasCustomPrimary = false;
+
+        removeStorage(
+          STORAGE.oldColor
+        );
+
+        this.applyPrimaryColor();
+      },
+
+      applyPrimaryColor() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        const preset =
+          getCurrentPreset(this);
+
+        this.primaryColor =
+          preset.accent;
+
+        root.style.setProperty(
+          "--accent-user",
+          preset.accent
+        );
+
+        root.style.setProperty(
+          "--accent-contrast",
+          preset.accentContrast
+        );
+
+        root.style.setProperty(
+          "--color-primary-effective",
+          preset.accent
+        );
+      },
+
+      setFontSize(value) {
+        this.fontSize =
+          normalizeFontSize(value);
+
+        this.persist();
+        this.applyFontSize();
+      },
+
+      applyFontSize() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        root.style.setProperty(
+          "--font-base",
+          this.fontSize
+        );
+
+        root.style.fontSize =
+          this.fontSize;
+      },
+
+      setAnimations(value) {
+        this.animations =
+          Boolean(value);
+
+        this.persist();
+        this.applyAnimations();
+      },
+
+      applyAnimations() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        root.style.setProperty(
+          "--animate-speed",
+          this.animations
+            ? "1"
+            : "0"
+        );
+
+        root.classList.toggle(
+          "reduced-motion",
+          !this.animations
+        );
+      },
+
+      setSurfacePreset(value) {
+        if (!this.darkMode) {
+          this.surfacePresetLight =
+            DEFAULT_LIGHT_SURFACE;
+
+          this.persist();
+          this.applySurfacePalette();
+
+          return;
+        }
+
+        this.setAppearance(
+          String(value ?? "")
+            .replace(/-surface$/, "")
+        );
+      },
+
+      applySurfacePalette() {
+        const root = getRoot();
+
+        if (!root) return;
+
+        const preset =
+          getCurrentPreset(this);
+
+        this.primaryColor =
+          preset.accent;
+
+        applyPresetVariables(
+          root,
+          preset
+        );
+      },
+
+      reset() {
+        Object.values(
+          STORAGE
+        ).forEach(removeStorage);
+
+        LEGACY_STORAGE.forEach(
+          removeStorage
+        );
+
+        this.darkMode = false;
+
+        this.darkVariant =
+          DEFAULT_DARK_VARIANT;
+
+        this.themeProfile =
+          DEFAULT_THEME_PROFILE;
+
+        this.routeTransition =
+          TRANSICION_RUTA_DEFAULT;
+
+        this.hasCustomPrimary = false;
+
+        this.primaryColor =
+          LIGHT_PRESET.accent;
+
+        this.fontSize =
+          DEFAULT_FONT_SIZE;
+
+        this.animations = true;
+
+        this.surfacePresetLight =
+          DEFAULT_LIGHT_SURFACE;
+
+        this.surfacePresetDark =
+          `${DEFAULT_DARK_VARIANT}-surface`;
+
+        this.persist();
+        this.applyAll();
+      },
     },
-
-    applySurfacePalette() {
-      const root = document.documentElement;
-
-      if (this.themeProfile === "institutional") {
-        const institutionalTokens = getInstitutionalThemeTokens(this.darkMode);
-        applyCssVars(root, SURFACE_STYLE_VAR_MAP, institutionalTokens);
-        applyCssVars(root, INSTITUTIONAL_PROFILE_VAR_MAP, institutionalTokens);
-        return;
-      }
-
-      const preset = this.darkMode
-        ? getSurfacePresetMeta(this.surfacePresetDark, true)
-        : getSurfacePresetMeta(this.surfacePresetLight, false);
-
-      applyCssVars(root, SURFACE_STYLE_VAR_MAP, preset.vars);
-      clearCssVars(root, INSTITUTIONAL_PROFILE_VAR_KEYS);
-    },
-
-    reset() {
-      removeLS(LS.theme);
-      removeLS(LS.color);
-      removeLS(LS.font);
-      removeLS(LS.anim);
-      removeLS(LS.darkVariant);
-      removeLS(LS.routeTransition);
-      removeLS(LS.surfaceLight);
-      removeLS(LS.surfaceDark);
-      removeLS(LS.themeProfile);
-      removeLS("sgpc-mono-dark");
-
-      this.darkMode = false;
-      this.darkVariant = "obsidian";
-      this.themeProfile = DEFAULT_THEME_PROFILE;
-      this.routeTransition = TRANSICION_RUTA_DEFAULT;
-      this.hasCustomPrimary = false;
-      this.primaryColor = DEFAULT_PRIMARY_LIGHT;
-      this.fontSize = DEFAULT_FONT_SIZE;
-      this.animations = true;
-      this.surfacePresetLight = DEFAULT_SURFACE_LIGHT;
-      this.surfacePresetDark = DEFAULT_SURFACE_DARK;
-
-      setLS(LS.theme, "light");
-      setLS(LS.darkVariant, "obsidian");
-      setLS(LS.themeProfile, DEFAULT_THEME_PROFILE);
-      setLS(LS.routeTransition, TRANSICION_RUTA_DEFAULT);
-      setLS(LS.font, DEFAULT_FONT_SIZE);
-      setLS(LS.anim, "true");
-      setLS(LS.surfaceLight, DEFAULT_SURFACE_LIGHT);
-      setLS(LS.surfaceDark, DEFAULT_SURFACE_DARK);
-
-      this.applyAll();
-    },
-  },
-});
+  }
+);
 
 export { TRANSICIONES_RUTA };
