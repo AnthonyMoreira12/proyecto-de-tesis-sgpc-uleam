@@ -1,13 +1,24 @@
 """
-View para listar las publicaciones vinculadas al usuario autenticado.
-Incluye las creadas por el usuario y las asociadas a su autoría.
+Vista para listar las publicaciones vinculadas al usuario
+autenticado.
+
+Incluye:
+- publicaciones creadas por el usuario;
+- publicaciones donde participa como Autor.
 """
 
-from django.db.models import Prefetch, Q
+from django.db.models import (
+    Prefetch,
+    Q,
+)
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Publicacion, PublicacionAutor
+from core.models import (
+    Publicacion,
+    PublicacionAutor,
+)
 from core.publicaciones.mixins.publicaciones_auth_mixins import (
     PublicacionesJWTAuthAPIViewMixin,
 )
@@ -23,67 +34,160 @@ from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
 )
 
 
-class MyPublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
+def _normalize_tipo(value):
+    return str(
+        value or ""
+    ).strip().lower()
+
+
+class MyPublicacionListAPIView(
+    PublicacionesJWTAuthAPIViewMixin,
+    APIView,
+):
     """
-    Lista las publicaciones relacionadas con el usuario autenticado.
-
-    Incluye:
-    - Publicaciones creadas directamente por el usuario.
-    - Publicaciones donde el usuario aparece como autor vinculado.
+    Devuelve únicamente publicaciones relacionadas con
+    el usuario autenticado.
     """
 
-    def get(self, request):
-        tipo = request.query_params.get("tipo") or request.query_params.get(
-            "tipo_publicacion_final"
-        )
-
+    def _build_queryset(
+        self,
+        user,
+    ):
         autores_prefetch = Prefetch(
             "participaciones",
-            queryset=PublicacionAutor.objects.select_related("autor").order_by(
-                "orden",
-                "id",
+            queryset=(
+                PublicacionAutor.objects
+                .select_related(
+                    "autor"
+                )
+                .order_by(
+                    "orden",
+                    "id",
+                )
             ),
+            to_attr="participaciones_ordenadas",
         )
 
-        autor_id = resolve_user_autor_id(request.user)
+        autor_id = (
+            resolve_user_autor_id(
+                user
+            )
+        )
 
-        filtros = Q(usuario_creador=request.user)
+        filtros = Q(
+            usuario_creador=user
+        )
 
         if autor_id:
-            filtros |= Q(participaciones__autor_id=autor_id)
+            filtros |= Q(
+                participaciones__autor_id=(
+                    autor_id
+                )
+            )
 
-        publicaciones = (
-            Publicacion.objects.select_related(
+        queryset = (
+            Publicacion.objects
+            .select_related(
                 "tipo",
                 "proyecto",
+
+                "usuario_creador",
+                "admin_registrador",
+
                 "carrera",
                 "carrera__facultad",
-                "usuario_creador",
+
+                "area",
+                "subarea",
+
+                "pais",
+                "ciudad",
+
                 "articulo",
                 "ponencia",
                 "libro",
                 "capitulo_libro",
             )
-            .prefetch_related(autores_prefetch)
-            .filter(filtros)
+            .prefetch_related(
+                autores_prefetch,
+                "archivos",
+            )
+            .filter(
+                filtros
+            )
             .distinct()
-            .order_by("-fecha_publicacion", "-id")
+            .order_by(
+                "-fecha_publicacion",
+                "-id",
+            )
         )
 
-        publicaciones = annotate_tipo_publicacion_final(publicaciones).exclude(
-            tipo_publicacion_final="sin_clasificar"
+        queryset = (
+            annotate_tipo_publicacion_final(
+                queryset
+            )
+            .exclude(
+                tipo_publicacion_final=(
+                    "sin_clasificar"
+                )
+            )
+        )
+
+        return queryset
+
+    def get(
+        self,
+        request,
+    ):
+        tipo = (
+            request.query_params.get(
+                "tipo"
+            )
+            or request.query_params.get(
+                "tipo_publicacion_final"
+            )
+        )
+
+        publicaciones = (
+            self._build_queryset(
+                request.user
+            )
         )
 
         if tipo:
-            tipo = str(tipo).strip().lower()
+            tipo = _normalize_tipo(
+                tipo
+            )
 
-            if tipo in TIPOS_PUBLICACION_FINALES:
-                publicaciones = publicaciones.filter(tipo_publicacion_final=tipo)
+            if (
+                tipo
+                not in TIPOS_PUBLICACION_FINALES
+            ):
+                raise ValidationError(
+                    {
+                        "tipo": [
+                            "El tipo de publicación "
+                            "seleccionado no es válido."
+                        ]
+                    }
+                )
 
-        serializer = PublicacionListadoSerializer(
-            publicaciones,
-            many=True,
-            context={"request": request},
+            publicaciones = (
+                publicaciones.filter(
+                    tipo_publicacion_final=tipo
+                )
+            )
+
+        serializer = (
+            PublicacionListadoSerializer(
+                publicaciones,
+                many=True,
+                context={
+                    "request": request,
+                },
+            )
         )
 
-        return Response(serializer.data)
+        return Response(
+            serializer.data
+        )

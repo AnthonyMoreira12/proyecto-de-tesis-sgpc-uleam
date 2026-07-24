@@ -7,18 +7,28 @@ def _norm_text(value):
 
 
 class AreaConocimiento(models.Model):
-    # Nombre único del área de conocimiento (ej. Ciencias de la Computación).
-    nombre = models.CharField(max_length=150, unique=True)
+    nombre = models.CharField(
+        max_length=150,
+        unique=True,
+    )
 
     class Meta:
         db_table = "areas_conocimiento"
         ordering = ["nombre"]
 
     def clean(self):
+        super().clean()
+
         self.nombre = _norm_text(self.nombre)
 
         if not self.nombre:
-            raise ValidationError({"nombre": "El nombre del área es obligatorio."})
+            raise ValidationError(
+                {
+                    "nombre": (
+                        "El nombre del área es obligatorio."
+                    )
+                }
+            )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -29,14 +39,14 @@ class AreaConocimiento(models.Model):
 
 
 class Subarea(models.Model):
-    # Nombre de la subárea de conocimiento.
-    nombre = models.CharField(max_length=150)
+    nombre = models.CharField(
+        max_length=150,
+    )
 
-    # Área principal a la que pertenece la subárea.
     area = models.ForeignKey(
         AreaConocimiento,
         on_delete=models.CASCADE,
-        related_name="subareas"
+        related_name="subareas",
     )
 
     class Meta:
@@ -46,22 +56,30 @@ class Subarea(models.Model):
             models.UniqueConstraint(
                 fields=["nombre", "area"],
                 name="unique_subarea_por_area",
-            )
+            ),
         ]
         indexes = [
-            models.Index(fields=["area", "nombre"]),
+            models.Index(
+                fields=["area", "nombre"],
+            ),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
 
         if not self.nombre:
-            errors["nombre"] = "El nombre de la subárea es obligatorio."
+            errors["nombre"] = (
+                "El nombre de la subárea es obligatorio."
+            )
 
         if not self.area_id:
-            errors["area"] = "El área es obligatoria."
+            errors["area"] = (
+                "El área es obligatoria."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -71,4 +89,10 @@ class Subarea(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.area.nombre})"
+        area_name = (
+            self.area.nombre
+            if self.area_id
+            else "Sin área"
+        )
+
+        return f"{self.nombre} ({area_name})"

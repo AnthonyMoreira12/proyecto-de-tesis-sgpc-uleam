@@ -1,28 +1,69 @@
 """
-ViewSet para gestión de proyectos del sistema.
+ViewSet para la gestión de proyectos del SGPC ULEAM.
 
-Qué hace:
-- Lista proyectos con paginación.
-- Usa selectors centralizados para visibilidad, búsqueda y filtros.
-- Permite filtrar por: q, anio, estado.
-- Expone endpoint de años disponibles desde base de datos.
-- Permite a administradores crear, editar, eliminar y cambiar estado.
-- Permite extender la fecha final del proyecto mediante endpoint dedicado.
-- Permite gestionar autores después de crear el proyecto.
-- Para usuarios no administradores solo expone proyectos visibles.
-- Devuelve serializer liviano en listados y serializer completo en detalle.
-- Soporta multipart/form-data para carga del PDF del proyecto.
+Funcionalidades:
+
+- Listado paginado de proyectos.
+- Consulta de proyectos según la visibilidad del usuario.
+- Búsqueda y filtros por texto, año y estado.
+- Consulta de años disponibles.
+- Creación, actualización y eliminación administrativa.
+- Gestión del equipo investigador.
+- Cambio de estado del proyecto.
+- Extensión de la fecha de finalización.
+- Carga de documentos mediante multipart/form-data.
+
+Permisos:
+
+- Usuarios autenticados:
+    - Listar proyectos visibles.
+    - Consultar proyectos visibles.
+    - Consultar años disponibles.
+    - Consultar el equipo investigador.
+
+- Administradores:
+    - Crear proyectos.
+    - Modificar proyectos.
+    - Eliminar proyectos.
+    - Gestionar autores.
+    - Cambiar estados.
+    - Extender fechas.
 """
 
+import logging
+
+from django.db import (
+    DatabaseError,
+    IntegrityError,
+    transaction,
+)
+from django.db.models.deletion import ProtectedError
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status, viewsets
+
+from rest_framework import (
+    serializers,
+    status,
+    viewsets,
+)
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import (
+    FormParser,
+    JSONParser,
+    MultiPartParser,
+)
+from rest_framework.permissions import (
+    BasePermission,
+    IsAuthenticated,
+)
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import (
+    JWTAuthentication,
+)
 
+from core.models import Proyecto
 from core.proyectos.serializers.proyectos_proyecto_serializers import (
     ProyectoAutorReadSerializer,
     ProyectoListSerializer,
@@ -31,250 +72,1004 @@ from core.proyectos.serializers.proyectos_proyecto_serializers import (
 from core.proyectos.selectors.proyectos_proyecto_selectors import (
     get_filtered_proyectos_queryset_for_user,
     get_proyectos_available_years_for_user,
+    proyectos_base_queryset,
 )
-
-# IMPORTANTE: Aquí importamos el resolver_estado_destino
 from core.proyectos.services.proyectos_proyecto_services import (
     autores_payload_tiene_principal,
     normalize_proyecto_autores_payload,
     require_project_admin,
-    sync_proyecto_autores,
     resolver_estado_destino,
+    sync_proyecto_autores,
+    user_is_project_admin,
 )
 
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# PERMISO ADMINISTRATIVO
+# ============================================================
+
+class IsProjectAdministrator(BasePermission):
+    """
+    Permite el acceso únicamente a administradores de proyectos.
+    """
+
+    message = (
+        "No tienes permisos administrativos para gestionar "
+        "proyectos."
+    )
+
+    def has_permission(
+        self,
+        request,
+        view,
+    ):
+        return user_is_project_admin(
+            request.user
+        )
+
+
+# ============================================================
+# PAGINACIÓN
+# ============================================================
+
 class ProyectoPagination(PageNumberPagination):
+    """
+    Paginación estándar del listado de proyectos.
+    """
+
     page_size = 20
     page_size_query_param = "page_size"
     max_page_size = 100
 
 
+# ============================================================
+# VIEWSET
+# ============================================================
+
 class ProyectoViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    """
+    Gestiona proyectos institucionales y equipos investigadores.
+    """
+
+    authentication_classes = [
+        JWTAuthentication,
+    ]
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
     pagination_class = ProyectoPagination
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+        JSONParser,
+    ]
+
+    http_method_names = [
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+    ]
+
+    lookup_field = "pk"
+    lookup_value_regex = r"\d+"
+
+    # ========================================================
+    # RESPUESTA FINAL
+    # ========================================================
+
+    def finalize_response(
+        self,
+        request,
+        response,
+        *args,
+        **kwargs,
+    ):
+        """
+        Evita que el navegador conserve listados o detalles
+        desactualizados.
+        """
+        response = super().finalize_response(
+            request,
+            response,
+            *args,
+            **kwargs,
+        )
+
+        response["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, "
+            "max-age=0, private"
+        )
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+
+        return response
+
+    # ========================================================
+    # PERMISOS
+    # ========================================================
+
+    def get_permissions(self):
+        """
+        Aplica permisos administrativos antes de procesar las
+        operaciones de escritura.
+        """
+        action_name = getattr(
+            self,
+            "action",
+            None,
+        )
+
+        request_method = str(
+            getattr(
+                self.request,
+                "method",
+                "",
+            )
+            or ""
+        ).upper()
+
+        administrative_actions = {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+            "cambiar_estado",
+            "extender_fecha",
+        }
+
+        authors_write = bool(
+            action_name == "autores"
+            and request_method in {
+                "PUT",
+                "PATCH",
+            }
+        )
+
+        if (
+            action_name in administrative_actions
+            or authors_write
+        ):
+            permission_classes = [
+                IsAuthenticated,
+                IsProjectAdministrator,
+            ]
+
+        else:
+            permission_classes = [
+                IsAuthenticated,
+            ]
+
+        return [
+            permission_class()
+            for permission_class
+            in permission_classes
+        ]
+
+    # ========================================================
+    # SERIALIZER
+    # ========================================================
 
     def get_serializer_class(self):
+        """
+        Utiliza una representación ligera para el listado y una
+        representación completa para el resto de operaciones.
+        """
         if self.action == "list":
             return ProyectoListSerializer
+
         return ProyectoSerializer
 
-    def get_queryset(self):
-        q = self.request.query_params.get("q", "")
-        anio = self.request.query_params.get("anio", "")
-        estado = self.request.query_params.get("estado", "")
+    # ========================================================
+    # QUERYSET
+    # ========================================================
 
-        return get_filtered_proyectos_queryset_for_user(
-            self.request.user,
-            q=q,
-            anio=anio,
-            estado=estado,
+    def get_queryset(self):
+        """
+        Aplica visibilidad, búsqueda y filtros.
+
+        Alias admitidos:
+
+        - q o search
+        - anio o year
+        - estado o status
+        """
+        query_params = self.request.query_params
+
+        query = (
+            query_params.get("q")
+            or query_params.get("search")
+            or ""
         )
 
-    def perform_create(self, serializer):
-        require_project_admin(self.request.user)
-        serializer.save(creado_por=self.request.user)
+        year = (
+            query_params.get("anio")
+            or query_params.get("year")
+            or ""
+        )
 
-    def perform_update(self, serializer):
-        require_project_admin(self.request.user)
+        project_status = (
+            query_params.get("estado")
+            or query_params.get("status")
+            or ""
+        )
+
+        return (
+            get_filtered_proyectos_queryset_for_user(
+                self.request.user,
+                q=query,
+                anio=year,
+                estado=project_status,
+            )
+        )
+
+    # ========================================================
+    # CREACIÓN Y ACTUALIZACIÓN
+    # ========================================================
+
+    def perform_create(
+        self,
+        serializer,
+    ):
+        """
+        Registra al administrador autenticado como creador.
+        """
+        require_project_admin(
+            self.request.user
+        )
+
+        serializer.save(
+            creado_por=self.request.user
+        )
+
+    def perform_update(
+        self,
+        serializer,
+    ):
+        """
+        Actualiza el proyecto después de verificar permisos.
+        """
+        require_project_admin(
+            self.request.user
+        )
+
         serializer.save()
 
-    def perform_destroy(self, instance):
-        require_project_admin(self.request.user)
-        instance.delete()
+    # ========================================================
+    # UTILIDADES INTERNAS
+    # ========================================================
 
-    def _limpiar_prefetch_cache(self, instance):
-        if hasattr(instance, "_prefetched_objects_cache"):
-            instance._prefetched_objects_cache = {}
+    def _get_locked_project(self):
+        """
+        Recupera y bloquea exclusivamente el registro del
+        proyecto.
 
-    def _extraer_autores_payload(self, request):
-        data = request.data
+        Se utiliza un queryset sin joins para evitar errores de
+        PostgreSQL al aplicar FOR UPDATE sobre relaciones
+        opcionales.
+        """
+        lookup_url_kwarg = (
+            self.lookup_url_kwarg
+            or self.lookup_field
+        )
 
-        if isinstance(data, list):
-            return data
+        lookup_value = self.kwargs.get(
+            lookup_url_kwarg
+        )
 
-        autores_data = None
+        queryset = (
+            Proyecto.objects
+            .select_for_update(
+                of=("self",)
+            )
+            .all()
+        )
 
-        if hasattr(data, "get"):
-            autores_data = data.get("autores_data", None)
+        project = get_object_or_404(
+            queryset,
+            **{
+                self.lookup_field: lookup_value,
+            },
+        )
 
-            if autores_data is None:
-                autores_data = data.get("autores", None)
+        self.check_object_permissions(
+            self.request,
+            project,
+        )
 
-        if autores_data is None:
+        return project
+
+    def _get_project_for_response(
+        self,
+        project_id,
+    ):
+        """
+        Recupera el proyecto con todas las relaciones necesarias
+        para construir la respuesta.
+        """
+        return get_object_or_404(
+            proyectos_base_queryset(),
+            pk=project_id,
+        )
+
+    def _clear_project_cache(
+        self,
+        project,
+    ):
+        """
+        Limpia las relaciones precargadas después de modificar el
+        equipo investigador.
+        """
+        if hasattr(
+            project,
+            "_prefetched_objects_cache",
+        ):
+            project._prefetched_objects_cache = {}
+
+        if hasattr(
+            project,
+            "_serializer_participaciones_cache",
+        ):
+            delattr(
+                project,
+                "_serializer_participaciones_cache",
+            )
+
+    def _extract_authors_payload(
+        self,
+        request,
+    ):
+        """
+        Obtiene la lista de autores desde cualquiera de los
+        formatos admitidos.
+
+        Campos admitidos:
+
+        - autores_data
+        - autores
+        """
+        request_data = request.data
+
+        if isinstance(
+            request_data,
+            list,
+        ):
+            return request_data
+
+        if hasattr(
+            request_data,
+            "get",
+        ):
+            for field_name in (
+                "autores_data",
+                "autores",
+            ):
+                if field_name not in request_data:
+                    continue
+
+                field_value = request_data.get(
+                    field_name
+                )
+
+                if field_value is not None:
+                    return field_value
+
+        raise ValidationError(
+            {
+                "autores_data": (
+                    "Debe enviar la lista de autores "
+                    "del proyecto."
+                )
+            }
+        )
+
+    def _parse_extension_date(
+        self,
+        raw_value,
+    ):
+        """
+        Valida la fecha recibida por el endpoint de extensión.
+        """
+        date_field = serializers.DateField(
+            error_messages={
+                "invalid": (
+                    "La nueva fecha debe tener el formato "
+                    "AAAA-MM-DD."
+                ),
+            }
+        )
+
+        try:
+            return date_field.run_validation(
+                raw_value
+            )
+
+        except serializers.ValidationError as exc:
             raise ValidationError(
                 {
-                    "autores_data": (
-                        "Debe enviar la lista de autores del proyecto."
+                    "fecha_fin_prorrogada": (
+                        exc.detail
                     )
                 }
+            ) from exc
+
+    def _database_unavailable_response(
+        self,
+        detail,
+    ):
+        """
+        Devuelve una respuesta controlada ante errores temporales
+        de base de datos.
+        """
+        return Response(
+            {
+                "detail": detail,
+            },
+            status=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
+        )
+
+    # ========================================================
+    # ELIMINACIÓN
+    # ========================================================
+
+    def destroy(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Elimina un proyecto dentro de una transacción y protege
+        la operación frente a modificaciones simultáneas.
+        """
+        require_project_admin(
+            request.user
+        )
+
+        try:
+            with transaction.atomic():
+                project = self._get_locked_project()
+
+                project.delete()
+
+        except ProtectedError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No se puede eliminar el proyecto "
+                        "porque está relacionado con otros "
+                        "registros protegidos."
+                    )
+                }
+            ) from exc
+
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No se puede eliminar el proyecto "
+                        "porque mantiene relaciones activas."
+                    )
+                }
+            ) from exc
+
+        except DatabaseError:
+            logger.exception(
+                "Error de base de datos al eliminar un proyecto."
             )
 
-        return autores_data
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(
-                page,
-                many=True,
-                context={"request": request},
+            return self._database_unavailable_response(
+                (
+                    "No fue posible eliminar el proyecto "
+                    "debido a un error temporal de la "
+                    "base de datos."
+                )
             )
-            return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(
-            queryset,
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance,
-            context={"request": request},
-        )
-        return Response(serializer.data)
-
-    @action(detail=False, methods=["get"], url_path="anios")
-    def anios(self, request, *args, **kwargs):
-        q = request.query_params.get("q", "")
-        estado = request.query_params.get("estado", "")
-
-        anios = get_proyectos_available_years_for_user(
-            request.user,
-            q=q,
-            estado=estado,
-        )
-
-        return Response(anios, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=["get", "put", "patch"], url_path="autores")
-    def autores(self, request, pk=None):
-        proyecto = self.get_object()
-
-        if request.method.lower() == "get":
-            serializer = ProyectoAutorReadSerializer(
-                proyecto.participaciones.all(),
-                many=True,
-                context={"request": request},
+        except OSError:
+            logger.exception(
+                (
+                    "Error de almacenamiento al eliminar "
+                    "un proyecto."
+                )
             )
 
             return Response(
                 {
-                    "autores": serializer.data,
-                    "autores_total": proyecto.participaciones.count(),
-                    "tiene_investigador_principal": proyecto.participaciones.filter(
-                        rol="principal"
-                    ).exists(),
-                    "equipo_pendiente": not proyecto.participaciones.exists(),
+                    "detail": (
+                        "No fue posible eliminar el proyecto "
+                        "debido a un problema con el "
+                        "almacenamiento de archivos."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    # ========================================================
+    # AÑOS DISPONIBLES
+    # ========================================================
+
+    @action(
+        detail=False,
+        methods=[
+            "get",
+        ],
+        url_path="anios",
+        url_name="anios",
+    )
+    def anios(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Devuelve los años disponibles según la visibilidad y los
+        filtros actuales.
+        """
+        query = (
+            request.query_params.get("q")
+            or request.query_params.get("search")
+            or ""
+        )
+
+        project_status = (
+            request.query_params.get("estado")
+            or request.query_params.get("status")
+            or ""
+        )
+
+        try:
+            available_years = (
+                get_proyectos_available_years_for_user(
+                    request.user,
+                    q=query,
+                    estado=project_status,
+                )
+            )
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error al calcular los años disponibles "
+                    "de proyectos."
+                )
+            )
+
+            return self._database_unavailable_response(
+                (
+                    "No fue posible consultar los años "
+                    "disponibles de proyectos."
+                )
+            )
+
+        return Response(
+            available_years,
+            status=status.HTTP_200_OK,
+        )
+
+    # ========================================================
+    # AUTORES DEL PROYECTO
+    # ========================================================
+
+    @action(
+        detail=True,
+        methods=[
+            "get",
+            "put",
+            "patch",
+        ],
+        url_path="autores",
+        url_name="autores",
+    )
+    def autores(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        Consulta o reemplaza el equipo investigador.
+
+        GET:
+            Disponible para usuarios autenticados con acceso al
+            proyecto.
+
+        PUT/PATCH:
+            Disponible únicamente para administradores.
+        """
+        if request.method.upper() == "GET":
+            project = self.get_object()
+
+            participations = list(
+                project.participaciones.all()
+            )
+
+            participation_serializer = (
+                ProyectoAutorReadSerializer(
+                    participations,
+                    many=True,
+                    context=self.get_serializer_context(),
+                )
+            )
+
+            has_main_researcher = any(
+                getattr(
+                    participation,
+                    "rol",
+                    None,
+                )
+                == "principal"
+                for participation
+                in participations
+            )
+
+            return Response(
+                {
+                    "autores": (
+                        participation_serializer.data
+                    ),
+                    "autores_total": len(
+                        participations
+                    ),
+                    "tiene_investigador_principal": (
+                        has_main_researcher
+                    ),
+                    "equipo_pendiente": (
+                        len(participations) == 0
+                    ),
                 },
                 status=status.HTTP_200_OK,
             )
 
-        require_project_admin(request.user)
+        require_project_admin(
+            request.user
+        )
 
-        raw_autores = self._extraer_autores_payload(request)
-        autores_data = normalize_proyecto_autores_payload(raw_autores)
+        raw_authors = self._extract_authors_payload(
+            request
+        )
 
-        if proyecto.estado == "cierre" and not autores_payload_tiene_principal(autores_data):
-            raise ValidationError(
-                {
-                    "autores_data": (
-                        "Un proyecto cerrado debe conservar al menos un investigador principal."
+        normalized_authors = (
+            normalize_proyecto_autores_payload(
+                raw_authors
+            )
+        )
+
+        try:
+            with transaction.atomic():
+                locked_project = (
+                    self._get_locked_project()
+                )
+
+                if (
+                    locked_project.estado == "cierre"
+                    and not autores_payload_tiene_principal(
+                        normalized_authors
                     )
-                }
+                ):
+                    raise ValidationError(
+                        {
+                            "autores_data": (
+                                "Un proyecto cerrado debe "
+                                "conservar al menos un "
+                                "investigador principal."
+                            )
+                        }
+                    )
+
+                sync_proyecto_autores(
+                    locked_project,
+                    normalized_authors,
+                )
+
+                self._clear_project_cache(
+                    locked_project
+                )
+
+                project_id = locked_project.pk
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al actualizar "
+                    "los autores de un proyecto."
+                )
             )
 
-        sync_proyecto_autores(proyecto, autores_data)
-        self._limpiar_prefetch_cache(proyecto)
+            return self._database_unavailable_response(
+                (
+                    "No fue posible actualizar el equipo "
+                    "investigador debido a un error temporal "
+                    "de la base de datos."
+                )
+            )
 
-        serializer = ProyectoSerializer(
-            proyecto,
-            context={"request": request},
+        updated_project = (
+            self._get_project_for_response(
+                project_id
+            )
+        )
+
+        project_serializer = ProyectoSerializer(
+            updated_project,
+            context=self.get_serializer_context(),
         )
 
         return Response(
-            {"proyecto": serializer.data},
+            {
+                "proyecto": project_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["patch"], url_path="cambiar_estado")
-    def cambiar_estado(self, request, pk=None):
-        require_project_admin(request.user)
+    # ========================================================
+    # CAMBIO DE ESTADO
+    # ========================================================
 
-        proyecto = self.get_object()
+    @action(
+        detail=True,
+        methods=[
+            "patch",
+        ],
+        url_path="cambiar_estado",
+        url_name="cambiar-estado",
+    )
+    def cambiar_estado(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        Cambia el estado de un proyecto.
 
-        estado_solicitado = request.data.get("estado", "")
-        
-        # Lógica de transición delegada al servicio externo
-        estado_destino = resolver_estado_destino(
-            proyecto,
-            estado_solicitado,
+        Cuando no se envía un estado, se aplica la transición
+        automática definida en el servicio:
+
+            nuevo -> arrastre
+            arrastre -> cierre
+            cierre -> arrastre
+        """
+        require_project_admin(
+            request.user
         )
 
-        payload = {
-            "estado": estado_destino,
-        }
-
-        if estado_destino == "cierre":
-            payload["fecha_cierre"] = proyecto.fecha_cierre or timezone.now().date()
-        else:
-            payload["fecha_cierre"] = None
-
-        serializer = ProyectoSerializer(
-            proyecto,
-            data=payload,
-            partial=True,
-            context={"request": request},
+        requested_state = request.data.get(
+            "estado",
+            "",
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        try:
+            with transaction.atomic():
+                locked_project = (
+                    self._get_locked_project()
+                )
+
+                destination_state = (
+                    resolver_estado_destino(
+                        locked_project,
+                        requested_state,
+                    )
+                )
+
+                payload = {
+                    "estado": destination_state,
+                }
+
+                if destination_state == "cierre":
+                    payload["fecha_cierre"] = (
+                        locked_project.fecha_cierre
+                        or timezone.localdate()
+                    )
+
+                else:
+                    payload["fecha_cierre"] = None
+
+                project_serializer = ProyectoSerializer(
+                    locked_project,
+                    data=payload,
+                    partial=True,
+                    context=self.get_serializer_context(),
+                )
+
+                project_serializer.is_valid(
+                    raise_exception=True
+                )
+
+                updated_project = (
+                    project_serializer.save()
+                )
+
+                project_id = updated_project.pk
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al cambiar "
+                    "el estado de un proyecto."
+                )
+            )
+
+            return self._database_unavailable_response(
+                (
+                    "No fue posible cambiar el estado del "
+                    "proyecto debido a un error temporal "
+                    "de la base de datos."
+                )
+            )
+
+        updated_project = (
+            self._get_project_for_response(
+                project_id
+            )
+        )
+
+        response_serializer = ProyectoSerializer(
+            updated_project,
+            context=self.get_serializer_context(),
+        )
 
         return Response(
-            {"proyecto": serializer.data},
+            {
+                "proyecto": response_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["patch"], url_path="extender_fecha")
-    def extender_fecha(self, request, pk=None):
-        require_project_admin(request.user)
+    # ========================================================
+    # EXTENSIÓN DE FECHA
+    # ========================================================
 
-        proyecto = self.get_object()
+    @action(
+        detail=True,
+        methods=[
+            "patch",
+        ],
+        url_path="extender_fecha",
+        url_name="extender-fecha",
+    )
+    def extender_fecha(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        Extiende la fecha final de un proyecto y lo coloca en
+        estado arrastre.
 
-        nueva_fecha = (
-            request.data.get("fecha_fin_prorrogada")
-            or request.data.get("fecha_fin")
-            or request.data.get("nueva_fecha_fin")
+        Campos admitidos:
+
+        - fecha_fin_prorrogada
+        - fecha_fin
+        - nueva_fecha_fin
+        """
+        require_project_admin(
+            request.user
         )
 
-        if not nueva_fecha:
+        raw_new_date = (
+            request.data.get(
+                "fecha_fin_prorrogada"
+            )
+            or request.data.get(
+                "fecha_fin"
+            )
+            or request.data.get(
+                "nueva_fecha_fin"
+            )
+        )
+
+        if not raw_new_date:
             raise ValidationError(
                 {
                     "fecha_fin_prorrogada": (
-                        "Debe indicar la nueva fecha de finalización."
+                        "Debe indicar la nueva fecha de "
+                        "finalización."
                     )
                 }
             )
 
-        payload = {
-            "fecha_fin_prorrogada": nueva_fecha,
-            "estado": "arrastre",
-            "fecha_cierre": None,
-        }
-
-        serializer = ProyectoSerializer(
-            proyecto,
-            data=payload,
-            partial=True,
-            context={"request": request},
+        new_end_date = self._parse_extension_date(
+            raw_new_date
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        try:
+            with transaction.atomic():
+                locked_project = (
+                    self._get_locked_project()
+                )
+
+                current_reference_date = (
+                    locked_project.fecha_fin_prorrogada
+                    or locked_project.fecha_fin_planificada
+                    or locked_project.fecha_cierre
+                    or locked_project.fecha_inicio
+                )
+
+                if (
+                    current_reference_date is not None
+                    and new_end_date
+                    <= current_reference_date
+                ):
+                    raise ValidationError(
+                        {
+                            "fecha_fin_prorrogada": (
+                                "La nueva fecha debe ser "
+                                "posterior a la fecha final "
+                                "actual del proyecto."
+                            )
+                        }
+                    )
+
+                payload = {
+                    "fecha_fin_prorrogada": new_end_date,
+                    "estado": "arrastre",
+                    "fecha_cierre": None,
+                }
+
+                project_serializer = ProyectoSerializer(
+                    locked_project,
+                    data=payload,
+                    partial=True,
+                    context=self.get_serializer_context(),
+                )
+
+                project_serializer.is_valid(
+                    raise_exception=True
+                )
+
+                updated_project = (
+                    project_serializer.save()
+                )
+
+                project_id = updated_project.pk
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al extender "
+                    "la fecha de un proyecto."
+                )
+            )
+
+            return self._database_unavailable_response(
+                (
+                    "No fue posible extender la fecha del "
+                    "proyecto debido a un error temporal "
+                    "de la base de datos."
+                )
+            )
+
+        updated_project = (
+            self._get_project_for_response(
+                project_id
+            )
+        )
+
+        response_serializer = ProyectoSerializer(
+            updated_project,
+            context=self.get_serializer_context(),
+        )
 
         return Response(
-            {"proyecto": serializer.data},
+            {
+                "proyecto": response_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )

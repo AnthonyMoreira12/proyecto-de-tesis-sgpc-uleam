@@ -1,18 +1,29 @@
 ﻿<template>
   <div class="sgpc-form-page sgpc-form-page--capitulo-libro">
     <div class="sgpc-form-shell">
-      <header class="sgpc-form-header sgpc-publication-header page-stage page-header">
+      <!-- =====================================================
+           ENCABEZADO
+      ====================================================== -->
+      <header
+        class="sgpc-form-header sgpc-publication-header page-stage page-header"
+      >
         <div class="sgpc-form-heading">
           <div class="sgpc-publication-header__topline">
-            <p class="sgpc-form-kicker">{{ pageKicker }}</p>
+            <p class="sgpc-form-kicker">
+              {{ pageKicker }}
+            </p>
 
             <div
               class="sgpc-publication-header__chips"
               aria-label="Clasificación del formulario"
             >
-              <span class="sgpc-publication-chip">Publicación científica</span>
+              <span class="sgpc-publication-chip">
+                Publicación científica
+              </span>
 
-              <span class="sgpc-publication-chip sgpc-publication-chip--accent">
+              <span
+                class="sgpc-publication-chip sgpc-publication-chip--accent"
+              >
                 Capítulo de libro
               </span>
             </div>
@@ -58,6 +69,9 @@
         </div>
       </header>
 
+      <!-- =====================================================
+           FORMULARIO
+      ====================================================== -->
       <form
         class="sgpc-form sgpc-form--with-aside"
         aria-label="Formulario para registrar un capítulo de libro"
@@ -65,6 +79,9 @@
         @submit.prevent="registrarCapitulo"
       >
         <main class="sgpc-form-main page-stage page-main">
+          <!-- =================================================
+               CONTEXTO ADMINISTRATIVO
+          ================================================== -->
           <section
             v-if="isAdminDelegado"
             id="sec-contexto-admin"
@@ -84,7 +101,10 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="cl-admin-context-anchor" tabindex="-1"></div>
+              <div
+                id="cl-admin-context-anchor"
+                tabindex="-1"
+              ></div>
 
               <div class="sgpc-admin-context">
                 <article class="sgpc-admin-context__item">
@@ -127,6 +147,9 @@
             </div>
           </section>
 
+          <!-- =================================================
+               DATOS GENERALES
+          ================================================== -->
           <section
             id="sec-datos-generales"
             class="sgpc-card"
@@ -157,6 +180,9 @@
             </div>
           </section>
 
+          <!-- =================================================
+               ORIGEN
+          ================================================== -->
           <section
             id="sec-origen"
             class="sgpc-card"
@@ -176,22 +202,32 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
+                <!-- Origen tipo -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="cl-origen_tipo"
                   >
                     Origen de la publicación
-                    <span class="req" aria-hidden="true">*</span>
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <select
                     id="cl-origen_tipo"
-                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
-                    :aria-describedby="fieldErrors.origen_tipo ? 'cl-origen-tipo-error' : undefined"
                     v-model="form.origen_tipo"
                     class="sgpc-input"
                     required
+                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
+                    :aria-describedby="
+                      fieldErrors.origen_tipo
+                        ? 'cl-origen-tipo-error'
+                        : undefined
+                    "
                   >
                     <option
                       disabled
@@ -219,14 +255,15 @@
 
                   <p
                     v-if="fieldErrors.origen_tipo"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-origen-tipo-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.origen_tipo }}
                   </p>
                 </div>
 
+                <!-- Origen grado -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
@@ -237,6 +274,7 @@
                     <span
                       v-if="form.origen_tipo === 'tic'"
                       class="req"
+                      aria-hidden="true"
                     >
                       *
                     </span>
@@ -244,15 +282,19 @@
 
                   <input
                     id="cl-origen_grado"
-                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
-                    :aria-describedby="fieldErrors.origen_grado ? 'cl-origen-grado-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.origen_grado"
                     class="sgpc-input"
                     type="text"
+                    maxlength="120"
                     :disabled="form.origen_tipo !== 'tic'"
                     :required="form.origen_tipo === 'tic'"
-                    placeholder="Ej. Ingeniería de Software / ..."
+                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
+                    :aria-describedby="
+                      fieldErrors.origen_grado
+                        ? 'cl-origen-grado-error'
+                        : undefined
+                    "
+                    placeholder="Ej. Ingeniería de Software"
                   />
 
                   <p class="sgpc-hint">
@@ -262,10 +304,10 @@
 
                   <p
                     v-if="fieldErrors.origen_grado"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-origen-grado-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.origen_grado }}
                   </p>
                 </div>
@@ -273,6 +315,9 @@
             </div>
           </section>
 
+          <!-- =================================================
+               INFORMACIÓN DEL CAPÍTULO
+          ================================================== -->
           <section
             id="sec-capitulo"
             class="sgpc-card"
@@ -293,124 +338,168 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
+                <!-- Nombre capítulo -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="cl-nombre_capitulo"
                   >
                     Nombre del capítulo
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-nombre_capitulo"
-                    :aria-invalid="Boolean(fieldErrors.nombre_capitulo)"
-                    :aria-describedby="fieldErrors.nombre_capitulo ? 'cl-nombre-capitulo-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.nombre_capitulo"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
                     required
+                    :aria-invalid="Boolean(fieldErrors.nombre_capitulo)"
+                    :aria-describedby="
+                      fieldErrors.nombre_capitulo
+                        ? 'cl-nombre-capitulo-error'
+                        : undefined
+                    "
                     placeholder="Ej. Tecnologías emergentes en la educación"
                   />
 
                   <p
                     v-if="fieldErrors.nombre_capitulo"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-nombre-capitulo-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.nombre_capitulo }}
                   </p>
                 </div>
 
+                <!-- Nombre libro -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="cl-nombre_libro"
                   >
                     Nombre del libro
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-nombre_libro"
-                    :aria-invalid="Boolean(fieldErrors.nombre_libro)"
-                    :aria-describedby="fieldErrors.nombre_libro ? 'cl-nombre-libro-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.nombre_libro"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
                     required
+                    :aria-invalid="Boolean(fieldErrors.nombre_libro)"
+                    :aria-describedby="
+                      fieldErrors.nombre_libro
+                        ? 'cl-nombre-libro-error'
+                        : undefined
+                    "
                     placeholder="Ej. Innovación y Ciencia en América Latina"
                   />
 
                   <p
                     v-if="fieldErrors.nombre_libro"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-nombre-libro-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.nombre_libro }}
                   </p>
                 </div>
 
+                <!-- Fecha -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="cl-fecha_publicacion"
                   >
                     Fecha de publicación
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-fecha_publicacion"
-                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
-                    :aria-describedby="fieldErrors.fecha_publicacion ? 'cl-fecha-publicacion-error' : undefined"
                     v-model="form.fecha_publicacion"
                     class="sgpc-input"
                     type="date"
                     required
+                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    :aria-describedby="
+                      fieldErrors.fecha_publicacion
+                        ? 'cl-fecha-publicacion-error'
+                        : undefined
+                    "
                   />
 
                   <p
                     v-if="fieldErrors.fecha_publicacion"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-fecha-publicacion-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.fecha_publicacion }}
                   </p>
                 </div>
 
+                <!-- ISBN -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="cl-codigo_isbn"
                   >
                     Código ISBN
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-codigo_isbn"
-                    :aria-invalid="Boolean(fieldErrors.codigo_isbn)"
-                    :aria-describedby="fieldErrors.codigo_isbn ? 'cl-codigo-isbn-error' : undefined"
-                    maxlength="32"
                     v-model.trim="form.codigo_isbn"
                     class="sgpc-input"
                     type="text"
+                    maxlength="100"
                     required
+                    :aria-invalid="Boolean(fieldErrors.codigo_isbn)"
+                    :aria-describedby="
+                      fieldErrors.codigo_isbn
+                        ? 'cl-codigo-isbn-error'
+                        : undefined
+                    "
                     placeholder="Ej. 978-9942-xx-xxxx-x"
                   />
 
                   <p
                     v-if="fieldErrors.codigo_isbn"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-codigo-isbn-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.codigo_isbn }}
                   </p>
 
@@ -419,53 +508,77 @@
                   </p>
                 </div>
 
+                <!-- Editor -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="cl-editor_compilador"
                   >
                     Editor / Compilador
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-editor_compilador"
-                    :aria-invalid="Boolean(fieldErrors.editor_compilador)"
-                    :aria-describedby="fieldErrors.editor_compilador ? 'cl-editor-compilador-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.editor_compilador"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
                     required
+                    :aria-invalid="Boolean(fieldErrors.editor_compilador)"
+                    :aria-describedby="
+                      fieldErrors.editor_compilador
+                        ? 'cl-editor-compilador-error'
+                        : undefined
+                    "
                     placeholder="Ej. Dr. Juan Pérez"
                   />
 
                   <p
                     v-if="fieldErrors.editor_compilador"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-editor-compilador-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.editor_compilador }}
                   </p>
                 </div>
 
+                <!-- Arbitraje -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="cl-revisor_par_arbitraje"
                   >
                     Revisor par / arbitraje
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <select
                     id="cl-revisor_par_arbitraje"
-                    :aria-invalid="Boolean(fieldErrors.revisor_par_arbitraje)"
-                    :aria-describedby="fieldErrors.revisor_par_arbitraje ? 'cl-revisor-par-arbitraje-error' : undefined"
                     v-model="form.revisor_par_arbitraje"
                     class="sgpc-input"
                     required
+                    :aria-invalid="
+                      Boolean(fieldErrors.revisor_par_arbitraje)
+                    "
+                    :aria-describedby="
+                      fieldErrors.revisor_par_arbitraje
+                        ? 'cl-revisor-par-arbitraje-error'
+                        : undefined
+                    "
                   >
                     <option
                       disabled
@@ -485,41 +598,53 @@
 
                   <p
                     v-if="fieldErrors.revisor_par_arbitraje"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-revisor-par-arbitraje-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.revisor_par_arbitraje }}
                   </p>
                 </div>
 
+                <!-- Link -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="cl-link_capitulo"
                   >
                     Link del capítulo
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="cl-link_capitulo"
-                    :aria-invalid="Boolean(fieldErrors.link_capitulo)"
-                    :aria-describedby="fieldErrors.link_capitulo ? 'cl-link-capitulo-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.link_capitulo"
                     class="sgpc-input"
                     type="url"
+                    inputmode="url"
+                    maxlength="500"
                     required
+                    :aria-invalid="Boolean(fieldErrors.link_capitulo)"
+                    :aria-describedby="
+                      fieldErrors.link_capitulo
+                        ? 'cl-link-capitulo-error'
+                        : undefined
+                    "
                     placeholder="https://..."
                   />
 
                   <p
                     v-if="fieldErrors.link_capitulo"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="cl-link-capitulo-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.link_capitulo }}
                   </p>
                 </div>
@@ -527,6 +652,9 @@
             </div>
           </section>
 
+          <!-- =================================================
+               AUTORES
+          ================================================== -->
           <section
             id="sec-autores"
             class="sgpc-card"
@@ -545,22 +673,21 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="cl-autores-anchor" tabindex="-1"></div>
+              <div
+                id="cl-autores-anchor"
+                tabindex="-1"
+              ></div>
 
               <AutoresSelector
                 v-model="form.autores"
                 :error="fieldErrors.autores"
               />
-
-              <p
-                v-if="fieldErrors.autores"
-                class="sgpc-hint sgpc-hint-error"
-              >
-                {{ fieldErrors.autores }}
-              </p>
             </div>
           </section>
 
+          <!-- =================================================
+               ARCHIVOS PDF
+          ================================================== -->
           <section
             id="sec-adjuntos"
             class="sgpc-card"
@@ -569,7 +696,7 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Adjuntos PDF
+                  Archivos PDF
                 </h2>
 
                 <p class="sgpc-card-desc">
@@ -596,16 +723,26 @@
             </div>
           </section>
 
+          <!-- =================================================
+               MENSAJE GLOBAL
+          ================================================== -->
           <div
             v-if="mensaje"
             :class="['sgpc-alert', `is-${mensajeTipo}`]"
             :role="mensajeTipo === 'error' ? 'alert' : 'status'"
-            :aria-live="mensajeTipo === 'error' ? 'assertive' : 'polite'"
+            :aria-live="
+              mensajeTipo === 'error'
+                ? 'assertive'
+                : 'polite'
+            "
           >
             {{ mensaje }}
           </div>
         </main>
 
+        <!-- ===================================================
+             RESUMEN
+        ==================================================== -->
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
             <div class="sgpc-summary-head">
@@ -636,6 +773,7 @@
               </div>
             </div>
 
+            <!-- Progreso -->
             <div class="sgpc-progress">
               <div class="sgpc-progress-row">
                 <span>Completitud</span>
@@ -659,10 +797,12 @@
 
               <p class="sgpc-progress-caption">
                 {{ completedRequiredCount }} de
-                {{ totalRequiredCount }} secciones obligatorias completas
+                {{ totalRequiredCount }}
+                secciones obligatorias completas
               </p>
             </div>
 
+            <!-- Estados -->
             <div class="sgpc-status-list">
               <button
                 type="button"
@@ -791,7 +931,7 @@
                 @click="goTo('sec-adjuntos')"
               >
                 <div>
-                  <strong>Adjuntos PDF</strong>
+                  <strong>Archivos PDF</strong>
 
                   <span>
                     {{
@@ -812,6 +952,7 @@
               </button>
             </div>
 
+            <!-- Acciones -->
             <div class="sgpc-summary-actions">
               <button
                 class="sgpc-btn-primary sgpc-publication-submit"
@@ -872,25 +1013,37 @@ import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
 import api from "../../scripts/api/axios";
 
 import {
+  appendArchivosToFormData,
   restoreDraftArchivos,
   serializeDraftArchivos,
-  appendArchivosToFormData,
 } from "../../scripts/utils/adjuntosPdf";
 
+/* ============================================================
+   CONFIGURACIÓN
+============================================================ */
+
 const BASE_STORAGE_KEY =
-  "sgpc-capitulo-libro-draft:v21";
+  "sgpc-capitulo-libro-draft:v22";
 
 const STANDARD_CREATE_ENDPOINT =
   "/capitulos-libro/";
 
 const ADMIN_CREATE_ENDPOINT =
-  "/admin/publicaciones/capitulos-libro/crear/";
+  "/admin/publicaciones/capitulos/crear/";
+
+const BULK_ATTACHMENTS_ENDPOINT =
+  "/archivos-publicacion/bulk-upload/";
+
+/* ============================================================
+   ERRORES
+============================================================ */
 
 const ERROR_KEY_ALIASES = Object.freeze({
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  archivo: "archivos",
   archivo_pdf: "archivos",
   non_field_errors: "admin_context",
 });
@@ -912,7 +1065,7 @@ const FIELD_LABELS = Object.freeze({
   revisor_par_arbitraje: "Revisor par / arbitraje",
   link_capitulo: "Link del capítulo",
   autores: "Autores",
-  archivos: "Adjuntos PDF",
+  archivos: "Archivos PDF",
 });
 
 const ERROR_FIELD_ORDER = Object.freeze([
@@ -935,6 +1088,10 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "archivos",
 ]);
 
+/* ============================================================
+   FORMULARIO VACÍO
+============================================================ */
+
 function createEmptyForm() {
   return {
     datos_generales: {
@@ -949,6 +1106,7 @@ function createEmptyForm() {
 
     origen_tipo: "",
     origen_grado: "",
+
     nombre_capitulo: "",
     nombre_libro: "",
     fecha_publicacion: "",
@@ -956,10 +1114,15 @@ function createEmptyForm() {
     editor_compilador: "",
     revisor_par_arbitraje: "",
     link_capitulo: "",
+
     autores: [],
     archivos: [],
   };
 }
+
+/* ============================================================
+   HELPERS
+============================================================ */
 
 function asText(value) {
   if (Array.isArray(value)) {
@@ -1003,18 +1166,10 @@ function normalizeDrfErrors(data) {
     };
   }
 
-  if (
-    typeof data?.detail === "string"
-  ) {
-    return {
-      fields: {},
-      message: data.detail,
-    };
-  }
-
   const rawErrors =
     data?.errors &&
-    typeof data.errors === "object"
+    typeof data.errors === "object" &&
+    data.errors !== null
       ? data.errors
       : data;
 
@@ -1025,7 +1180,9 @@ function normalizeDrfErrors(data) {
     return {
       fields: {},
       message:
-        "No se pudo guardar. Verifique los campos.",
+        typeof data?.detail === "string"
+          ? data.detail
+          : "No se pudo guardar. Verifique los campos.",
     };
   }
 
@@ -1058,7 +1215,10 @@ function normalizeDrfErrors(data) {
   );
 
   let message =
-    "No se pudo registrar. Revise los campos marcados.";
+    typeof data?.detail === "string" &&
+    data.detail.trim()
+      ? data.detail.trim()
+      : "No se pudo registrar. Revise los campos marcados.";
 
   if (fields.admin_context) {
     message =
@@ -1068,8 +1228,14 @@ function normalizeDrfErrors(data) {
       "Revise la sección de Autores: debe existir al menos un autor y el orden debe ser válido.";
   } else if (fields.archivos) {
     message =
-      "Revise la sección de Adjuntos PDF.";
-  } else if (first) {
+      "Revise la sección de Archivos PDF.";
+  } else if (
+    first &&
+    !(
+      typeof data?.detail === "string" &&
+      data.detail.trim()
+    )
+  ) {
     const label =
       FIELD_LABELS[first] ||
       first;
@@ -1085,14 +1251,19 @@ function normalizeDrfErrors(data) {
 }
 
 function firstErrorField(fields) {
-  for (const key of ERROR_FIELD_ORDER) {
+  for (
+    const key
+    of ERROR_FIELD_ORDER
+  ) {
     if (fields?.[key]) {
       return key;
     }
   }
 
   return (
-    Object.keys(fields || {})[0] ||
+    Object.keys(
+      fields || {}
+    )[0] ||
     null
   );
 }
@@ -1123,12 +1294,31 @@ function appendIfPresent(
   );
 }
 
-function normalizeComparableText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+function positiveId(value) {
+  const parsed =
+    Number(value);
+
+  return (
+    Number.isInteger(parsed) &&
+    parsed > 0
+      ? parsed
+      : null
+  );
 }
+
+function extractPublicacionId(
+  payload
+) {
+  return positiveId(
+    payload?.publicacion_id ??
+    payload?.publicacion?.id ??
+    payload?.capitulo?.publicacion_id
+  );
+}
+
+/* ============================================================
+   COMPONENTE
+============================================================ */
 
 export default {
   name: "CapituloLibroRegistro",
@@ -1142,9 +1332,12 @@ export default {
   data() {
     return {
       loading: false,
+
       mensaje: "",
       mensajeTipo: "",
+
       fieldErrors: {},
+
       draftInfo: "",
       _draftTimer: null,
       _draftSuspended: false,
@@ -1156,9 +1349,14 @@ export default {
         autorNombre: "",
       },
 
-      form: createEmptyForm(),
+      form:
+        createEmptyForm(),
     };
   },
+
+  /* ==========================================================
+     COMPUTED
+  ========================================================== */
 
   computed: {
     isAdminDelegado() {
@@ -1179,32 +1377,34 @@ export default {
       return Boolean(
         this.$route?.meta
           ?.delegatedPublication ||
-          path.startsWith(
-            "/admin/publicaciones/usuario/"
-          ) ||
-          params.usuarioId ||
-          query.modo ===
-            "delegado" ||
-          query.delegado ===
-            "1" ||
-          query.admin ===
-            "1"
+        path.startsWith(
+          "/admin/publicaciones/usuario/"
+        ) ||
+        params.usuarioId ||
+        query.modo ===
+          "delegado" ||
+        query.delegado ===
+          "1" ||
+        query.admin ===
+          "1"
       );
     },
 
     draftStorageKey() {
-      if (!this.isAdminDelegado) {
+      if (
+        !this.isAdminDelegado
+      ) {
         return (
           `${BASE_STORAGE_KEY}:self`
         );
       }
 
       const usuarioId =
-        this.adminContext.usuarioId ||
-        Number(
+        this.adminContext
+          .usuarioId ||
+        positiveId(
           this.$route?.params
-            ?.usuarioId ||
-          0
+            ?.usuarioId
         ) ||
         "sin-usuario";
 
@@ -1251,55 +1451,32 @@ export default {
     },
 
     showAutorObjetivo() {
-      if (!this.isAdminDelegado) {
+      if (
+        !this.isAdminDelegado
+      ) {
         return false;
       }
 
-      const usuarioNombre =
-        normalizeComparableText(
-          this.adminContext
-            .usuarioNombre
-        );
-
-      const autorNombre =
-        normalizeComparableText(
-          this.adminContext
-            .autorNombre
-        );
-
-      if (
-        autorNombre &&
-        usuarioNombre &&
-        autorNombre !==
-          usuarioNombre
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext.autorId &&
-        this.adminContext.usuarioId &&
-        this.adminContext.autorId !==
-          this.adminContext.usuarioId
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext.autorId &&
-        !this.adminContext
-          .usuarioNombre
-      ) {
-        return true;
-      }
-
-      return false;
+      /*
+       * Usuario.id y Autor.id pertenecen a
+       * entidades distintas.
+       *
+       * Nunca deben compararse directamente.
+       */
+      return Boolean(
+        this.adminContext
+          .autorId ||
+        this.adminContext
+          .autorNombre
+      );
     },
 
     pageKicker() {
-      return this.isAdminDelegado
-        ? "Administración · Libros y capítulos"
-        : "Libros y capítulos";
+      return (
+        this.isAdminDelegado
+          ? "Administración · Libros y capítulos"
+          : "Libros y capítulos"
+      );
     },
 
     pageTitle() {
@@ -1309,19 +1486,17 @@ export default {
     },
 
     pageSubtitle() {
-      if (this.isAdminDelegado) {
-        return (
-          "Registre la información editorial del capítulo para el usuario seleccionado. Los campos marcados con * son obligatorios."
-        );
-      }
-
       return (
-        "Registre la información editorial del capítulo. Los campos marcados con * son obligatorios."
+        this.isAdminDelegado
+          ? "Registre la información editorial del capítulo para el usuario seleccionado. Los campos marcados con * son obligatorios."
+          : "Registre la información editorial del capítulo. Los campos marcados con * son obligatorios."
       );
     },
 
     submitText() {
-      return "Registrar capítulo";
+      return (
+        "Registrar capítulo"
+      );
     },
 
     submitLoadingText() {
@@ -1344,13 +1519,15 @@ export default {
 
     hasRequiredOrigin() {
       if (
-        !this.form.origen_tipo
+        !this.form
+          .origen_tipo
       ) {
         return false;
       }
 
       if (
-        this.form.origen_tipo ===
+        this.form
+          .origen_tipo ===
         "tic"
       ) {
         return Boolean(
@@ -1372,28 +1549,34 @@ export default {
             .nombre_capitulo ||
           ""
         ).trim() &&
+
         String(
           this.form
             .nombre_libro ||
           ""
         ).trim() &&
+
         this.form
           .fecha_publicacion &&
+
         String(
           this.form
             .codigo_isbn ||
           ""
         ).trim() &&
+
         String(
           this.form
             .editor_compilador ||
           ""
         ).trim() &&
+
         String(
           this.form
             .revisor_par_arbitraje ||
           ""
         ).trim() &&
+
         String(
           this.form
             .link_capitulo ||
@@ -1429,16 +1612,19 @@ export default {
           done:
             this.hasRequiredContext,
         },
+
         {
           key: "origen",
           done:
             this.hasRequiredOrigin,
         },
+
         {
           key: "capitulo",
           done:
             this.hasRequiredChapter,
         },
+
         {
           key: "autores",
           done:
@@ -1448,12 +1634,14 @@ export default {
     },
 
     completedRequiredCount() {
-      return this.requiredSections
-        .filter(
-          (section) =>
-            section.done
-        )
-        .length;
+      return (
+        this.requiredSections
+          .filter(
+            (section) =>
+              section.done
+          )
+          .length
+      );
     },
 
     totalRequiredCount() {
@@ -1465,7 +1653,8 @@ export default {
 
     progressPercent() {
       if (
-        !this.totalRequiredCount
+        !this
+          .totalRequiredCount
       ) {
         return 0;
       }
@@ -1474,10 +1663,15 @@ export default {
         (
           this.completedRequiredCount /
           this.totalRequiredCount
-        ) * 100
+        ) *
+        100
       );
     },
   },
+
+  /* ==========================================================
+     CICLO DE VIDA
+  ========================================================== */
 
   created() {
     this.hydrateAdminContextFromRoute();
@@ -1489,6 +1683,10 @@ export default {
       this._draftTimer
     );
   },
+
+  /* ==========================================================
+     WATCHERS
+  ========================================================== */
 
   watch: {
     form: {
@@ -1506,76 +1704,96 @@ export default {
         );
 
         this._draftTimer =
-          setTimeout(() => {
-            const payload = {
-              form: {
-                datos_generales: {
-                  ...value.datos_generales,
-                  pais: null,
-                  ciudad: null,
+          setTimeout(
+            () => {
+              const payload = {
+                form: {
+                  datos_generales: {
+                    ...(
+                      value
+                        .datos_generales ||
+                      {}
+                    ),
+
+                    pais: null,
+                    ciudad: null,
+                  },
+
+                  origen_tipo:
+                    value.origen_tipo,
+
+                  origen_grado:
+                    value.origen_grado,
+
+                  nombre_capitulo:
+                    value.nombre_capitulo,
+
+                  nombre_libro:
+                    value.nombre_libro,
+
+                  fecha_publicacion:
+                    value.fecha_publicacion,
+
+                  codigo_isbn:
+                    value.codigo_isbn,
+
+                  editor_compilador:
+                    value.editor_compilador,
+
+                  revisor_par_arbitraje:
+                    value.revisor_par_arbitraje,
+
+                  link_capitulo:
+                    value.link_capitulo,
+
+                  autores:
+                    value.autores,
+
+                  archivos:
+                    serializeDraftArchivos(
+                      value.archivos
+                    ),
                 },
 
-                origen_tipo:
-                  value.origen_tipo,
+                updatedAt:
+                  new Date()
+                    .toISOString(),
+              };
 
-                origen_grado:
-                  value.origen_grado,
+              try {
+                localStorage
+                  .setItem(
+                    this
+                      .draftStorageKey,
 
-                nombre_capitulo:
-                  value.nombre_capitulo,
-
-                nombre_libro:
-                  value.nombre_libro,
-
-                fecha_publicacion:
-                  value.fecha_publicacion,
-
-                codigo_isbn:
-                  value.codigo_isbn,
-
-                editor_compilador:
-                  value.editor_compilador,
-
-                revisor_par_arbitraje:
-                  value.revisor_par_arbitraje,
-
-                link_capitulo:
-                  value.link_capitulo,
-
-                autores:
-                  value.autores,
-
-                archivos:
-                  serializeDraftArchivos(
-                    value.archivos
-                  ),
-              },
-
-              updatedAt:
-                new Date()
-                  .toISOString(),
-            };
-
-            try {
-              localStorage.setItem(
-                this.draftStorageKey,
-                JSON.stringify(
-                  payload
-                )
-              );
-            } catch (error) {
-              console.warn(
-                "No se pudo guardar el borrador.",
+                    JSON.stringify(
+                      payload
+                    )
+                  );
+              } catch (
                 error
-              );
-            }
-          }, 250);
+              ) {
+                console.warn(
+                  "No se pudo guardar el borrador.",
+                  error
+                );
+              }
+            },
+
+            250
+          );
       },
     },
 
-    "form.origen_tipo"(value) {
-      if (value !== "tic") {
-        this.form.origen_grado =
+    "form.origen_tipo"(
+      value
+    ) {
+      if (
+        value !==
+        "tic"
+      ) {
+        this.form
+          .origen_grado =
           "";
       }
     },
@@ -1585,49 +1803,41 @@ export default {
     },
   },
 
+  /* ==========================================================
+     MÉTODOS
+  ========================================================== */
+
   methods: {
+    /* ========================================================
+       CONTEXTO ADMINISTRATIVO
+    ======================================================== */
+
     hydrateAdminContextFromRoute() {
       const query =
-        this.$route?.query ||
+        this.$route
+          ?.query ||
         {};
 
       const params =
-        this.$route?.params ||
+        this.$route
+          ?.params ||
         {};
-
-      const usuarioId =
-        Number(
-          params.usuarioId ||
-          query.usuario_id ||
-          query.usuarioId ||
-          query.user_id ||
-          0
-        );
-
-      const autorId =
-        Number(
-          params.autorId ||
-          query.autor_id ||
-          query.autorId ||
-          0
-        );
 
       this.adminContext = {
         usuarioId:
-          Number.isFinite(
-            usuarioId
-          ) &&
-          usuarioId > 0
-            ? usuarioId
-            : null,
+          positiveId(
+            params.usuarioId ||
+            query.usuario_id ||
+            query.usuarioId ||
+            query.user_id
+          ),
 
         autorId:
-          Number.isFinite(
-            autorId
-          ) &&
-          autorId > 0
-            ? autorId
-            : null,
+          positiveId(
+            params.autorId ||
+            query.autor_id ||
+            query.autorId
+          ),
 
         usuarioNombre:
           String(
@@ -1647,14 +1857,43 @@ export default {
       };
     },
 
+    validateAdminContext() {
+      if (
+        !this.isAdminDelegado
+      ) {
+        return null;
+      }
+
+      if (
+        !this.adminContext
+          .usuarioId
+      ) {
+        return (
+          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
+        );
+      }
+
+      return null;
+    },
+
+    /* ========================================================
+       BORRADOR
+    ======================================================== */
+
     loadDraft() {
-      let raw = null;
+      let raw =
+        null;
 
       try {
-        raw = localStorage.getItem(
-          this.draftStorageKey
-        );
-      } catch (error) {
+        raw =
+          localStorage
+            .getItem(
+              this
+                .draftStorageKey
+            );
+      } catch (
+        error
+      ) {
         console.warn(
           "No se pudo leer el borrador.",
           error
@@ -1669,117 +1908,120 @@ export default {
 
       try {
         const parsed =
-          JSON.parse(raw);
+          JSON.parse(
+            raw
+          );
+
+        const savedForm =
+          parsed.form ||
+          parsed;
+
+        const empty =
+          createEmptyForm();
 
         this.form = {
-          ...this.form,
-          ...(parsed.form || parsed),
+          ...empty,
+          ...savedForm,
 
           datos_generales: {
-            ...this.form
+            ...empty
               .datos_generales,
 
             ...(
-              (
-                parsed.form
-                  ?.datos_generales ||
-                parsed.datos_generales
-              ) ||
+              savedForm
+                ?.datos_generales ||
               {}
             ),
 
+            /*
+             * País y ciudad no aplican
+             * para capítulos.
+             */
             pais: null,
             ciudad: null,
           },
 
           autores:
             Array.isArray(
-              parsed.form?.autores ??
-              parsed.autores
+              savedForm
+                ?.autores
             )
-              ? (
-                  parsed.form?.autores ??
-                  parsed.autores
-                )
+              ? savedForm
+                  .autores
               : [],
 
           archivos:
             restoreDraftArchivos(
-              parsed.form?.archivos ??
-              parsed.archivos
+              savedForm
+                ?.archivos
             ),
         };
 
-        if (parsed?.updatedAt) {
+        if (
+          parsed
+            ?.updatedAt
+        ) {
           const date =
             new Date(
-              parsed.updatedAt
+              parsed
+                .updatedAt
             );
 
           this.draftInfo =
-            `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
+            Number.isNaN(
+              date.getTime()
+            )
+              ? "Se recuperó un borrador guardado."
+              : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
         } else {
           this.draftInfo =
             "Se recuperó un borrador guardado.";
         }
-
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
-          "Borrador corrupto, se ignora",
+          "Borrador corrupto, se ignora.",
           error
         );
       }
     },
 
     suspendDraftOnce() {
-      this._draftSuspended = true;
+      this._draftSuspended =
+        true;
 
-      this.$nextTick(() => {
-        this._draftSuspended = false;
-      });
+      this.$nextTick(
+        () => {
+          this._draftSuspended =
+            false;
+        }
+      );
     },
 
-    handleRouteContextChange() {
-      clearTimeout(this._draftTimer);
-      this.hydrateAdminContextFromRoute();
-      this.suspendDraftOnce();
-      this.resetForm();
-      this.loadDraft();
-    },
-
-    goTo(id) {
-      const element =
-        document.getElementById(
-          id
-        );
-
-      element?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    },
-
-    clearDraft() {
-      clearTimeout(this._draftTimer);
+    removeStoredDraft() {
+      clearTimeout(
+        this._draftTimer
+      );
 
       try {
-        try {
-          localStorage.removeItem(
-            this.draftStorageKey
+        localStorage
+          .removeItem(
+            this
+              .draftStorageKey
           );
-        } catch (storageError) {
-          console.warn(
-            "No se pudo eliminar el borrador guardado.",
-            storageError
-          );
-        }
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
-          "No se pudo eliminar el borrador:",
+          "No se pudo eliminar el borrador guardado.",
           error
         );
       }
+    },
 
+    clearDraft() {
+      this.removeStoredDraft();
       this.suspendDraftOnce();
       this.resetForm();
 
@@ -1790,10 +2032,49 @@ export default {
         "info";
     },
 
+    handleRouteContextChange() {
+      clearTimeout(
+        this._draftTimer
+      );
+
+      this.hydrateAdminContextFromRoute();
+      this.suspendDraftOnce();
+      this.resetForm();
+      this.loadDraft();
+    },
+
+    /* ========================================================
+       NAVEGACIÓN / ERRORES
+    ======================================================== */
+
     clearErrors() {
-      this.fieldErrors = {};
-      this.mensaje = "";
-      this.mensajeTipo = "";
+      this.fieldErrors =
+        {};
+
+      this.mensaje =
+        "";
+
+      this.mensajeTipo =
+        "";
+    },
+
+    goTo(id) {
+      const element =
+        document
+          .getElementById(
+            id
+          );
+
+      element
+        ?.scrollIntoView(
+          {
+            behavior:
+              "smooth",
+
+            block:
+              "start",
+          }
+        );
     },
 
     focusField(key) {
@@ -1836,127 +2117,180 @@ export default {
       };
 
       const element =
-        document.getElementById(
-          `dg-${key}`
-        ) ||
-        document.getElementById(
-          localIdMap[key] ||
-          ""
-        );
+        document
+          .getElementById(
+            `dg-${key}`
+          ) ||
+        document
+          .getElementById(
+            localIdMap[
+              key
+            ] ||
+            ""
+          );
 
       if (!element) {
         return;
       }
 
       if (
-        key === "autores" ||
-        key === "archivos" ||
-        key === "admin_context"
+        key ===
+          "autores" ||
+        key ===
+          "archivos" ||
+        key ===
+          "admin_context"
       ) {
-        element.scrollIntoView?.({
-          behavior: "smooth",
-          block: "center",
-        });
+        element
+          .scrollIntoView
+          ?.({
+            behavior:
+              "smooth",
 
-        element.focus?.({
-          preventScroll: true,
-        });
+            block:
+              "center",
+          });
+
+        element
+          .focus
+          ?.({
+            preventScroll:
+              true,
+          });
 
         return;
       }
 
       if (
-        typeof element.focus ===
+        typeof
+          element.focus ===
         "function"
       ) {
         element.focus({
-          preventScroll: false,
+          preventScroll:
+            false,
         });
-      } else {
-        element.scrollIntoView?.({
-          behavior: "smooth",
-          block: "center",
-        });
+
+        return;
       }
+
+      element
+        .scrollIntoView
+        ?.({
+          behavior:
+            "smooth",
+
+          block:
+            "center",
+        });
     },
+
+    /* ========================================================
+       AUTORES
+    ======================================================== */
 
     buildAutoresPayload() {
       const raw =
         Array.isArray(
-          this.form.autores
+          this.form
+            .autores
         )
-          ? this.form.autores
+          ? this.form
+              .autores
           : [];
 
       return raw
         .map(
-          (autor, index) => {
+          (
+            autor,
+            index
+          ) => {
             const id =
-              Number(
-                autor?.autor_id ??
-                autor?.id ??
-                autor?.autor?.id
+              positiveId(
+                autor
+                  ?.autor_id ??
+                autor
+                  ?.id ??
+                autor
+                  ?.autor
+                  ?.id
               );
 
-            if (
-              !Number.isFinite(id) ||
-              id <= 0
-            ) {
+            if (!id) {
               return null;
             }
 
             const orden =
-              index + 1;
+              index +
+              1;
 
             return {
-              autor_id: id,
+              autor_id:
+                id,
+
               orden,
 
               rol_autoria:
-                orden === 1
+                orden ===
+                1
                   ? "principal"
                   : "coautor",
             };
           }
         )
-        .filter(Boolean);
+        .filter(
+          Boolean
+        );
     },
 
+    /* ========================================================
+       ARCHIVOS
+    ======================================================== */
+
     hasPendingRecoveredFiles() {
+      const archivos =
+        Array.isArray(
+          this.form
+            .archivos
+        )
+          ? this.form
+              .archivos
+          : [];
+
+      return archivos
+        .some(
+          (item) =>
+            !item
+              ?.file &&
+            Boolean(
+              item
+                ?.originalName
+            )
+        );
+    },
+
+    selectedUploadItems() {
       return (
         Array.isArray(
-          this.form.archivos
+          this.form
+            .archivos
         )
-          ? this.form.archivos
+          ? this.form
+              .archivos
           : []
-      ).some(
+      ).filter(
         (item) =>
-          !item?.file &&
-          item?.originalName
+          item?.file
       );
     },
 
-    validateAdminContext() {
-      if (
-        !this.isAdminDelegado
-      ) {
-        return null;
-      }
-
-      if (
-        !this.adminContext
-          .usuarioId
-      ) {
-        return (
-          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
-        );
-      }
-
-      return null;
-    },
+    /* ========================================================
+       VALIDACIÓN FRONTEND
+    ======================================================== */
 
     validateFront() {
-      const errors = {};
+      const errors =
+        {};
 
       const general =
         this.form
@@ -1972,22 +2306,34 @@ export default {
           "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
       }
 
-      if (!general.facultad) {
+      if (
+        !general
+          .facultad
+      ) {
         errors.facultad =
           "Seleccione una facultad.";
       }
 
-      if (!general.carrera) {
+      if (
+        !general
+          .carrera
+      ) {
         errors.carrera =
           "Seleccione una carrera.";
       }
 
-      if (!general.area) {
+      if (
+        !general
+          .area
+      ) {
         errors.area =
           "Seleccione un área del conocimiento (UNESCO).";
       }
 
-      if (!general.subarea) {
+      if (
+        !general
+          .subarea
+      ) {
         errors.subarea =
           "Seleccione una subárea del conocimiento (UNESCO).";
       }
@@ -2004,7 +2350,8 @@ export default {
       }
 
       if (
-        this.form.origen_tipo ===
+        this.form
+          .origen_tipo ===
           "tic" &&
         !String(
           this.form
@@ -2068,12 +2415,22 @@ export default {
           "Campo obligatorio.";
       }
 
-      if (
-        !String(
+      const arbitraje =
+        String(
           this.form
             .revisor_par_arbitraje ||
           ""
-        ).trim()
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        ![
+          "si",
+          "no",
+        ].includes(
+          arbitraje
+        )
       ) {
         errors.revisor_par_arbitraje =
           "Seleccione Sí o No.";
@@ -2092,10 +2449,13 @@ export default {
 
       if (
         !Array.isArray(
-          this.form.autores
+          this.form
+            .autores
         ) ||
-        this.form.autores
-          .length === 0
+        this.form
+          .autores
+          .length ===
+          0
       ) {
         errors.autores =
           "Debe registrar al menos un autor.";
@@ -2105,15 +2465,16 @@ export default {
         this.hasPendingRecoveredFiles()
       ) {
         errors.archivos =
-          "Hay adjuntos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
+          "Hay archivos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
       }
 
       this.fieldErrors =
         errors;
 
       if (
-        Object.keys(errors)
-          .length
+        Object.keys(
+          errors
+        ).length
       ) {
         const first =
           firstErrorField(
@@ -2127,7 +2488,9 @@ export default {
           "error";
 
         if (first) {
-          this.focusField(first);
+          this.focusField(
+            first
+          );
         }
 
         return false;
@@ -2136,28 +2499,371 @@ export default {
       return true;
     },
 
+    /* ========================================================
+       FORMDATA PRINCIPAL
+    ======================================================== */
+
+    buildCreateFormData(
+      autoresPayload
+    ) {
+      const formData =
+        new FormData();
+
+      Object.entries(
+        this.form
+          .datos_generales ||
+        {}
+      ).forEach(
+        (
+          [
+            key,
+            value,
+          ]
+        ) => {
+          /*
+           * País/Ciudad no aplican
+           * a capítulos.
+           */
+          if (
+            key ===
+              "pais" ||
+            key ===
+              "ciudad"
+          ) {
+            return;
+          }
+
+          appendIfPresent(
+            formData,
+            key,
+            value
+          );
+        }
+      );
+
+      appendIfPresent(
+        formData,
+        "origen_tipo",
+        this.form
+          .origen_tipo ||
+          "ninguno"
+      );
+
+      if (
+        this.form
+          .origen_tipo ===
+        "tic"
+      ) {
+        appendIfPresent(
+          formData,
+          "origen_grado",
+          this.form
+            .origen_grado
+        );
+      }
+
+      [
+        "nombre_capitulo",
+        "nombre_libro",
+        "fecha_publicacion",
+        "codigo_isbn",
+        "editor_compilador",
+        "revisor_par_arbitraje",
+        "link_capitulo",
+      ].forEach(
+        (key) => {
+          appendIfPresent(
+            formData,
+            key,
+            this.form[
+              key
+            ]
+          );
+        }
+      );
+
+      formData.append(
+        "autores",
+        JSON.stringify(
+          autoresPayload
+        )
+      );
+
+      if (
+        this.isAdminDelegado &&
+        this.adminContext
+          .usuarioId
+      ) {
+        formData.append(
+          "usuario_objetivo_id",
+          String(
+            this.adminContext
+              .usuarioId
+          )
+        );
+
+        if (
+          this.adminContext
+            .autorId
+        ) {
+          formData.append(
+            "autor_objetivo_id",
+            String(
+              this.adminContext
+                .autorId
+            )
+          );
+        }
+      }
+
+      return formData;
+    },
+
+    /* ========================================================
+       PDF PRINCIPAL + ADJUNTOS
+    ======================================================== */
+
+    appendCreateFiles(
+      formData
+    ) {
+      const uploadItems =
+        this
+          .selectedUploadItems();
+
+      if (
+        !uploadItems
+          .length
+      ) {
+        return {
+          attachments:
+            [],
+        };
+      }
+
+      /*
+       * ADMINISTRACIÓN
+       *
+       * El endpoint delegado administra:
+       *
+       * - archivo_pdf
+       * - archivos
+       * - archivos_meta
+       *
+       * en la propia operación de creación.
+       */
+      if (
+        this
+          .isAdminDelegado
+      ) {
+        appendArchivosToFormData(
+          formData,
+          uploadItems,
+          {
+            primaryField:
+              "archivo_pdf",
+
+            filesField:
+              "archivos",
+
+            metaField:
+              "archivos_meta",
+          }
+        );
+
+        return {
+          attachments:
+            [],
+        };
+      }
+
+      /*
+       * USUARIO NORMAL
+       *
+       * /capitulos-libro/
+       * consume el PDF principal.
+       *
+       * Los adjuntos adicionales se cargan
+       * posteriormente mediante bulk-upload.
+       */
+      appendArchivosToFormData(
+        formData,
+        uploadItems.slice(
+          0,
+          1
+        ),
+        {
+          primaryField:
+            "archivo_pdf",
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      return {
+        attachments:
+          uploadItems.slice(
+            1
+          ),
+      };
+    },
+
+    async uploadStandardAttachments(
+      publicacionId,
+      attachments
+    ) {
+      if (
+        !attachments
+          .length
+      ) {
+        return 0;
+      }
+
+      if (
+        !positiveId(
+          publicacionId
+        )
+      ) {
+        throw new Error(
+          "El backend no devolvió un publicacion_id válido para asociar los adjuntos."
+        );
+      }
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "publicacion_id",
+        String(
+          publicacionId
+        )
+      );
+
+      appendArchivosToFormData(
+        formData,
+        attachments,
+        {
+          primaryField:
+            null,
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      await api.post(
+        BULK_ATTACHMENTS_ENDPOINT,
+        formData
+      );
+
+      return (
+        attachments
+          .length
+      );
+    },
+
+    /* ========================================================
+       FINALIZACIÓN
+    ======================================================== */
+
+    finalizeSuccess(
+      message
+    ) {
+      this.removeStoredDraft();
+      this.suspendDraftOnce();
+      this.resetForm();
+
+      this.mensaje =
+        message;
+
+      this.mensajeTipo =
+        "success";
+    },
+
+    finalizePartialAttachmentFailure(
+      publicacionId,
+      error
+    ) {
+      /*
+       * El capítulo ya existe.
+       *
+       * Borramos el borrador y limpiamos el formulario
+       * para evitar que el usuario presione "Registrar"
+       * nuevamente y duplique la publicación.
+       */
+      this.removeStoredDraft();
+      this.suspendDraftOnce();
+      this.resetForm();
+
+      this.fieldErrors =
+        {};
+
+      this.mensaje =
+        `El capítulo fue registrado correctamente${
+          publicacionId
+            ? ` (publicación #${publicacionId})`
+            : ""
+        }, pero no se pudieron cargar los adjuntos complementarios. No vuelva a registrar el capítulo; agregue los adjuntos desde el detalle de la publicación.`;
+
+      this.mensajeTipo =
+        "error";
+
+      console.error(
+        "❌ Capítulo creado, pero falló la carga de adjuntos:",
+        error?.response
+          ?.data ||
+        error
+      );
+    },
+
+    /* ========================================================
+       REGISTRAR
+    ======================================================== */
+
     async registrarCapitulo() {
-      if (this.loading) {
+      if (
+        this.loading
+      ) {
         return;
       }
 
-      this.loading = true;
+      this.loading =
+        true;
+
       this.clearErrors();
 
       try {
-        if (!this.validateFront()) {
-          this.loading = false;
+        /* -----------------------------------------------
+           1. Validación frontend
+        ------------------------------------------------ */
+
+        if (
+          !this.validateFront()
+        ) {
           return;
         }
 
+        /* -----------------------------------------------
+           2. Autores
+        ------------------------------------------------ */
+
         const autoresPayload =
-          this.buildAutoresPayload();
+          this
+            .buildAutoresPayload();
 
         if (
-          !autoresPayload.length
+          !autoresPayload
+            .length
         ) {
           this.fieldErrors = {
-            ...this.fieldErrors,
+            ...this
+              .fieldErrors,
 
             autores:
               "Los autores seleccionados no tienen ID válido.",
@@ -2173,18 +2879,23 @@ export default {
             "autores"
           );
 
-          this.loading = false;
           return;
         }
 
+        /* -----------------------------------------------
+           3. Contexto administrativo
+        ------------------------------------------------ */
+
         const adminValidationError =
-          this.validateAdminContext();
+          this
+            .validateAdminContext();
 
         if (
           adminValidationError
         ) {
           this.fieldErrors = {
-            ...this.fieldErrors,
+            ...this
+              .fieldErrors,
 
             admin_context:
               adminValidationError,
@@ -2200,144 +2911,90 @@ export default {
             "admin_context"
           );
 
-          this.loading = false;
           return;
         }
 
+        /* -----------------------------------------------
+           4. Payload principal
+        ------------------------------------------------ */
+
         const formData =
-          new FormData();
-
-        Object.entries(
-          this.form
-            .datos_generales
-        ).forEach(
-          ([key, value]) => {
-            if (
-              key === "pais" ||
-              key === "ciudad"
-            ) {
-              return;
-            }
-
-            appendIfPresent(
-              formData,
-              key,
-              value
+          this
+            .buildCreateFormData(
+              autoresPayload
             );
-          }
-        );
 
-        appendIfPresent(
-          formData,
-          "origen_tipo",
-          this.form.origen_tipo ||
-            "ninguno"
-        );
-
-        if (
-          this.form.origen_tipo ===
-          "tic"
-        ) {
-          appendIfPresent(
-            formData,
-            "origen_grado",
-            this.form
-              .origen_grado
-          );
-        }
-
-        const fields = [
-          "nombre_capitulo",
-          "nombre_libro",
-          "fecha_publicacion",
-          "codigo_isbn",
-          "editor_compilador",
-          "revisor_par_arbitraje",
-          "link_capitulo",
-        ];
-
-        fields.forEach(
-          (key) => {
-            appendIfPresent(
-              formData,
-              key,
-              this.form[key]
+        const {
+          attachments,
+        } =
+          this
+            .appendCreateFiles(
+              formData
             );
-          }
-        );
 
-        formData.append(
-          "autores",
-          JSON.stringify(
-            autoresPayload
-          )
-        );
+        /* -----------------------------------------------
+           5. Endpoint
+        ------------------------------------------------ */
 
-        if (
-          this.isAdminDelegado &&
-          this.adminContext
-            .usuarioId
-        ) {
-          formData.append(
-            "usuario_objetivo_id",
-            String(
-              this.adminContext
-                .usuarioId
-            )
-          );
-
-          if (
-            this.adminContext
-              .autorId
-          ) {
-            formData.append(
-              "autor_objetivo_id",
-              String(
-                this.adminContext
-                  .autorId
-              )
-            );
-          }
-        }
-
-        appendArchivosToFormData(
-          formData,
-          this.form.archivos,
-          {
-            primaryField:
-              "archivo_pdf",
-
-            filesField:
-              "archivos",
-
-            metaField:
-              "archivos_meta",
-          }
-        );
-
-        await api.post(
+        const endpoint =
           this.isAdminDelegado
             ? ADMIN_CREATE_ENDPOINT
-            : STANDARD_CREATE_ENDPOINT,
-          formData
-        );
+            : STANDARD_CREATE_ENDPOINT;
 
-        this.suspendDraftOnce();
+        const response =
+          await api.post(
+            endpoint,
+            formData
+          );
 
-        localStorage.removeItem(
-          this.draftStorageKey
-        );
+        /* -----------------------------------------------
+           6. Publicación creada
+        ------------------------------------------------ */
 
-        this.mensaje =
+        const publicacionId =
+          extractPublicacionId(
+            response?.data
+          );
+
+        /* -----------------------------------------------
+           7. Adjuntos adicionales usuario normal
+        ------------------------------------------------ */
+
+        if (
+          !this.isAdminDelegado &&
+          attachments.length
+        ) {
+          try {
+            await this
+              .uploadStandardAttachments(
+                publicacionId,
+                attachments
+              );
+          } catch (
+            attachmentError
+          ) {
+            this
+              .finalizePartialAttachmentFailure(
+                publicacionId,
+                attachmentError
+              );
+
+            return;
+          }
+        }
+
+        /* -----------------------------------------------
+           8. Éxito
+        ------------------------------------------------ */
+
+        this.finalizeSuccess(
           this.isAdminDelegado
             ? "Capítulo registrado correctamente para el usuario seleccionado."
-            : "Capítulo registrado exitosamente.";
-
-        this.mensajeTipo =
-          "success";
-
-        this.resetForm();
-      } catch (error) {
+            : "Capítulo registrado exitosamente."
+        );
+      } catch (
+        error
+      ) {
         const status =
           error?.response
             ?.status;
@@ -2346,16 +3003,43 @@ export default {
           error?.response
             ?.data;
 
-        if (status === 401) {
+        /* -----------------------------------------------
+           Sesión
+        ------------------------------------------------ */
+
+        if (
+          status ===
+          401
+        ) {
           this.mensaje =
             "Sesión expirada. Vuelva a iniciar sesión.";
 
           this.mensajeTipo =
             "error";
 
-          this.loading = false;
           return;
         }
+
+        /* -----------------------------------------------
+           Permisos
+        ------------------------------------------------ */
+
+        if (
+          status ===
+          403
+        ) {
+          this.mensaje =
+            "No tiene permisos para registrar este capítulo.";
+
+          this.mensajeTipo =
+            "error";
+
+          return;
+        }
+
+        /* -----------------------------------------------
+           Errores DRF
+        ------------------------------------------------ */
 
         const normalized =
           normalizeDrfErrors(
@@ -2363,11 +3047,13 @@ export default {
           );
 
         this.fieldErrors =
-          normalized.fields ||
+          normalized
+            .fields ||
           {};
 
         this.mensaje =
-          normalized.message ||
+          normalized
+            .message ||
           "Error al registrar el capítulo.";
 
         this.mensajeTipo =
@@ -2375,26 +3061,40 @@ export default {
 
         const first =
           firstErrorField(
-            this.fieldErrors
+            this
+              .fieldErrors
           );
 
         if (first) {
-          this.focusField(first);
+          this.focusField(
+            first
+          );
         }
 
         console.error(
           "❌ Error capítulo:",
-          data || error
+          data ||
+          error
         );
       } finally {
-        this.loading = false;
+        this.loading =
+          false;
       }
     },
 
+    /* ========================================================
+       RESET
+    ======================================================== */
+
     resetForm() {
-      this.fieldErrors = {};
-      this.draftInfo = "";
-      this.form = createEmptyForm();
+      this.fieldErrors =
+        {};
+
+      this.draftInfo =
+        "";
+
+      this.form =
+        createEmptyForm();
     },
   },
 };

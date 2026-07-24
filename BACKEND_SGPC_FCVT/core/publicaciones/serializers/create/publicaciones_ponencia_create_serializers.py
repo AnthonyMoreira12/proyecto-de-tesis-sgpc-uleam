@@ -14,6 +14,9 @@ from core.models import (
     Proyecto,
     Subarea,
 )
+from core.publicaciones.serializers.base.publicaciones_autores_serializers import (
+    AutorParticipacionSerializer,
+)
 from core.publicaciones.serializers.base.publicaciones_campos_base_serializers import (
     PublicacionCamposBaseMixin,
 )
@@ -28,91 +31,458 @@ from core.publicaciones.utils.publicaciones_creation_context_utils import (
     resolve_publicacion_creation_context,
 )
 
+
 MAX_PRIMARY_PDF_BYTES = 5 * 1024 * 1024
-ALLOWED_PDF_EXTENSIONS = {".pdf"}
-ALLOWED_PDF_CONTENT_TYPES = {"application/pdf"}
+
+ALLOWED_PDF_CONTENT_TYPES = {
+    "application/pdf",
+    "application/x-pdf",
+}
+
+
+def _none_if_blank(value):
+    value = str(
+        value or ""
+    ).strip()
+
+    return value or None
+
+
+def _read_header(
+    uploaded_file,
+    max_bytes=1024,
+):
+    file_obj = getattr(
+        uploaded_file,
+        "file",
+        uploaded_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(
+            file_obj,
+            "read",
+        )
+    ):
+        return b""
+
+    position = 0
+
+    try:
+        if hasattr(
+            file_obj,
+            "tell",
+        ):
+            position = (
+                file_obj.tell()
+            )
+    except (
+        OSError,
+        ValueError,
+    ):
+        position = 0
+
+    try:
+        if hasattr(
+            file_obj,
+            "seek",
+        ):
+            file_obj.seek(0)
+
+        return bytes(
+            file_obj.read(
+                max_bytes
+            )
+            or b""
+        )
+
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+    ):
+        return b""
+
+    finally:
+        try:
+            if hasattr(
+                file_obj,
+                "seek",
+            ):
+                file_obj.seek(
+                    position
+                )
+        except (
+            OSError,
+            ValueError,
+        ):
+            pass
 
 
 def validate_primary_pdf_file(value):
     if not value:
         return value
 
-    file_name = str(getattr(value, "name", "") or "").lower()
-    ext = os.path.splitext(file_name)[1]
+    file_name = str(
+        getattr(
+            value,
+            "name",
+            "",
+        )
+        or ""
+    ).strip()
 
-    if ext not in ALLOWED_PDF_EXTENSIONS:
+    if (
+        os.path.splitext(
+            file_name.lower()
+        )[1]
+        != ".pdf"
+    ):
         raise ValidationError(
-            {"archivo_pdf": ["Solo se permiten archivos PDF."]}
+            "Solo se permiten archivos PDF."
         )
 
     content_type = (
-        getattr(value, "content_type", None)
-        or getattr(getattr(value, "file", None), "content_type", None)
+        getattr(
+            value,
+            "content_type",
+            None,
+        )
+        or getattr(
+            getattr(
+                value,
+                "file",
+                None,
+            ),
+            "content_type",
+            None,
+        )
     )
 
-    if content_type and content_type not in ALLOWED_PDF_CONTENT_TYPES:
+    if (
+        content_type
+        and str(
+            content_type
+        ).lower()
+        not in ALLOWED_PDF_CONTENT_TYPES
+    ):
         raise ValidationError(
-            {"archivo_pdf": ["Solo se permiten archivos PDF."]}
+            "El tipo de contenido no corresponde a un PDF."
         )
 
-    file_size = int(getattr(value, "size", 0) or 0)
+    try:
+        size = int(
+            getattr(
+                value,
+                "size",
+                0,
+            )
+            or 0
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        size = 0
 
-    if file_size > MAX_PRIMARY_PDF_BYTES:
+    if size <= 0:
         raise ValidationError(
-            {"archivo_pdf": ["El PDF principal supera el tamaño máximo de 5 MB."]}
+            "El archivo PDF está vacío."
+        )
+
+    if size > MAX_PRIMARY_PDF_BYTES:
+        raise ValidationError(
+            "El PDF principal supera el tamaño máximo de 5 MB."
+        )
+
+    header = _read_header(value)
+
+    if (
+        header
+        and not header.startswith(
+            b"%PDF-"
+        )
+    ):
+        raise ValidationError(
+            "El archivo no contiene una firma PDF válida."
         )
 
     return value
 
 
-class PonenciaRegistroSerializer(PublicacionCamposBaseMixin, serializers.ModelSerializer):
-    TIPO_PRESENTACION_CHOICES = [
-        ("magistral", "Conferencia magistral"),
-        ("oral", "Conferencia oral"),
-        ("poster", "Poster"),
-        ("otro", "Otro"),
+def _plain_data(data):
+    if hasattr(data, "lists"):
+        result = {}
+
+        for key, values in data.lists():
+            if not values:
+                result[key] = ""
+            elif len(values) == 1:
+                result[key] = values[0]
+            else:
+                result[key] = values
+
+        return result
+
+    return dict(data)
+
+
+def _parse_autores(value):
+    if (
+        isinstance(value, list)
+        and len(value) == 1
+    ):
+        value = value[0]
+
+    if value in (
+        None,
+        "",
+        "[]",
+        "null",
+        "None",
+        [],
+        {},
+    ):
+        return []
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(
+                value.strip()
+            )
+        except (
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        "Formato inválido. "
+                        "Debe enviar una lista JSON válida."
+                    ]
+                }
+            )
+
+    if not isinstance(
+        value,
+        list,
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "Los autores deben enviarse como una lista."
+                ]
+            }
+        )
+
+    normalized = []
+
+    for index, item in enumerate(
+        value,
+        start=1,
+    ):
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        f"El autor #{index} debe ser un objeto."
+                    ]
+                }
+            )
+
+        item = dict(item)
+
+        try:
+            orden = int(
+                item.get("orden")
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        f"El autor #{index} debe tener un orden válido."
+                    ]
+                }
+            )
+
+        if orden < 1:
+            raise ValidationError(
+                {
+                    "autores": [
+                        "El orden debe ser mayor o igual a 1."
+                    ]
+                }
+            )
+
+        item["orden"] = orden
+
+        item["rol_autoria"] = (
+            "principal"
+            if orden == 1
+            else "coautor"
+        )
+
+        normalized.append(
+            item
+        )
+
+    return normalized
+
+
+def _normalize_autores(autores):
+    if not autores:
+        raise ValidationError(
+            {
+                "autores": [
+                    "Debe registrar al menos un autor."
+                ]
+            }
+        )
+
+    ids = [
+        item["autor"].id
+        for item in autores
     ]
 
-    autores = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True,
-        required=False,
+    orders = [
+        int(item["orden"])
+        for item in autores
+    ]
+
+    if len(ids) != len(set(ids)):
+        raise ValidationError(
+            {
+                "autores": [
+                    "No se permite repetir el mismo autor."
+                ]
+            }
+        )
+
+    if (
+        len(orders)
+        != len(set(orders))
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "No se permite repetir el orden."
+                ]
+            }
+        )
+
+    if 1 not in orders:
+        raise ValidationError(
+            {
+                "autores": [
+                    "Debe existir un autor principal con orden 1."
+                ]
+            }
+        )
+
+    autores = sorted(
+        autores,
+        key=lambda item: int(
+            item["orden"]
+        ),
     )
 
-    carrera = serializers.PrimaryKeyRelatedField(queryset=Carrera.objects.all())
+    for index, item in enumerate(
+        autores,
+        start=1,
+    ):
+        item["orden"] = index
+
+        item["rol_autoria"] = (
+            "principal"
+            if index == 1
+            else "coautor"
+        )
+
+    return autores
+
+
+class PonenciaRegistroSerializer(
+    PublicacionCamposBaseMixin,
+    serializers.ModelSerializer,
+):
+    autores = AutorParticipacionSerializer(
+        many=True,
+        write_only=True,
+        required=True,
+    )
+
+    carrera = serializers.PrimaryKeyRelatedField(
+        queryset=Carrera.objects.select_related(
+            "facultad"
+        ).all(),
+        write_only=True,
+    )
 
     proyecto = serializers.PrimaryKeyRelatedField(
-        queryset=Proyecto.objects.all(),
+        queryset=Proyecto.objects.select_related(
+            "carrera"
+        ).all(),
         required=False,
         allow_null=True,
+        write_only=True,
     )
 
     area = serializers.PrimaryKeyRelatedField(
         queryset=AreaConocimiento.objects.all(),
         required=False,
         allow_null=True,
+        write_only=True,
     )
 
     subarea = serializers.PrimaryKeyRelatedField(
-        queryset=Subarea.objects.all(),
+        queryset=Subarea.objects.select_related(
+            "area"
+        ).all(),
         required=False,
         allow_null=True,
+        write_only=True,
     )
 
     pais = serializers.PrimaryKeyRelatedField(
         queryset=Pais.objects.all(),
-        required=False,
-        allow_null=True,
+        required=True,
+        write_only=True,
     )
 
     ciudad = serializers.PrimaryKeyRelatedField(
-        queryset=Ciudad.objects.all(),
+        queryset=Ciudad.objects.select_related(
+            "pais"
+        ).all(),
+        required=True,
+        write_only=True,
+    )
+
+    fecha_publicacion = serializers.DateField(
         required=False,
         allow_null=True,
+        write_only=True,
+        input_formats=[
+            "%Y-%m-%d",
+            "%d/%m/%Y",
+        ],
+    )
+
+    archivo_pdf = serializers.FileField(
+        required=False,
+        allow_null=True,
+        write_only=True,
     )
 
     tipo_presentacion = serializers.ChoiceField(
-        choices=[choice[0] for choice in TIPO_PRESENTACION_CHOICES],
+        choices=Ponencia.TIPO_PRESENTACION,
         required=False,
         allow_null=True,
         allow_blank=True,
@@ -126,9 +496,21 @@ class PonenciaRegistroSerializer(PublicacionCamposBaseMixin, serializers.ModelSe
         trim_whitespace=True,
     )
 
+    revisor_par_arbitraje = serializers.ChoiceField(
+        choices=[
+            ("si", "Sí"),
+            ("no", "No"),
+        ],
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+    )
+
     class Meta:
         model = Ponencia
+
         fields = [
+            "id",
             "carrera",
             "proyecto",
             "area",
@@ -145,238 +527,380 @@ class PonenciaRegistroSerializer(PublicacionCamposBaseMixin, serializers.ModelSe
             "tipo_presentacion",
             "tipo_presentacion_otro",
             "link_evento",
+            "revisor_par_arbitraje",
             "autores",
         ]
 
-    def to_internal_value(self, data):
-        if hasattr(data, "dict"):
-            base = data.dict()
-            base["autores"] = data.get("autores", None)
-            data = base
-        else:
-            data = dict(data)
+        read_only_fields = [
+            "id",
+        ]
 
-        autores = data.get("autores", None)
+        extra_kwargs = {
+            "codigo_issn_isbn": {
+                "required": False,
+                "allow_blank": True,
+                "allow_null": True,
+            },
+            "link_evento": {
+                "required": False,
+                "allow_blank": True,
+                "allow_null": True,
+            },
+        }
 
-        if isinstance(autores, list):
-            if len(autores) == 1 and isinstance(autores[0], str):
-                raw = (autores[0] or "").strip()
+    def to_internal_value(
+        self,
+        data,
+    ):
+        data = _plain_data(data)
 
-                if raw in ("", "[]", "null", "None"):
-                    data["autores"] = []
-                else:
-                    try:
-                        data["autores"] = json.loads(raw)
-                    except Exception:
-                        raise ValidationError(
-                            {"autores": ["Formato inválido. Debe ser JSON válido (lista)."]}
-                        )
+        data["autores"] = (
+            _parse_autores(
+                data.get("autores")
+            )
+        )
 
-            elif len(autores) == 1 and isinstance(autores[0], list):
-                data["autores"] = autores[0]
-            else:
-                data["autores"] = autores
+        return super().to_internal_value(
+            data
+        )
 
-        elif isinstance(autores, str):
-            raw = autores.strip()
+    def validate_archivo_pdf(
+        self,
+        value,
+    ):
+        return validate_primary_pdf_file(
+            value
+        )
 
-            if raw in ("", "[]", "null", "None"):
-                data["autores"] = []
-            else:
-                try:
-                    data["autores"] = json.loads(raw)
-                except Exception:
-                    raise ValidationError(
-                        {"autores": ["Formato inválido. Debe ser JSON válido (lista)."]}
-                    )
+    def validate(
+        self,
+        attrs,
+    ):
+        attrs = self._aplicar_reglas_origen(
+            attrs
+        )
 
-        elif autores is None:
-            data["autores"] = []
-        else:
-            data["autores"] = autores
+        carrera = attrs.get(
+            "carrera"
+        )
+
+        proyecto = attrs.get(
+            "proyecto"
+        )
 
         if (
-            isinstance(data.get("autores"), list)
-            and len(data["autores"]) == 1
-            and isinstance(data["autores"][0], list)
+            proyecto
+            and carrera
+            and proyecto.carrera_id
+            != carrera.id
         ):
-            data["autores"] = data["autores"][0]
-
-        return super().to_internal_value(data)
-
-    def validate_archivo_pdf(self, value):
-        return validate_primary_pdf_file(value)
-
-    def validate(self, attrs):
-        carrera = attrs.get("carrera")
-        proyecto = attrs.get("proyecto")
-
-        if proyecto and carrera and getattr(proyecto, "carrera_id", None) != getattr(carrera, "id", None):
             raise ValidationError(
-                {"proyecto": ["El proyecto seleccionado no pertenece a la carrera indicada."]}
+                {
+                    "proyecto": [
+                        "El proyecto seleccionado no pertenece "
+                        "a la carrera indicada."
+                    ]
+                }
             )
 
-        pais = attrs.get("pais")
-        ciudad = attrs.get("ciudad")
+        pais = attrs.get(
+            "pais"
+        )
+
+        ciudad = attrs.get(
+            "ciudad"
+        )
 
         if not pais:
             raise ValidationError(
-                {"pais": ["Debe seleccionar un país (solo para ponencias)."]}
+                {
+                    "pais": [
+                        "Debe seleccionar un país."
+                    ]
+                }
             )
 
         if not ciudad:
             raise ValidationError(
-                {"ciudad": ["Debe seleccionar una ciudad (solo para ponencias)."]}
+                {
+                    "ciudad": [
+                        "Debe seleccionar una ciudad."
+                    ]
+                }
             )
 
-        if getattr(ciudad, "pais_id", None) != getattr(pais, "id", None):
+        if (
+            ciudad.pais_id
+            != pais.id
+        ):
             raise ValidationError(
-                {"ciudad": ["La ciudad seleccionada no pertenece al país indicado."]}
+                {
+                    "ciudad": [
+                        "La ciudad seleccionada no pertenece "
+                        "al país indicado."
+                    ]
+                }
             )
 
-        tipo_presentacion = attrs.get("tipo_presentacion")
-        tipo_presentacion_otro = attrs.get("tipo_presentacion_otro")
+        area = attrs.get(
+            "area"
+        )
 
-        if isinstance(tipo_presentacion, str):
-            tipo_presentacion = tipo_presentacion.strip().lower() or None
+        subarea = attrs.get(
+            "subarea"
+        )
 
-        if tipo_presentacion_otro is not None:
-            tipo_presentacion_otro = str(tipo_presentacion_otro).strip() or None
+        if subarea and not area:
+            attrs["area"] = (
+                subarea.area
+            )
 
-        attrs["tipo_presentacion"] = tipo_presentacion
-        attrs["tipo_presentacion_otro"] = tipo_presentacion_otro
+            area = subarea.area
 
-        if tipo_presentacion == "otro":
-            if not tipo_presentacion_otro:
+        if (
+            area
+            and subarea
+            and subarea.area_id
+            != area.id
+        ):
+            raise ValidationError(
+                {
+                    "subarea": [
+                        "La subárea seleccionada no pertenece "
+                        "al área indicada."
+                    ]
+                }
+            )
+
+        nombre_evento = str(
+            attrs.get(
+                "nombre_evento"
+            )
+            or ""
+        ).strip()
+
+        nombre_ponencia = str(
+            attrs.get(
+                "nombre_ponencia"
+            )
+            or ""
+        ).strip()
+
+        if not nombre_evento:
+            raise ValidationError(
+                {
+                    "nombre_evento": [
+                        "El nombre del evento es obligatorio."
+                    ]
+                }
+            )
+
+        if not nombre_ponencia:
+            raise ValidationError(
+                {
+                    "nombre_ponencia": [
+                        "El nombre de la ponencia es obligatorio."
+                    ]
+                }
+            )
+
+        attrs[
+            "nombre_evento"
+        ] = nombre_evento
+
+        attrs[
+            "nombre_ponencia"
+        ] = nombre_ponencia
+
+        attrs[
+            "codigo_issn_isbn"
+        ] = _none_if_blank(
+            attrs.get(
+                "codigo_issn_isbn"
+            )
+        )
+
+        attrs[
+            "link_evento"
+        ] = _none_if_blank(
+            attrs.get(
+                "link_evento"
+            )
+        )
+
+        tipo_presentacion = (
+            _none_if_blank(
+                attrs.get(
+                    "tipo_presentacion"
+                )
+            )
+        )
+
+        if tipo_presentacion:
+            tipo_presentacion = (
+                tipo_presentacion.lower()
+            )
+
+        tipo_otro = (
+            _none_if_blank(
+                attrs.get(
+                    "tipo_presentacion_otro"
+                )
+            )
+        )
+
+        if (
+            tipo_presentacion
+            == "otro"
+        ):
+            if not tipo_otro:
                 raise ValidationError(
                     {
                         "tipo_presentacion_otro": [
-                            "Debe escribir el tipo de presentación cuando seleccione 'Otro'."
+                            "Debe escribir el tipo de presentación "
+                            "cuando seleccione 'Otro'."
                         ]
                     }
                 )
         else:
-            attrs["tipo_presentacion_otro"] = None
+            tipo_otro = None
 
-        attrs = self._aplicar_reglas_origen(attrs)
+        attrs[
+            "tipo_presentacion"
+        ] = tipo_presentacion
 
-        area = attrs.get("area")
-        subarea = attrs.get("subarea")
+        attrs[
+            "tipo_presentacion_otro"
+        ] = tipo_otro
 
-        if subarea and not area:
-            try:
-                attrs["area"] = subarea.area
-            except Exception:
-                pass
-
-        if attrs.get("area") and attrs.get("subarea"):
-            if getattr(attrs["subarea"], "area_id", None) != getattr(attrs["area"], "id", None):
-                raise ValidationError(
-                    {"subarea": ["La subárea seleccionada no pertenece al área indicada."]}
-                )
-
-        autores = attrs.get("autores") or []
-
-        if not autores:
-            raise ValidationError({"autores": ["Debe registrar al menos un autor."]})
-
-        autor_ids = []
-        ordenes = []
-
-        for item in autores:
-            if not isinstance(item, dict):
-                raise ValidationError(
-                    {"autores": ["Cada autor debe ser un objeto JSON."]}
-                )
-
-            autor_id = item.get("autor_id") or item.get("autor")
-
-            if autor_id is None:
-                raise ValidationError(
-                    {"autores": ["Cada autor debe incluir 'autor_id'."]}
-                )
-
-            try:
-                autor_id = int(autor_id)
-            except Exception:
-                raise ValidationError({"autores": ["'autor_id' debe ser numérico."]})
-
-            autor_ids.append(autor_id)
-
-            orden = item.get("orden")
-
-            if orden is None:
-                raise ValidationError({"autores": ["Cada autor debe tener un 'orden'."]})
-
-            try:
-                orden = int(orden)
-            except Exception:
-                raise ValidationError({"autores": ["El 'orden' debe ser un número entero."]})
-
-            ordenes.append(orden)
-
-        if len(autor_ids) != len(set(autor_ids)):
-            raise ValidationError({"autores": ["No se permite repetir el mismo autor."]})
-
-        if len(ordenes) != len(set(ordenes)):
-            raise ValidationError({"autores": ["No se permite repetir el campo 'orden'."]})
-
-        if 1 not in ordenes:
-            raise ValidationError(
-                {"autores": ["Debe existir un autor con orden = 1 (Autor Principal)."]}
+        revisor = _none_if_blank(
+            attrs.get(
+                "revisor_par_arbitraje"
             )
-
-        autores_sorted = sorted(
-            autores,
-            key=lambda item: int(item.get("orden", 999999) or 999999),
         )
 
-        normalized = []
+        if revisor:
+            revisor = revisor.lower()
 
-        for index, item in enumerate(autores_sorted, start=1):
-            autor_id = int(item.get("autor_id") or item.get("autor"))
-
-            normalized.append(
+        if (
+            revisor
+            and revisor
+            not in {
+                "si",
+                "no",
+            }
+        ):
+            raise ValidationError(
                 {
-                    "autor_id": autor_id,
-                    "orden": index,
-                    "rol_autoria": "principal" if index == 1 else "coautor",
+                    "revisor_par_arbitraje": [
+                        "El valor debe ser 'si' o 'no'."
+                    ]
                 }
             )
 
-        attrs["autores"] = normalized
+        attrs[
+            "revisor_par_arbitraje"
+        ] = revisor
+
+        attrs["autores"] = (
+            _normalize_autores(
+                attrs.get("autores")
+                or []
+            )
+        )
 
         return attrs
 
     @transaction.atomic
-    def create(self, validated_data):
-        autores_data = validated_data.pop("autores", [])
-
-        usuario_creador, admin_registrador, registrado_por_admin = (
-            resolve_publicacion_creation_context(self)
+    def create(
+        self,
+        validated_data,
+    ):
+        autores_data = (
+            validated_data.pop(
+                "autores",
+                [],
+            )
         )
 
-        carrera = validated_data.pop("carrera")
-        proyecto = validated_data.pop("proyecto", None)
+        (
+            usuario_creador,
+            admin_registrador,
+            registrado_por_admin,
+        ) = resolve_publicacion_creation_context(
+            self
+        )
 
-        area = validated_data.pop("area", None)
-        subarea = validated_data.pop("subarea", None)
-        pais = validated_data.pop("pais", None)
-        ciudad = validated_data.pop("ciudad", None)
+        carrera = (
+            validated_data.pop(
+                "carrera"
+            )
+        )
 
-        origen_tipo = validated_data.pop("origen_tipo", "ninguno")
-        origen_grado = validated_data.pop("origen_grado", None)
-        fecha_publicacion = validated_data.pop("fecha_publicacion", None)
-        archivo_pdf = validated_data.pop("archivo_pdf", None)
+        proyecto = (
+            validated_data.pop(
+                "proyecto",
+                None,
+            )
+        )
 
+        area = validated_data.pop(
+            "area",
+            None,
+        )
+
+        subarea = validated_data.pop(
+            "subarea",
+            None,
+        )
+
+        pais = validated_data.pop(
+            "pais"
+        )
+
+        ciudad = validated_data.pop(
+            "ciudad"
+        )
+
+        origen_tipo = (
+            validated_data.pop(
+                "origen_tipo",
+                "ninguno",
+            )
+        )
+
+        origen_grado = (
+            validated_data.pop(
+                "origen_grado",
+                None,
+            )
+        )
+
+        fecha_publicacion = (
+            validated_data.pop(
+                "fecha_publicacion",
+                None,
+            )
+        )
+
+        archivo_pdf = (
+            validated_data.pop(
+                "archivo_pdf",
+                None,
+            )
+        )
+
+        tipo = (
+            obtener_o_crear_tipo_publicacion(
+                codigo="ponencia",
+                nombre="Ponencia",
+                categoria="ponencia",
+                orden=1,
+            )
+        )
+
+        # Facultad siempre se deriva de Carrera.
         facultad = carrera.facultad
-
-        tipo = obtener_o_crear_tipo_publicacion(
-            codigo="ponencia",
-            nombre="Ponencia",
-            categoria="ponencia",
-            orden=1,
-        )
 
         publicacion = crear_publicacion_base(
             proyecto=proyecto,
@@ -390,20 +914,21 @@ class PonenciaRegistroSerializer(PublicacionCamposBaseMixin, serializers.ModelSe
             ciudad=ciudad,
             origen_tipo=origen_tipo,
             origen_grado=origen_grado,
-            fecha_publicacion=fecha_publicacion,
+            fecha_publicacion=(
+                fecha_publicacion
+            ),
             archivo_pdf=archivo_pdf,
-            registrado_por_admin=registrado_por_admin,
-            admin_registrador=admin_registrador,
+            registrado_por_admin=(
+                registrado_por_admin
+            ),
+            admin_registrador=(
+                admin_registrador
+            ),
         )
 
         ponencia = Ponencia.objects.create(
             publicacion=publicacion,
-            nombre_evento=validated_data["nombre_evento"],
-            nombre_ponencia=validated_data["nombre_ponencia"],
-            codigo_issn_isbn=validated_data.get("codigo_issn_isbn"),
-            tipo_presentacion=validated_data.get("tipo_presentacion"),
-            tipo_presentacion_otro=validated_data.get("tipo_presentacion_otro"),
-            link_evento=validated_data.get("link_evento"),
+            **validated_data,
         )
 
         registrar_autores_publicacion(

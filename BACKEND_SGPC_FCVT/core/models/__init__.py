@@ -1,5 +1,5 @@
 from .academico import Facultad, Carrera, Proyecto, ProyectoAutor
-from .banners import Banner
+from .banners import Banner, BannerConfiguracion
 from .conocimiento import AreaConocimiento, Subarea
 from .microsoft import MicrosoftMappingRule
 from .models_password_reset import PasswordResetToken
@@ -17,6 +17,7 @@ __all__ = [
     "Proyecto",
     "ProyectoAutor",
     "Banner",
+    "BannerConfiguracion",
     "AreaConocimiento",
     "Subarea",
     "MicrosoftMappingRule",

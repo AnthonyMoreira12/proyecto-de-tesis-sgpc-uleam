@@ -1,13 +1,20 @@
 import os
-import magic  # <-- IMPORTANTE PARA LA SEGURIDAD
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 
-MAX_ADJUNTO_PDF_BYTES = 3 * 1024 * 1024  # 3 MB
+MAX_ADJUNTO_PDF_BYTES = 3 * 1024 * 1024
 MAX_ADJUNTOS_POR_PUBLICACION = 2
+
 ALLOWED_PDF_EXTENSIONS = {".pdf"}
-ALLOWED_PDF_CONTENT_TYPES = {"application/pdf"}
+ALLOWED_PDF_CONTENT_TYPES = {
+    "application/pdf",
+    "application/x-pdf",
+}
+
+PDF_SIGNATURE = b"%PDF-"
+PDF_SIGNATURE_SCAN_BYTES = 1024
 
 
 def _norm_text(value):
@@ -21,22 +28,90 @@ def _delete_storage_file(field_file):
     name = getattr(field_file, "name", None)
     storage = getattr(field_file, "storage", None)
 
-    if not name or not storage:
+    if not name or storage is None:
         return
 
     try:
         if storage.exists(name):
             storage.delete(name)
-    except Exception:
-        pass
+    except (OSError, ValueError):
+        return
 
 
-def publicacion_archivo_upload_path(instance, filename):
+def _read_header(
+    field_file,
+    max_bytes=PDF_SIGNATURE_SCAN_BYTES,
+):
+    file_obj = getattr(
+        field_file,
+        "file",
+        field_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+    ):
+        return b""
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    try:
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+        content = file_obj.read(max_bytes)
+
+        if isinstance(content, str):
+            content = content.encode(
+                "utf-8",
+                errors="ignore",
+            )
+
+        return bytes(content or b"")
+
+    except (OSError, ValueError, TypeError):
+        return b""
+
+    finally:
+        try:
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _has_pdf_signature(field_file):
+    header = _read_header(
+        field_file,
+        max_bytes=PDF_SIGNATURE_SCAN_BYTES,
+    )
+
+    if not header:
+        return False
+
+    return PDF_SIGNATURE in header
+
+
+def publicacion_archivo_upload_path(
+    instance,
+    filename,
+):
+    safe_filename = os.path.basename(
+        str(filename or "archivo.pdf")
+    )
+
     return os.path.join(
         "publicaciones",
         "adjuntos",
-        str(instance.publicacion_id),
-        filename,
+        str(instance.publicacion_id or "tmp"),
+        safe_filename,
     )
 
 
@@ -47,73 +122,168 @@ class PublicacionArchivo(models.Model):
         related_name="archivos",
     )
 
-    nombre = models.CharField(max_length=150)
-    archivo = models.FileField(upload_to=publicacion_archivo_upload_path)
-    orden = models.PositiveIntegerField(default=1)
-    created_at = models.DateTimeField(auto_now_add=True)
+    nombre = models.CharField(
+        max_length=150,
+    )
+
+    archivo = models.FileField(
+        upload_to=publicacion_archivo_upload_path,
+        max_length=255,
+    )
+
+    orden = models.PositiveIntegerField(
+        default=1,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
     class Meta:
         db_table = "publicaciones_archivos"
         ordering = ["orden", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["publicacion", "orden"],
+                name=(
+                    "unique_archivo_orden_por_publicacion"
+                ),
+            ),
+        ]
         indexes = [
-            models.Index(fields=["publicacion"]),
+            models.Index(
+                fields=["publicacion"],
+            ),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
 
         if not self.nombre:
-            errors["nombre"] = "El nombre del archivo es obligatorio."
+            errors["nombre"] = (
+                "El nombre del archivo es obligatorio."
+            )
+
+        if not self.publicacion_id:
+            errors["publicacion"] = (
+                "La publicación es obligatoria."
+            )
 
         if not self.archivo:
-            errors["archivo"] = "Debe adjuntar un archivo."
+            errors["archivo"] = (
+                "Debe adjuntar un archivo PDF."
+            )
         else:
-            file_name = str(getattr(self.archivo, "name", "") or "").lower()
-            ext = os.path.splitext(file_name)[1]
+            file_name = _norm_text(
+                getattr(
+                    self.archivo,
+                    "name",
+                    "",
+                )
+            )
 
-            if ext not in ALLOWED_PDF_EXTENSIONS:
-                errors["archivo"] = "Solo se permiten archivos PDF."
+            extension = os.path.splitext(
+                file_name.lower()
+            )[1]
+
+            if extension not in ALLOWED_PDF_EXTENSIONS:
+                errors["archivo"] = (
+                    "Solo se permiten archivos "
+                    "con extensión PDF."
+                )
 
             content_type = (
-                getattr(self.archivo, "content_type", None)
-                or getattr(getattr(self.archivo, "file", None), "content_type", None)
+                getattr(
+                    self.archivo,
+                    "content_type",
+                    None,
+                )
+                or getattr(
+                    getattr(
+                        self.archivo,
+                        "file",
+                        None,
+                    ),
+                    "content_type",
+                    None,
+                )
             )
-            if content_type and content_type not in ALLOWED_PDF_CONTENT_TYPES:
-                errors["archivo"] = "Solo se permiten archivos PDF."
 
-            file_size = int(getattr(self.archivo, "size", 0) or 0)
-            if file_size > MAX_ADJUNTO_PDF_BYTES:
-                errors["archivo"] = "El archivo adjunto supera el tamaño máximo de 3 MB."
+            if (
+                "archivo" not in errors
+                and content_type
+                and str(content_type).lower()
+                not in ALLOWED_PDF_CONTENT_TYPES
+            ):
+                errors["archivo"] = (
+                    "El tipo de contenido no corresponde "
+                    "a un archivo PDF."
+                )
 
-            # ============================================================
-            # VALIDACIÓN ESTRICTA DE BYTES MÁGICOS (SEGURIDAD)
-            # ============================================================
-            if "archivo" not in errors:
-                try:
-                    # magic lee los primeros bytes y determina el formato real
-                    file_mime = magic.from_buffer(self.archivo.read(2048), mime=True)
-                    if file_mime != "application/pdf":
-                        errors["archivo"] = "El archivo adjunto no es un PDF válido (Firma MIME incorrecta)."
-                    
-                    # Reiniciamos el cursor de lectura para que Django pueda guardarlo
-                    self.archivo.seek(0)
-                except Exception as e:
-                    errors["archivo"] = f"Error al validar los bytes del archivo: {str(e)}"
+            try:
+                file_size = int(
+                    getattr(
+                        self.archivo,
+                        "size",
+                        0,
+                    )
+                    or 0
+                )
+            except (TypeError, ValueError):
+                file_size = 0
+
+            if (
+                "archivo" not in errors
+                and file_size <= 0
+            ):
+                errors["archivo"] = (
+                    "El archivo PDF está vacío."
+                )
+
+            if (
+                "archivo" not in errors
+                and file_size > MAX_ADJUNTO_PDF_BYTES
+            ):
+                errors["archivo"] = (
+                    "El archivo adjunto supera "
+                    "el tamaño máximo de 3 MB."
+                )
+
+            if (
+                "archivo" not in errors
+                and not _has_pdf_signature(self.archivo)
+            ):
+                errors["archivo"] = (
+                    "El archivo adjunto no contiene "
+                    "una firma PDF válida."
+                )
 
         if self.orden is None or self.orden < 1:
-            errors["orden"] = "El orden debe ser mayor o igual a 1."
+            errors["orden"] = (
+                "El orden debe ser mayor o igual a 1."
+            )
 
-        if self.publicacion_id:
-            qs = PublicacionArchivo.objects.filter(publicacion_id=self.publicacion_id)
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
+        if self.publicacion_id and not self.pk:
+            current_count = (
+                PublicacionArchivo.objects
+                .filter(
+                    publicacion_id=self.publicacion_id
+                )
+                .count()
+            )
 
-            if qs.count() >= MAX_ADJUNTOS_POR_PUBLICACION and not self.pk:
+            if (
+                current_count
+                >= MAX_ADJUNTOS_POR_PUBLICACION
+            ):
                 errors["archivo"] = (
-                    f"Solo se permiten {MAX_ADJUNTOS_POR_PUBLICACION} adjuntos "
-                    "por publicación."
+                    "Solo se permiten hasta "
+                    f"{MAX_ADJUNTOS_POR_PUBLICACION} "
+                    "archivos adjuntos por publicación."
                 )
 
         if errors:
@@ -125,7 +295,8 @@ class PublicacionArchivo(models.Model):
         if self.pk:
             try:
                 old_file = (
-                    PublicacionArchivo.objects.only("archivo")
+                    PublicacionArchivo.objects
+                    .only("archivo")
                     .get(pk=self.pk)
                     .archivo
                 )
@@ -133,10 +304,23 @@ class PublicacionArchivo(models.Model):
                 old_file = None
 
         self.full_clean()
-        result = super().save(*args, **kwargs)
 
-        old_name = getattr(old_file, "name", None)
-        new_name = getattr(self.archivo, "name", None)
+        result = super().save(
+            *args,
+            **kwargs,
+        )
+
+        old_name = getattr(
+            old_file,
+            "name",
+            None,
+        )
+
+        new_name = getattr(
+            self.archivo,
+            "name",
+            None,
+        )
 
         if old_name and old_name != new_name:
             _delete_storage_file(old_file)
@@ -145,9 +329,18 @@ class PublicacionArchivo(models.Model):
 
     def delete(self, *args, **kwargs):
         file_to_delete = self.archivo
-        result = super().delete(*args, **kwargs)
+
+        result = super().delete(
+            *args,
+            **kwargs,
+        )
+
         _delete_storage_file(file_to_delete)
+
         return result
 
     def __str__(self):
-        return f"{self.nombre} (Pub #{self.publicacion_id})"
+        return (
+            f"{self.nombre} "
+            f"(Pub #{self.publicacion_id})"
+        )

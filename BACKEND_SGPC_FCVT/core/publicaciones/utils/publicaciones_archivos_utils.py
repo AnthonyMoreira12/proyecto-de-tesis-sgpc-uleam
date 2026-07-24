@@ -1,38 +1,109 @@
-import magic
 import os
-import json
+
 from rest_framework.exceptions import ValidationError
+
+
+PDF_SIGNATURE = b"%PDF-"
+PDF_SIGNATURE_SCAN_BYTES = 1024
+MAX_ATTACHMENT_NAME_LENGTH = 150
+
+
+def _read_prefix(
+    uploaded_file,
+    max_bytes=PDF_SIGNATURE_SCAN_BYTES,
+):
+    if not uploaded_file:
+        return b""
+
+    file_obj = getattr(
+        uploaded_file,
+        "file",
+        uploaded_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+    ):
+        return b""
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    try:
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+        content = file_obj.read(max_bytes)
+
+        if isinstance(content, str):
+            content = content.encode(
+                "utf-8",
+                errors="ignore",
+            )
+
+        return bytes(content or b"")
+
+    except (OSError, ValueError, TypeError):
+        return b""
+
+    finally:
+        try:
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
 
 def validar_firma_pdf(uploaded_file):
     """
-    Lee los bytes reales del archivo para asegurar que sea un PDF legítimo,
-    evitando ataques de spoofing MIME/extensión (Requisito de Auditoría).
-    """
-    if not uploaded_file:
-        raise ValidationError("No se proporcionó ningún archivo.")
+    Comprueba que la firma real de PDF (%PDF-) aparezca
+    dentro de los primeros 1024 bytes.
 
-    try:
-        # Leer los primeros 2048 bytes para determinar la firma real (Magic Bytes)
-        file_mime = magic.from_buffer(uploaded_file.read(2048), mime=True)
-        if file_mime != "application/pdf":
-            raise ValidationError("El archivo adjunto no es un PDF válido (Firma MIME incorrecta).")
-        
-        # Devolver el puntero al inicio para que Django/Storage pueda guardarlo luego
-        uploaded_file.seek(0)
-    except ValidationError:
-        raise
-    except Exception as e:
-        raise ValidationError(f"Error al validar los bytes del archivo: {str(e)}")
-    
+    Esto mantiene la comprobación de contenido sin exigir
+    que la cabecera se encuentre exactamente en el byte 0.
+    """
+
+    if not uploaded_file:
+        raise ValidationError(
+            "No se proporcionó ningún archivo."
+        )
+
+    prefix = _read_prefix(
+        uploaded_file,
+        max_bytes=PDF_SIGNATURE_SCAN_BYTES,
+    )
+
+    if not prefix or PDF_SIGNATURE not in prefix:
+        raise ValidationError(
+            "El archivo adjunto no contiene "
+            "una firma PDF válida."
+        )
+
     return uploaded_file
 
 
 def default_nombre_from_file(uploaded_file):
-    """Genera un nombre por defecto basado en el nombre del archivo original."""
-    raw_name = str(getattr(uploaded_file, "name", "") or "").strip()
+    """
+    Genera un nombre válido para PublicacionArchivo.nombre
+    a partir del nombre original del archivo.
+    """
+
+    raw_name = str(
+        getattr(uploaded_file, "name", "")
+        or ""
+    ).strip()
+
     if not raw_name:
         return "Archivo PDF"
 
+    raw_name = os.path.basename(raw_name)
     base, _ext = os.path.splitext(raw_name)
-    base = str(base or "").strip()
-    return base or raw_name or "Archivo PDF"
+    resolved = str(base or raw_name or "Archivo PDF").strip()
+
+    return resolved[:MAX_ATTACHMENT_NAME_LENGTH]

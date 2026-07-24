@@ -1,15 +1,17 @@
+import os
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
 from django.utils import timezone
-import os
-import magic # <-- IMPORTANTE PARA LA SEGURIDAD
 
 
-MAX_PROYECTO_PDF_BYTES = 5 * 1024 * 1024  # 5 MB
+MAX_PROYECTO_PDF_BYTES = 5 * 1024 * 1024
 ALLOWED_PDF_EXTENSIONS = {".pdf"}
-ALLOWED_PDF_CONTENT_TYPES = {"application/pdf"}
+ALLOWED_PDF_CONTENT_TYPES = {
+    "application/pdf",
+    "application/x-pdf",
+}
 
 
 def _norm_text(value):
@@ -28,51 +30,186 @@ def _delete_storage_file(field_file):
     name = getattr(field_file, "name", None)
     storage = getattr(field_file, "storage", None)
 
-    if not name or not storage:
+    if not name or storage is None:
         return
 
     try:
         if storage.exists(name):
             storage.delete(name)
-    except Exception:
-        pass
+    except (OSError, ValueError):
+        return
+
+
+def _read_header(field_file, size=1024):
+    file_obj = getattr(field_file, "file", field_file)
+
+    if file_obj is None or not hasattr(file_obj, "read"):
+        return b""
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    try:
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+        content = file_obj.read(size)
+
+        if isinstance(content, str):
+            content = content.encode(
+                "utf-8",
+                errors="ignore",
+            )
+
+        return bytes(content or b"")
+
+    except (OSError, ValueError, TypeError):
+        return b""
+
+    finally:
+        try:
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _validate_pdf(field_file, *, max_bytes, label):
+    errors = []
+
+    name = _norm_text(
+        getattr(field_file, "name", "")
+    )
+
+    extension = os.path.splitext(
+        name.lower()
+    )[1]
+
+    if extension not in ALLOWED_PDF_EXTENSIONS:
+        errors.append(
+            f"{label} debe tener extensión .pdf."
+        )
+
+    content_type = (
+        getattr(field_file, "content_type", None)
+        or getattr(
+            getattr(field_file, "file", None),
+            "content_type",
+            None,
+        )
+    )
+
+    if (
+        content_type
+        and str(content_type).lower()
+        not in ALLOWED_PDF_CONTENT_TYPES
+    ):
+        errors.append(
+            f"{label} debe ser un archivo PDF."
+        )
+
+    try:
+        file_size = int(
+            getattr(field_file, "size", 0)
+            or 0
+        )
+    except (TypeError, ValueError):
+        file_size = 0
+
+    if file_size <= 0:
+        errors.append(
+            f"{label} está vacío."
+        )
+
+    if file_size > max_bytes:
+        max_mb = max_bytes / (1024 * 1024)
+
+        errors.append(
+            f"{label} supera el tamaño máximo "
+            f"de {max_mb:g} MB."
+        )
+
+    header = _read_header(field_file)
+
+    if header and not header.startswith(b"%PDF-"):
+        errors.append(
+            f"{label} no contiene una firma PDF válida."
+        )
+
+    return errors
 
 
 def proyecto_pdf_upload_path(instance, filename):
     filename = filename or "proyecto.pdf"
-    base, ext = os.path.splitext(filename)
-    ext = (ext or "").lower()
+    base, extension = os.path.splitext(filename)
 
-    if ext not in ALLOWED_PDF_EXTENSIONS:
-        ext = ".pdf"
+    safe_base = (
+        _norm_text(base)
+        or "proyecto"
+    )[:80]
 
-    safe_base = (_norm_text(base) or "proyecto")[:80]
-    proyecto_id = instance.pk or "tmp"
+    if extension.lower() not in ALLOWED_PDF_EXTENSIONS:
+        extension = ".pdf"
+    else:
+        extension = extension.lower()
 
-    return os.path.join("proyectos", "pdf", str(proyecto_id), f"{safe_base}{ext}")
+    project_id = instance.pk or "tmp"
+
+    return os.path.join(
+        "proyectos",
+        "pdf",
+        str(project_id),
+        f"{safe_base}{extension}",
+    )
 
 
 class Facultad(models.Model):
-    nombre = models.CharField(max_length=255, unique=True)
-    siglas = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    descripcion = models.TextField(null=True, blank=True)
+    nombre = models.CharField(
+        max_length=255,
+        unique=True,
+    )
+
+    siglas = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+
+    descripcion = models.TextField(
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "facultades"
         ordering = ["nombre"]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
-        self.siglas = _norm_optional_text(self.siglas)
-        self.descripcion = _norm_optional_text(self.descripcion)
+        self.siglas = _norm_optional_text(
+            self.siglas
+        )
+        self.descripcion = _norm_optional_text(
+            self.descripcion
+        )
 
         if self.siglas:
             self.siglas = self.siglas.upper()
 
         if not self.nombre:
-            errors["nombre"] = "El nombre de la facultad es obligatorio."
+            errors["nombre"] = (
+                "El nombre de la facultad es obligatorio."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -86,7 +223,10 @@ class Facultad(models.Model):
 
 
 class Carrera(models.Model):
-    nombre = models.CharField(max_length=255)
+    nombre = models.CharField(
+        max_length=255,
+    )
+
     facultad = models.ForeignKey(
         Facultad,
         on_delete=models.CASCADE,
@@ -100,22 +240,30 @@ class Carrera(models.Model):
             models.UniqueConstraint(
                 fields=["nombre", "facultad"],
                 name="unique_carrera_por_facultad",
-            )
+            ),
         ]
         indexes = [
-            models.Index(fields=["facultad", "nombre"]),
+            models.Index(
+                fields=["facultad", "nombre"],
+            ),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
 
         if not self.nombre:
-            errors["nombre"] = "El nombre de la carrera es obligatorio."
+            errors["nombre"] = (
+                "El nombre de la carrera es obligatorio."
+            )
 
         if not self.facultad_id:
-            errors["facultad"] = "La facultad es obligatoria."
+            errors["facultad"] = (
+                "La facultad es obligatoria."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -125,10 +273,14 @@ class Carrera(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.facultad.siglas or self.facultad.nombre})"
+        faculty_label = (
+            self.facultad.siglas
+            or self.facultad.nombre
+            if self.facultad_id
+            else "Sin facultad"
+        )
 
-
-
+        return f"{self.nombre} ({faculty_label})"
 
 
 class Proyecto(models.Model):
@@ -138,11 +290,17 @@ class Proyecto(models.Model):
         ("cierre", "Cierre"),
     ]
 
-    nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(null=True, blank=True)
+    nombre = models.CharField(
+        max_length=255,
+    )
+
+    descripcion = models.TextField(
+        null=True,
+        blank=True,
+    )
 
     carrera = models.ForeignKey(
-        "core.Carrera",
+        Carrera,
         on_delete=models.CASCADE,
         related_name="proyectos",
     )
@@ -168,144 +326,237 @@ class Proyecto(models.Model):
         blank=True,
     )
 
-    fecha_inicio = models.DateField(null=True, blank=True)
-    fecha_fin_planificada = models.DateField(null=True, blank=True)
-    fecha_fin_prorrogada = models.DateField(null=True, blank=True)
-    fecha_cierre = models.DateField(null=True, blank=True)
-
-    anio_inicio = models.PositiveIntegerField(null=True, blank=True, db_index=True)
-    anio_fin = models.PositiveIntegerField(null=True, blank=True, db_index=True)
-
-    archivo_pdf = models.FileField(
-        upload_to=proyecto_pdf_upload_path,
+    fecha_inicio = models.DateField(
         null=True,
         blank=True,
     )
 
-    fecha_creacion = models.DateField(auto_now_add=True)
+    fecha_fin_planificada = models.DateField(
+        null=True,
+        blank=True,
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    fecha_fin_prorrogada = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_cierre = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    anio_inicio = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    anio_fin = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    archivo_pdf = models.FileField(
+        upload_to=proyecto_pdf_upload_path,
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    fecha_creacion = models.DateField(
+        auto_now_add=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
 
     class Meta:
         db_table = "proyectos"
-        ordering = ["-anio_inicio", "nombre", "id"]
+        ordering = [
+            "-anio_inicio",
+            "nombre",
+            "id",
+        ]
         indexes = [
             models.Index(fields=["estado"]),
             models.Index(fields=["anio_inicio"]),
             models.Index(fields=["anio_fin"]),
-            models.Index(fields=["estado", "anio_inicio"]),
+            models.Index(
+                fields=["estado", "anio_inicio"],
+            ),
             models.Index(fields=["carrera"]),
             models.Index(fields=["creado_por"]),
         ]
 
     @property
+    def facultad(self):
+        if not self.carrera_id:
+            return None
+
+        return self.carrera.facultad
+
+    @property
     def fecha_fin_vigente(self):
-        return self.fecha_fin_prorrogada or self.fecha_fin_planificada
+        return (
+            self.fecha_fin_prorrogada
+            or self.fecha_fin_planificada
+        )
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
-        self.descripcion = _norm_optional_text(self.descripcion)
+        self.descripcion = _norm_optional_text(
+            self.descripcion
+        )
+        self.estado = _norm_text(
+            self.estado
+        ).lower()
 
-        estados_validos = {value for value, _ in self.ESTADOS}
+        valid_states = {
+            value
+            for value, _label
+            in self.ESTADOS
+        }
 
         if not self.nombre:
-            errors["nombre"] = "El nombre del proyecto es obligatorio."
+            errors["nombre"] = (
+                "El nombre del proyecto es obligatorio."
+            )
 
         if not self.carrera_id:
-            errors["carrera"] = "La carrera es obligatoria."
+            errors["carrera"] = (
+                "La carrera es obligatoria."
+            )
 
         if not self.creado_por_id:
-            errors["creado_por"] = "El usuario creador es obligatorio."
-        elif not getattr(self.creado_por, "is_staff", False) and not getattr(
-            self.creado_por,
-            "is_superuser",
-            False,
+            errors["creado_por"] = (
+                "Debe indicar el administrador creador."
+            )
+        elif not (
+            getattr(
+                self.creado_por,
+                "is_staff",
+                False,
+            )
+            or getattr(
+                self.creado_por,
+                "is_superuser",
+                False,
+            )
         ):
             errors["creado_por"] = (
-                "El usuario creador debe tener privilegios administrativos."
+                "El usuario creador debe tener "
+                "privilegios administrativos."
             )
 
-        if self.estado not in estados_validos:
-            errors["estado"] = "El estado del proyecto es inválido."
+        if self.estado not in valid_states:
+            errors["estado"] = (
+                "El estado del proyecto es inválido."
+            )
 
-        if self.estado == "cierre" and not self.fecha_cierre:
-            self.fecha_cierre = timezone.now().date()
+        if (
+            self.fecha_inicio
+            and self.fecha_fin_planificada
+            and self.fecha_fin_planificada
+            < self.fecha_inicio
+        ):
+            errors["fecha_fin_planificada"] = (
+                "La fecha de finalización planificada "
+                "no puede ser menor a la fecha de inicio."
+            )
 
-        if self.fecha_inicio and self.fecha_fin_planificada:
-            if self.fecha_fin_planificada < self.fecha_inicio:
-                errors["fecha_fin_planificada"] = (
-                    "La fecha de finalización planificada no puede ser menor a la fecha de inicio."
-                )
+        if (
+            self.fecha_inicio
+            and self.fecha_fin_prorrogada
+            and self.fecha_fin_prorrogada
+            < self.fecha_inicio
+        ):
+            errors["fecha_fin_prorrogada"] = (
+                "La fecha prorrogada no puede ser menor "
+                "a la fecha de inicio."
+            )
 
-        if self.fecha_inicio and self.fecha_fin_prorrogada:
-            if self.fecha_fin_prorrogada < self.fecha_inicio:
-                errors["fecha_fin_prorrogada"] = (
-                    "La fecha prorrogada no puede ser menor a la fecha de inicio."
-                )
+        if (
+            self.fecha_fin_planificada
+            and self.fecha_fin_prorrogada
+            and self.fecha_fin_prorrogada
+            < self.fecha_fin_planificada
+        ):
+            errors["fecha_fin_prorrogada"] = (
+                "La fecha prorrogada no puede ser menor "
+                "a la fecha planificada."
+            )
 
-        if self.fecha_fin_planificada and self.fecha_fin_prorrogada:
-            if self.fecha_fin_prorrogada < self.fecha_fin_planificada:
-                errors["fecha_fin_prorrogada"] = (
-                    "La fecha prorrogada no puede ser menor a la fecha planificada."
-                )
+        if (
+            self.fecha_cierre
+            and self.fecha_inicio
+            and self.fecha_cierre
+            < self.fecha_inicio
+        ):
+            errors["fecha_cierre"] = (
+                "La fecha de cierre no puede ser menor "
+                "a la fecha de inicio."
+            )
 
-        if self.fecha_cierre and self.fecha_inicio:
-            if self.fecha_cierre < self.fecha_inicio:
-                errors["fecha_cierre"] = (
-                    "La fecha de cierre no puede ser menor a la fecha de inicio."
-                )
-
-        if self.fecha_inicio and not self.anio_inicio:
+        if self.fecha_inicio:
             self.anio_inicio = self.fecha_inicio.year
 
-        fecha_fin_referencia = (
-            self.fecha_fin_prorrogada or self.fecha_fin_planificada or self.fecha_cierre
+        final_reference = (
+            self.fecha_cierre
+            or self.fecha_fin_prorrogada
+            or self.fecha_fin_planificada
         )
-        if fecha_fin_referencia and not self.anio_fin:
-            self.anio_fin = fecha_fin_referencia.year
 
-        if self.anio_inicio is not None and self.anio_inicio < 1:
-            errors["anio_inicio"] = "El año de inicio debe ser mayor o igual a 1."
+        if final_reference:
+            self.anio_fin = final_reference.year
 
-        if self.anio_fin is not None and self.anio_fin < 1:
-            errors["anio_fin"] = "El año de finalización debe ser mayor o igual a 1."
-
-        if self.anio_inicio and self.anio_fin and self.anio_fin < self.anio_inicio:
-            errors["anio_fin"] = (
-                "El año de finalización no puede ser menor al año de inicio."
+        if (
+            self.anio_inicio is not None
+            and self.anio_inicio < 1
+        ):
+            errors["anio_inicio"] = (
+                "El año de inicio debe ser mayor "
+                "o igual a 1."
             )
 
-        # ============================================================
-        # VALIDACIÓN estricta de ARCHIVO PDF (Evitar subida de ejecutables maliciosos)
-        # ============================================================
+        if (
+            self.anio_fin is not None
+            and self.anio_fin < 1
+        ):
+            errors["anio_fin"] = (
+                "El año de finalización debe ser mayor "
+                "o igual a 1."
+            )
+
+        if (
+            self.anio_inicio
+            and self.anio_fin
+            and self.anio_fin < self.anio_inicio
+        ):
+            errors["anio_fin"] = (
+                "El año de finalización no puede ser "
+                "menor al año de inicio."
+            )
+
         if self.archivo_pdf:
-            file_name = str(getattr(self.archivo_pdf, "name", "") or "").lower()
-            ext = os.path.splitext(file_name)[1]
+            pdf_errors = _validate_pdf(
+                self.archivo_pdf,
+                max_bytes=MAX_PROYECTO_PDF_BYTES,
+                label="El PDF del proyecto",
+            )
 
-            if ext not in ALLOWED_PDF_EXTENSIONS:
-                errors["archivo_pdf"] = "Solo se permiten archivos PDF."
-
-            file_size = int(getattr(self.archivo_pdf, "size", 0) or 0)
-            if file_size > MAX_PROYECTO_PDF_BYTES:
-                errors["archivo_pdf"] = (
-                    "El PDF del proyecto supera el tamaño máximo de 5 MB."
-                )
-
-            # Si pasa las pruebas básicas, validamos los bytes reales del archivo
-            if "archivo_pdf" not in errors:
-                try:
-                    # magic lee los primeros bytes y determina el formato real
-                    file_mime = magic.from_buffer(self.archivo_pdf.read(2048), mime=True)
-                    if file_mime != 'application/pdf':
-                        errors["archivo_pdf"] = "El archivo subido no es un PDF válido. Detectado contenido no permitido."
-                    
-                    # Reiniciamos el cursor de lectura para que Django pueda guardarlo
-                    self.archivo_pdf.seek(0)
-                except Exception as e:
-                    errors["archivo_pdf"] = f"No se pudo analizar la firma del archivo: {str(e)}"
+            if pdf_errors:
+                errors["archivo_pdf"] = pdf_errors
 
         if errors:
             raise ValidationError(errors)
@@ -315,29 +566,60 @@ class Proyecto(models.Model):
 
         if self.pk:
             try:
-                old_pdf = Proyecto.objects.only("archivo_pdf").get(pk=self.pk).archivo_pdf
+                old_pdf = (
+                    Proyecto.objects
+                    .only("archivo_pdf")
+                    .get(pk=self.pk)
+                    .archivo_pdf
+                )
             except Proyecto.DoesNotExist:
                 old_pdf = None
 
         if not self.anio_inicio:
             if self.fecha_inicio:
-                self.anio_inicio = self.fecha_inicio.year
+                self.anio_inicio = (
+                    self.fecha_inicio.year
+                )
             elif self.fecha_creacion:
-                self.anio_inicio = self.fecha_creacion.year
+                self.anio_inicio = (
+                    self.fecha_creacion.year
+                )
             else:
-                self.anio_inicio = timezone.now().year
+                self.anio_inicio = (
+                    timezone.now().year
+                )
 
-        fecha_fin_referencia = (
-            self.fecha_fin_prorrogada or self.fecha_fin_planificada or self.fecha_cierre
+        final_reference = (
+            self.fecha_cierre
+            or self.fecha_fin_prorrogada
+            or self.fecha_fin_planificada
         )
-        if fecha_fin_referencia and not self.anio_fin:
-            self.anio_fin = fecha_fin_referencia.year
+
+        if (
+            final_reference
+            and not self.anio_fin
+        ):
+            self.anio_fin = (
+                final_reference.year
+            )
 
         self.full_clean()
-        result = super().save(*args, **kwargs)
 
-        old_name = getattr(old_pdf, "name", None)
-        new_name = getattr(self.archivo_pdf, "name", None)
+        result = super().save(
+            *args,
+            **kwargs,
+        )
+
+        old_name = getattr(
+            old_pdf,
+            "name",
+            None,
+        )
+        new_name = getattr(
+            self.archivo_pdf,
+            "name",
+            None,
+        )
 
         if old_name and old_name != new_name:
             _delete_storage_file(old_pdf)
@@ -346,8 +628,14 @@ class Proyecto(models.Model):
 
     def delete(self, *args, **kwargs):
         pdf_to_delete = self.archivo_pdf
-        result = super().delete(*args, **kwargs)
+
+        result = super().delete(
+            *args,
+            **kwargs,
+        )
+
         _delete_storage_file(pdf_to_delete)
+
         return result
 
     def __str__(self):
@@ -356,13 +644,22 @@ class Proyecto(models.Model):
 
 class ProyectoAutor(models.Model):
     ROLES = [
-        ("principal", "Investigador principal"),
-        ("coinvestigador", "Coinvestigador"),
-        ("colaborador", "Colaborador"),
+        (
+            "principal",
+            "Investigador principal",
+        ),
+        (
+            "coinvestigador",
+            "Coinvestigador",
+        ),
+        (
+            "colaborador",
+            "Colaborador",
+        ),
     ]
 
     proyecto = models.ForeignKey(
-        "core.Proyecto",
+        Proyecto,
         on_delete=models.CASCADE,
         related_name="participaciones",
     )
@@ -373,8 +670,15 @@ class ProyectoAutor(models.Model):
         related_name="proyectos_participaciones",
     )
 
-    rol = models.CharField(max_length=20, choices=ROLES, default="principal")
-    orden = models.PositiveIntegerField(default=1)
+    rol = models.CharField(
+        max_length=20,
+        choices=ROLES,
+        default="principal",
+    )
+
+    orden = models.PositiveIntegerField(
+        default=1,
+    )
 
     class Meta:
         db_table = "proyectos_autores"
@@ -390,26 +694,86 @@ class ProyectoAutor(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["proyecto", "rol"]),
+            models.Index(
+                fields=["proyecto", "rol"],
+            ),
             models.Index(fields=["autor"]),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
-        roles_validos = {value for value, _ in self.ROLES}
+        valid_roles = {
+            value
+            for value, _label
+            in self.ROLES
+        }
 
         if self.orden is None or self.orden < 1:
-            errors["orden"] = "El orden debe ser mayor o igual a 1."
+            errors["orden"] = (
+                "El orden debe ser mayor o igual a 1."
+            )
 
-        if self.rol not in roles_validos:
-            errors["rol"] = "El rol del autor en el proyecto es inválido."
+        if self.rol not in valid_roles:
+            errors["rol"] = (
+                "El rol del autor en el proyecto "
+                "es inválido."
+            )
 
         if not self.proyecto_id:
-            errors["proyecto"] = "El proyecto es obligatorio."
+            errors["proyecto"] = (
+                "El proyecto es obligatorio."
+            )
 
         if not self.autor_id:
-            errors["autor"] = "El autor es obligatorio."
+            errors["autor"] = (
+                "El autor es obligatorio."
+            )
+
+        if (
+            self.rol == "principal"
+            and self.orden != 1
+        ):
+            errors["orden"] = (
+                "El investigador principal debe "
+                "ocupar el orden 1."
+            )
+
+        if (
+            self.orden == 1
+            and self.rol != "principal"
+        ):
+            errors["rol"] = (
+                "El autor ubicado en el orden 1 debe "
+                "ser investigador principal."
+            )
+
+        if self.proyecto_id:
+            principal_query = (
+                ProyectoAutor.objects
+                .filter(
+                    proyecto_id=self.proyecto_id,
+                    rol="principal",
+                )
+            )
+
+            if self.pk:
+                principal_query = (
+                    principal_query.exclude(
+                        pk=self.pk
+                    )
+                )
+
+            if (
+                self.rol == "principal"
+                and principal_query.exists()
+            ):
+                errors["rol"] = (
+                    "El proyecto ya tiene un "
+                    "investigador principal."
+                )
 
         if errors:
             raise ValidationError(errors)
@@ -419,4 +783,7 @@ class ProyectoAutor(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.autor} · {self.proyecto} ({self.rol})"
+        return (
+            f"{self.autor} · "
+            f"{self.proyecto} ({self.rol})"
+        )

@@ -2,42 +2,8 @@
    SGPC ULEAM
    Registro de Ponencia
    Ajustes exclusivos del formulario PON
-
-   La estructura visual compartida se encuentra en:
-   ../componentes/sgpc-fcvt.css
 ============================================================ */
 
 .sgpc-form-page--ponencia {
-  /*
-   * Punto de extensión visual del formulario de ponencia.
-   * Mantiene la identidad institucional general.
-   */
   --sgpc-primary: var(--color-primary, #315fcb);
-}
-
-/* ============================================================
-   CONTEXTO ADMINISTRATIVO
-
-   Ponencia presenta:
-   1. Usuario objetivo
-   2. Autor objetivo
-   3. Modalidad del registro
-============================================================ */
-
-.sgpc-form-page--ponencia .sgpc-admin-context {
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0, 1fr)
-    );
-}
-
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media (max-width: 920px) {
-  .sgpc-form-page--ponencia .sgpc-admin-context {
-    grid-template-columns: 1fr;
-  }
 }

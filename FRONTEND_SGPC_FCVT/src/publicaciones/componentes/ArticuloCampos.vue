@@ -33,7 +33,10 @@
       </header>
 
       <div class="art-grid">
-        <!-- Título -->
+        <!-- =================================================
+             TÍTULO
+        ================================================== -->
+
         <label
           class="art-field art-field--span-12"
           :class="{
@@ -42,13 +45,19 @@
         >
           <span class="art-label">
             Título del artículo
-            <span class="req" aria-hidden="true">*</span>
+            <span
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
           </span>
 
           <input
             :value="form.nombre_articulo || ''"
             class="art-input"
             type="text"
+            maxlength="255"
             placeholder="Ej. Evaluación de la producción científica..."
             :disabled="disabled"
             :aria-invalid="hasFieldError('nombre_articulo')"
@@ -76,7 +85,10 @@
           </small>
         </label>
 
-        <!-- Revista -->
+        <!-- =================================================
+             REVISTA
+        ================================================== -->
+
         <label
           class="art-field art-field--span-6"
           :class="{
@@ -85,14 +97,20 @@
         >
           <span class="art-label">
             Nombre de la revista
-            <span class="req" aria-hidden="true">*</span>
+            <span
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
           </span>
 
           <input
             :value="form.nombre_revista || ''"
             class="art-input"
             type="text"
-            placeholder="Nombre oficial de la revista"
+            maxlength="255"
+            placeholder="Ej. Revista Científica..."
             :disabled="disabled"
             :aria-invalid="hasFieldError('nombre_revista')"
             :aria-describedby="
@@ -119,24 +137,32 @@
           </small>
         </label>
 
-        <!-- ISSN -->
+        <!-- =================================================
+             ISSN
+        ================================================== -->
+
         <label
-          class="art-field art-field--span-3"
+          class="art-field art-field--span-6"
           :class="{
             'art-field--invalid': hasFieldError('codigo_issn'),
           }"
         >
           <span class="art-label">
-            ISSN
-            <span class="req" aria-hidden="true">*</span>
+            Código ISSN
+            <span
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
           </span>
 
           <input
             :value="form.codigo_issn || ''"
             class="art-input"
             type="text"
-            inputmode="text"
-            placeholder="0000-0000"
+            maxlength="100"
+            placeholder="Ej. 1234-5678"
             :disabled="disabled"
             :aria-invalid="hasFieldError('codigo_issn')"
             :aria-describedby="
@@ -163,9 +189,12 @@
           </small>
         </label>
 
-        <!-- Número de revista -->
+        <!-- =================================================
+             NÚMERO DE REVISTA
+        ================================================== -->
+
         <label
-          class="art-field art-field--span-3"
+          class="art-field art-field--span-4"
           :class="{
             'art-field--invalid': hasFieldError('numero_revista'),
           }"
@@ -207,7 +236,10 @@
           </small>
         </label>
 
-        <!-- DOI -->
+        <!-- =================================================
+             DOI
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -222,6 +254,7 @@
             :value="form.codigo_doi || ''"
             class="art-input"
             type="text"
+            maxlength="150"
             placeholder="10.xxxx/xxxxx"
             :disabled="disabled"
             :aria-invalid="hasFieldError('codigo_doi')"
@@ -248,7 +281,10 @@
           </small>
         </label>
 
-        <!-- Link de revista -->
+        <!-- =================================================
+             LINK REVISTA
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -264,6 +300,7 @@
             class="art-input"
             type="url"
             inputmode="url"
+            maxlength="500"
             placeholder="https://..."
             :disabled="disabled"
             :aria-invalid="hasFieldError('link_revista')"
@@ -290,7 +327,10 @@
           </small>
         </label>
 
-        <!-- Link de publicación -->
+        <!-- =================================================
+             LINK PUBLICACIÓN
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -306,6 +346,7 @@
             class="art-input"
             type="url"
             inputmode="url"
+            maxlength="500"
             placeholder="https://..."
             :disabled="disabled"
             :aria-invalid="hasFieldError('link_publicacion')"
@@ -359,7 +400,10 @@
       </header>
 
       <div class="art-grid">
-        <!-- Base indexada -->
+        <!-- =================================================
+             BASE INDEXADA
+        ================================================== -->
+
         <label
           class="art-field art-field--span-6"
           :class="{
@@ -370,7 +414,12 @@
         >
           <span class="art-label">
             Base indexada
-            <span class="req" aria-hidden="true">*</span>
+            <span
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
           </span>
 
           <select
@@ -414,7 +463,10 @@
           </small>
         </label>
 
-        <!-- Otra base -->
+        <!-- =================================================
+             OTRA BASE
+        ================================================== -->
+
         <label
           v-if="form.base_datos_indexada === 'otra'"
           class="art-field art-field--span-6"
@@ -424,13 +476,19 @@
         >
           <span class="art-label">
             Especifique la base
-            <span class="req" aria-hidden="true">*</span>
+            <span
+              class="req"
+              aria-hidden="true"
+            >
+              *
+            </span>
           </span>
 
           <input
             :value="form.base_datos_otra || ''"
             class="art-input"
             type="text"
+            maxlength="150"
             placeholder="Nombre de la base o índice"
             :disabled="disabled"
             :aria-invalid="hasFieldError('base_datos_otra')"
@@ -485,7 +543,10 @@
       </header>
 
       <div class="art-grid">
-        <!-- Factor de impacto -->
+        <!-- =================================================
+             FACTOR DE IMPACTO
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -514,7 +575,7 @@
             "
           >
             <option value="">
-              Sin factor registrado
+              No aplica / no disponible
             </option>
 
             <option
@@ -536,7 +597,10 @@
           </small>
         </label>
 
-        <!-- Cuartil -->
+        <!-- =================================================
+             CUARTIL
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -587,7 +651,10 @@
           </small>
         </label>
 
-        <!-- SJR -->
+        <!-- =================================================
+             SJR
+        ================================================== -->
+
         <label
           class="art-field art-field--span-4"
           :class="{
@@ -611,6 +678,7 @@
             class="art-input"
             type="text"
             inputmode="decimal"
+            maxlength="100"
             placeholder="Ej. 0.75"
             :disabled="
               disabled ||
@@ -618,11 +686,7 @@
             "
             :required="form.factor_impacto === 'sjr'"
             :aria-invalid="hasFieldError('sjr')"
-            :aria-describedby="
-              hasFieldError('sjr')
-                ? fieldErrorId('sjr')
-                : `${componentId}-sjr-help`
-            "
+            :aria-describedby="sjrDescriptionIds"
             @input="
               updateField(
                 'sjr',
@@ -659,9 +723,11 @@ import {
   watch,
 } from "vue";
 
+
 defineOptions({
   name: "ArticuloCampos",
 });
+
 
 const props = defineProps({
   modelValue: {
@@ -680,10 +746,12 @@ const props = defineProps({
   },
 });
 
+
 const emit = defineEmits([
   "update:modelValue",
   "change",
 ]);
+
 
 /* =========================================================
    IDENTIFICADOR ACCESIBLE
@@ -692,9 +760,27 @@ const emit = defineEmits([
 const componentId =
   `articulo-campos-${useId().replaceAll(":", "")}`;
 
+
 const fieldErrorId = (field) => (
   `${componentId}-${field}-error`
 );
+
+
+/* =========================================================
+   LÍMITES DEL BACKEND
+========================================================= */
+
+const FIELD_LIMITS = Object.freeze({
+  nombre_articulo: 255,
+  base_datos_otra: 150,
+  codigo_doi: 150,
+  codigo_issn: 100,
+  nombre_revista: 255,
+  link_revista: 500,
+  link_publicacion: 500,
+  sjr: 100,
+});
+
 
 /* =========================================================
    CATÁLOGOS
@@ -727,6 +813,7 @@ const basesRegional = Object.freeze([
   },
 ]);
 
+
 const factoresImpacto = Object.freeze([
   {
     value: "sjr",
@@ -737,6 +824,7 @@ const factoresImpacto = Object.freeze([
     label: "JCR",
   },
 ]);
+
 
 const cuartiles = Object.freeze([
   {
@@ -761,6 +849,7 @@ const cuartiles = Object.freeze([
   },
 ]);
 
+
 /* =========================================================
    MODELO
 ========================================================= */
@@ -771,6 +860,11 @@ const form = computed(() => (
     ? props.modelValue
     : {}
 ));
+
+
+/* =========================================================
+   TIPO DE ARTÍCULO
+========================================================= */
 
 const normalizeArticleType = (value) => {
   const normalized = String(value || "")
@@ -803,6 +897,7 @@ const normalizeArticleType = (value) => {
   return normalized;
 };
 
+
 const tipoCodigo = computed(() => {
   return normalizeArticleType(
     form.value.tipo_codigo ||
@@ -811,15 +906,18 @@ const tipoCodigo = computed(() => {
   );
 });
 
+
 const esRegional = computed(() => (
   tipoCodigo.value ===
   "articulo_regional"
 ));
 
+
 const esAltoImpacto = computed(() => (
   tipoCodigo.value ===
   "articulo_alto_impacto"
 ));
+
 
 const tipoVisual = computed(() => {
   if (esRegional.value) {
@@ -833,6 +931,7 @@ const tipoVisual = computed(() => {
   return "articulo";
 });
 
+
 const tipoLabel = computed(() => {
   if (esRegional.value) {
     return "Artículo regional";
@@ -845,8 +944,9 @@ const tipoLabel = computed(() => {
   return "Artículo";
 });
 
+
 /* =========================================================
-   NORMALIZACIÓN DE CAMPOS
+   NORMALIZACIÓN
 ========================================================= */
 
 const normalizeQuartile = (value) => {
@@ -867,11 +967,13 @@ const normalizeQuartile = (value) => {
   return normalized;
 };
 
+
 const normalizedQuartile = computed(() => (
   normalizeQuartile(
     form.value.cuartil
   )
 ));
+
 
 const normalizeOptionalNumber = (value) => {
   if (
@@ -884,10 +986,15 @@ const normalizeOptionalNumber = (value) => {
 
   const number = Number(value);
 
-  return Number.isFinite(number)
-    ? number
-    : null;
+  if (
+    !Number.isFinite(number)
+  ) {
+    return null;
+  }
+
+  return number;
 };
+
 
 /* =========================================================
    ERRORES
@@ -909,7 +1016,9 @@ const normalizeError = (value) => {
       .join(" ");
   }
 
-  if (typeof value === "object") {
+  if (
+    typeof value === "object"
+  ) {
     return Object.values(value)
       .map(normalizeError)
       .filter(Boolean)
@@ -919,31 +1028,58 @@ const normalizeError = (value) => {
   return String(value).trim();
 };
 
+
 const fieldError = (field) => (
   normalizeError(
     props.errors?.[field]
   )
 );
 
+
 const hasFieldError = (field) => (
-  Boolean(fieldError(field))
+  Boolean(
+    fieldError(field)
+  )
 );
+
+
+const sjrDescriptionIds =
+  computed(() => {
+    const ids = [
+      `${componentId}-sjr-help`,
+    ];
+
+    if (
+      hasFieldError("sjr")
+    ) {
+      ids.push(
+        fieldErrorId("sjr")
+      );
+    }
+
+    return ids.join(" ");
+  });
+
 
 /* =========================================================
    ACTUALIZACIÓN DEL MODELO
 ========================================================= */
 
 const emitPatch = (patch) => {
-  const current = form.value;
+  const current =
+    form.value;
 
-  const hasChanges = Object.entries(
-    patch
-  ).some(([key, value]) => (
-    !Object.is(
-      current[key],
-      value
-    )
-  ));
+  const hasChanges =
+    Object.entries(
+      patch
+    ).some(
+      ([key, value]) => (
+        !Object.is(
+          current[key],
+          value
+        )
+      )
+    );
 
   if (!hasChanges) {
     return;
@@ -965,6 +1101,7 @@ const emitPatch = (patch) => {
   );
 };
 
+
 const updateField = (
   field,
   value
@@ -973,31 +1110,53 @@ const updateField = (
     [field]: value,
   };
 
-  if (
-    field === "base_datos_indexada" &&
-    value !== "otra"
-  ) {
-    patch.base_datos_otra = "";
-  }
+  /* =======================================================
+     BASE REGIONAL
+  ======================================================== */
 
   if (
-    field === "factor_impacto" &&
+    field ===
+      "base_datos_indexada" &&
+    value !== "otra"
+  ) {
+    patch.base_datos_otra =
+      "";
+  }
+
+  /* =======================================================
+     FACTOR DE IMPACTO
+  ======================================================== */
+
+  if (
+    field ===
+      "factor_impacto" &&
     value !== "sjr"
   ) {
-    patch.sjr = "";
+    patch.sjr =
+      "";
   }
 
   emitPatch(patch);
 };
 
+
 /* =========================================================
-   COHERENCIA ENTRE TIPOS DE ARTÍCULO
+   COHERENCIA ENTRE TIPOS
 ========================================================= */
 
 watch(
   tipoCodigo,
 
   (tipo) => {
+    /*
+     * REGIONAL
+     *
+     * El backend obliga a eliminar:
+     *
+     * - factor_impacto
+     * - cuartil
+     * - sjr
+     */
     if (
       tipo ===
       "articulo_regional"
@@ -1009,14 +1168,27 @@ watch(
         tipo_articulo:
           "regional",
 
-        factor_impacto: "",
-        cuartil: "",
-        sjr: "",
+        factor_impacto:
+          "",
+
+        cuartil:
+          "",
+
+        sjr:
+          "",
       });
 
       return;
     }
 
+    /*
+     * ALTO IMPACTO
+     *
+     * El backend obliga a eliminar:
+     *
+     * - base_datos_indexada
+     * - base_datos_otra
+     */
     if (
       tipo ===
       "articulo_alto_impacto"
@@ -1028,8 +1200,11 @@ watch(
         tipo_articulo:
           "alto_impacto",
 
-        base_datos_indexada: "",
-        base_datos_otra: "",
+        base_datos_indexada:
+          "",
+
+        base_datos_otra:
+          "",
       });
     }
   },

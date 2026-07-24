@@ -1,341 +1,287 @@
-# Servicio administrativo para publicaciones delegadas:
-# resuelve el usuario y autor objetivo, valida coherencia entre ambos y prepara el payload
-# para crear publicaciones en nombre de otro usuario desde el módulo administrativo.
+"""Servicios para publicaciones administrativas delegadas."""
 
 import json
 
 from django.contrib.auth import get_user_model
-from rest_framework import status
+from django.db import transaction
 
-from core.autores.services.autores_usuario_sync_services import asegurar_autor_para_usuario
 from core.models import Autor
+from core.utils.files import normalize_optional_text, validate_pdf_file
+
 
 User = get_user_model()
+MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024
 
 
 class AdminPublicacionesServiceError(Exception):
-    def __init__(self, detail, status_code=status.HTTP_400_BAD_REQUEST):
+    def __init__(self, detail, *, status_code=400):
         self.detail = detail
         self.status_code = status_code
         super().__init__(str(detail))
 
 
-def _safe_int(value):
-    try:
-        return int(value)
-    except Exception:
-        return None
-
-
-def _safe_get_autor_for_user(usuario):
-    if not usuario:
-        return None
+def _positive_int(value, *, field):
+    if isinstance(value, bool):
+        raise AdminPublicacionesServiceError(
+            {field: "El identificador debe ser un entero positivo."}
+        )
 
     try:
-        return usuario.autor
-    except Exception:
-        return None
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise AdminPublicacionesServiceError(
+            {field: "El identificador debe ser un entero positivo."}
+        ) from exc
+
+    if parsed <= 0:
+        raise AdminPublicacionesServiceError(
+            {field: "El identificador debe ser mayor que cero."}
+        )
+
+    return parsed
 
 
-def _get_usuario_by_id(usuario_id):
-    usuario_id = _safe_int(usuario_id)
-    if not usuario_id:
-        return None
+def _plain_data(source):
+    output = {}
 
-    usuario = (
-        User.objects.select_related("carrera__facultad", "carrera")
-        .filter(pk=usuario_id)
-        .first()
+    if hasattr(source, "lists"):
+        for key, values in source.lists():
+            output[key] = (
+                values[0]
+                if len(values) == 1
+                else list(values)
+            )
+    else:
+        output.update(dict(source))
+
+    return output
+
+
+def _parse_authors(value):
+    if value in (None, "", "[]", [], "null", "None"):
+        return []
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise AdminPublicacionesServiceError(
+                {"autores": "El campo autores debe ser JSON válido."}
+            ) from exc
+
+    if not isinstance(value, list):
+        raise AdminPublicacionesServiceError(
+            {"autores": "El campo autores debe ser una lista."}
+        )
+
+    return value
+
+
+def _target_user(data):
+    raw_id = (
+        data.get("usuario_objetivo_id")
+        or data.get("usuario_id")
     )
 
-    if not usuario:
-        raise AdminPublicacionesServiceError(
-            {"usuario_objetivo_id": "El usuario objetivo no existe."},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-
-    return usuario
-
-
-def _get_autor_by_id(autor_id):
-    autor_id = _safe_int(autor_id)
-    if not autor_id:
-        return None
-
-    autor = (
-        Autor.objects.select_related("usuario")
-        .filter(pk=autor_id)
-        .first()
-    )
-
-    if not autor:
-        raise AdminPublicacionesServiceError(
-            {"autor_objetivo_id": "El autor objetivo no existe."},
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-
-    return autor
-
-
-def _validate_usuario_objetivo(usuario):
-    if not usuario:
-        raise AdminPublicacionesServiceError(
-            {"detail": "No se pudo resolver el usuario objetivo."}
-        )
-
-    if not getattr(usuario, "is_active", False):
-        raise AdminPublicacionesServiceError(
-            {"detail": "El usuario objetivo está inactivo."}
-        )
-
-    rol = str(getattr(usuario, "rol", "") or "").strip().lower()
-    if rol not in {"autor", "autor_externo"}:
-        raise AdminPublicacionesServiceError(
-            {"detail": "El usuario objetivo no es válido para publicaciones."}
-        )
-
-    return usuario
-
-
-def resolve_usuario_objetivo(*, usuario_id=None, autor_id=None):
-    usuario = _get_usuario_by_id(usuario_id)
-    autor = _get_autor_by_id(autor_id)
-
-    if usuario is None and autor is None:
+    if raw_id in (None, ""):
         raise AdminPublicacionesServiceError(
             {
-                "detail": (
-                    "Debe enviar 'usuario_objetivo_id' o 'autor_objetivo_id' "
-                    "para crear publicaciones en modo delegado."
+                "usuario_objetivo_id": (
+                    "Debe seleccionar el usuario para quien "
+                    "se registrará la publicación."
                 )
             }
         )
 
-    if usuario is not None and autor is not None:
-        autor_usuario = getattr(autor, "usuario", None)
+    user_id = _positive_int(
+        raw_id,
+        field="usuario_objetivo_id",
+    )
 
-        if autor_usuario is None:
-            raise AdminPublicacionesServiceError(
-                {
-                    "autor_objetivo_id": (
-                        "El autor objetivo no está vinculado a un usuario del sistema."
-                    )
-                }
-            )
+    try:
+        return (
+            User.objects
+            .select_related("carrera__facultad", "autor")
+            .get(pk=user_id)
+        )
+    except User.DoesNotExist as exc:
+        raise AdminPublicacionesServiceError(
+            {"usuario_objetivo_id": "El usuario no existe."},
+            status_code=404,
+        ) from exc
 
-        if getattr(autor_usuario, "id", None) != getattr(usuario, "id", None):
-            raise AdminPublicacionesServiceError(
-                {
-                    "detail": (
-                        "El usuario objetivo y el autor objetivo no son coherentes "
-                        "entre sí."
-                    )
-                }
-            )
 
-        return _validate_usuario_objetivo(usuario)
+def _target_author(data, user):
+    raw_id = (
+        data.get("autor_objetivo_id")
+        or data.get("autor_id")
+        or getattr(getattr(user, "autor", None), "pk", None)
+    )
 
-    if usuario is not None:
-        return _validate_usuario_objetivo(usuario)
-
-    autor_usuario = getattr(autor, "usuario", None)
-
-    if autor_usuario is None:
+    if raw_id in (None, ""):
         raise AdminPublicacionesServiceError(
             {
                 "autor_objetivo_id": (
-                    "El autor objetivo no está vinculado a un usuario del sistema."
+                    "El usuario seleccionado no tiene un "
+                    "autor vinculado."
                 )
             }
         )
 
-    return _validate_usuario_objetivo(autor_usuario)
-
-
-def ensure_autor_objetivo(usuario, *, autor_id=None):
-    explicit_autor = _get_autor_by_id(autor_id)
-
-    if explicit_autor is not None:
-        explicit_usuario = getattr(explicit_autor, "usuario", None)
-
-        if explicit_usuario is None:
-            raise AdminPublicacionesServiceError(
-                {
-                    "autor_objetivo_id": (
-                        "El autor objetivo no está vinculado a un usuario del sistema."
-                    )
-                }
-            )
-
-        if getattr(explicit_usuario, "id", None) != getattr(usuario, "id", None):
-            raise AdminPublicacionesServiceError(
-                {
-                    "detail": (
-                        "El autor objetivo no pertenece al usuario objetivo indicado."
-                    )
-                }
-            )
-
-        return explicit_autor
-
-    autor = _safe_get_autor_for_user(usuario)
-
-    if autor is None:
-        try:
-            posible_autor = asegurar_autor_para_usuario(usuario)
-            if posible_autor is not None:
-                autor = posible_autor
-        except Exception:
-            autor = None
-
-    if autor is None:
-        try:
-            usuario.refresh_from_db()
-        except Exception:
-            pass
-
-        autor = _safe_get_autor_for_user(usuario)
-
-    if autor is None:
-        raise AdminPublicacionesServiceError(
-            {
-                "detail": (
-                    "No se pudo resolver o crear el autor asociado al usuario objetivo."
-                )
-            }
-        )
-
-    return autor
-
-
-def _decode_autores_payload(raw_autores):
-    if raw_autores in (None, "", "[]", "null", "None", [], {}):
-        return []
-
-    if isinstance(raw_autores, list):
-        if len(raw_autores) == 1 and isinstance(raw_autores[0], str):
-            raw_autores = raw_autores[0]
-        elif len(raw_autores) == 1 and isinstance(raw_autores[0], list):
-            return raw_autores[0]
-        else:
-            return raw_autores
-
-    if isinstance(raw_autores, str):
-        raw = raw_autores.strip()
-
-        if raw in ("", "[]", "null", "None"):
-            return []
-
-        try:
-            parsed = json.loads(raw)
-        except Exception:
-            raise AdminPublicacionesServiceError(
-                {"autores": ["Formato inválido. Debe ser JSON válido."]}
-            )
-
-        if parsed is None:
-            return []
-
-        if not isinstance(parsed, list):
-            raise AdminPublicacionesServiceError(
-                {"autores": ["El campo 'autores' debe ser una lista."]}
-            )
-
-        return parsed
-
-    raise AdminPublicacionesServiceError(
-        {"autores": ["Formato inválido para el campo 'autores'."]}
+    author_id = _positive_int(
+        raw_id,
+        field="autor_objetivo_id",
     )
 
+    try:
+        author = Autor.objects.select_related("usuario").get(
+            pk=author_id
+        )
+    except Autor.DoesNotExist as exc:
+        raise AdminPublicacionesServiceError(
+            {"autor_objetivo_id": "El autor no existe."},
+            status_code=404,
+        ) from exc
 
-def _normalize_autores_for_admin(*, autores_payload, autor_objetivo):
-    autores_list = _decode_autores_payload(autores_payload)
+    if author.usuario_id not in (None, user.pk):
+        raise AdminPublicacionesServiceError(
+            {
+                "autor_objetivo_id": (
+                    "El autor seleccionado pertenece a "
+                    "otro usuario."
+                )
+            }
+        )
 
+    return author
+
+
+def _attachments(request):
+    files = []
+
+    for key in (
+        "adjuntos",
+        "adjuntos[]",
+        "archivos",
+        "archivos[]",
+    ):
+        if hasattr(request.FILES, "getlist"):
+            files.extend(request.FILES.getlist(key))
+
+    unique_files = []
     seen = set()
-    ordered_ids = []
 
-    autor_objetivo_id = int(autor_objetivo.id)
-    ordered_ids.append(autor_objetivo_id)
-    seen.add(autor_objetivo_id)
+    for uploaded in files:
+        identity = id(uploaded)
 
-    for item in autores_list:
-        if not isinstance(item, dict):
-            raise AdminPublicacionesServiceError(
-                {"autores": ["Cada autor debe ser un objeto JSON."]}
-            )
-
-        autor_id = item.get("autor_id", item.get("autor"))
-        autor_id = _safe_int(autor_id)
-
-        if not autor_id:
-            raise AdminPublicacionesServiceError(
-                {"autores": ["Cada autor debe incluir 'autor_id' o 'autor'."]}
-            )
-
-        if autor_id in seen:
+        if identity in seen:
             continue
 
-        ordered_ids.append(autor_id)
-        seen.add(autor_id)
+        seen.add(identity)
+        unique_files.append(uploaded)
 
-    autores_existentes = set(
-        Autor.objects.filter(id__in=ordered_ids).values_list("id", flat=True)
-    )
-    faltantes = [
-        autor_id for autor_id in ordered_ids
-        if autor_id not in autores_existentes
-    ]
+    names = request.data.get("nombres_adjuntos")
 
-    if faltantes:
+    if isinstance(names, str):
+        try:
+            names = json.loads(names)
+        except json.JSONDecodeError:
+            names = []
+
+    names = names if isinstance(names, list) else []
+    output = []
+
+    for index, uploaded in enumerate(unique_files, start=1):
+        validate_pdf_file(
+            uploaded,
+            max_bytes=MAX_ATTACHMENT_BYTES,
+            field_name="adjuntos",
+            label=f"El adjunto #{index}",
+        )
+
+        name = (
+            normalize_optional_text(
+                names[index - 1]
+                if index - 1 < len(names)
+                else None
+            )
+            or normalize_optional_text(
+                getattr(uploaded, "name", None)
+            )
+            or f"Adjunto {index}"
+        )
+
+        output.append(
+            {
+                "file": uploaded,
+                "nombre": name,
+                "orden": index,
+            }
+        )
+
+    return output
+
+
+@transaction.atomic
+def prepare_admin_publicacion_payload(*, request):
+    data = _plain_data(request.data)
+    user = _target_user(data)
+    author = _target_author(data, user)
+
+    if not user.is_active:
         raise AdminPublicacionesServiceError(
             {
-                "autores": [
-                    f"Autor(es) no existe(n): {', '.join(map(str, faltantes))}."
-                ]
+                "usuario_objetivo_id": (
+                    "El usuario seleccionado está inactivo."
+                )
             }
         )
 
-    normalized = []
+    if not data.get("carrera") and user.carrera_id:
+        data["carrera"] = user.carrera_id
 
-    for index, autor_id in enumerate(ordered_ids, start=1):
+    for key in (
+        "facultad",
+        "usuario_objetivo_id",
+        "usuario_id",
+        "autor_objetivo_id",
+        "autor_id",
+    ):
+        data.pop(key, None)
+
+    authors = _parse_authors(data.get("autores"))
+    normalized = [
+        {
+            "autor_id": author.pk,
+            "orden": 1,
+            "rol_autoria": "principal",
+        }
+    ]
+    seen_ids = {author.pk}
+
+    for item in authors:
+        try:
+            item_id = int(item.get("autor_id"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+
+        if item_id in seen_ids:
+            continue
+
+        seen_ids.add(item_id)
         normalized.append(
             {
-                "autor_id": autor_id,
-                "orden": index,
-                "rol_autoria": "principal" if index == 1 else "coautor",
+                "autor_id": item_id,
+                "orden": len(normalized) + 1,
+                "rol_autoria": "coautor",
             }
         )
 
-    return normalized
+    data["autores"] = json.dumps(normalized)
 
-
-def prepare_admin_publicacion_payload(*, raw_data):
-    data = raw_data.copy() if hasattr(raw_data, "copy") else dict(raw_data)
-
-    usuario_objetivo_id = (
-        data.pop("usuario_objetivo_id", None)
-        or data.pop("usuario_id", None)
-    )
-
-    autor_objetivo_id = (
-        data.pop("autor_objetivo_id", None)
-        or data.pop("autor_id_objetivo", None)
-        or data.pop("autor_id", None)
-    )
-
-    usuario_objetivo = resolve_usuario_objetivo(
-        usuario_id=usuario_objetivo_id,
-        autor_id=autor_objetivo_id,
-    )
-
-    autor_objetivo = ensure_autor_objetivo(
-        usuario_objetivo,
-        autor_id=autor_objetivo_id,
-    )
-
-    data["autores"] = _normalize_autores_for_admin(
-        autores_payload=data.get("autores"),
-        autor_objetivo=autor_objetivo,
-    )
-
-    return data, usuario_objetivo, autor_objetivo
+    return {
+        "data": data,
+        "usuario_objetivo": user,
+        "autor_objetivo": author,
+        "adjuntos": _attachments(request),
+    }

@@ -1,15 +1,35 @@
 """
-View para consultar y actualizar el detalle de una publicación.
-Permite actualizar con JSON, form-data y multipart/form-data.
+Vista para consultar y actualizar el detalle de una publicación.
+
+Admite:
+- GET
+- PUT
+- PATCH
+- application/json
+- multipart/form-data
+- application/x-www-form-urlencoded
+
+La modificación de una publicación está limitada a:
+- administradores;
+- usuario creador;
+- autores vinculados con permiso de edición.
 """
 
+from django.db.models import Prefetch
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import (
+    FormParser,
+    JSONParser,
+    MultiPartParser,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Publicacion
+from core.models import (
+    Publicacion,
+    PublicacionAutor,
+)
 from core.publicaciones.mixins.publicaciones_auth_mixins import (
     PublicacionesJWTAuthAPIViewMixin,
 )
@@ -24,7 +44,6 @@ from core.publicaciones.services.publicaciones_detalle_services import (
 )
 from core.publicaciones.utils.publicaciones_permissions_utils import (
     can_edit_publicacion,
-    is_admin_user,
 )
 
 
@@ -33,90 +52,271 @@ class PublicacionDetailAPIView(
     PublicacionesMultiPartMixin,
     APIView,
 ):
-    parser_classes = [JSONParser, FormParser, MultiPartParser]
+    parser_classes = [
+        JSONParser,
+        FormParser,
+        MultiPartParser,
+    ]
 
-    def _get_pub_or_404(self, publicacion_id):
-        return (
-            Publicacion.objects
-            .select_related("usuario_creador", "tipo")
-            .get(id=publicacion_id)
+    # =========================================================
+    # QUERY
+    # =========================================================
+
+    def _get_publicacion(
+        self,
+        publicacion_id,
+    ):
+        autores_prefetch = Prefetch(
+            "participaciones",
+            queryset=(
+                PublicacionAutor.objects
+                .select_related("autor")
+                .order_by(
+                    "orden",
+                    "id",
+                )
+            ),
+            to_attr="participaciones_ordenadas",
         )
 
-    def _check_owner_or_admin(self, request, publicacion: Publicacion):
-        if is_admin_user(request.user):
+        return (
+            Publicacion.objects
+            .select_related(
+                "tipo",
+                "proyecto",
+                "usuario_creador",
+                "admin_registrador",
+                "carrera",
+                "carrera__facultad",
+                "area",
+                "subarea",
+                "pais",
+                "ciudad",
+                "articulo",
+                "ponencia",
+                "libro",
+                "capitulo_libro",
+            )
+            .prefetch_related(
+                autores_prefetch,
+                "archivos",
+            )
+            .get(
+                pk=publicacion_id
+            )
+        )
+
+    # =========================================================
+    # PERMISOS
+    # =========================================================
+
+    def _check_can_edit(
+        self,
+        request,
+        publicacion,
+    ):
+        if can_edit_publicacion(
+            request.user,
+            publicacion,
+        ):
             return
 
-        if getattr(publicacion, "usuario_creador_id", None) == getattr(request.user, "id", None):
-            return
+        raise PermissionDenied(
+            "No tiene permisos para editar "
+            "esta publicación."
+        )
 
-        if can_edit_publicacion(request.user, publicacion):
-            return
+    # =========================================================
+    # REQUEST DATA
+    # =========================================================
 
-        raise PermissionDenied("No tienes permisos para editar esta publicación.")
+    def _build_plain_data(
+        self,
+        request,
+    ):
+        """
+        Convierte QueryDict/FormData en un diccionario
+        manejable por el serializer sin perder archivos
+        ni listas.
+        """
 
-    def _build_plain_data(self, request):
         source = request.data
         data = {}
 
-        if hasattr(source, "lists"):
+        if hasattr(
+            source,
+            "lists",
+        ):
             for key, values in source.lists():
-                if len(values) == 0:
+                if not values:
                     data[key] = ""
+
                 elif len(values) == 1:
                     data[key] = values[0]
+
                 else:
                     data[key] = values
+
         else:
             data = dict(source)
 
-        if "archivo_pdf" in request.FILES:
-            data["archivo_pdf"] = request.FILES["archivo_pdf"]
+        if (
+            hasattr(request, "FILES")
+            and "archivo_pdf"
+            in request.FILES
+        ):
+            data["archivo_pdf"] = (
+                request.FILES[
+                    "archivo_pdf"
+                ]
+            )
 
         return data
 
-    def get(self, request, id):
+    # =========================================================
+    # GET
+    # =========================================================
+
+    def get(
+        self,
+        request,
+        id,
+    ):
         try:
-            data = construir_detalle_publicacion(publicacion_id=id)
-        except Publicacion.DoesNotExist:
-            return Response(
-                {"error": "Publicación no encontrada."},
-                status=status.HTTP_404_NOT_FOUND,
+            data = (
+                construir_detalle_publicacion(
+                    publicacion_id=id
+                )
             )
 
-        return Response(data, status=status.HTTP_200_OK)
-
-    def put(self, request, id):
-        return self._update(request, id)
-
-    def patch(self, request, id):
-        return self._update(request, id)
-
-    def _update(self, request, id):
-        try:
-            publicacion = self._get_pub_or_404(id)
         except Publicacion.DoesNotExist:
             return Response(
-                {"error": "Publicación no encontrada."},
-                status=status.HTTP_404_NOT_FOUND,
+                {
+                    "error": (
+                        "Publicación no encontrada."
+                    )
+                },
+                status=(
+                    status.HTTP_404_NOT_FOUND
+                ),
             )
 
-        self._check_owner_or_admin(request, publicacion)
+        return Response(
+            data,
+            status=status.HTTP_200_OK,
+        )
 
-        plain_data = self._build_plain_data(request)
+    # =========================================================
+    # PUT
+    # =========================================================
 
-        serializer = PublicacionActualizacionSerializer(
-            instance=publicacion,
-            data=plain_data,
+    def put(
+        self,
+        request,
+        id,
+    ):
+        return self._update(
+            request=request,
+            publicacion_id=id,
+            partial=False,
+        )
+
+    # =========================================================
+    # PATCH
+    # =========================================================
+
+    def patch(
+        self,
+        request,
+        id,
+    ):
+        return self._update(
+            request=request,
+            publicacion_id=id,
             partial=True,
         )
 
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
+    # =========================================================
+    # UPDATE
+    # =========================================================
+
+    def _update(
+        self,
+        *,
+        request,
+        publicacion_id,
+        partial,
+    ):
+        try:
+            publicacion = (
+                self._get_publicacion(
+                    publicacion_id
+                )
             )
 
-        publicacion = serializer.save()
-        data = construir_detalle_publicacion(publicacion_id=publicacion.id)
+        except Publicacion.DoesNotExist:
+            return Response(
+                {
+                    "error": (
+                        "Publicación no encontrada."
+                    )
+                },
+                status=(
+                    status.HTTP_404_NOT_FOUND
+                ),
+            )
 
-        return Response(data, status=status.HTTP_200_OK)
+        self._check_can_edit(
+            request,
+            publicacion,
+        )
+
+        plain_data = (
+            self._build_plain_data(
+                request
+            )
+        )
+
+        serializer = (
+            PublicacionActualizacionSerializer(
+                instance=publicacion,
+                data=plain_data,
+                partial=partial,
+                context={
+                    "request": request,
+                },
+            )
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        publicacion = serializer.save()
+
+        try:
+            data = (
+                construir_detalle_publicacion(
+                    publicacion_id=(
+                        publicacion.pk
+                    )
+                )
+            )
+
+        except Publicacion.DoesNotExist:
+            return Response(
+                {
+                    "error": (
+                        "La publicación fue actualizada, "
+                        "pero no pudo recuperarse su detalle."
+                    )
+                },
+                status=(
+                    status.HTTP_404_NOT_FOUND
+                ),
+            )
+
+        return Response(
+            data,
+            status=status.HTTP_200_OK,
+        )

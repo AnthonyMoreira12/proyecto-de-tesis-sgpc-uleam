@@ -1,257 +1,970 @@
 """
 Servicios auxiliares para perfiles tipo Scholar.
+
+Centraliza:
+- nombre completo;
+- afiliación;
+- avatar;
+- publicaciones;
+- PDF;
+- autores;
+- coautores;
+- información pública del perfil.
 """
 
-from django.db.models import Exists, OuterRef, TextField, Value
-from django.db.models.functions import Cast, Coalesce, Concat
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import (
+    Exists,
+    OuterRef,
+    Prefetch,
+    Q,
+    TextField,
+    Value,
+)
+from django.db.models.functions import (
+    Cast,
+    Coalesce,
+    Concat,
+)
 
-from core.models import Publicacion, PublicacionArchivo, PublicacionAutor
+from core.models import (
+    Publicacion,
+    PublicacionArchivo,
+    PublicacionAutor,
+)
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     annotate_tipo_publicacion_final,
     tipo_publicacion_label,
 )
 
 
+# =============================================================
+# HELPERS GENERALES
+# =============================================================
+
+
+def _to_str(value):
+    return str(
+        value or ""
+    ).strip()
+
+
+def _to_lower(value):
+    value = _to_str(
+        value
+    )
+
+    return (
+        value.lower()
+        if value
+        else ""
+    )
+
+
+def _safe_related(
+    instance,
+    relation_name,
+):
+    if instance is None:
+        return None
+
+    try:
+        return getattr(
+            instance,
+            relation_name,
+        )
+
+    except (
+        ObjectDoesNotExist,
+        AttributeError,
+    ):
+        return None
+
+
 def build_fullname_expression():
     return Cast(
         Concat(
-            Coalesce("nombres", Value("")),
+            Coalesce(
+                "nombres",
+                Value(""),
+            ),
             Value(" "),
-            Coalesce("apellidos", Value("")),
+            Coalesce(
+                "apellidos",
+                Value(""),
+            ),
             output_field=TextField(),
         ),
         TextField(),
     )
 
 
-def get_user_avatar_absolute_url(request, user):
-    if request and user and getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
-        try:
-            return request.build_absolute_uri(user.avatar.url)
-        except Exception:
-            return user.avatar.url
-    return None
+# =============================================================
+# AVATAR
+# =============================================================
 
 
-def get_author_org_label(author):
-    user = getattr(author, "usuario", None)
+def get_user_avatar_absolute_url(
+    request,
+    user,
+):
     if not user:
-        return "Autor externo" if getattr(author, "es_externo", False) else "ULEAM"
+        return None
 
-    carrera = getattr(user, "carrera", None)
-    facultad = getattr(carrera, "facultad", None) if carrera else None
+    avatar = getattr(
+        user,
+        "avatar",
+        None,
+    )
 
-    parts = []
+    if (
+        not avatar
+        or not getattr(
+            avatar,
+            "name",
+            None,
+        )
+    ):
+        return None
 
-    if carrera and getattr(carrera, "nombre", None):
-        parts.append(carrera.nombre)
-
-    if facultad and getattr(facultad, "nombre", None):
-        parts.append(facultad.nombre)
-
-    return " • ".join(parts) if parts else "ULEAM"
-
-
-def _build_absolute_url(request, file_field):
     try:
-        if not file_field:
-            return None
-        url = file_field.url
-    except Exception:
+        url = avatar.url
+
+    except (
+        AttributeError,
+        ValueError,
+    ):
         return None
 
     if request:
         try:
-            return request.build_absolute_uri(url)
+            return (
+                request.build_absolute_uri(
+                    url
+                )
+            )
+
         except Exception:
-            return url
+            pass
 
     return url
 
 
-def _get_pdf_file(publicacion):
-    archivo_pdf = getattr(publicacion, "archivo_pdf", None)
+# =============================================================
+# ORGANIZACIÓN
+# =============================================================
 
-    if archivo_pdf and getattr(archivo_pdf, "name", None):
+
+def get_author_org_label(
+    author,
+):
+    user = getattr(
+        author,
+        "usuario",
+        None,
+    )
+
+    institucion = _to_str(
+        getattr(
+            author,
+            "institucion",
+            None,
+        )
+    )
+
+    if not user:
+        if institucion:
+            return institucion
+
+        if getattr(
+            author,
+            "es_externo",
+            False,
+        ):
+            return "Autor externo"
+
+        return "ULEAM"
+
+    carrera = getattr(
+        user,
+        "carrera",
+        None,
+    )
+
+    facultad = (
+        getattr(
+            carrera,
+            "facultad",
+            None,
+        )
+        if carrera
+        else None
+    )
+
+    parts = []
+
+    if (
+        carrera
+        and getattr(
+            carrera,
+            "nombre",
+            None,
+        )
+    ):
+        parts.append(
+            carrera.nombre
+        )
+
+    if (
+        facultad
+        and getattr(
+            facultad,
+            "nombre",
+            None,
+        )
+    ):
+        parts.append(
+            facultad.nombre
+        )
+
+    if parts:
+        return " • ".join(
+            parts
+        )
+
+    if institucion:
+        return institucion
+
+    if getattr(
+        author,
+        "es_externo",
+        False,
+    ):
+        return "Autor externo"
+
+    return "ULEAM"
+
+
+# =============================================================
+# ARCHIVOS / PDF
+# =============================================================
+
+
+def _build_absolute_url(
+    request,
+    file_field,
+):
+    try:
+        if (
+            not file_field
+            or not getattr(
+                file_field,
+                "name",
+                None,
+            )
+        ):
+            return None
+
+        url = file_field.url
+
+    except (
+        AttributeError,
+        ValueError,
+    ):
+        return None
+
+    if request:
+        try:
+            return (
+                request.build_absolute_uri(
+                    url
+                )
+            )
+        except Exception:
+            pass
+
+    return url
+
+
+def _get_pdf_file(
+    publicacion,
+):
+    # ---------------------------------------------------------
+    # 1. PDF principal
+    # ---------------------------------------------------------
+
+    archivo_pdf = getattr(
+        publicacion,
+        "archivo_pdf",
+        None,
+    )
+
+    if (
+        archivo_pdf
+        and getattr(
+            archivo_pdf,
+            "name",
+            None,
+        )
+    ):
         return archivo_pdf
 
-    prefetched = getattr(publicacion, "_prefetched_objects_cache", {})
+    # ---------------------------------------------------------
+    # 2. Adjuntos prefetched
+    # ---------------------------------------------------------
+
+    prefetched = getattr(
+        publicacion,
+        "_prefetched_objects_cache",
+        {},
+    )
 
     if "archivos" in prefetched:
-        for adjunto in prefetched["archivos"]:
-            archivo = getattr(adjunto, "archivo", None)
-            if archivo and getattr(archivo, "name", None):
+        archivos = sorted(
+            prefetched["archivos"],
+            key=lambda item: (
+                getattr(
+                    item,
+                    "orden",
+                    0,
+                ),
+                getattr(
+                    item,
+                    "id",
+                    0,
+                ),
+            ),
+        )
+
+        for adjunto in archivos:
+            archivo = getattr(
+                adjunto,
+                "archivo",
+                None,
+            )
+
+            if (
+                archivo
+                and getattr(
+                    archivo,
+                    "name",
+                    None,
+                )
+            ):
                 return archivo
+
         return None
+
+    # ---------------------------------------------------------
+    # 3. Consulta de respaldo
+    # ---------------------------------------------------------
 
     try:
         adjunto = (
-            publicacion.archivos.filter(archivo__isnull=False)
-            .exclude(archivo="")
-            .order_by("orden", "id")
+            publicacion.archivos
+            .exclude(
+                archivo=""
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
             .first()
         )
+
     except Exception:
         return None
 
-    if adjunto and adjunto.archivo and getattr(adjunto.archivo, "name", None):
-        return adjunto.archivo
+    if not adjunto:
+        return None
+
+    archivo = getattr(
+        adjunto,
+        "archivo",
+        None,
+    )
+
+    if (
+        archivo
+        and getattr(
+            archivo,
+            "name",
+            None,
+        )
+    ):
+        return archivo
 
     return None
 
 
-def publicacion_has_pdf(publicacion):
-    annotated = getattr(publicacion, "tiene_adjuntos_pdf", None)
-
-    archivo_pdf = getattr(publicacion, "archivo_pdf", None)
-    has_main_pdf = bool(archivo_pdf and getattr(archivo_pdf, "name", None))
-
-    if annotated is not None:
-        return bool(has_main_pdf or annotated)
-
-    return bool(_get_pdf_file(publicacion))
-
-
-def publicacion_pdf_url(request, publicacion):
-    return _build_absolute_url(request, _get_pdf_file(publicacion))
-
-
-def get_publicacion_title_and_venue(publicacion):
-    codigo = (getattr(getattr(publicacion, "tipo", None), "codigo", "") or "").lower()
-
-    if codigo in {"articulo", "articulo_regional", "articulo_alto_impacto"} and getattr(publicacion, "articulo", None):
-        return (
-            (publicacion.articulo.nombre_articulo or "").strip() or "—",
-            (publicacion.articulo.nombre_revista or "").strip() or None,
-        )
-
-    if codigo == "ponencia" and getattr(publicacion, "ponencia", None):
-        return (
-            (publicacion.ponencia.nombre_ponencia or "").strip() or "—",
-            (publicacion.ponencia.nombre_evento or "").strip() or None,
-        )
-
-    if codigo == "libro" and getattr(publicacion, "libro", None):
-        return (
-            (publicacion.libro.nombre_libro or "").strip() or "—",
-            (publicacion.libro.editorial_compilador or "").strip() or None,
-        )
-
-    if codigo in {"capitulo", "capitulo_libro"} and getattr(publicacion, "capitulo_libro", None):
-        return (
-            (publicacion.capitulo_libro.nombre_capitulo or "").strip() or "—",
-            (publicacion.capitulo_libro.nombre_libro or "").strip() or None,
-        )
-
-    tipo_nombre = getattr(getattr(publicacion, "tipo", None), "nombre", None) or "Publicación"
-    numero = getattr(publicacion, "numero", None) or publicacion.id
-    return f"{tipo_nombre} #{numero}", None
-
-
-def get_author_authors_string(publicacion_id: int) -> str:
-    rels = (
-        PublicacionAutor.objects
-        .select_related("autor")
-        .filter(publicacion_id=publicacion_id)
-        .order_by("orden", "id")
+def publicacion_has_pdf(
+    publicacion,
+):
+    annotated = getattr(
+        publicacion,
+        "tiene_adjuntos_pdf",
+        None,
     )
 
+    archivo_pdf = getattr(
+        publicacion,
+        "archivo_pdf",
+        None,
+    )
+
+    has_main_pdf = bool(
+        archivo_pdf
+        and getattr(
+            archivo_pdf,
+            "name",
+            None,
+        )
+    )
+
+    if annotated is not None:
+        return bool(
+            has_main_pdf
+            or annotated
+        )
+
+    return bool(
+        _get_pdf_file(
+            publicacion
+        )
+    )
+
+
+def publicacion_pdf_url(
+    request,
+    publicacion,
+):
+    return _build_absolute_url(
+        request,
+        _get_pdf_file(
+            publicacion
+        ),
+    )
+
+
+# =============================================================
+# TÍTULO / SEDE
+# =============================================================
+
+
+def get_publicacion_title_and_venue(
+    publicacion,
+):
+    articulo = _safe_related(
+        publicacion,
+        "articulo",
+    )
+
+    if articulo:
+        return (
+            _to_str(
+                articulo.nombre_articulo
+            )
+            or "—",
+            _to_str(
+                articulo.nombre_revista
+            )
+            or None,
+        )
+
+    ponencia = _safe_related(
+        publicacion,
+        "ponencia",
+    )
+
+    if ponencia:
+        return (
+            _to_str(
+                ponencia.nombre_ponencia
+            )
+            or "—",
+            _to_str(
+                ponencia.nombre_evento
+            )
+            or None,
+        )
+
+    libro = _safe_related(
+        publicacion,
+        "libro",
+    )
+
+    if libro:
+        return (
+            _to_str(
+                libro.nombre_libro
+            )
+            or "—",
+            _to_str(
+                libro.editorial_compilador
+            )
+            or None,
+        )
+
+    capitulo = _safe_related(
+        publicacion,
+        "capitulo_libro",
+    )
+
+    if capitulo:
+        return (
+            _to_str(
+                capitulo.nombre_capitulo
+            )
+            or "—",
+            _to_str(
+                capitulo.nombre_libro
+            )
+            or None,
+        )
+
+    tipo = getattr(
+        publicacion,
+        "tipo",
+        None,
+    )
+
+    tipo_nombre = (
+        _to_str(
+            getattr(
+                tipo,
+                "nombre",
+                None,
+            )
+        )
+        or "Publicación"
+    )
+
+    numero = (
+        getattr(
+            publicacion,
+            "numero",
+            None,
+        )
+        or publicacion.id
+    )
+
+    return (
+        f"{tipo_nombre} #{numero}",
+        None,
+    )
+
+
+# =============================================================
+# AUTORES
+# =============================================================
+
+
+def _get_publicacion_autor_rels(
+    publicacion,
+):
+    participaciones = getattr(
+        publicacion,
+        "participaciones_ordenadas",
+        None,
+    )
+
+    if participaciones is not None:
+        return participaciones
+
+    prefetched = getattr(
+        publicacion,
+        "_prefetched_objects_cache",
+        {},
+    )
+
+    if "participaciones" in prefetched:
+        return sorted(
+            prefetched[
+                "participaciones"
+            ],
+            key=lambda item: (
+                getattr(
+                    item,
+                    "orden",
+                    0,
+                ),
+                getattr(
+                    item,
+                    "id",
+                    0,
+                ),
+            ),
+        )
+
+    return (
+        PublicacionAutor.objects
+        .select_related(
+            "autor",
+            "autor__usuario",
+        )
+        .filter(
+            publicacion=publicacion
+        )
+        .order_by(
+            "orden",
+            "id",
+        )
+    )
+
+
+def _author_name(
+    author,
+):
+    if not author:
+        return "—"
+
+    name = (
+        f"{_to_str(author.nombres)} "
+        f"{_to_str(author.apellidos)}"
+    ).strip()
+
+    return (
+        name
+        or _to_str(
+            author.correo
+        )
+        or _to_str(
+            author.identificacion
+        )
+        or "—"
+    )
+
+
+def get_author_authors_string(
+    publicacion,
+) -> str:
     names = []
-    for rel in rels:
-        autor = getattr(rel, "autor", None)
+
+    for rel in _get_publicacion_autor_rels(
+        publicacion
+    ):
+        autor = getattr(
+            rel,
+            "autor",
+            None,
+        )
+
         if not autor:
             continue
 
-        label = f"{autor.nombres or ''} {autor.apellidos or ''}".strip()
-        if label:
-            names.append(label)
+        label = _author_name(
+            autor
+        )
 
-    return ", ".join(names) if names else "—"
+        if (
+            label
+            and label != "—"
+        ):
+            names.append(
+                label
+            )
 
-
-def build_public_profile_payload(*, request, author, is_me=False):
-    user = getattr(author, "usuario", None)
-
-    name = f"{author.nombres or ''} {author.apellidos or ''}".strip() or "—"
-    org = get_author_org_label(author)
-    avatar = get_user_avatar_absolute_url(request, user)
-
-    publicacion_ids = (
-        PublicacionAutor.objects
-        .filter(autor_id=author.id)
-        .values_list("publicacion_id", flat=True)
-        .distinct()
+    return (
+        ", ".join(names)
+        if names
+        else "—"
     )
 
-    adjuntos_pdf = (
-        PublicacionArchivo.objects.filter(
-            publicacion_id=OuterRef("pk"),
-            archivo__isnull=False,
+
+# =============================================================
+# PERFIL
+# =============================================================
+
+
+def build_public_profile_payload(
+    *,
+    request,
+    author,
+    is_me=False,
+):
+    user = getattr(
+        author,
+        "usuario",
+        None,
+    )
+
+    name = _author_name(
+        author
+    )
+
+    org = get_author_org_label(
+        author
+    )
+
+    avatar = (
+        get_user_avatar_absolute_url(
+            request,
+            user,
         )
-        .exclude(archivo="")
+    )
+
+    # ---------------------------------------------------------
+    # Publicaciones asociadas
+    #
+    # Se consideran:
+    # - relación PublicacionAutor;
+    # - publicaciones creadas por el usuario vinculado,
+    #   útil para registros históricos incompletos.
+    # ---------------------------------------------------------
+
+    filtros = Q(
+        participaciones__autor_id=(
+            author.id
+        )
+    )
+
+    if user:
+        filtros |= Q(
+            usuario_creador=user
+        )
+
+    adjuntos_pdf = (
+        PublicacionArchivo.objects
+        .filter(
+            publicacion_id=(
+                OuterRef("pk")
+            ),
+        )
+        .exclude(
+            archivo=""
+        )
+    )
+
+    autores_prefetch = Prefetch(
+        "participaciones",
+        queryset=(
+            PublicacionAutor.objects
+            .select_related(
+                "autor",
+                "autor__usuario",
+                "autor__usuario__carrera",
+                "autor__usuario__carrera__facultad",
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
+        ),
+        to_attr=(
+            "participaciones_ordenadas"
+        ),
+    )
+
+    publicaciones_qs = (
+        Publicacion.objects
+        .select_related(
+            "tipo",
+            "proyecto",
+            "carrera",
+            "carrera__facultad",
+            "articulo",
+            "ponencia",
+            "libro",
+            "capitulo_libro",
+        )
+        .prefetch_related(
+            autores_prefetch,
+            "archivos",
+        )
+        .annotate(
+            tiene_adjuntos_pdf=Exists(
+                adjuntos_pdf
+            )
+        )
+        .filter(
+            filtros
+        )
+        .distinct()
     )
 
     publicaciones_qs = (
         annotate_tipo_publicacion_final(
-            Publicacion.objects
-            .select_related(
-                "tipo",
-                "carrera",
-                "carrera__facultad",
-                "articulo",
-                "ponencia",
-                "libro",
-                "capitulo_libro",
-            )
-            .prefetch_related("archivos")
-            .annotate(tiene_adjuntos_pdf=Exists(adjuntos_pdf))
-            .filter(id__in=publicacion_ids)
+            publicaciones_qs
         )
-        .order_by("-anio_publicacion", "-id")
+        .exclude(
+            tipo_publicacion_final=(
+                "sin_clasificar"
+            )
+        )
+        .order_by(
+            "-anio_publicacion",
+            "-id",
+        )
     )
 
     publicaciones = []
+
+    years = []
+
+    coauthors_map = {}
+
     for pub in publicaciones_qs:
-        title, venue = get_publicacion_title_and_venue(pub)
-        tipo_final = getattr(pub, "tipo_publicacion_final", "sin_clasificar")
-        has_pdf = publicacion_has_pdf(pub)
-        pdf_url = publicacion_pdf_url(request, pub)
+        title, venue = (
+            get_publicacion_title_and_venue(
+                pub
+            )
+        )
+
+        tipo_final = getattr(
+            pub,
+            "tipo_publicacion_final",
+            "sin_clasificar",
+        )
+
+        has_pdf = publicacion_has_pdf(
+            pub
+        )
+
+        pdf_url = publicacion_pdf_url(
+            request,
+            pub,
+        )
+
+        year = getattr(
+            pub,
+            "anio_publicacion",
+            None,
+        )
+
+        if year:
+            years.append(
+                int(year)
+            )
+
+        # -----------------------------------------------------
+        # Coautores
+        # -----------------------------------------------------
+
+        for rel in _get_publicacion_autor_rels(
+            pub
+        ):
+            coauthor = getattr(
+                rel,
+                "autor",
+                None,
+            )
+
+            if (
+                not coauthor
+                or coauthor.id == author.id
+            ):
+                continue
+
+            if (
+                coauthor.id
+                not in coauthors_map
+            ):
+                coauthor_user = getattr(
+                    coauthor,
+                    "usuario",
+                    None,
+                )
+
+                coauthors_map[
+                    coauthor.id
+                ] = {
+                    "id": coauthor.id,
+                    "name": _author_name(
+                        coauthor
+                    ),
+                    "org": (
+                        get_author_org_label(
+                            coauthor
+                        )
+                    ),
+                    "avatar": (
+                        get_user_avatar_absolute_url(
+                            request,
+                            coauthor_user,
+                        )
+                    ),
+                }
 
         publicaciones.append(
             {
                 "id": pub.id,
+
                 "title": title,
                 "titulo": title,
-                "authors": get_author_authors_string(pub.id),
+
+                "authors": (
+                    get_author_authors_string(
+                        pub
+                    )
+                ),
+
                 "venue": venue,
+
+                # No existe todavía un modelo de citas
+                # científicas en el dominio.
                 "citedBy": 0,
-                "year": getattr(pub, "anio_publicacion", None),
-                "anio_publicacion": getattr(pub, "anio_publicacion", None),
-                "type": {
-                    "id": pub.tipo_id,
-                    "nombre": pub.tipo.nombre if pub.tipo else None,
-                    "codigo": pub.tipo.codigo if pub.tipo else None,
-                }
-                if pub.tipo
-                else None,
-                "tipo_publicacion_final": tipo_final,
-                "tipo_publicacion_final_label": tipo_publicacion_label(tipo_final),
+
+                "year": year,
+                "anio_publicacion": year,
+
+                "type": (
+                    {
+                        "id": pub.tipo_id,
+                        "nombre": (
+                            pub.tipo.nombre
+                        ),
+                        "codigo": (
+                            pub.tipo.codigo
+                        ),
+                    }
+                    if pub.tipo
+                    else None
+                ),
+
+                "tipo_publicacion_final": (
+                    tipo_final
+                ),
+
+                "tipo_publicacion_final_label": (
+                    tipo_publicacion_label(
+                        tipo_final
+                    )
+                ),
+
                 "hasPdf": has_pdf,
                 "has_pdf": has_pdf,
                 "tiene_pdf": has_pdf,
+
                 "pdf_url": pdf_url,
-                "archivo_pdf_url": pdf_url,
+                "archivo_pdf_url": (
+                    pdf_url
+                ),
             }
         )
 
+    since_year = (
+        min(years)
+        if years
+        else None
+    )
+
     payload = {
         "id": author.id,
+
         "name": name,
         "org": org,
         "avatar": avatar,
+
         "verified": None,
+
         "tags": [],
-        "sinceYear": 2019,
+
+        # Ya no se fija artificialmente en 2019.
+        "sinceYear": since_year,
+
+        # El sistema actualmente no posee un modelo
+        # de citas bibliométricas, por lo que estos
+        # indicadores se mantienen en cero.
         "metrics": {
             "citesTotal": 0,
             "citesSince": 0,
@@ -260,8 +973,14 @@ def build_public_profile_payload(*, request, author, is_me=False):
             "i10Total": 0,
             "i10Since": 0,
         },
-        "publications": publicaciones,
-        "coauthors": [],
+
+        "publications": (
+            publicaciones
+        ),
+
+        "coauthors": list(
+            coauthors_map.values()
+        ),
     }
 
     if is_me:

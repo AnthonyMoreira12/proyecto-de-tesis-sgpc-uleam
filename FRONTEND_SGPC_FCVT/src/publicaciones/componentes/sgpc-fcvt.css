@@ -87,10 +87,6 @@
     0 14px 34px rgba(23, 32, 51, 0.085)
   );
 
-  /*
-   * Sistema de radios simplificado.
-   * Evita tener demasiados radios visualmente distintos.
-   */
   --sgpc-radius-xl: 18px;
   --sgpc-radius-lg: 14px;
   --sgpc-radius-md: 12px;
@@ -152,6 +148,12 @@
 
   min-height: 100%;
 
+  /*
+   * Los contenedores internos no deben recortar la tarjeta
+   * lateral mientras acompaña el desplazamiento.
+   */
+  overflow: visible;
+
   color: var(--sgpc-text);
 
   font-family: var(--sgpc-font-body);
@@ -210,12 +212,16 @@
   margin: 0 auto;
 
   padding: clamp(16px, 2vw, 26px);
+
+  overflow: visible;
 }
 
 .sgpc-form {
   display: grid;
 
   gap: 20px;
+
+  overflow: visible;
 }
 
 .sgpc-form--with-aside {
@@ -239,19 +245,30 @@
 }
 
 .sgpc-form-aside {
-  position: sticky;
+  position: relative !important;
 
-  top: var(--sgpc-scroll-offset);
+  top: auto !important;
 
+  align-self: stretch;
+
+  display: block !important;
+
+  width: 100%;
   min-width: 0;
+  height: auto;
+
+  overflow: visible !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
 
   /*
-   * Se elimina el scroll interno.
-   * La página mantiene un único desplazamiento vertical.
+   * Evita interferencias de reglas globales aplicadas
+   * mediante la clase page-aside.
    */
-  max-height: none;
+  transform: none !important;
 
-  overflow: visible;
+  z-index: 20;
 }
 
 /* =========================================================
@@ -322,10 +339,6 @@
   pointer-events: none;
 }
 
-/*
- * Distribución real del encabezado.
- * El template ya utiliza esta clase.
- */
 .sgpc-publication-header {
   grid-template-columns:
     minmax(0, 1fr)
@@ -616,10 +629,6 @@
   scroll-margin-top: var(--sgpc-scroll-offset);
 }
 
-/*
- * No se utiliza hover en toda la tarjeta.
- * Una tarjeta estática no debe parecer un botón.
- */
 .sgpc-card:focus-within {
   border-color: var(--sgpc-primary-line);
 
@@ -1813,6 +1822,8 @@
 .sgpc-summary-card {
   position: relative;
 
+  width: 100%;
+
   overflow: hidden;
 
   padding: 15px;
@@ -2036,10 +2047,6 @@
     transform 150ms ease;
 }
 
-/*
- * Estado pendiente visible.
- * Antes aparecía un cuadro vacío.
- */
 .sgpc-status-item::before {
   content: "•";
 
@@ -2193,7 +2200,115 @@
 }
 
 /* =========================================================
-   14. INDICADOR DE CARGA
+   14. RESUMEN LATERAL STICKY EN ESCRITORIO
+========================================================= */
+
+@media (min-width: 1161px) {
+  .sgpc-form-page .sgpc-form--with-aside {
+    overflow: visible !important;
+  }
+
+  .sgpc-form-page .sgpc-form-aside {
+    position: relative !important;
+
+    top: auto !important;
+
+    align-self: stretch !important;
+
+    overflow: visible !important;
+  }
+
+  /*
+   * Esta es la sección que acompaña al usuario durante
+   * todo el desplazamiento del formulario.
+   */
+  .sgpc-form-page .sgpc-summary-card {
+    position: sticky !important;
+
+    top: var(--sgpc-scroll-offset) !important;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+
+    max-height: calc(
+      100dvh - var(--sgpc-scroll-offset) - 16px
+    );
+
+    overflow: hidden;
+
+    transform: none !important;
+
+    z-index: 30;
+  }
+
+  .sgpc-summary-head,
+  .sgpc-progress,
+  .sgpc-summary-actions {
+    flex: 0 0 auto;
+  }
+
+  /*
+   * Si la tarjeta supera la altura disponible, solamente
+   * se desplaza la lista. Los botones siguen visibles.
+   */
+  .sgpc-status-list {
+    flex: 1 1 auto;
+
+    min-height: 0;
+
+    padding-right: 4px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+
+    scrollbar-color:
+      var(--sgpc-primary-line)
+      transparent;
+  }
+
+  .sgpc-status-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sgpc-status-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sgpc-status-list::-webkit-scrollbar-thumb {
+    border-radius: var(--sgpc-radius-pill);
+
+    background: var(--sgpc-primary-line);
+  }
+
+  .sgpc-summary-actions {
+    position: relative;
+
+    z-index: 2;
+
+    margin-top: 12px;
+
+    padding-top: 13px;
+
+    border-top: 1px solid var(--sgpc-line);
+
+    background: var(--sgpc-surface);
+
+    box-shadow:
+      0 -10px 18px
+      color-mix(
+        in srgb,
+        var(--sgpc-surface) 90%,
+        transparent
+      );
+  }
+}
+
+/* =========================================================
+   15. INDICADOR DE CARGA
 ========================================================= */
 
 .sgpc-spinner {
@@ -2224,7 +2339,7 @@
 }
 
 /* =========================================================
-   15. PUENTE VISUAL · DATOS GENERALES
+   16. PUENTE VISUAL · DATOS GENERALES
 ========================================================= */
 
 .sgpc-form-page :where(.dg) {
@@ -2395,7 +2510,7 @@
 }
 
 /* =========================================================
-   16. PUENTE VISUAL · AUTORES
+   17. PUENTE VISUAL · AUTORES
 ========================================================= */
 
 .sgpc-form-page
@@ -2519,7 +2634,7 @@
 }
 
 /* =========================================================
-   17. MODO OSCURO
+   18. MODO OSCURO
 ========================================================= */
 
 html.dark .sgpc-form-page,
@@ -2576,7 +2691,7 @@ body.dark
 }
 
 /* =========================================================
-   18. RESPONSIVE · TABLET GRANDE
+   19. RESPONSIVE · TABLET GRANDE
 ========================================================= */
 
 @media (max-width: 1160px) {
@@ -2585,13 +2700,26 @@ body.dark
   }
 
   /*
-   * En tablet el resumen aparece antes del formulario.
-   * Así las acciones no quedan al final de toda la página.
+   * En tablet y móvil el resumen aparece después del formulario,
+   * inmediatamente después de la sección de adjuntos.
    */
   .sgpc-form-aside {
-    position: static;
+    position: static !important;
+
+    top: auto !important;
 
     order: -1;
+
+    width: 100%;
+    max-height: none;
+
+    overflow: visible !important;
+  }
+
+  .sgpc-summary-card {
+    position: relative !important;
+
+    top: auto !important;
 
     max-height: none;
 
@@ -2643,7 +2771,7 @@ body.dark
 }
 
 /* =========================================================
-   19. RESPONSIVE · TABLET
+   20. RESPONSIVE · TABLET
 ========================================================= */
 
 @media (max-width: 920px) {
@@ -2712,7 +2840,7 @@ body.dark
 }
 
 /* =========================================================
-   20. RESPONSIVE · MÓVIL HORIZONTAL
+   21. RESPONSIVE · MÓVIL HORIZONTAL
 ========================================================= */
 
 @media (max-width: 760px) {
@@ -2829,7 +2957,7 @@ body.dark
 }
 
 /* =========================================================
-   21. RESPONSIVE · MÓVIL
+   22. RESPONSIVE · MÓVIL
 ========================================================= */
 
 @media (max-width: 620px) {
@@ -2896,7 +3024,7 @@ body.dark
 }
 
 /* =========================================================
-   22. RESPONSIVE · MÓVIL PEQUEÑO
+   23. RESPONSIVE · MÓVIL PEQUEÑO
 ========================================================= */
 
 @media (max-width: 480px) {
@@ -2973,7 +3101,7 @@ body.dark
 }
 
 /* =========================================================
-   23. MOVIMIENTO REDUCIDO
+   24. MOVIMIENTO REDUCIDO
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {

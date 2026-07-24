@@ -1,7 +1,26 @@
 """
-Servicio para construir el detalle completo de una publicación según su tipo.
-Incluye PDF principal y archivos adjuntos asociados.
+Servicio para construir el detalle completo de una publicación.
+
+La respuesta mantiene compatibilidad con las interfaces
+actuales del SGPC y respeta la estructura normalizada:
+
+    Publicacion -> Carrera -> Facultad
+
+Incluye:
+- datos generales;
+- tipo final;
+- autores;
+- PDF principal;
+- adjuntos;
+- datos específicos de artículo;
+- ponencia;
+- libro;
+- capítulo de libro.
 """
+
+import os
+
+from django.db.models import Prefetch
 
 from core.models import (
     Articulo,
@@ -17,116 +36,335 @@ from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
 )
 
 
+ARTICULO_CODES = {
+    "articulo",
+    "articulo_regional",
+    "articulo_alto_impacto",
+}
+
+CAPITULO_CODES = {
+    "capitulo",
+    "capitulo_libro",
+}
+
+
+def _to_str(value):
+    return (
+        ""
+        if value is None
+        else str(value).strip()
+    )
+
+
+def _to_lower(value):
+    value = _to_str(value)
+
+    return (
+        value.lower()
+        if value
+        else ""
+    )
+
+
 def _fecha_a_str(value):
     if not value:
         return None
 
     try:
         return value.isoformat()
-    except Exception:
+    except (
+        AttributeError,
+        ValueError,
+    ):
         return str(value)
 
 
-def _safe_related(obj, rel_name):
+def _safe_related(
+    obj,
+    relation_name,
+):
+    if obj is None:
+        return None
+
     try:
-        return getattr(obj, rel_name)
+        return getattr(
+            obj,
+            relation_name,
+        )
+    except (
+        AttributeError,
+        ObjectDoesNotExist,
+    ):
+        return None
     except Exception:
         return None
 
 
-def _safe_file_url(file_field):
-    try:
-        if not file_field:
-            return None
+# Evita importar ObjectDoesNotExist arriba únicamente
+# para una función pequeña sin perder compatibilidad.
+try:
+    from django.core.exceptions import (
+        ObjectDoesNotExist,
+    )
+except ImportError:
+    ObjectDoesNotExist = Exception
 
-        if not getattr(file_field, "name", None):
+
+def _safe_file_url(
+    file_field,
+):
+    try:
+        if (
+            not file_field
+            or not getattr(
+                file_field,
+                "name",
+                None,
+            )
+        ):
             return None
 
         return file_field.url
-    except Exception:
+
+    except (
+        AttributeError,
+        ValueError,
+    ):
         return None
 
 
-def _safe_file_name(file_field):
-    try:
-        if not file_field:
-            return None
+def _safe_file_name(
+    file_field,
+):
+    name = _to_str(
+        getattr(
+            file_field,
+            "name",
+            None,
+        )
+    )
 
-        name = getattr(file_field, "name", None)
-        if not name:
-            return None
-
-        return name.split("/")[-1]
-    except Exception:
+    if not name:
         return None
 
-
-def _to_str(value):
-    return "" if value is None else str(value).strip()
-
-
-def _to_lower(value):
-    value = _to_str(value)
-    return value.lower() if value else ""
+    return (
+        os.path.basename(name)
+        or None
+    )
 
 
-def _get_facultad_desde_publicacion(pub):
+def _get_facultad_desde_publicacion(
+    publicacion,
+):
     """
-    La publicación ya no tiene facultad directa.
-    La facultad se obtiene mediante:
-    Publicacion -> Carrera -> Facultad
-    """
-    carrera = _safe_related(pub, "carrera")
+    Facultad NO es una FK de Publicacion.
 
-    if not carrera:
+    Publicacion
+        -> Carrera
+            -> Facultad
+    """
+
+    carrera = _safe_related(
+        publicacion,
+        "carrera",
+    )
+
+    if carrera is None:
         return None
 
-    return _safe_related(carrera, "facultad")
+    return _safe_related(
+        carrera,
+        "facultad",
+    )
 
 
-def _build_archivos_payload(pub):
-    """
-    Devuelve todos los archivos PDF asociados a una publicación.
+def _get_autores_payload(
+    publicacion,
+):
+    participaciones = getattr(
+        publicacion,
+        "participaciones_ordenadas",
+        None,
+    )
 
-    Incluye:
-    - PDF principal: Publicacion.archivo_pdf
-    - Adjuntos: PublicacionArchivo mediante related_name='archivos'
-    """
+    if participaciones is None:
+        participaciones = (
+            PublicacionAutor.objects
+            .select_related(
+                "autor"
+            )
+            .filter(
+                publicacion=publicacion
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
+        )
+
+    result = []
+
+    for participacion in participaciones:
+        autor = getattr(
+            participacion,
+            "autor",
+            None,
+        )
+
+        if autor is None:
+            continue
+
+        nombres = _to_str(
+            getattr(
+                autor,
+                "nombres",
+                None,
+            )
+        )
+
+        apellidos = _to_str(
+            getattr(
+                autor,
+                "apellidos",
+                None,
+            )
+        )
+
+        nombre_completo = (
+            f"{nombres} {apellidos}"
+        ).strip()
+
+        if not nombre_completo:
+            nombre_completo = (
+                _to_str(
+                    getattr(
+                        autor,
+                        "correo",
+                        None,
+                    )
+                )
+                or _to_str(
+                    getattr(
+                        autor,
+                        "identificacion",
+                        None,
+                    )
+                )
+                or "Autor"
+            )
+
+        result.append(
+            {
+                "id": autor.id,
+                "autor_id": autor.id,
+                "nombre": nombre_completo,
+                "autor_nombre": nombre_completo,
+                "nombre_completo": nombre_completo,
+                "rol_autoria": (
+                    participacion.rol_autoria
+                ),
+                "orden": (
+                    participacion.orden
+                ),
+            }
+        )
+
+    return result
+
+
+def _build_archivos_payload(
+    publicacion,
+):
     archivos = []
 
-    pdf_principal_url = _safe_file_url(pub.archivo_pdf)
+    # ---------------------------------------------------------
+    # PDF principal
+    # ---------------------------------------------------------
 
-    if pdf_principal_url:
+    principal_url = (
+        _safe_file_url(
+            publicacion.archivo_pdf
+        )
+    )
+
+    if principal_url:
         archivos.append(
             {
                 "id": None,
                 "tipo": "principal",
-                "nombre": _safe_file_name(pub.archivo_pdf) or "PDF principal",
-                "archivo": pdf_principal_url,
-                "url": pdf_principal_url,
+                "nombre": (
+                    _safe_file_name(
+                        publicacion.archivo_pdf
+                    )
+                    or "PDF principal"
+                ),
+                "archivo": principal_url,
+                "url": principal_url,
                 "orden": 0,
                 "es_principal": True,
             }
         )
 
-    try:
-        adjuntos_qs = pub.archivos.all().order_by("orden", "id")
-    except Exception:
-        adjuntos_qs = []
+    # ---------------------------------------------------------
+    # Adjuntos
+    # ---------------------------------------------------------
 
-    for adjunto in adjuntos_qs:
-        adjunto_url = _safe_file_url(adjunto.archivo)
+    prefetched = getattr(
+        publicacion,
+        "_prefetched_objects_cache",
+        {},
+    )
 
-        if not adjunto_url:
+    if "archivos" in prefetched:
+        adjuntos = sorted(
+            prefetched["archivos"],
+            key=lambda item: (
+                getattr(
+                    item,
+                    "orden",
+                    0,
+                ),
+                getattr(
+                    item,
+                    "id",
+                    0,
+                ),
+            ),
+        )
+
+    else:
+        adjuntos = (
+            publicacion.archivos
+            .all()
+            .order_by(
+                "orden",
+                "id",
+            )
+        )
+
+    for adjunto in adjuntos:
+        url = _safe_file_url(
+            adjunto.archivo
+        )
+
+        if not url:
             continue
 
         archivos.append(
             {
                 "id": adjunto.id,
                 "tipo": "adjunto",
-                "nombre": adjunto.nombre or _safe_file_name(adjunto.archivo) or "Adjunto",
-                "archivo": adjunto_url,
-                "url": adjunto_url,
+                "nombre": (
+                    _to_str(
+                        adjunto.nombre
+                    )
+                    or _safe_file_name(
+                        adjunto.archivo
+                    )
+                    or "Adjunto"
+                ),
+                "archivo": url,
+                "url": url,
                 "orden": adjunto.orden,
                 "es_principal": False,
             }
@@ -135,231 +373,611 @@ def _build_archivos_payload(pub):
     return archivos
 
 
-def _get_archivo_pdf_principal_o_adjunto(pub, archivos):
-    """
-    Mantiene compatibilidad con el frontend:
-    si Publicacion.archivo_pdf existe, usa ese.
-    si no existe, usa el primer adjunto disponible.
-    """
-    pdf_principal_url = _safe_file_url(pub.archivo_pdf)
+def _get_pdf_principal_o_adjunto(
+    publicacion,
+    archivos,
+):
+    principal_url = (
+        _safe_file_url(
+            publicacion.archivo_pdf
+        )
+    )
 
-    if pdf_principal_url:
-        return pdf_principal_url
+    if principal_url:
+        return principal_url
 
     for archivo in archivos:
-        url = archivo.get("url") or archivo.get("archivo")
+        if archivo.get(
+            "es_principal"
+        ):
+            continue
+
+        url = (
+            archivo.get("url")
+            or archivo.get("archivo")
+        )
+
         if url:
             return url
 
     return None
 
 
-def _get_articulo_payload(articulo):
-    if not articulo:
+def _get_articulo_payload(
+    articulo,
+):
+    if articulo is None:
         return {}
 
-    tipo_articulo = _to_lower(getattr(articulo, "tipo_articulo", None))
+    tipo_articulo = _to_lower(
+        articulo.tipo_articulo
+    )
 
-    base_datos_indexada = getattr(articulo, "base_datos_indexada", None)
-    base_datos_otra = getattr(articulo, "base_datos_otra", None)
+    base_datos = (
+        articulo.base_datos_indexada
+    )
 
-    factor_impacto = getattr(articulo, "factor_impacto", None)
-    cuartil = getattr(articulo, "cuartil", None)
-    sjr = getattr(articulo, "sjr", None)
+    base_datos_otra = (
+        articulo.base_datos_otra
+    )
+
+    factor_impacto = (
+        articulo.factor_impacto
+    )
+
+    cuartil = articulo.cuartil
+    sjr = articulo.sjr
+
+    # ---------------------------------------------------------
+    # Regional
+    # ---------------------------------------------------------
 
     if tipo_articulo == "regional":
         factor_impacto = None
         cuartil = None
         sjr = None
 
-        base_norm = _to_lower(base_datos_indexada)
-        if not base_norm:
-            base_datos_indexada = None
-
-        if base_norm != "otra":
+        if (
+            _to_lower(base_datos)
+            != "otra"
+        ):
             base_datos_otra = None
 
+    # ---------------------------------------------------------
+    # Alto impacto
+    # ---------------------------------------------------------
+
     elif tipo_articulo == "alto_impacto":
-        base_datos_indexada = None
+        base_datos = None
         base_datos_otra = None
 
-        factor_impacto = _to_lower(factor_impacto) or None
-        cuartil = _to_lower(cuartil) or None
-        sjr = _to_str(sjr) or None
+        factor_impacto = (
+            _to_lower(
+                factor_impacto
+            )
+            or None
+        )
+
+        cuartil = (
+            _to_lower(
+                cuartil
+            )
+            or None
+        )
+
+        sjr = (
+            _to_str(sjr)
+            or None
+        )
+
+        if factor_impacto != "sjr":
+            sjr = None
 
     return {
         "tipo_articulo": tipo_articulo,
-        "nombre_articulo": articulo.nombre_articulo,
-        "nombre_revista": articulo.nombre_revista,
-        "base_datos_indexada": base_datos_indexada,
-        "base_datos_otra": base_datos_otra,
-        "codigo_issn": articulo.codigo_issn,
-        "codigo_doi": articulo.codigo_doi,
-        "factor_impacto": factor_impacto,
+        "nombre_articulo": (
+            articulo.nombre_articulo
+        ),
+        "base_datos_indexada": (
+            base_datos
+        ),
+        "base_datos_otra": (
+            base_datos_otra
+        ),
+        "codigo_doi": (
+            articulo.codigo_doi
+        ),
+        "codigo_issn": (
+            articulo.codigo_issn
+        ),
+        "nombre_revista": (
+            articulo.nombre_revista
+        ),
+        "numero_revista": (
+            articulo.numero_revista
+        ),
+        "link_revista": (
+            articulo.link_revista
+        ),
+        "link_publicacion": (
+            articulo.link_publicacion
+        ),
+        "factor_impacto": (
+            factor_impacto
+        ),
         "cuartil": cuartil,
         "sjr": sjr,
-        "link_publicacion": articulo.link_publicacion,
-        "link_revista": articulo.link_revista,
-        "numero_revista": getattr(articulo, "numero_revista", None),
     }
 
 
-def construir_detalle_publicacion(*, publicacion_id: int):
-    pub = (
-        annotate_tipo_publicacion_final(
-            Publicacion.objects.select_related(
-                "usuario_creador",
-                "carrera__facultad",
-                "carrera",
-                "proyecto",
-                "area",
-                "subarea",
-                "pais",
-                "ciudad",
-                "tipo",
-                "articulo",
-                "ponencia",
-                "libro",
-                "capitulo_libro",
+def construir_detalle_publicacion(
+    *,
+    publicacion_id,
+):
+    autores_prefetch = Prefetch(
+        "participaciones",
+        queryset=(
+            PublicacionAutor.objects
+            .select_related(
+                "autor"
             )
-            .prefetch_related("archivos")
-        )
-        .get(id=publicacion_id)
+            .order_by(
+                "orden",
+                "id",
+            )
+        ),
+        to_attr="participaciones_ordenadas",
     )
 
-    autores_rel = (
-        PublicacionAutor.objects.select_related("autor")
-        .filter(publicacion=pub)
-        .order_by("orden", "id")
+    queryset = (
+        Publicacion.objects
+        .select_related(
+            "usuario_creador",
+            "admin_registrador",
+
+            "tipo",
+            "proyecto",
+
+            "carrera",
+            "carrera__facultad",
+
+            "area",
+            "subarea",
+
+            "pais",
+            "ciudad",
+
+            "articulo",
+            "ponencia",
+            "libro",
+            "capitulo_libro",
+        )
+        .prefetch_related(
+            autores_prefetch,
+            "archivos",
+        )
     )
 
-    autores = []
-
-    for pa in autores_rel:
-        autores.append(
-            {
-                "autor_id": pa.autor.id,
-                "id": pa.autor.id,
-                "nombre": str(pa.autor),
-                "nombre_completo": str(pa.autor),
-                "rol_autoria": pa.rol_autoria,
-                "orden": pa.orden,
-            }
+    publicacion = (
+        annotate_tipo_publicacion_final(
+            queryset
         )
+        .get(
+            pk=publicacion_id
+        )
+    )
 
-    tipo = getattr(pub, "tipo", None)
-    codigo = ((getattr(tipo, "codigo", "") or "").strip().lower())
-    tipo_final = getattr(pub, "tipo_publicacion_final", "sin_clasificar")
+    tipo = publicacion.tipo
 
-    ARTICULOS = {"articulo", "articulo_regional", "articulo_alto_impacto"}
-    CAPITULOS = {"capitulo_libro", "capitulo"}
+    tipo_codigo = _to_lower(
+        getattr(
+            tipo,
+            "codigo",
+            None,
+        )
+    )
 
-    origen_tipo = str(pub.origen_tipo or "ninguno").strip().lower()
-    origen_grado = pub.origen_grado if origen_tipo == "tic" else None
+    tipo_categoria = _to_lower(
+        getattr(
+            tipo,
+            "categoria",
+            None,
+        )
+    )
 
-    facultad = _get_facultad_desde_publicacion(pub)
+    tipo_final = _to_lower(
+        getattr(
+            publicacion,
+            "tipo_publicacion_final",
+            None,
+        )
+    ) or "sin_clasificar"
 
-    archivos = _build_archivos_payload(pub)
-    archivo_pdf_url = _get_archivo_pdf_principal_o_adjunto(pub, archivos)
+    facultad = (
+        _get_facultad_desde_publicacion(
+            publicacion
+        )
+    )
+
+    archivos = (
+        _build_archivos_payload(
+            publicacion
+        )
+    )
+
+    archivo_pdf_url = (
+        _get_pdf_principal_o_adjunto(
+            publicacion,
+            archivos,
+        )
+    )
+
+    autores = (
+        _get_autores_payload(
+            publicacion
+        )
+    )
+
+    origen_tipo = (
+        _to_lower(
+            publicacion.origen_tipo
+        )
+        or "ninguno"
+    )
+
+    origen_grado = (
+        publicacion.origen_grado
+        if origen_tipo == "tic"
+        else None
+    )
 
     data = {
-        "id": pub.id,
-        "tipo": getattr(tipo, "nombre", None),
-        "tipo_codigo": getattr(tipo, "codigo", None),
-        "tipo_publicacion_final": tipo_final,
-        "tipo_publicacion_final_label": tipo_publicacion_label(tipo_final),
+        # -----------------------------------------------------
+        # Identidad
+        # -----------------------------------------------------
 
-        "proyecto": pub.proyecto.nombre if pub.proyecto else None,
-        "facultad": facultad.nombre if facultad else None,
-        "carrera": pub.carrera.nombre if pub.carrera else None,
-        "area": pub.area.nombre if pub.area else None,
-        "subarea": pub.subarea.nombre if pub.subarea else None,
-        "pais": pub.pais.nombre if (codigo == "ponencia" and pub.pais) else None,
-        "ciudad": pub.ciudad.nombre if (codigo == "ponencia" and pub.ciudad) else None,
+        "id": publicacion.id,
+        "numero": publicacion.numero,
 
-        "proyecto_id": pub.proyecto_id,
-        "facultad_id": facultad.id if facultad else None,
-        "carrera_id": pub.carrera_id,
-        "area_id": pub.area_id,
-        "subarea_id": pub.subarea_id,
-        "pais_id": pub.pais_id if codigo == "ponencia" else None,
-        "ciudad_id": pub.ciudad_id if codigo == "ponencia" else None,
+        "tipo": getattr(
+            tipo,
+            "nombre",
+            None,
+        ),
+        "tipo_codigo": tipo_codigo,
 
-        "fecha_publicacion": _fecha_a_str(pub.fecha_publicacion),
-        "anio_publicacion": pub.anio_publicacion,
+        "tipo_publicacion_final": (
+            tipo_final
+        ),
+        "tipo_publicacion_final_label": (
+            tipo_publicacion_label(
+                tipo_final
+            )
+        ),
+
+        # -----------------------------------------------------
+        # Relaciones institucionales
+        # -----------------------------------------------------
+
+        "proyecto_id": (
+            publicacion.proyecto_id
+        ),
+        "proyecto": (
+            publicacion.proyecto.nombre
+            if publicacion.proyecto
+            else None
+        ),
+
+        "facultad_id": (
+            facultad.id
+            if facultad
+            else None
+        ),
+        "facultad": (
+            facultad.nombre
+            if facultad
+            else None
+        ),
+
+        "carrera_id": (
+            publicacion.carrera_id
+        ),
+        "carrera": (
+            publicacion.carrera.nombre
+            if publicacion.carrera
+            else None
+        ),
+
+        "area_id": (
+            publicacion.area_id
+        ),
+        "area": (
+            publicacion.area.nombre
+            if publicacion.area
+            else None
+        ),
+
+        "subarea_id": (
+            publicacion.subarea_id
+        ),
+        "subarea": (
+            publicacion.subarea.nombre
+            if publicacion.subarea
+            else None
+        ),
+
+        # -----------------------------------------------------
+        # Localización
+        #
+        # Únicamente aplica a Ponencia.
+        # -----------------------------------------------------
+
+        "pais_id": (
+            publicacion.pais_id
+            if tipo_final == "ponencia"
+            else None
+        ),
+        "pais": (
+            publicacion.pais.nombre
+            if (
+                tipo_final == "ponencia"
+                and publicacion.pais
+            )
+            else None
+        ),
+
+        "ciudad_id": (
+            publicacion.ciudad_id
+            if tipo_final == "ponencia"
+            else None
+        ),
+        "ciudad": (
+            publicacion.ciudad.nombre
+            if (
+                tipo_final == "ponencia"
+                and publicacion.ciudad
+            )
+            else None
+        ),
+
+        # -----------------------------------------------------
+        # Origen
+        # -----------------------------------------------------
+
         "origen_tipo": origen_tipo,
         "origen_grado": origen_grado,
 
-        # Compatibilidad con frontend actual.
-        # Si no hay PDF principal, usa el primer adjunto disponible.
-        "archivo_pdf": archivo_pdf_url,
-        "archivo_pdf_url": archivo_pdf_url,
+        # -----------------------------------------------------
+        # Fecha
+        # -----------------------------------------------------
 
-        # Lista completa de archivos asociados.
+        "fecha_publicacion": (
+            _fecha_a_str(
+                publicacion.fecha_publicacion
+            )
+        ),
+        "anio_publicacion": (
+            publicacion.anio_publicacion
+        ),
+
+        # -----------------------------------------------------
+        # Archivos
+        # -----------------------------------------------------
+
+        "archivo_pdf": (
+            archivo_pdf_url
+        ),
+        "archivo_pdf_url": (
+            archivo_pdf_url
+        ),
+        "pdf_url": (
+            archivo_pdf_url
+        ),
+
+        "tiene_pdf": bool(
+            archivo_pdf_url
+        ),
+        "has_pdf": bool(
+            archivo_pdf_url
+        ),
+        "hasPdf": bool(
+            archivo_pdf_url
+        ),
+
         "archivos": archivos,
 
+        # -----------------------------------------------------
+        # Autores
+        # -----------------------------------------------------
+
         "autores": autores,
+
+        # -----------------------------------------------------
+        # Registro
+        # -----------------------------------------------------
+
+        "registrado_por_admin": (
+            publicacion.registrado_por_admin
+        ),
+        "admin_registrador_id": (
+            publicacion.admin_registrador_id
+        ),
+        "usuario_creador_id": (
+            publicacion.usuario_creador_id
+        ),
     }
 
-    if codigo == "ponencia":
-        pon = (
-            _safe_related(pub, "ponencia")
-            or Ponencia.objects.filter(publicacion=pub).first()
+    # =========================================================
+    # PONENCIA
+    # =========================================================
+
+    if tipo_final == "ponencia":
+        ponencia = _safe_related(
+            publicacion,
+            "ponencia",
         )
 
-        if pon:
+        if ponencia is None:
+            ponencia = (
+                Ponencia.objects
+                .filter(
+                    publicacion=publicacion
+                )
+                .first()
+            )
+
+        if ponencia:
             data.update(
                 {
-                    "nombre_evento": pon.nombre_evento,
-                    "nombre_ponencia": pon.nombre_ponencia,
-                    "codigo_issn_isbn": pon.codigo_issn_isbn,
-                    "tipo_presentacion": pon.tipo_presentacion,
-                    "tipo_presentacion_otro": getattr(pon, "tipo_presentacion_otro", None),
-                    "link_evento": pon.link_evento,
+                    "nombre_evento": (
+                        ponencia.nombre_evento
+                    ),
+                    "nombre_ponencia": (
+                        ponencia.nombre_ponencia
+                    ),
+                    "codigo_issn_isbn": (
+                        ponencia.codigo_issn_isbn
+                    ),
+                    "tipo_presentacion": (
+                        ponencia.tipo_presentacion
+                    ),
+                    "tipo_presentacion_otro": (
+                        ponencia
+                        .tipo_presentacion_otro
+                    ),
+                    "link_evento": (
+                        ponencia.link_evento
+                    ),
+                    "revisor_par_arbitraje": (
+                        ponencia
+                        .revisor_par_arbitraje
+                    ),
                 }
             )
 
-    elif codigo in ARTICULOS:
-        art = (
-            _safe_related(pub, "articulo")
-            or Articulo.objects.filter(publicacion=pub).first()
+    # =========================================================
+    # ARTÍCULO
+    # =========================================================
+
+    elif (
+        tipo_final
+        in {
+            "articulo_regional",
+            "articulo_alto_impacto",
+        }
+        or tipo_categoria == "articulo"
+        or tipo_codigo in ARTICULO_CODES
+    ):
+        articulo = _safe_related(
+            publicacion,
+            "articulo",
         )
 
-        if art:
-            data.update(_get_articulo_payload(art))
+        if articulo is None:
+            articulo = (
+                Articulo.objects
+                .filter(
+                    publicacion=publicacion
+                )
+                .first()
+            )
 
-    elif codigo == "libro":
-        lib = (
-            _safe_related(pub, "libro")
-            or Libro.objects.filter(publicacion=pub).first()
+        if articulo:
+            data.update(
+                _get_articulo_payload(
+                    articulo
+                )
+            )
+
+    # =========================================================
+    # LIBRO
+    # =========================================================
+
+    elif tipo_final == "libro":
+        libro = _safe_related(
+            publicacion,
+            "libro",
         )
 
-        if lib:
+        if libro is None:
+            libro = (
+                Libro.objects
+                .filter(
+                    publicacion=publicacion
+                )
+                .first()
+            )
+
+        if libro:
             data.update(
                 {
-                    "nombre_libro": lib.nombre_libro,
-                    "codigo_isbn": lib.codigo_isbn,
-                    "editorial_compilador": lib.editorial_compilador,
-                    "revisor_par_arbitraje": lib.revisor_par_arbitraje,
-                    "link_libro": lib.link_libro,
+                    "nombre_libro": (
+                        libro.nombre_libro
+                    ),
+                    "codigo_isbn": (
+                        libro.codigo_isbn
+                    ),
+                    "editorial_compilador": (
+                        libro
+                        .editorial_compilador
+                    ),
+                    "revisor_par_arbitraje": (
+                        libro
+                        .revisor_par_arbitraje
+                    ),
+                    "link_libro": (
+                        libro.link_libro
+                    ),
                 }
             )
 
-    elif codigo in CAPITULOS:
-        cap = (
-            _safe_related(pub, "capitulo_libro")
-            or CapituloLibro.objects.filter(publicacion=pub).first()
+    # =========================================================
+    # CAPÍTULO
+    # =========================================================
+
+    elif (
+        tipo_final
+        == "capitulo_libro"
+        or tipo_codigo
+        in CAPITULO_CODES
+    ):
+        capitulo = _safe_related(
+            publicacion,
+            "capitulo_libro",
         )
 
-        if cap:
+        if capitulo is None:
+            capitulo = (
+                CapituloLibro.objects
+                .filter(
+                    publicacion=publicacion
+                )
+                .first()
+            )
+
+        if capitulo:
             data.update(
                 {
-                    "nombre_capitulo": cap.nombre_capitulo,
-                    "nombre_libro": cap.nombre_libro,
-                    "codigo_isbn": cap.codigo_isbn,
-                    "editor_compilador": cap.editor_compilador,
-                    "revisor_par_arbitraje": cap.revisor_par_arbitraje,
-                    "link_capitulo": cap.link_capitulo,
+                    "nombre_capitulo": (
+                        capitulo.nombre_capitulo
+                    ),
+                    "nombre_libro": (
+                        capitulo.nombre_libro
+                    ),
+                    "codigo_isbn": (
+                        capitulo.codigo_isbn
+                    ),
+                    "editor_compilador": (
+                        capitulo
+                        .editor_compilador
+                    ),
+                    "revisor_par_arbitraje": (
+                        capitulo
+                        .revisor_par_arbitraje
+                    ),
+                    "link_capitulo": (
+                        capitulo.link_capitulo
+                    ),
                 }
             )
 

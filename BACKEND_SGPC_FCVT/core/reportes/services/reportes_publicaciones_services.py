@@ -1,6 +1,8 @@
 """
-Servicios de reportes para exportación de publicaciones.
-Construye la respuesta HTTP lista para descarga del archivo Excel.
+Servicios de reportes de publicaciones.
+
+Construye la respuesta HTTP para descargar el archivo
+Excel generado por publicaciones_excel_services.
 """
 
 from django.http import HttpResponse
@@ -12,20 +14,94 @@ from core.publicaciones.services.publicaciones_excel_services import (
 )
 
 
-def build_export_publicaciones_response(filters=None):
-    filters = filters or {}
+EXCEL_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument."
+    "spreadsheetml.sheet"
+)
 
-    workbook = build_publicaciones_excel(filters)
-    file_bytes = workbook_to_bytes(workbook)
 
-    stamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
-    filename = f"reporte_publicaciones_{stamp}.xlsx"
+def _build_filename():
+    """
+    Genera un nombre único y seguro para el archivo Excel.
+    """
+
+    stamp = timezone.localtime().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    return (
+        f"reporte_publicaciones_{stamp}.xlsx"
+    )
+
+
+def build_export_publicaciones_response(
+    filters=None,
+):
+    """
+    Genera el reporte de publicaciones y devuelve
+    una respuesta HTTP lista para descarga.
+
+    Parameters
+    ----------
+    filters:
+        Diccionario opcional con los filtros que serán
+        enviados al servicio de generación Excel.
+
+    Returns
+    -------
+    HttpResponse
+        Archivo .xlsx listo para descargar.
+    """
+
+    filters = dict(
+        filters or {}
+    )
+
+    # ---------------------------------------------------------
+    # Generar libro Excel
+    # ---------------------------------------------------------
+
+    workbook = build_publicaciones_excel(
+        filters
+    )
+
+    # ---------------------------------------------------------
+    # Convertir a bytes
+    # ---------------------------------------------------------
+
+    file_bytes = workbook_to_bytes(
+        workbook
+    )
+
+    filename = _build_filename()
+
+    # ---------------------------------------------------------
+    # Respuesta
+    # ---------------------------------------------------------
 
     response = HttpResponse(
         file_bytes,
-        content_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
+        content_type=EXCEL_CONTENT_TYPE,
     )
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    response[
+        "Content-Disposition"
+    ] = (
+        f'attachment; filename="{filename}"'
+    )
+
+    response[
+        "Content-Length"
+    ] = str(
+        len(file_bytes)
+    )
+
+    response[
+        "Cache-Control"
+    ] = "private, no-store"
+
+    response[
+        "X-Content-Type-Options"
+    ] = "nosniff"
+
     return response

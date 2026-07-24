@@ -1,6 +1,17 @@
 """
-Mixin con los campos base reutilizables de una publicación.
-Centraliza validaciones comunes de origen, fecha de publicación y archivo PDF.
+Campos base reutilizables por los serializers de creación
+de publicaciones.
+
+Centraliza:
+
+- origen de la publicación;
+- grado/programa asociado al TIC;
+- fecha de publicación;
+- PDF principal.
+
+La validación específica del PDF se mantiene en los
+serializers que la necesitan, mientras este mixin define
+el campo común.
 """
 
 from rest_framework import serializers
@@ -9,51 +20,151 @@ from rest_framework.exceptions import ValidationError
 from core.models import Publicacion
 
 
-class PublicacionCamposBaseMixin(serializers.Serializer):
+def _norm_text(value):
+    return str(
+        value or ""
+    ).strip()
+
+
+def _norm_optional_text(value):
+    value = _norm_text(
+        value
+    )
+
+    return (
+        value
+        or None
+    )
+
+
+class PublicacionCamposBaseMixin(
+    serializers.Serializer
+):
+    """
+    Campos comunes utilizados por:
+
+    - ArticuloRegistroSerializer
+    - PonenciaRegistroSerializer
+    - LibroRegistroSerializer
+    - CapituloLibroRegistroSerializer
+    """
+
     origen_tipo = serializers.ChoiceField(
-        choices=[c[0] for c in Publicacion._meta.get_field("origen_tipo").choices],
+        choices=Publicacion.ORIGEN_TIPO,
         required=False,
         default="ninguno",
     )
+
     origen_grado = serializers.CharField(
+        max_length=120,
         required=False,
         allow_blank=True,
         allow_null=True,
     )
+
     fecha_publicacion = serializers.DateField(
         required=False,
         allow_null=True,
-        input_formats=["%Y-%m-%d", "%d/%m/%Y"],
+        input_formats=(
+            "%Y-%m-%d",
+            "%d/%m/%Y",
+        ),
     )
+
     archivo_pdf = serializers.FileField(
         required=False,
         allow_null=True,
     )
 
-    def _aplicar_reglas_origen(self, attrs):
-        origen_tipo = str(attrs.get("origen_tipo") or "ninguno").strip().lower() or "ninguno"
+    # =========================================================
+    # ORIGEN
+    # =========================================================
 
-        valid_origenes = {
-            choice[0]
-            for choice in Publicacion._meta.get_field("origen_tipo").choices
+    def _aplicar_reglas_origen(
+        self,
+        attrs,
+    ):
+        """
+        Aplica exactamente las reglas de Publicacion:
+
+        ninguno
+            origen_grado = None
+
+        tic
+            origen_grado obligatorio
+
+        maestria
+            origen_grado = None
+
+        doctoral
+            origen_grado = None
+        """
+
+        origen_tipo = (
+            _norm_text(
+                attrs.get(
+                    "origen_tipo"
+                )
+            ).lower()
+            or "ninguno"
+        )
+
+        valid_origins = {
+            value
+            for value, _label
+            in Publicacion.ORIGEN_TIPO
         }
 
-        if origen_tipo not in valid_origenes:
-            raise ValidationError({"origen_tipo": ["Opción inválida de origen."]})
+        if (
+            origen_tipo
+            not in valid_origins
+        ):
+            raise ValidationError(
+                {
+                    "origen_tipo": [
+                        "El origen de la publicación "
+                        "no es válido."
+                    ]
+                }
+            )
 
-        origen_grado = attrs.get("origen_grado", None)
-        if origen_grado is not None:
-            origen_grado = str(origen_grado).strip() or None
+        origen_grado = (
+            _norm_optional_text(
+                attrs.get(
+                    "origen_grado"
+                )
+            )
+        )
 
-        attrs["origen_tipo"] = origen_tipo
+        # -----------------------------------------------------
+        # TIC
+        # -----------------------------------------------------
 
         if origen_tipo == "tic":
             if not origen_grado:
                 raise ValidationError(
-                    {"origen_grado": ["Debe especificar el grado cuando el origen es TIC."]}
+                    {
+                        "origen_grado": [
+                            "Debe especificar el grado "
+                            "cuando el origen es un "
+                            "Trabajo de Integración Curricular."
+                        ]
+                    }
                 )
-            attrs["origen_grado"] = origen_grado
+
+        # -----------------------------------------------------
+        # Cualquier otro origen
+        # -----------------------------------------------------
+
         else:
-            attrs["origen_grado"] = None
+            origen_grado = None
+
+        attrs[
+            "origen_tipo"
+        ] = origen_tipo
+
+        attrs[
+            "origen_grado"
+        ] = origen_grado
 
         return attrs

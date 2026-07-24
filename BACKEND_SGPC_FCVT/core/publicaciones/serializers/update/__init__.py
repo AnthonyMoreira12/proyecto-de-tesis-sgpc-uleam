@@ -1,5 +1,12 @@
-from .publicaciones_actualizacion_serializers import PublicacionActualizacionSerializer
+"""
+Serializers de actualización de publicaciones.
+"""
 
-__all__ = [
+from .publicaciones_actualizacion_serializers import (
+    PublicacionActualizacionSerializer,
+)
+
+
+__all__ = (
     "PublicacionActualizacionSerializer",
-]
+)

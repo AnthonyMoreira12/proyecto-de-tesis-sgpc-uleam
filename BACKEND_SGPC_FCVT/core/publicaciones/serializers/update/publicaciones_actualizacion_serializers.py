@@ -1,12 +1,9 @@
-"""
-Serializer para actualización de publicaciones y sus autores.
-Permite modificar datos generales, datos específicos por tipo y sincronizar autorías.
-Mantiene coherencia entre carrera/facultad, área/subárea, ubicación y campos obligatorios.
-Incluye opción para quitar PDF principal o adjunto asociado.
-"""
-
 import json
+import os
 
+from django.core.exceptions import (
+    ValidationError as DjangoValidationError,
+)
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -29,1093 +26,2395 @@ from core.models import (
 )
 
 
+MAX_PRIMARY_PDF_BYTES = (
+    5 * 1024 * 1024
+)
+
+ALLOWED_PDF_EXTENSIONS = {
+    ".pdf",
+}
+
+ALLOWED_PDF_CONTENT_TYPES = {
+    "application/pdf",
+    "application/x-pdf",
+}
+
+
 def _to_str(value):
-    return "" if value is None else str(value).strip()
+    return (
+        ""
+        if value is None
+        else str(value).strip()
+    )
 
 
 def _to_lower(value):
     value = _to_str(value)
-    return value.lower() if value else ""
+
+    return (
+        value.lower()
+        if value
+        else ""
+    )
 
 
 def _none_if_blank(value):
     value = _to_str(value)
-    return value or None
+
+    return (
+        value
+        or None
+    )
 
 
 def _to_bool(value):
-    """
-    Normaliza booleanos enviados como JSON, FormData o texto.
-    """
-    if isinstance(value, bool):
+    if isinstance(
+        value,
+        bool,
+    ):
         return value
 
-    if value in (1, "1"):
+    if value in (
+        1,
+        "1",
+    ):
         return True
 
-    if value in (0, "0"):
+    if value in (
+        0,
+        "0",
+    ):
         return False
 
-    value = str(value or "").strip().lower()
-    return value in ("true", "yes", "y", "on", "si", "sí")
+    value = _to_lower(value)
+
+    return value in {
+        "true",
+        "yes",
+        "y",
+        "on",
+        "si",
+        "sí",
+    }
 
 
-def _delete_file_field(file_field):
-    """
-    Elimina físicamente el archivo del storage sin guardar aún el modelo.
-    """
+def _read_header(
+    uploaded_file,
+    max_bytes=1024,
+):
+    file_obj = getattr(
+        uploaded_file,
+        "file",
+        uploaded_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(
+            file_obj,
+            "read",
+        )
+    ):
+        return b""
+
+    original_position = 0
+
     try:
-        if not file_field:
-            return
+        if hasattr(
+            file_obj,
+            "tell",
+        ):
+            original_position = (
+                file_obj.tell()
+            )
+    except (
+        OSError,
+        ValueError,
+    ):
+        original_position = 0
 
-        if not getattr(file_field, "name", None):
-            return
+    try:
+        if hasattr(
+            file_obj,
+            "seek",
+        ):
+            file_obj.seek(0)
 
-        file_field.delete(save=False)
-    except Exception:
-        pass
+        content = file_obj.read(
+            max_bytes
+        )
+
+        if isinstance(
+            content,
+            str,
+        ):
+            content = (
+                content.encode(
+                    "utf-8",
+                    errors="ignore",
+                )
+            )
+
+        return bytes(
+            content
+            or b""
+        )
+
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+    ):
+        return b""
+
+    finally:
+        try:
+            if hasattr(
+                file_obj,
+                "seek",
+            ):
+                file_obj.seek(
+                    original_position
+                )
+        except (
+            OSError,
+            ValueError,
+        ):
+            pass
 
 
-class AutorActualizacionItemSerializer(serializers.Serializer):
-    autor_id = serializers.IntegerField()
-    orden = serializers.IntegerField(required=False)
+def validate_primary_pdf_file(value):
+    if not value:
+        return value
+
+    file_name = _to_str(
+        getattr(
+            value,
+            "name",
+            "",
+        )
+    )
+
+    extension = os.path.splitext(
+        file_name.lower()
+    )[1]
+
+    if (
+        extension
+        not in ALLOWED_PDF_EXTENSIONS
+    ):
+        raise ValidationError(
+            "Solo se permiten archivos PDF."
+        )
+
+    content_type = (
+        getattr(
+            value,
+            "content_type",
+            None,
+        )
+        or getattr(
+            getattr(
+                value,
+                "file",
+                None,
+            ),
+            "content_type",
+            None,
+        )
+    )
+
+    if (
+        content_type
+        and str(
+            content_type
+        ).lower()
+        not in ALLOWED_PDF_CONTENT_TYPES
+    ):
+        raise ValidationError(
+            "El tipo de contenido no corresponde a un PDF."
+        )
+
+    try:
+        file_size = int(
+            getattr(
+                value,
+                "size",
+                0,
+            )
+            or 0
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        file_size = 0
+
+    if file_size <= 0:
+        raise ValidationError(
+            "El archivo PDF está vacío."
+        )
+
+    if (
+        file_size
+        > MAX_PRIMARY_PDF_BYTES
+    ):
+        raise ValidationError(
+            "El PDF principal supera "
+            "el tamaño máximo de 5 MB."
+        )
+
+    header = _read_header(
+        value
+    )
+
+    if (
+        header
+        and not header.startswith(
+            b"%PDF-"
+        )
+    ):
+        raise ValidationError(
+            "El archivo no contiene "
+            "una firma PDF válida."
+        )
+
+    return value
+
+
+def _django_validation_to_drf(exc):
+    if hasattr(
+        exc,
+        "message_dict",
+    ):
+        return ValidationError(
+            exc.message_dict
+        )
+
+    if hasattr(
+        exc,
+        "messages",
+    ):
+        return ValidationError(
+            {
+                "detail": list(
+                    exc.messages
+                )
+            }
+        )
+
+    return ValidationError(
+        {
+            "detail": [
+                str(exc)
+            ]
+        }
+    )
+
+
+class AutorActualizacionItemSerializer(
+    serializers.Serializer
+):
+    autor_id = serializers.IntegerField(
+        min_value=1,
+    )
+
+    orden = serializers.IntegerField(
+        required=False,
+        min_value=1,
+    )
+
     rol_autoria = serializers.ChoiceField(
-        choices=["principal", "coautor"],
+        choices=PublicacionAutor.ROL_AUTORIA,
         required=False,
     )
 
 
-class PublicacionActualizacionSerializer(serializers.Serializer):
-    carrera = serializers.PrimaryKeyRelatedField(
-        queryset=Carrera.objects.all(),
-        required=False,
+class PublicacionActualizacionSerializer(
+    serializers.Serializer
+):
+    # ---------------------------------------------------------
+    # Publicación base
+    # ---------------------------------------------------------
+
+    carrera = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=(
+                Carrera.objects
+                .select_related(
+                    "facultad"
+                )
+                .all()
+            ),
+            required=False,
+        )
     )
 
-    proyecto = serializers.PrimaryKeyRelatedField(
-        queryset=Proyecto.objects.all(),
-        required=False,
-        allow_null=True,
+    proyecto = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=(
+                Proyecto.objects
+                .select_related(
+                    "carrera"
+                )
+                .all()
+            ),
+            required=False,
+            allow_null=True,
+        )
     )
 
-    area = serializers.PrimaryKeyRelatedField(
-        queryset=AreaConocimiento.objects.all(),
-        required=False,
-        allow_null=True,
+    area = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=(
+                AreaConocimiento.objects
+                .all()
+            ),
+            required=False,
+            allow_null=True,
+        )
     )
 
-    subarea = serializers.PrimaryKeyRelatedField(
-        queryset=Subarea.objects.all(),
-        required=False,
-        allow_null=True,
+    subarea = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=(
+                Subarea.objects
+                .select_related(
+                    "area"
+                )
+                .all()
+            ),
+            required=False,
+            allow_null=True,
+        )
     )
 
-    pais = serializers.PrimaryKeyRelatedField(
-        queryset=Pais.objects.all(),
-        required=False,
-        allow_null=True,
+    pais = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=Pais.objects.all(),
+            required=False,
+            allow_null=True,
+        )
     )
 
-    ciudad = serializers.PrimaryKeyRelatedField(
-        queryset=Ciudad.objects.all(),
-        required=False,
-        allow_null=True,
+    ciudad = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=(
+                Ciudad.objects
+                .select_related(
+                    "pais"
+                )
+                .all()
+            ),
+            required=False,
+            allow_null=True,
+        )
     )
 
-    fecha_publicacion = serializers.DateField(
-        required=False,
-        allow_null=True,
-        input_formats=["%Y-%m-%d", "%d/%m/%Y"],
+    fecha_publicacion = (
+        serializers.DateField(
+            required=False,
+            allow_null=True,
+            input_formats=[
+                "%Y-%m-%d",
+                "%d/%m/%Y",
+            ],
+        )
     )
 
-    origen_tipo = serializers.ChoiceField(
-        choices=[c[0] for c in Publicacion._meta.get_field("origen_tipo").choices],
-        required=False,
+    origen_tipo = (
+        serializers.ChoiceField(
+            choices=Publicacion.ORIGEN_TIPO,
+            required=False,
+        )
     )
 
-    origen_grado = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
+    origen_grado = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+        )
     )
 
-    archivo_pdf = serializers.FileField(
-        required=False,
-        allow_null=True,
+    archivo_pdf = (
+        serializers.FileField(
+            required=False,
+            allow_null=True,
+        )
     )
 
-    quitar_pdf_actual = serializers.BooleanField(
-        required=False,
-        default=False,
+    # ---------------------------------------------------------
+    # Acciones PDF
+    # ---------------------------------------------------------
+
+    quitar_pdf_actual = (
+        serializers.BooleanField(
+            required=False,
+            default=False,
+        )
     )
 
-    quitar_archivo_pdf = serializers.BooleanField(
-        required=False,
-        default=False,
+    quitar_archivo_pdf = (
+        serializers.BooleanField(
+            required=False,
+            default=False,
+        )
     )
 
-    quitar_archivo_adjunto_id = serializers.IntegerField(
-        required=False,
-        allow_null=True,
-        min_value=1,
+    quitar_archivo_adjunto_id = (
+        serializers.IntegerField(
+            required=False,
+            allow_null=True,
+            min_value=1,
+        )
     )
 
-    autores = AutorActualizacionItemSerializer(
-        many=True,
-        required=False,
+    # ---------------------------------------------------------
+    # Autores
+    # ---------------------------------------------------------
+
+    autores = (
+        AutorActualizacionItemSerializer(
+            many=True,
+            required=False,
+        )
     )
 
-    TIPO_PRESENTACION_CHOICES = [
-        ("magistral", "Conferencia magistral"),
-        ("oral", "Conferencia oral"),
-        ("poster", "Poster"),
-        ("otro", "Otro"),
-    ]
+    # ---------------------------------------------------------
+    # Ponencia
+    # ---------------------------------------------------------
 
-    tipo_presentacion = serializers.ChoiceField(
-        choices=[c[0] for c in TIPO_PRESENTACION_CHOICES],
-        required=False,
-        allow_null=True,
+    tipo_presentacion = (
+        serializers.ChoiceField(
+            choices=Ponencia.TIPO_PRESENTACION,
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+        )
     )
 
-    tipo_presentacion_otro = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
+    tipo_presentacion_otro = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=150,
+        )
     )
 
-    nombre_evento = serializers.CharField(required=False, allow_blank=True)
-    nombre_ponencia = serializers.CharField(required=False, allow_blank=True)
-    codigo_issn_isbn = serializers.CharField(required=False, allow_blank=True)
-    link_evento = serializers.CharField(required=False, allow_blank=True)
-
-    nombre_articulo = serializers.CharField(required=False, allow_blank=True)
-
-    base_datos_indexada = serializers.ChoiceField(
-        choices=[c[0] for c in Articulo.BASES_DATOS],
-        required=False,
-        allow_null=True,
-        allow_blank=True,
+    nombre_evento = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
     )
 
-    base_datos_otra = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
+    nombre_ponencia = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
     )
 
-    codigo_doi = serializers.CharField(required=False, allow_blank=True)
-    codigo_issn = serializers.CharField(required=False, allow_blank=True)
-    nombre_revista = serializers.CharField(required=False, allow_blank=True)
-
-    numero_revista = serializers.IntegerField(
-        required=False,
-        allow_null=True,
-        min_value=1,
+    codigo_issn_isbn = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=100,
+        )
     )
 
-    link_publicacion = serializers.CharField(required=False, allow_blank=True)
-    link_revista = serializers.CharField(required=False, allow_blank=True)
-
-    factor_impacto = serializers.ChoiceField(
-        choices=[c[0] for c in Articulo.FACTOR_IMPACTO],
-        required=False,
-        allow_null=True,
-        allow_blank=True,
+    link_evento = (
+        serializers.URLField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=500,
+        )
     )
 
-    cuartil = serializers.ChoiceField(
-        choices=[c[0] for c in Articulo.CUARTIL],
-        required=False,
-        allow_null=True,
-        allow_blank=True,
+    # ---------------------------------------------------------
+    # Artículo
+    # ---------------------------------------------------------
+
+    nombre_articulo = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
+
+    base_datos_indexada = (
+        serializers.ChoiceField(
+            choices=Articulo.BASES_DATOS,
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+        )
+    )
+
+    base_datos_otra = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=150,
+        )
+    )
+
+    codigo_doi = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=150,
+        )
+    )
+
+    codigo_issn = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=100,
+        )
+    )
+
+    nombre_revista = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
+
+    numero_revista = (
+        serializers.IntegerField(
+            required=False,
+            allow_null=True,
+            min_value=1,
+        )
+    )
+
+    link_publicacion = (
+        serializers.URLField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=500,
+        )
+    )
+
+    link_revista = (
+        serializers.URLField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=500,
+        )
+    )
+
+    factor_impacto = (
+        serializers.ChoiceField(
+            choices=Articulo.FACTOR_IMPACTO,
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+        )
+    )
+
+    cuartil = (
+        serializers.ChoiceField(
+            choices=Articulo.CUARTIL,
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+        )
     )
 
     sjr = serializers.CharField(
         required=False,
         allow_blank=True,
         allow_null=True,
+        max_length=100,
     )
 
-    revisor_par_arbitraje = serializers.ChoiceField(
-        choices=[c[0] for c in Libro.SI_NO],
-        required=False,
+    # ---------------------------------------------------------
+    # Ponencia / Libro / Capítulo
+    # ---------------------------------------------------------
+
+    revisor_par_arbitraje = (
+        serializers.ChoiceField(
+            choices=[
+                ("si", "Sí"),
+                ("no", "No"),
+            ],
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+        )
     )
 
-    nombre_libro = serializers.CharField(required=False, allow_blank=True)
-    codigo_isbn = serializers.CharField(required=False, allow_blank=True)
-    editorial_compilador = serializers.CharField(required=False, allow_blank=True)
-    link_libro = serializers.CharField(required=False, allow_blank=True)
+    # ---------------------------------------------------------
+    # Libro
+    # ---------------------------------------------------------
 
-    nombre_capitulo = serializers.CharField(required=False, allow_blank=True)
-    editor_compilador = serializers.CharField(required=False, allow_blank=True)
-    link_capitulo = serializers.CharField(required=False, allow_blank=True)
+    nombre_libro = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
 
-    def _querydict_to_dict(self, data):
-        if hasattr(data, "lists"):
+    codigo_isbn = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=100,
+        )
+    )
+
+    editorial_compilador = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
+
+    link_libro = (
+        serializers.URLField(
+            required=False,
+            allow_blank=True,
+            max_length=500,
+        )
+    )
+
+    # ---------------------------------------------------------
+    # Capítulo
+    # ---------------------------------------------------------
+
+    nombre_capitulo = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
+
+    editor_compilador = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            max_length=255,
+        )
+    )
+
+    link_capitulo = (
+        serializers.URLField(
+            required=False,
+            allow_blank=True,
+            max_length=500,
+        )
+    )
+
+    # =========================================================
+    # INPUT
+    # =========================================================
+
+    def _querydict_to_dict(
+        self,
+        data,
+    ):
+        if hasattr(
+            data,
+            "lists",
+        ):
             output = {}
 
             for key, values in data.lists():
-                if len(values) == 0:
+                if not values:
                     output[key] = ""
+
                 elif len(values) == 1:
-                    output[key] = values[0]
+                    output[key] = (
+                        values[0]
+                    )
+
                 else:
-                    output[key] = values
+                    output[key] = (
+                        values
+                    )
 
             return output
 
         return dict(data)
 
-    def _instance_tipo_codigo(self):
-        instance = self.instance
-
-        if not instance:
-            return ""
-
-        return _to_lower(getattr(instance.tipo, "codigo", ""))
-
-    def _articulos_codes(self):
-        return {
-            "articulo",
-            "articulo_regional",
-            "articulo_alto_impacto",
-        }
-
-    def _capitulos_codes(self):
-        return {
-            "capitulo_libro",
-            "capitulo",
-        }
-
-    def _normalize_autores_input(self, data):
-        """
-        Normaliza autores solo si el campo viene en la petición.
-
-        Importante:
-        En PATCH parcial, si no se envía 'autores', no debe tocarse la autoría.
-        Esto evita que una acción simple como quitar PDF termine validando autores=[].
-        """
+    def _normalize_autores_input(
+        self,
+        data,
+    ):
         if "autores" not in data:
             return data
 
-        autores = data.get("autores", None)
+        autores = data.get(
+            "autores"
+        )
 
-        if isinstance(autores, list) and len(autores) == 1:
+        if (
+            isinstance(
+                autores,
+                list,
+            )
+            and len(autores) == 1
+        ):
             autores = autores[0]
 
-        if autores in ("", "[]", "null", "None", [], {}):
+        if autores in (
+            None,
+            "",
+            "null",
+            "None",
+        ):
             data["autores"] = []
             return data
 
-        if autores is None:
-            return data
-
-        if isinstance(autores, str):
+        if isinstance(
+            autores,
+            str,
+        ):
             raw = autores.strip()
 
-            if raw in ("", "[]", "null", "None"):
+            if raw in {
+                "",
+                "[]",
+                "null",
+                "None",
+            }:
                 data["autores"] = []
                 return data
 
             try:
-                parsed = json.loads(raw)
-            except Exception:
+                autores = json.loads(
+                    raw
+                )
+
+            except (
+                TypeError,
+                ValueError,
+                json.JSONDecodeError,
+            ):
                 raise ValidationError(
                     {
                         "autores": [
-                            "Formato inválido. Debe ser JSON válido (lista)."
+                            "Formato inválido. "
+                            "Debe enviar una lista JSON válida."
                         ]
                     }
                 )
 
-            if parsed is None:
-                parsed = []
-
-            if not isinstance(parsed, list):
-                raise ValidationError(
-                    {
-                        "autores": [
-                            "Formato inválido. Debe ser JSON válido (lista)."
-                        ]
-                    }
-                )
-
-            data["autores"] = parsed
-
-        return data
-
-    def _normalize_string_fields(self, attrs):
-        string_fields = [
-            "origen_grado",
-            "nombre_evento",
-            "nombre_ponencia",
-            "codigo_issn_isbn",
-            "link_evento",
-            "tipo_presentacion_otro",
-            "nombre_articulo",
-            "base_datos_otra",
-            "codigo_doi",
-            "codigo_issn",
-            "nombre_revista",
-            "link_publicacion",
-            "link_revista",
-            "sjr",
-            "nombre_libro",
-            "codigo_isbn",
-            "editorial_compilador",
-            "link_libro",
-            "nombre_capitulo",
-            "editor_compilador",
-            "link_capitulo",
-        ]
-
-        for field in string_fields:
-            if field in attrs and attrs[field] is not None:
-                attrs[field] = _to_str(attrs[field])
-
-        return attrs
-
-    def _validate_relaciones_generales(self, attrs):
-        instance = self.instance
-
-        final_carrera = attrs.get(
-            "carrera",
-            getattr(instance, "carrera", None),
-        )
-
-        final_proyecto = attrs.get(
-            "proyecto",
-            getattr(instance, "proyecto", None),
-        )
-
-        if final_proyecto and final_carrera:
-            if getattr(final_proyecto, "carrera_id", None) != getattr(final_carrera, "id", None):
-                raise ValidationError(
-                    {
-                        "proyecto": [
-                            "El proyecto seleccionado no pertenece a la carrera indicada."
-                        ]
-                    }
-                )
-
-        return attrs
-
-    def _validate_pdf_actions(self, attrs):
-        quitar_pdf_actual = _to_bool(attrs.get("quitar_pdf_actual", False))
-        quitar_archivo_pdf = _to_bool(attrs.get("quitar_archivo_pdf", False))
-        quitar_archivo_adjunto_id = attrs.get("quitar_archivo_adjunto_id", None)
-
-        sube_pdf = "archivo_pdf" in attrs and attrs.get("archivo_pdf") is not None
-
-        if sube_pdf and (
-            quitar_pdf_actual
-            or quitar_archivo_pdf
-            or quitar_archivo_adjunto_id
+        if not isinstance(
+            autores,
+            list,
         ):
             raise ValidationError(
                 {
-                    "archivo_pdf": [
-                        "No puedes subir un PDF nuevo y quitar un PDF en la misma solicitud."
-                    ]
-                }
-            )
-
-        attrs["quitar_pdf_actual"] = quitar_pdf_actual
-        attrs["quitar_archivo_pdf"] = quitar_archivo_pdf
-
-        return attrs
-
-    def _validate_origen(self, attrs):
-        instance = self.instance
-
-        if "origen_tipo" in attrs or "origen_grado" in attrs:
-            origen_tipo = attrs.get(
-                "origen_tipo",
-                getattr(instance, "origen_tipo", "ninguno") if instance else "ninguno",
-            )
-            origen_tipo = _to_lower(origen_tipo) or "ninguno"
-
-            origen_grado = attrs.get(
-                "origen_grado",
-                getattr(instance, "origen_grado", None) if instance else None,
-            )
-            origen_grado = _none_if_blank(origen_grado)
-
-            attrs["origen_tipo"] = origen_tipo
-
-            if origen_tipo == "tic":
-                if not origen_grado:
-                    raise ValidationError(
-                        {
-                            "origen_grado": [
-                                "Debe especificar el grado cuando el origen es TIC."
-                            ]
-                        }
-                    )
-
-                attrs["origen_grado"] = origen_grado
-            else:
-                attrs["origen_grado"] = None
-
-        return attrs
-
-    def _validate_area_subarea(self, attrs):
-        instance = self.instance
-
-        area = attrs.get("area", None)
-        subarea = attrs.get("subarea", None)
-
-        if subarea and not area:
-            try:
-                attrs["area"] = subarea.area
-            except Exception:
-                pass
-
-        final_area = attrs.get("area", getattr(instance, "area", None))
-        final_subarea = attrs.get("subarea", getattr(instance, "subarea", None))
-
-        if final_subarea and not final_area:
-            try:
-                attrs["area"] = final_subarea.area
-                final_area = final_subarea.area
-            except Exception:
-                pass
-
-        if final_area and final_subarea:
-            if getattr(final_subarea, "area_id", None) != getattr(final_area, "id", None):
-                raise ValidationError(
-                    {
-                        "subarea": [
-                            "La subárea seleccionada no pertenece al área indicada."
-                        ]
-                    }
-                )
-
-        return attrs
-
-    def _validate_revisor(self, attrs):
-        if "revisor_par_arbitraje" in attrs and attrs["revisor_par_arbitraje"] is not None:
-            value = _to_lower(attrs["revisor_par_arbitraje"])
-
-            if value not in ("si", "no"):
-                raise ValidationError(
-                    {
-                        "revisor_par_arbitraje": [
-                            "Debe seleccionar Sí o No."
-                        ]
-                    }
-                )
-
-            attrs["revisor_par_arbitraje"] = value
-
-        return attrs
-
-    def _validate_autores(self, attrs):
-        if "autores" not in attrs:
-            return attrs
-
-        autores = attrs.get("autores") or []
-
-        if not autores:
-            raise ValidationError(
-                {
                     "autores": [
-                        "Debe registrar al menos un autor."
-                    ]
-                }
-            )
-
-        autor_ids = []
-
-        for item in autores:
-            autor_id = item.get("autor_id")
-
-            if autor_id is None:
-                raise ValidationError(
-                    {
-                        "autores": [
-                            "Cada autor debe incluir 'autor_id'."
-                        ]
-                    }
-                )
-
-            try:
-                autor_id = int(autor_id)
-            except Exception:
-                raise ValidationError(
-                    {
-                        "autores": [
-                            "'autor_id' debe ser numérico."
-                        ]
-                    }
-                )
-
-            if autor_id <= 0:
-                raise ValidationError(
-                    {
-                        "autores": [
-                            "'autor_id' inválido."
-                        ]
-                    }
-                )
-
-            autor_ids.append(autor_id)
-
-        if len(autor_ids) != len(set(autor_ids)):
-            raise ValidationError(
-                {
-                    "autores": [
-                        "No se permite repetir el mismo autor."
-                    ]
-                }
-            )
-
-        autores_map = Autor.objects.in_bulk(autor_ids)
-        faltantes = [
-            autor_id for autor_id in autor_ids
-            if autor_id not in autores_map
-        ]
-
-        if faltantes:
-            raise ValidationError(
-                {
-                    "autores": [
-                        f"Autor(es) no existe(n): {', '.join(map(str, faltantes))}."
+                        "Los autores deben enviarse como una lista."
                     ]
                 }
             )
 
         normalized = []
 
-        for index, item in enumerate(autores, start=1):
-            normalized.append(
-                {
-                    "autor_id": int(item["autor_id"]),
-                    "orden": index,
-                    "rol_autoria": "principal" if index == 1 else "coautor",
-                }
-            )
-
-        attrs["autores"] = normalized
-
-        return attrs
-
-    def _validate_required_if_present(self, attrs, field_names):
-        for field in field_names:
-            if field in attrs:
-                value = attrs.get(field)
-
-                if value is None or (isinstance(value, str) and not value.strip()):
-                    raise ValidationError(
-                        {
-                            field: [
-                                "Este campo es obligatorio."
-                            ]
-                        }
-                    )
-
-        return attrs
-
-    def _validate_fecha_if_present(self, attrs):
-        if "fecha_publicacion" in attrs and not attrs.get("fecha_publicacion"):
-            raise ValidationError(
-                {
-                    "fecha_publicacion": [
-                        "Este campo es obligatorio."
-                    ]
-                }
-            )
-
-        return attrs
-
-    def _validate_ponencia(self, attrs):
-        instance = self.instance
-
-        final_pais = attrs.get("pais", getattr(instance, "pais", None))
-        final_ciudad = attrs.get("ciudad", getattr(instance, "ciudad", None))
-
-        if not final_pais:
-            raise ValidationError(
-                {
-                    "pais": [
-                        "Debe seleccionar un país (solo para ponencias)."
-                    ]
-                }
-            )
-
-        if not final_ciudad:
-            raise ValidationError(
-                {
-                    "ciudad": [
-                        "Debe seleccionar una ciudad (solo para ponencias)."
-                    ]
-                }
-            )
-
-        if getattr(final_ciudad, "pais_id", None) != getattr(final_pais, "id", None):
-            raise ValidationError(
-                {
-                    "ciudad": [
-                        "La ciudad seleccionada no pertenece al país indicado."
-                    ]
-                }
-            )
-
-        attrs = self._validate_required_if_present(
-            attrs,
-            [
-                "nombre_evento",
-                "nombre_ponencia",
-            ],
-        )
-
-        attrs = self._validate_fecha_if_present(attrs)
-
-        return attrs
-
-    def _validate_articulo(self, attrs):
-        instance = self.instance
-        articulo = getattr(instance, "articulo", None)
-        tipo_articulo = _to_lower(getattr(articulo, "tipo_articulo", None))
-
-        attrs = self._validate_required_if_present(
-            attrs,
-            [
-                "nombre_articulo",
-                "codigo_issn",
-                "nombre_revista",
-            ],
-        )
-
-        attrs = self._validate_fecha_if_present(attrs)
-
-        final_base = attrs.get(
-            "base_datos_indexada",
-            getattr(articulo, "base_datos_indexada", None) if articulo else None,
-        )
-
-        final_base_otra = attrs.get(
-            "base_datos_otra",
-            getattr(articulo, "base_datos_otra", None) if articulo else None,
-        )
-
-        final_factor = attrs.get(
-            "factor_impacto",
-            getattr(articulo, "factor_impacto", None) if articulo else None,
-        )
-
-        final_cuartil = attrs.get(
-            "cuartil",
-            getattr(articulo, "cuartil", None) if articulo else None,
-        )
-
-        final_sjr = attrs.get(
-            "sjr",
-            getattr(articulo, "sjr", None) if articulo else None,
-        )
-
-        final_base = _to_lower(final_base) or None
-        final_base_otra = _none_if_blank(final_base_otra)
-        final_factor = _to_lower(final_factor) or None
-        final_cuartil = _to_lower(final_cuartil) or None
-        final_sjr = _none_if_blank(final_sjr)
-
-        if tipo_articulo == "regional":
-            attrs["factor_impacto"] = None
-            attrs["cuartil"] = None
-            attrs["sjr"] = None
-
-            if not final_base:
-                raise ValidationError(
-                    {
-                        "base_datos_indexada": [
-                            "Debe seleccionar una base de datos / indexación."
-                        ]
-                    }
-                )
-
-            valid_bases = {choice[0] for choice in Articulo.BASES_DATOS}
-
-            if final_base not in valid_bases:
-                raise ValidationError(
-                    {
-                        "base_datos_indexada": [
-                            "Opción inválida de base de datos / indexación."
-                        ]
-                    }
-                )
-
-            attrs["base_datos_indexada"] = final_base
-
-            if final_base == "otra":
-                if not final_base_otra:
-                    raise ValidationError(
-                        {
-                            "base_datos_otra": [
-                                "Debe especificar la base de datos cuando seleccione 'Otra'."
-                            ]
-                        }
-                    )
-
-                attrs["base_datos_otra"] = final_base_otra
-            else:
-                attrs["base_datos_otra"] = None
-
-        else:
-            attrs["base_datos_indexada"] = None
-            attrs["base_datos_otra"] = None
-
-            valid_factor = {choice[0] for choice in Articulo.FACTOR_IMPACTO}
-            valid_cuartil = {choice[0] for choice in Articulo.CUARTIL}
-
-            if final_factor and final_factor not in valid_factor:
-                raise ValidationError(
-                    {
-                        "factor_impacto": [
-                            "Factor de impacto inválido."
-                        ]
-                    }
-                )
-
-            if final_cuartil and final_cuartil not in valid_cuartil:
-                raise ValidationError(
-                    {
-                        "cuartil": [
-                            "Cuartil inválido."
-                        ]
-                    }
-                )
-
-            attrs["factor_impacto"] = final_factor
-            attrs["cuartil"] = final_cuartil
-            attrs["sjr"] = final_sjr
-
-            if final_factor == "sjr" and not final_sjr:
-                raise ValidationError(
-                    {
-                        "sjr": [
-                            "Debe ingresar el valor SJR cuando el factor de impacto es SJR."
-                        ]
-                    }
-                )
-
-        return attrs
-
-    def _validate_libro(self, attrs):
-        attrs = self._validate_required_if_present(
-            attrs,
-            [
-                "nombre_libro",
-                "codigo_isbn",
-                "editorial_compilador",
-                "revisor_par_arbitraje",
-                "link_libro",
-            ],
-        )
-
-        attrs = self._validate_fecha_if_present(attrs)
-
-        return attrs
-
-    def _validate_capitulo(self, attrs):
-        attrs = self._validate_required_if_present(
-            attrs,
-            [
-                "nombre_capitulo",
-                "nombre_libro",
-                "codigo_isbn",
-                "editor_compilador",
-                "revisor_par_arbitraje",
-                "link_capitulo",
-            ],
-        )
-
-        attrs = self._validate_fecha_if_present(attrs)
-
-        return attrs
-
-    def to_internal_value(self, data):
-        data = self._querydict_to_dict(data)
-        data = self._normalize_autores_input(data)
-        return super().to_internal_value(data)
-
-    def validate(self, attrs):
-        attrs = self._normalize_string_fields(attrs)
-        attrs = self._validate_pdf_actions(attrs)
-        attrs = self._validate_relaciones_generales(attrs)
-        attrs = self._validate_origen(attrs)
-        attrs = self._validate_area_subarea(attrs)
-        attrs = self._validate_revisor(attrs)
-        attrs = self._validate_autores(attrs)
-
-        codigo = self._instance_tipo_codigo()
-        articulos_codes = self._articulos_codes()
-        capitulos_codes = self._capitulos_codes()
-
-        if codigo == "ponencia":
-            attrs = self._validate_ponencia(attrs)
-
-        elif codigo in articulos_codes:
-            attrs = self._validate_articulo(attrs)
-
-            if "pais" in attrs or "ciudad" in attrs:
-                attrs["pais"] = None
-                attrs["ciudad"] = None
-
-        elif codigo == "libro":
-            attrs = self._validate_libro(attrs)
-
-            if "pais" in attrs or "ciudad" in attrs:
-                attrs["pais"] = None
-                attrs["ciudad"] = None
-
-        elif codigo in capitulos_codes:
-            attrs = self._validate_capitulo(attrs)
-
-            if "pais" in attrs or "ciudad" in attrs:
-                attrs["pais"] = None
-                attrs["ciudad"] = None
-
-        return attrs
-
-    def _sincronizar_autores(self, *, publicacion: Publicacion, autores_data: list):
-        autores_data = autores_data or []
-        autor_ids = [int(item["autor_id"]) for item in autores_data]
-        autores_map = Autor.objects.in_bulk(autor_ids)
-
-        PublicacionAutor.objects.filter(publicacion=publicacion).delete()
-
-        rels = []
-
-        for item in autores_data:
-            autor_id = int(item["autor_id"])
-            autor_obj = autores_map.get(autor_id)
-
-            if not autor_obj:
+        for index, item in enumerate(
+            autores,
+            start=1,
+        ):
+            if not isinstance(
+                item,
+                dict,
+            ):
                 raise ValidationError(
                     {
                         "autores": [
-                            f"Autor no existe: {autor_id}"
+                            f"El autor #{index} "
+                            "debe ser un objeto."
                         ]
                     }
                 )
 
-            rels.append(
-                PublicacionAutor(
-                    publicacion=publicacion,
-                    autor=autor_obj,
-                    rol_autoria=item.get("rol_autoria")
-                    or (
-                        "principal"
-                        if int(item.get("orden") or 0) == 1
-                        else "coautor"
-                    ),
-                    orden=int(item["orden"]),
+            item = dict(item)
+
+            if (
+                "autor_id" not in item
+                and "autor" in item
+            ):
+                item["autor_id"] = (
+                    item["autor"]
+                )
+
+            normalized.append(
+                item
+            )
+
+        data["autores"] = (
+            normalized
+        )
+
+        return data
+
+    def to_internal_value(
+        self,
+        data,
+    ):
+        data = (
+            self._querydict_to_dict(
+                data
+            )
+        )
+
+        data = (
+            self._normalize_autores_input(
+                data
+            )
+        )
+
+        return super().to_internal_value(
+            data
+        )
+
+    # =========================================================
+    # HELPERS
+    # =========================================================
+
+    def _instance_tipo_codigo(
+        self,
+    ):
+        instance = self.instance
+
+        if instance is None:
+            return ""
+
+        tipo = getattr(
+            instance,
+            "tipo",
+            None,
+        )
+
+        codigo = _to_lower(
+            getattr(
+                tipo,
+                "codigo",
+                None,
+            )
+        )
+
+        categoria = _to_lower(
+            getattr(
+                tipo,
+                "categoria",
+                None,
+            )
+        )
+
+        articulo = getattr(
+            instance,
+            "articulo",
+            None,
+        )
+
+        if (
+            categoria == "articulo"
+            or codigo
+            in {
+                "articulo",
+                "articulo_regional",
+                "articulo_alto_impacto",
+            }
+        ):
+            tipo_articulo = _to_lower(
+                getattr(
+                    articulo,
+                    "tipo_articulo",
+                    None,
                 )
             )
 
-        if rels:
-            PublicacionAutor.objects.bulk_create(rels)
+            if (
+                tipo_articulo
+                == "regional"
+            ):
+                return (
+                    "articulo_regional"
+                )
 
-    def _quitar_pdf_actual(self, instance: Publicacion):
-        """
-        Quita el PDF que actualmente ve el frontend:
-        1. Si existe archivo_pdf principal, elimina ese.
-        2. Si no existe archivo_pdf principal, elimina el primer adjunto.
-        """
-        if instance.archivo_pdf:
-            _delete_file_field(instance.archivo_pdf)
-            instance.archivo_pdf = None
-            return
+            if (
+                tipo_articulo
+                == "alto_impacto"
+            ):
+                return (
+                    "articulo_alto_impacto"
+                )
 
-        adjunto_actual = (
-            PublicacionArchivo.objects
-            .filter(publicacion=instance)
-            .order_by("orden", "id")
-            .first()
+        if (
+            categoria == "ponencia"
+            or codigo == "ponencia"
+        ):
+            return "ponencia"
+
+        if (
+            categoria == "libro"
+            or codigo == "libro"
+        ):
+            return "libro"
+
+        if (
+            categoria == "capitulo"
+            or codigo
+            in {
+                "capitulo",
+                "capitulo_libro",
+            }
+        ):
+            return "capitulo_libro"
+
+        return codigo
+
+    def _articulo_instance(
+        self,
+    ):
+        return getattr(
+            self.instance,
+            "articulo",
+            None,
         )
 
-        if adjunto_actual:
-            adjunto_actual.delete()
+    def _ponencia_instance(
+        self,
+    ):
+        return getattr(
+            self.instance,
+            "ponencia",
+            None,
+        )
 
-    def _quitar_pdf_principal(self, instance: Publicacion):
+    def _libro_instance(
+        self,
+    ):
+        return getattr(
+            self.instance,
+            "libro",
+            None,
+        )
+
+    def _capitulo_instance(
+        self,
+    ):
+        return getattr(
+            self.instance,
+            "capitulo_libro",
+            None,
+        )
+
+    def _final_value(
+        self,
+        attrs,
+        field,
+        current_value,
+    ):
+        if field in attrs:
+            return attrs[field]
+
+        return current_value
+
+    # =========================================================
+    # VALIDACIÓN
+    # =========================================================
+
+    def validate_archivo_pdf(
+        self,
+        value,
+    ):
+        return (
+            validate_primary_pdf_file(
+                value
+            )
+        )
+
+    def _validate_pdf_actions(
+        self,
+        attrs,
+    ):
+        quitar_actual = _to_bool(
+            attrs.get(
+                "quitar_pdf_actual",
+                False,
+            )
+        )
+
+        quitar_principal = _to_bool(
+            attrs.get(
+                "quitar_archivo_pdf",
+                False,
+            )
+        )
+
+        nuevo_pdf = attrs.get(
+            "archivo_pdf"
+        )
+
+        if (
+            nuevo_pdf
+            and (
+                quitar_actual
+                or quitar_principal
+            )
+        ):
+            raise ValidationError(
+                {
+                    "archivo_pdf": [
+                        "No puede cargar un PDF nuevo "
+                        "y eliminar el PDF actual "
+                        "en la misma operación."
+                    ]
+                }
+            )
+
+        return attrs
+
+    def _validate_relaciones_generales(
+        self,
+        attrs,
+    ):
+        instance = self.instance
+
+        carrera = self._final_value(
+            attrs,
+            "carrera",
+            getattr(
+                instance,
+                "carrera",
+                None,
+            ),
+        )
+
+        proyecto = self._final_value(
+            attrs,
+            "proyecto",
+            getattr(
+                instance,
+                "proyecto",
+                None,
+            ),
+        )
+
+        if carrera is None:
+            raise ValidationError(
+                {
+                    "carrera": [
+                        "La carrera es obligatoria."
+                    ]
+                }
+            )
+
+        if (
+            proyecto
+            and proyecto.carrera_id
+            != carrera.id
+        ):
+            raise ValidationError(
+                {
+                    "proyecto": [
+                        "El proyecto seleccionado no pertenece "
+                        "a la carrera indicada."
+                    ]
+                }
+            )
+
+        return attrs
+
+    def _validate_area_subarea(
+        self,
+        attrs,
+    ):
+        instance = self.instance
+
+        area = self._final_value(
+            attrs,
+            "area",
+            getattr(
+                instance,
+                "area",
+                None,
+            ),
+        )
+
+        subarea = self._final_value(
+            attrs,
+            "subarea",
+            getattr(
+                instance,
+                "subarea",
+                None,
+            ),
+        )
+
+        if (
+            subarea
+            and not area
+        ):
+            area = subarea.area
+            attrs["area"] = area
+
+        if (
+            area
+            and subarea
+            and subarea.area_id
+            != area.id
+        ):
+            raise ValidationError(
+                {
+                    "subarea": [
+                        "La subárea seleccionada no pertenece "
+                        "al área indicada."
+                    ]
+                }
+            )
+
+        return attrs
+
+    def _validate_origen(
+        self,
+        attrs,
+    ):
+        instance = self.instance
+
+        origen_tipo = _to_lower(
+            self._final_value(
+                attrs,
+                "origen_tipo",
+                getattr(
+                    instance,
+                    "origen_tipo",
+                    "ninguno",
+                ),
+            )
+        ) or "ninguno"
+
+        origen_grado = _none_if_blank(
+            self._final_value(
+                attrs,
+                "origen_grado",
+                getattr(
+                    instance,
+                    "origen_grado",
+                    None,
+                ),
+            )
+        )
+
+        valid_origins = {
+            value
+            for value, _label
+            in Publicacion.ORIGEN_TIPO
+        }
+
+        if (
+            origen_tipo
+            not in valid_origins
+        ):
+            raise ValidationError(
+                {
+                    "origen_tipo": [
+                        "El origen de la publicación es inválido."
+                    ]
+                }
+            )
+
+        if origen_tipo == "tic":
+            if not origen_grado:
+                raise ValidationError(
+                    {
+                        "origen_grado": [
+                            "Debe especificar el grado "
+                            "cuando el origen es TIC."
+                        ]
+                    }
+                )
+        else:
+            origen_grado = None
+
+        attrs["origen_tipo"] = (
+            origen_tipo
+        )
+
+        attrs["origen_grado"] = (
+            origen_grado
+        )
+
+        return attrs
+
+    def _validate_autores(
+        self,
+        attrs,
+    ):
+        if "autores" not in attrs:
+            return attrs
+
+        autores = attrs.get(
+            "autores"
+        ) or []
+
+        if not autores:
+            raise ValidationError(
+                {
+                    "autores": [
+                        "La publicación debe tener "
+                        "al menos un autor."
+                    ]
+                }
+            )
+
+        autor_ids = []
+        ordenes = []
+
+        for item in autores:
+            autor_id = int(
+                item["autor_id"]
+            )
+
+            autor_ids.append(
+                autor_id
+            )
+
+            orden = item.get(
+                "orden"
+            )
+
+            if orden is None:
+                orden = (
+                    len(ordenes) + 1
+                )
+
+            orden = int(
+                orden
+            )
+
+            ordenes.append(
+                orden
+            )
+
+        if (
+            len(autor_ids)
+            != len(set(autor_ids))
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        "No se permite repetir "
+                        "el mismo autor."
+                    ]
+                }
+            )
+
+        if (
+            len(ordenes)
+            != len(set(ordenes))
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        "No se permite repetir "
+                        "el orden de los autores."
+                    ]
+                }
+            )
+
+        missing_ids = (
+            set(autor_ids)
+            - set(
+                Autor.objects
+                .filter(
+                    id__in=autor_ids
+                )
+                .values_list(
+                    "id",
+                    flat=True,
+                )
+            )
+        )
+
+        if missing_ids:
+            raise ValidationError(
+                {
+                    "autores": [
+                        "Uno o más autores "
+                        "seleccionados no existen."
+                    ]
+                }
+            )
+
+        sorted_data = sorted(
+            autores,
+            key=lambda item: int(
+                item.get(
+                    "orden"
+                )
+                or 999999
+            ),
+        )
+
+        normalized = []
+
+        for index, item in enumerate(
+            sorted_data,
+            start=1,
+        ):
+            normalized.append(
+                {
+                    "autor_id": int(
+                        item[
+                            "autor_id"
+                        ]
+                    ),
+                    "orden": index,
+                    "rol_autoria": (
+                        "principal"
+                        if index == 1
+                        else "coautor"
+                    ),
+                }
+            )
+
+        attrs["autores"] = (
+            normalized
+        )
+
+        return attrs
+
+    def _validate_ponencia(
+        self,
+        attrs,
+    ):
+        current = (
+            self._ponencia_instance()
+        )
+
+        nombre_evento = _to_str(
+            self._final_value(
+                attrs,
+                "nombre_evento",
+                getattr(
+                    current,
+                    "nombre_evento",
+                    None,
+                ),
+            )
+        )
+
+        nombre_ponencia = _to_str(
+            self._final_value(
+                attrs,
+                "nombre_ponencia",
+                getattr(
+                    current,
+                    "nombre_ponencia",
+                    None,
+                ),
+            )
+        )
+
+        if not nombre_evento:
+            raise ValidationError(
+                {
+                    "nombre_evento": [
+                        "El nombre del evento es obligatorio."
+                    ]
+                }
+            )
+
+        if not nombre_ponencia:
+            raise ValidationError(
+                {
+                    "nombre_ponencia": [
+                        "El nombre de la ponencia es obligatorio."
+                    ]
+                }
+            )
+
+        attrs["nombre_evento"] = (
+            nombre_evento
+        )
+
+        attrs["nombre_ponencia"] = (
+            nombre_ponencia
+        )
+
+        tipo_presentacion = _none_if_blank(
+            self._final_value(
+                attrs,
+                "tipo_presentacion",
+                getattr(
+                    current,
+                    "tipo_presentacion",
+                    None,
+                ),
+            )
+        )
+
+        if tipo_presentacion:
+            tipo_presentacion = (
+                tipo_presentacion.lower()
+            )
+
+        tipo_otro = _none_if_blank(
+            self._final_value(
+                attrs,
+                "tipo_presentacion_otro",
+                getattr(
+                    current,
+                    "tipo_presentacion_otro",
+                    None,
+                ),
+            )
+        )
+
+        if (
+            tipo_presentacion
+            == "otro"
+        ):
+            if not tipo_otro:
+                raise ValidationError(
+                    {
+                        "tipo_presentacion_otro": [
+                            "Debe escribir el tipo "
+                            "de presentación cuando "
+                            "seleccione 'Otro'."
+                        ]
+                    }
+                )
+        else:
+            tipo_otro = None
+
+        attrs["tipo_presentacion"] = (
+            tipo_presentacion
+        )
+
+        attrs[
+            "tipo_presentacion_otro"
+        ] = tipo_otro
+
+        instance = self.instance
+
+        pais = self._final_value(
+            attrs,
+            "pais",
+            getattr(
+                instance,
+                "pais",
+                None,
+            ),
+        )
+
+        ciudad = self._final_value(
+            attrs,
+            "ciudad",
+            getattr(
+                instance,
+                "ciudad",
+                None,
+            ),
+        )
+
+        if not pais:
+            raise ValidationError(
+                {
+                    "pais": [
+                        "Debe seleccionar un país."
+                    ]
+                }
+            )
+
+        if not ciudad:
+            raise ValidationError(
+                {
+                    "ciudad": [
+                        "Debe seleccionar una ciudad."
+                    ]
+                }
+            )
+
+        if (
+            ciudad.pais_id
+            != pais.id
+        ):
+            raise ValidationError(
+                {
+                    "ciudad": [
+                        "La ciudad seleccionada no pertenece "
+                        "al país indicado."
+                    ]
+                }
+            )
+
+        return attrs
+
+    def _validate_articulo(
+        self,
+        attrs,
+    ):
+        articulo = (
+            self._articulo_instance()
+        )
+
+        if articulo is None:
+            raise ValidationError(
+                {
+                    "detail": [
+                        "No existe el detalle "
+                        "del artículo asociado."
+                    ]
+                }
+            )
+
+        nombre_articulo = _to_str(
+            self._final_value(
+                attrs,
+                "nombre_articulo",
+                articulo.nombre_articulo,
+            )
+        )
+
+        codigo_issn = _to_str(
+            self._final_value(
+                attrs,
+                "codigo_issn",
+                articulo.codigo_issn,
+            )
+        )
+
+        nombre_revista = _to_str(
+            self._final_value(
+                attrs,
+                "nombre_revista",
+                articulo.nombre_revista,
+            )
+        )
+
+        if not nombre_articulo:
+            raise ValidationError(
+                {
+                    "nombre_articulo": [
+                        "El nombre del artículo es obligatorio."
+                    ]
+                }
+            )
+
+        if not codigo_issn:
+            raise ValidationError(
+                {
+                    "codigo_issn": [
+                        "El código ISSN es obligatorio."
+                    ]
+                }
+            )
+
+        if not nombre_revista:
+            raise ValidationError(
+                {
+                    "nombre_revista": [
+                        "El nombre de la revista es obligatorio."
+                    ]
+                }
+            )
+
+        attrs["nombre_articulo"] = (
+            nombre_articulo
+        )
+
+        attrs["codigo_issn"] = (
+            codigo_issn
+        )
+
+        attrs["nombre_revista"] = (
+            nombre_revista
+        )
+
+        tipo_articulo = _to_lower(
+            articulo.tipo_articulo
+        )
+
+        if tipo_articulo == "regional":
+            base_datos = _to_lower(
+                self._final_value(
+                    attrs,
+                    "base_datos_indexada",
+                    articulo.base_datos_indexada,
+                )
+            )
+
+            base_otra = _none_if_blank(
+                self._final_value(
+                    attrs,
+                    "base_datos_otra",
+                    articulo.base_datos_otra,
+                )
+            )
+
+            valid_bases = {
+                value
+                for value, _label
+                in Articulo.BASES_DATOS
+            }
+
+            if not base_datos:
+                raise ValidationError(
+                    {
+                        "base_datos_indexada": [
+                            "Debe seleccionar una "
+                            "base de datos o indexación."
+                        ]
+                    }
+                )
+
+            if (
+                base_datos
+                not in valid_bases
+            ):
+                raise ValidationError(
+                    {
+                        "base_datos_indexada": [
+                            "La base de datos seleccionada "
+                            "es inválida."
+                        ]
+                    }
+                )
+
+            if (
+                base_datos == "otra"
+                and not base_otra
+            ):
+                raise ValidationError(
+                    {
+                        "base_datos_otra": [
+                            "Debe especificar la base "
+                            "de datos cuando seleccione 'Otra'."
+                        ]
+                    }
+                )
+
+            attrs[
+                "base_datos_indexada"
+            ] = base_datos
+
+            attrs[
+                "base_datos_otra"
+            ] = (
+                base_otra
+                if base_datos == "otra"
+                else None
+            )
+
+            attrs["factor_impacto"] = (
+                None
+            )
+
+            attrs["cuartil"] = None
+
+            attrs["sjr"] = None
+
+        else:
+            factor = _to_lower(
+                self._final_value(
+                    attrs,
+                    "factor_impacto",
+                    articulo.factor_impacto,
+                )
+            ) or None
+
+            cuartil = _to_lower(
+                self._final_value(
+                    attrs,
+                    "cuartil",
+                    articulo.cuartil,
+                )
+            ) or None
+
+            sjr = _none_if_blank(
+                self._final_value(
+                    attrs,
+                    "sjr",
+                    articulo.sjr,
+                )
+            )
+
+            valid_factors = {
+                value
+                for value, _label
+                in Articulo.FACTOR_IMPACTO
+            }
+
+            valid_quartiles = {
+                value
+                for value, _label
+                in Articulo.CUARTIL
+            }
+
+            if (
+                factor
+                and factor
+                not in valid_factors
+            ):
+                raise ValidationError(
+                    {
+                        "factor_impacto": [
+                            "El factor de impacto es inválido."
+                        ]
+                    }
+                )
+
+            if (
+                cuartil
+                and cuartil
+                not in valid_quartiles
+            ):
+                raise ValidationError(
+                    {
+                        "cuartil": [
+                            "El cuartil es inválido."
+                        ]
+                    }
+                )
+
+            if (
+                factor == "sjr"
+                and not sjr
+            ):
+                raise ValidationError(
+                    {
+                        "sjr": [
+                            "Debe ingresar el valor SJR "
+                            "cuando el factor es SJR."
+                        ]
+                    }
+                )
+
+            if factor != "sjr":
+                sjr = None
+
+            attrs[
+                "base_datos_indexada"
+            ] = None
+
+            attrs[
+                "base_datos_otra"
+            ] = None
+
+            attrs["factor_impacto"] = (
+                factor
+            )
+
+            attrs["cuartil"] = (
+                cuartil
+            )
+
+            attrs["sjr"] = sjr
+
+        return attrs
+
+    def _validate_libro(
+        self,
+        attrs,
+    ):
+        libro = self._libro_instance()
+
+        if libro is None:
+            raise ValidationError(
+                {
+                    "detail": [
+                        "No existe el detalle "
+                        "del libro asociado."
+                    ]
+                }
+            )
+
+        required_fields = {
+            "nombre_libro": (
+                libro.nombre_libro
+            ),
+            "codigo_isbn": (
+                libro.codigo_isbn
+            ),
+            "editorial_compilador": (
+                libro.editorial_compilador
+            ),
+            "revisor_par_arbitraje": (
+                libro.revisor_par_arbitraje
+            ),
+            "link_libro": (
+                libro.link_libro
+            ),
+        }
+
+        for field, current in (
+            required_fields.items()
+        ):
+            value = _to_str(
+                self._final_value(
+                    attrs,
+                    field,
+                    current,
+                )
+            )
+
+            if not value:
+                raise ValidationError(
+                    {
+                        field: [
+                            "Este campo es obligatorio."
+                        ]
+                    }
+                )
+
+            attrs[field] = value
+
+        return attrs
+
+    def _validate_capitulo(
+        self,
+        attrs,
+    ):
+        capitulo = (
+            self._capitulo_instance()
+        )
+
+        if capitulo is None:
+            raise ValidationError(
+                {
+                    "detail": [
+                        "No existe el detalle "
+                        "del capítulo asociado."
+                    ]
+                }
+            )
+
+        required_fields = {
+            "nombre_capitulo": (
+                capitulo.nombre_capitulo
+            ),
+            "nombre_libro": (
+                capitulo.nombre_libro
+            ),
+            "codigo_isbn": (
+                capitulo.codigo_isbn
+            ),
+            "editor_compilador": (
+                capitulo.editor_compilador
+            ),
+            "revisor_par_arbitraje": (
+                capitulo.revisor_par_arbitraje
+            ),
+            "link_capitulo": (
+                capitulo.link_capitulo
+            ),
+        }
+
+        for field, current in (
+            required_fields.items()
+        ):
+            value = _to_str(
+                self._final_value(
+                    attrs,
+                    field,
+                    current,
+                )
+            )
+
+            if not value:
+                raise ValidationError(
+                    {
+                        field: [
+                            "Este campo es obligatorio."
+                        ]
+                    }
+                )
+
+            attrs[field] = value
+
+        return attrs
+
+    def validate(
+        self,
+        attrs,
+    ):
+        attrs = self._validate_pdf_actions(
+            attrs
+        )
+
+        attrs = (
+            self._validate_relaciones_generales(
+                attrs
+            )
+        )
+
+        attrs = (
+            self._validate_area_subarea(
+                attrs
+            )
+        )
+
+        attrs = self._validate_origen(
+            attrs
+        )
+
+        attrs = self._validate_autores(
+            attrs
+        )
+
+        codigo = (
+            self._instance_tipo_codigo()
+        )
+
+        if codigo == "ponencia":
+            attrs = self._validate_ponencia(
+                attrs
+            )
+
+        elif codigo in {
+            "articulo_regional",
+            "articulo_alto_impacto",
+        }:
+            attrs = self._validate_articulo(
+                attrs
+            )
+
+            attrs["pais"] = None
+            attrs["ciudad"] = None
+
+        elif codigo == "libro":
+            attrs = self._validate_libro(
+                attrs
+            )
+
+            attrs["pais"] = None
+            attrs["ciudad"] = None
+
+        elif codigo == "capitulo_libro":
+            attrs = self._validate_capitulo(
+                attrs
+            )
+
+            attrs["pais"] = None
+            attrs["ciudad"] = None
+
+        else:
+            raise ValidationError(
+                {
+                    "detail": [
+                        "El tipo de publicación "
+                        "no es compatible con la actualización."
+                    ]
+                }
+            )
+
+        return attrs
+
+    # =========================================================
+    # AUTORÍAS
+    # =========================================================
+
+    def _sincronizar_autores(
+        self,
+        *,
+        publicacion,
+        autores_data,
+    ):
+        autores_data = (
+            autores_data
+            or []
+        )
+
+        if not autores_data:
+            raise ValidationError(
+                {
+                    "autores": [
+                        "La publicación debe mantener "
+                        "al menos un autor."
+                    ]
+                }
+            )
+
+        autor_ids = [
+            int(
+                item[
+                    "autor_id"
+                ]
+            )
+            for item
+            in autores_data
+        ]
+
+        autores_map = (
+            Autor.objects.in_bulk(
+                autor_ids
+            )
+        )
+
+        if (
+            len(autores_map)
+            != len(set(autor_ids))
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        "Uno o más autores "
+                        "seleccionados no existen."
+                    ]
+                }
+            )
+
+        PublicacionAutor.objects.filter(
+            publicacion=publicacion
+        ).delete()
+
+        for item in autores_data:
+            autor_id = int(
+                item[
+                    "autor_id"
+                ]
+            )
+
+            PublicacionAutor.objects.create(
+                publicacion=publicacion,
+                autor=autores_map[
+                    autor_id
+                ],
+                orden=int(
+                    item[
+                        "orden"
+                    ]
+                ),
+                rol_autoria=(
+                    item[
+                        "rol_autoria"
+                    ]
+                ),
+            )
+
+    # =========================================================
+    # PDF
+    # =========================================================
+
+    def _quitar_pdf_actual(
+        self,
+        instance,
+    ):
         """
-        Quita únicamente Publicacion.archivo_pdf.
-        No toca adjuntos.
+        Elimina el PDF que actualmente utiliza
+        la interfaz.
+
+        1. PDF principal.
+        2. Primer adjunto, si no existe principal.
         """
-        if instance.archivo_pdf:
-            _delete_file_field(instance.archivo_pdf)
+
+        if (
+            instance.archivo_pdf
+            and getattr(
+                instance.archivo_pdf,
+                "name",
+                None,
+            )
+        ):
+            # El propio save() del modelo se encargará
+            # de eliminar físicamente el archivo antiguo.
             instance.archivo_pdf = None
-
-    def _quitar_adjunto(self, instance: Publicacion, adjunto_id):
-        """
-        Quita un adjunto específico de PublicacionArchivo.
-        """
-        if not adjunto_id:
             return
 
         adjunto = (
             PublicacionArchivo.objects
             .filter(
-                id=adjunto_id,
-                publicacion=instance,
+                publicacion=instance
+            )
+            .order_by(
+                "orden",
+                "id",
             )
             .first()
         )
 
-        if not adjunto:
+        if adjunto:
+            adjunto.delete()
+
+    def _quitar_pdf_principal(
+        self,
+        instance,
+    ):
+        if (
+            instance.archivo_pdf
+            and getattr(
+                instance.archivo_pdf,
+                "name",
+                None,
+            )
+        ):
+            instance.archivo_pdf = None
+
+    def _quitar_adjunto(
+        self,
+        instance,
+        adjunto_id,
+    ):
+        if not adjunto_id:
+            return
+
+        try:
+            adjunto = (
+                PublicacionArchivo.objects
+                .get(
+                    id=adjunto_id,
+                    publicacion=instance,
+                )
+            )
+
+        except PublicacionArchivo.DoesNotExist:
             raise ValidationError(
                 {
                     "quitar_archivo_adjunto_id": [
-                        "El archivo adjunto indicado no existe para esta publicación."
+                        "El archivo adjunto indicado "
+                        "no pertenece a esta publicación."
                     ]
                 }
             )
 
         adjunto.delete()
 
+    # =========================================================
+    # UPDATE
+    # =========================================================
+
     @transaction.atomic
-    def update(self, instance: Publicacion, validated_data):
-        codigo = self._instance_tipo_codigo()
-        articulos_codes = self._articulos_codes()
-        capitulos_codes = self._capitulos_codes()
+    def update(
+        self,
+        instance,
+        validated_data,
+    ):
+        codigo = (
+            self._instance_tipo_codigo()
+        )
 
         quitar_pdf_actual = _to_bool(
-            validated_data.pop("quitar_pdf_actual", False)
+            validated_data.pop(
+                "quitar_pdf_actual",
+                False,
+            )
         )
 
         quitar_archivo_pdf = _to_bool(
-            validated_data.pop("quitar_archivo_pdf", False)
+            validated_data.pop(
+                "quitar_archivo_pdf",
+                False,
+            )
         )
 
-        quitar_archivo_adjunto_id = validated_data.pop(
-            "quitar_archivo_adjunto_id",
-            None,
+        quitar_adjunto_id = (
+            validated_data.pop(
+                "quitar_archivo_adjunto_id",
+                None,
+            )
         )
 
-        fecha_changed = False
+        autores_data = (
+            validated_data.pop(
+                "autores",
+                None,
+            )
+        )
 
-        for field in [
+        nuevo_pdf_presente = (
+            "archivo_pdf"
+            in validated_data
+        )
+
+        nuevo_pdf = (
+            validated_data.pop(
+                "archivo_pdf",
+                None,
+            )
+            if nuevo_pdf_presente
+            else None
+        )
+
+        # -----------------------------------------------------
+        # Publicacion
+        # -----------------------------------------------------
+
+        base_fields = [
             "carrera",
             "proyecto",
             "area",
             "subarea",
+            "pais",
+            "ciudad",
             "origen_tipo",
             "origen_grado",
             "fecha_publicacion",
-        ]:
+        ]
+
+        for field in base_fields:
             if field in validated_data:
-                setattr(instance, field, validated_data[field])
-
-                if field == "fecha_publicacion":
-                    fecha_changed = True
-
-        if codigo == "ponencia":
-            if "pais" in validated_data:
-                instance.pais = validated_data["pais"]
-
-            if "ciudad" in validated_data:
-                instance.ciudad = validated_data["ciudad"]
-
-            if instance.ciudad and not instance.pais:
-                raise ValidationError(
-                    {
-                        "pais": [
-                            "Debe seleccionar país si selecciona ciudad."
-                        ]
-                    }
+                setattr(
+                    instance,
+                    field,
+                    validated_data.pop(
+                        field
+                    ),
                 )
 
-            if instance.pais and instance.ciudad:
-                if getattr(instance.ciudad, "pais_id", None) != getattr(instance.pais, "id", None):
-                    raise ValidationError(
-                        {
-                            "ciudad": [
-                                "La ciudad seleccionada no pertenece al país indicado."
-                            ]
-                        }
-                    )
-        else:
+        if codigo != "ponencia":
             instance.pais = None
             instance.ciudad = None
 
-        if instance.subarea and not instance.area:
-            try:
-                instance.area = instance.subarea.area
-            except Exception:
-                pass
-
-        if instance.subarea and instance.area:
-            if getattr(instance.subarea, "area_id", None) != getattr(instance.area, "id", None):
-                raise ValidationError(
-                    {
-                        "subarea": [
-                            "La subárea seleccionada no pertenece al área indicada."
-                        ]
-                    }
-                )
-
-        origen_tipo = _to_lower(instance.origen_tipo) or "ninguno"
-        instance.origen_tipo = origen_tipo
-
-        if origen_tipo != "tic":
-            instance.origen_grado = None
-        else:
-            if not _to_str(instance.origen_grado):
-                raise ValidationError(
-                    {
-                        "origen_grado": [
-                            "Debe especificar el grado cuando el origen es TIC."
-                        ]
-                    }
-                )
-
-            instance.origen_grado = _to_str(instance.origen_grado)
-
-        if fecha_changed:
-            fecha = instance.fecha_publicacion
-            instance.anio_publicacion = fecha.year if fecha else None
-
-        if quitar_pdf_actual:
-            self._quitar_pdf_actual(instance)
-
-        elif quitar_archivo_pdf:
-            self._quitar_pdf_principal(instance)
-
-        if quitar_archivo_adjunto_id:
-            self._quitar_adjunto(instance, quitar_archivo_adjunto_id)
-
-        if "archivo_pdf" in validated_data:
-            instance.archivo_pdf = validated_data["archivo_pdf"]
-
-        instance.save()
-
-        if "autores" in validated_data:
-            self._sincronizar_autores(
-                publicacion=instance,
-                autores_data=validated_data.get("autores") or [],
+        if (
+            instance.subarea
+            and not instance.area
+        ):
+            instance.area = (
+                instance.subarea.area
             )
 
-        if codigo == "ponencia":
-            ponencia, _ = Ponencia.objects.get_or_create(publicacion=instance)
+        if instance.fecha_publicacion:
+            instance.anio_publicacion = (
+                instance
+                .fecha_publicacion
+                .year
+            )
+        else:
+            instance.anio_publicacion = (
+                None
+            )
 
-            for field in [
+        if quitar_pdf_actual:
+            self._quitar_pdf_actual(
+                instance
+            )
+
+        elif quitar_archivo_pdf:
+            self._quitar_pdf_principal(
+                instance
+            )
+
+        if quitar_adjunto_id:
+            self._quitar_adjunto(
+                instance,
+                quitar_adjunto_id,
+            )
+
+        if nuevo_pdf_presente:
+            instance.archivo_pdf = (
+                nuevo_pdf
+            )
+
+        try:
+            instance.save()
+
+        except DjangoValidationError as exc:
+            raise (
+                _django_validation_to_drf(
+                    exc
+                )
+            )
+
+        # -----------------------------------------------------
+        # Autores
+        # -----------------------------------------------------
+
+        if autores_data is not None:
+            self._sincronizar_autores(
+                publicacion=instance,
+                autores_data=autores_data,
+            )
+
+        # -----------------------------------------------------
+        # Ponencia
+        # -----------------------------------------------------
+
+        if codigo == "ponencia":
+            try:
+                ponencia = (
+                    instance.ponencia
+                )
+
+            except Ponencia.DoesNotExist:
+                raise ValidationError(
+                    {
+                        "detail": [
+                            "No existe el detalle "
+                            "de la ponencia asociada."
+                        ]
+                    }
+                )
+
+            fields = [
                 "nombre_evento",
                 "nombre_ponencia",
                 "codigo_issn_isbn",
                 "tipo_presentacion",
                 "tipo_presentacion_otro",
                 "link_evento",
-            ]:
+                "revisor_par_arbitraje",
+            ]
+
+            for field in fields:
                 if field in validated_data:
-                    setattr(ponencia, field, validated_data[field])
+                    setattr(
+                        ponencia,
+                        field,
+                        validated_data.pop(
+                            field
+                        ),
+                    )
 
-            ponencia.save()
+            try:
+                ponencia.save()
 
-        elif codigo in articulos_codes:
-            articulo, _ = Articulo.objects.get_or_create(publicacion=instance)
+            except DjangoValidationError as exc:
+                raise (
+                    _django_validation_to_drf(
+                        exc
+                    )
+                )
 
-            for field in [
+        # -----------------------------------------------------
+        # Artículo
+        # -----------------------------------------------------
+
+        elif codigo in {
+            "articulo_regional",
+            "articulo_alto_impacto",
+        }:
+            try:
+                articulo = (
+                    instance.articulo
+                )
+
+            except Articulo.DoesNotExist:
+                raise ValidationError(
+                    {
+                        "detail": [
+                            "No existe el detalle "
+                            "del artículo asociado."
+                        ]
+                    }
+                )
+
+            fields = [
                 "nombre_articulo",
                 "base_datos_indexada",
                 "base_datos_otra",
@@ -1128,90 +2427,121 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
                 "factor_impacto",
                 "cuartil",
                 "sjr",
-            ]:
+            ]
+
+            for field in fields:
                 if field in validated_data:
-                    setattr(articulo, field, validated_data[field])
-
-            tipo_articulo = _to_lower(articulo.tipo_articulo)
-
-            if tipo_articulo == "regional":
-                articulo.factor_impacto = None
-                articulo.cuartil = None
-                articulo.sjr = None
-
-                base_datos = _to_lower(articulo.base_datos_indexada)
-
-                if not base_datos:
-                    raise ValidationError(
-                        {
-                            "base_datos_indexada": [
-                                "Debe seleccionar una base de datos / indexación."
-                            ]
-                        }
+                    setattr(
+                        articulo,
+                        field,
+                        validated_data.pop(
+                            field
+                        ),
                     )
 
-                if base_datos == "otra":
-                    if not _to_str(articulo.base_datos_otra):
-                        raise ValidationError(
-                            {
-                                "base_datos_otra": [
-                                    "Debe especificar la base de datos cuando seleccione 'Otra'."
-                                ]
-                            }
-                        )
+            try:
+                articulo.save()
 
-                    articulo.base_datos_otra = _to_str(articulo.base_datos_otra)
-                else:
-                    articulo.base_datos_otra = None
-
-            else:
-                articulo.base_datos_indexada = None
-                articulo.base_datos_otra = None
-
-                articulo.factor_impacto = _to_lower(articulo.factor_impacto) or None
-                articulo.cuartil = _to_lower(articulo.cuartil) or None
-                articulo.sjr = _none_if_blank(articulo.sjr)
-
-                if articulo.factor_impacto == "sjr" and not _to_str(articulo.sjr):
-                    raise ValidationError(
-                        {
-                            "sjr": [
-                                "Debe ingresar el valor SJR cuando el factor de impacto es SJR."
-                            ]
-                        }
+            except DjangoValidationError as exc:
+                raise (
+                    _django_validation_to_drf(
+                        exc
                     )
+                )
 
-            articulo.save()
+        # -----------------------------------------------------
+        # Libro
+        # -----------------------------------------------------
 
         elif codigo == "libro":
-            libro, _ = Libro.objects.get_or_create(publicacion=instance)
+            try:
+                libro = instance.libro
 
-            for field in [
+            except Libro.DoesNotExist:
+                raise ValidationError(
+                    {
+                        "detail": [
+                            "No existe el detalle "
+                            "del libro asociado."
+                        ]
+                    }
+                )
+
+            fields = [
                 "nombre_libro",
                 "codigo_isbn",
                 "editorial_compilador",
                 "revisor_par_arbitraje",
                 "link_libro",
-            ]:
+            ]
+
+            for field in fields:
                 if field in validated_data:
-                    setattr(libro, field, validated_data[field])
+                    setattr(
+                        libro,
+                        field,
+                        validated_data.pop(
+                            field
+                        ),
+                    )
 
-            libro.save()
+            try:
+                libro.save()
 
-        elif codigo in capitulos_codes:
-            capitulo, _ = CapituloLibro.objects.get_or_create(publicacion=instance)
+            except DjangoValidationError as exc:
+                raise (
+                    _django_validation_to_drf(
+                        exc
+                    )
+                )
 
-            for field in [
+        # -----------------------------------------------------
+        # Capítulo
+        # -----------------------------------------------------
+
+        elif codigo == "capitulo_libro":
+            try:
+                capitulo = (
+                    instance.capitulo_libro
+                )
+
+            except CapituloLibro.DoesNotExist:
+                raise ValidationError(
+                    {
+                        "detail": [
+                            "No existe el detalle "
+                            "del capítulo asociado."
+                        ]
+                    }
+                )
+
+            fields = [
                 "nombre_capitulo",
                 "nombre_libro",
                 "codigo_isbn",
                 "editor_compilador",
                 "revisor_par_arbitraje",
                 "link_capitulo",
-            ]:
-                if field in validated_data:
-                    setattr(capitulo, field, validated_data[field])
+            ]
 
-            capitulo.save()
+            for field in fields:
+                if field in validated_data:
+                    setattr(
+                        capitulo,
+                        field,
+                        validated_data.pop(
+                            field
+                        ),
+                    )
+
+            try:
+                capitulo.save()
+
+            except DjangoValidationError as exc:
+                raise (
+                    _django_validation_to_drf(
+                        exc
+                    )
+                )
 
         return instance

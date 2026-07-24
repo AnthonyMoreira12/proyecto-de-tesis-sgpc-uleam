@@ -1,30 +1,95 @@
 """
-Serializers para gestión de archivos adjuntos de publicaciones.
-Permiten listar, crear y cargar múltiples archivos con validación de metadatos.
-Aceptan aliases de payload para compatibilidad:
-- meta / archivos_meta
-- files / archivos
+Serializers para archivos adjuntos de publicaciones.
+
+Gestiona:
+- lectura;
+- creación individual;
+- subida múltiple;
+- validación de PDF;
+- límite máximo de adjuntos;
+- asignación segura del orden.
 """
 
 import json
+
+from django.core.exceptions import (
+    ValidationError as DjangoValidationError,
+)
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from core.models import Publicacion
-from core.models.publicaciones.archivos import PublicacionArchivo
-# Importamos las utilidades que acabas de crear
+from core.models.publicaciones.archivos import (
+    MAX_ADJUNTOS_POR_PUBLICACION,
+    PublicacionArchivo,
+)
 from core.publicaciones.utils.publicaciones_archivos_utils import (
+    default_nombre_from_file,
     validar_firma_pdf,
-    default_nombre_from_file
 )
 
 
-class PublicacionArchivoSerializer(serializers.ModelSerializer):
-    archivo_url = serializers.SerializerMethodField(read_only=True)
-    publicacion_id = serializers.IntegerField(source="publicacion.id", read_only=True)
+def _django_validation_to_drf(
+    exc,
+):
+    if hasattr(
+        exc,
+        "message_dict",
+    ):
+        return ValidationError(
+            exc.message_dict
+        )
+
+    if hasattr(
+        exc,
+        "messages",
+    ):
+        return ValidationError(
+            {
+                "detail": list(
+                    exc.messages
+                )
+            }
+        )
+
+    return ValidationError(
+        {
+            "detail": [
+                str(exc)
+            ]
+        }
+    )
+
+
+def _next_free_order(
+    used_orders,
+):
+    order = 1
+
+    while order in used_orders:
+        order += 1
+
+    return order
+
+
+class PublicacionArchivoSerializer(
+    serializers.ModelSerializer
+):
+    publicacion_id = serializers.IntegerField(
+        source="publicacion.id",
+        read_only=True,
+    )
+
+    archivo_url = (
+        serializers.SerializerMethodField(
+            read_only=True
+        )
+    )
 
     class Meta:
         model = PublicacionArchivo
+
         fields = [
             "id",
             "publicacion_id",
@@ -34,6 +99,7 @@ class PublicacionArchivoSerializer(serializers.ModelSerializer):
             "orden",
             "created_at",
         ]
+
         read_only_fields = [
             "id",
             "publicacion_id",
@@ -41,30 +107,67 @@ class PublicacionArchivoSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_archivo_url(self, obj):
+    def get_archivo_url(
+        self,
+        obj,
+    ):
         try:
-            if not obj.archivo:
+            archivo = getattr(
+                obj,
+                "archivo",
+                None,
+            )
+
+            if (
+                not archivo
+                or not getattr(
+                    archivo,
+                    "name",
+                    None,
+                )
+            ):
                 return None
-            file_url = obj.archivo.url
-        except Exception:
+
+            file_url = archivo.url
+
+        except (
+            ValueError,
+            AttributeError,
+        ):
             return None
 
-        request = self.context.get("request")
-        if request:
-            try:
-                return request.build_absolute_uri(file_url)
-            except Exception:
-                return file_url
+        request = self.context.get(
+            "request"
+        )
 
-        return file_url
+        if request is None:
+            return file_url
+
+        try:
+            return (
+                request.build_absolute_uri(
+                    file_url
+                )
+            )
+        except Exception:
+            return file_url
 
 
-class PublicacionArchivoCreateSerializer(serializers.ModelSerializer):
-    publicacion = serializers.PrimaryKeyRelatedField(
-        queryset=Publicacion.objects.all()
+class PublicacionArchivoCreateSerializer(
+    serializers.ModelSerializer
+):
+    publicacion = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=Publicacion.objects.all(),
+        )
     )
-    nombre = serializers.CharField(max_length=150)
+
+    nombre = serializers.CharField(
+        max_length=150,
+    )
+
     archivo = serializers.FileField()
+
     orden = serializers.IntegerField(
         required=False,
         allow_null=True,
@@ -73,6 +176,7 @@ class PublicacionArchivoCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublicacionArchivo
+
         fields = [
             "id",
             "publicacion",
@@ -81,171 +185,648 @@ class PublicacionArchivoCreateSerializer(serializers.ModelSerializer):
             "orden",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
 
-    def validate_nombre(self, value):
-        value = (value or "").strip()
+        read_only_fields = [
+            "id",
+            "created_at",
+        ]
+
+    def validate_nombre(
+        self,
+        value,
+    ):
+        value = str(
+            value or ""
+        ).strip()
+
         if not value:
-            raise ValidationError("Debe ingresar un nombre para el archivo.")
+            raise ValidationError(
+                "Debe ingresar un nombre "
+                "para el archivo."
+            )
+
         return value
 
-    def validate_archivo(self, value):
-        # Usamos nuestra nueva utilidad para bloquear falsos PDFs
-        return validar_firma_pdf(value)
+    def validate_archivo(
+        self,
+        value,
+    ):
+        return validar_firma_pdf(
+            value
+        )
 
-    def validate(self, attrs):
-        if attrs.get("orden") in (None, ""):
-            publicacion = attrs.get("publicacion")
-            last = (
-                PublicacionArchivo.objects
-                .filter(publicacion=publicacion)
-                .order_by("-orden", "-id")
-                .first()
+    @transaction.atomic
+    def create(
+        self,
+        validated_data,
+    ):
+        publicacion = (
+            validated_data[
+                "publicacion"
+            ]
+        )
+
+        publicacion = (
+            Publicacion.objects
+            .select_for_update()
+            .get(
+                pk=publicacion.pk
             )
-            attrs["orden"] = 1 if not last else int(last.orden or 0) + 1
+        )
 
-        return attrs
-
-
-class PublicacionArchivosBulkUploadSerializer(serializers.Serializer):
-    publicacion_id = serializers.IntegerField()
-    meta = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    files = serializers.ListField(
-        child=serializers.FileField(),
-        allow_empty=False,
-        required=False,
-    )
-
-    def to_internal_value(self, data):
-        source = data.copy() if hasattr(data, "copy") else dict(data)
-
-        meta_value = None
-        files_value = []
-
-        if hasattr(data, "getlist"):
-            files_value = data.getlist("files") or data.getlist("archivos")
-            meta_value = data.get("meta", None)
-            if meta_value in (None, ""):
-                meta_value = data.get("archivos_meta", None)
-        else:
-            files_value = source.get("files") or source.get("archivos") or []
-            meta_value = source.get("meta", None)
-            if meta_value in (None, ""):
-                meta_value = source.get("archivos_meta", None)
-
-        if not isinstance(files_value, list):
-            files_value = [files_value] if files_value else []
-
-        source["files"] = [f for f in files_value if f]
-        source["meta"] = meta_value if meta_value is not None else ""
-
-        return super().to_internal_value(source)
-
-    def validate(self, attrs):
-        pub_id = attrs.get("publicacion_id")
-
-        try:
-            publicacion = Publicacion.objects.get(id=pub_id)
-        except Publicacion.DoesNotExist:
-            raise ValidationError({"publicacion_id": ["Publicación no existe."]})
-
-        raw_meta = (attrs.get("meta") or "").strip()
-        files = attrs.get("files") or []
-
-        # Usamos nuestra nueva utilidad para bloquear falsos PDFs en la subida masiva
-        for index, uploaded_file in enumerate(files, start=1):
-            try:
-                validar_firma_pdf(uploaded_file)
-            except ValidationError as e:
-                raise ValidationError({"files": [f"Archivo #{index}: {e.detail[0]}"]})
-
-        try:
-            meta_list = json.loads(raw_meta) if raw_meta else []
-        except Exception:
-            raise ValidationError({"meta": ["Formato inválido. Debe ser JSON válido."]})
-
-        if meta_list and not isinstance(meta_list, list):
-            raise ValidationError(
-                {"meta": ["Debe enviar una lista JSON con {nombre, orden?}."]}
+        existing = list(
+            PublicacionArchivo.objects
+            .filter(
+                publicacion=publicacion
             )
+            .values_list(
+                "orden",
+                flat=True,
+            )
+        )
 
-        if meta_list and len(meta_list) != len(files):
+        if (
+            len(existing)
+            >= MAX_ADJUNTOS_POR_PUBLICACION
+        ):
             raise ValidationError(
                 {
-                    "detail": (
-                        "La cantidad de 'meta' debe coincidir con la cantidad de archivos."
+                    "archivo": [
+                        "Solo se permiten hasta "
+                        f"{MAX_ADJUNTOS_POR_PUBLICACION} "
+                        "archivos adjuntos por publicación."
+                    ]
+                }
+            )
+
+        requested_order = (
+            validated_data.get(
+                "orden"
+            )
+        )
+
+        used_orders = set(
+            existing
+        )
+
+        if requested_order is None:
+            requested_order = (
+                _next_free_order(
+                    used_orders
+                )
+            )
+
+        if requested_order in used_orders:
+            raise ValidationError(
+                {
+                    "orden": [
+                        "Ya existe un archivo "
+                        "con este orden."
+                    ]
+                }
+            )
+
+        try:
+            return (
+                PublicacionArchivo.objects
+                .create(
+                    publicacion=publicacion,
+                    nombre=validated_data[
+                        "nombre"
+                    ],
+                    archivo=validated_data[
+                        "archivo"
+                    ],
+                    orden=requested_order,
+                )
+            )
+
+        except DjangoValidationError as exc:
+            raise _django_validation_to_drf(
+                exc
+            )
+
+
+class PublicacionArchivosBulkUploadSerializer(
+    serializers.Serializer
+):
+    publicacion_id = serializers.IntegerField(
+        min_value=1,
+    )
+
+    meta = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
+    files = serializers.ListField(
+        child=serializers.FileField(),
+        required=False,
+        allow_empty=False,
+    )
+
+    def to_internal_value(
+        self,
+        data,
+    ):
+        source = {}
+
+        if hasattr(
+            data,
+            "getlist",
+        ):
+            files_value = (
+                data.getlist(
+                    "files"
+                )
+                or data.getlist(
+                    "archivos"
+                )
+            )
+
+            meta_value = data.get(
+                "meta",
+                None,
+            )
+
+            if meta_value in (
+                None,
+                "",
+            ):
+                meta_value = data.get(
+                    "archivos_meta",
+                    None,
+                )
+
+            publicacion_id = data.get(
+                "publicacion_id",
+                None,
+            )
+
+        else:
+            raw = dict(
+                data
+            )
+
+            files_value = (
+                raw.get(
+                    "files"
+                )
+                or raw.get(
+                    "archivos"
+                )
+                or []
+            )
+
+            meta_value = raw.get(
+                "meta",
+                None,
+            )
+
+            if meta_value in (
+                None,
+                "",
+            ):
+                meta_value = raw.get(
+                    "archivos_meta",
+                    None,
+                )
+
+            publicacion_id = raw.get(
+                "publicacion_id",
+                None,
+            )
+
+        if not isinstance(
+            files_value,
+            list,
+        ):
+            files_value = (
+                [files_value]
+                if files_value
+                else []
+            )
+
+        source[
+            "publicacion_id"
+        ] = publicacion_id
+
+        source["files"] = [
+            file
+            for file in files_value
+            if file
+        ]
+
+        source["meta"] = (
+            meta_value
+            if meta_value is not None
+            else ""
+        )
+
+        return super().to_internal_value(
+            source
+        )
+
+    def validate(
+        self,
+        attrs,
+    ):
+        publicacion_id = attrs.get(
+            "publicacion_id"
+        )
+
+        try:
+            publicacion = (
+                Publicacion.objects
+                .get(
+                    pk=publicacion_id
+                )
+            )
+        except Publicacion.DoesNotExist:
+            raise ValidationError(
+                {
+                    "publicacion_id": [
+                        "La publicación no existe."
+                    ]
+                }
+            )
+
+        files = attrs.get(
+            "files"
+        ) or []
+
+        if not files:
+            raise ValidationError(
+                {
+                    "files": [
+                        "Debe adjuntar al menos "
+                        "un archivo PDF."
+                    ]
+                }
+            )
+
+        if (
+            len(files)
+            > MAX_ADJUNTOS_POR_PUBLICACION
+        ):
+            raise ValidationError(
+                {
+                    "files": [
+                        "Solo se permiten hasta "
+                        f"{MAX_ADJUNTOS_POR_PUBLICACION} "
+                        "archivos adjuntos por publicación."
+                    ]
+                }
+            )
+
+        for index, uploaded_file in enumerate(
+            files,
+            start=1,
+        ):
+            try:
+                validar_firma_pdf(
+                    uploaded_file
+                )
+            except ValidationError as exc:
+                detail = exc.detail
+
+                if isinstance(
+                    detail,
+                    list,
+                ):
+                    message = str(
+                        detail[0]
                     )
+                else:
+                    message = str(
+                        detail
+                    )
+
+                raise ValidationError(
+                    {
+                        "files": [
+                            f"Archivo #{index}: "
+                            f"{message}"
+                        ]
+                    }
+                )
+
+        raw_meta = str(
+            attrs.get(
+                "meta"
+            )
+            or ""
+        ).strip()
+
+        try:
+            meta_list = (
+                json.loads(
+                    raw_meta
+                )
+                if raw_meta
+                else []
+            )
+        except (
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ):
+            raise ValidationError(
+                {
+                    "meta": [
+                        "Formato inválido. "
+                        "Debe ser JSON válido."
+                    ]
+                }
+            )
+
+        if (
+            meta_list
+            and not isinstance(
+                meta_list,
+                list,
+            )
+        ):
+            raise ValidationError(
+                {
+                    "meta": [
+                        "Debe enviar una lista JSON "
+                        "con los metadatos de los archivos."
+                    ]
+                }
+            )
+
+        if (
+            meta_list
+            and len(meta_list)
+            != len(files)
+        ):
+            raise ValidationError(
+                {
+                    "meta": [
+                        "La cantidad de metadatos "
+                        "debe coincidir con la cantidad "
+                        "de archivos."
+                    ]
                 }
             )
 
         normalized = []
 
-        if not meta_list:
-            for index, uploaded_file in enumerate(files, start=1):
-                normalized.append(
+        for index, uploaded_file in enumerate(
+            files,
+            start=1,
+        ):
+            item = (
+                meta_list[index - 1]
+                if meta_list
+                else {}
+            )
+
+            if not isinstance(
+                item,
+                dict,
+            ):
+                raise ValidationError(
                     {
-                        "nombre": default_nombre_from_file(uploaded_file),
-                        "orden": index,
+                        "meta": [
+                            f"El elemento #{index} "
+                            "debe ser un objeto JSON."
+                        ]
                     }
                 )
-        else:
-            for index, item in enumerate(meta_list, start=1):
-                if not isinstance(item, dict):
-                    raise ValidationError(
-                        {"meta": ["Cada item de meta debe ser un objeto JSON."]}
+
+            nombre = str(
+                item.get(
+                    "nombre"
+                )
+                or ""
+            ).strip()
+
+            if not nombre:
+                nombre = (
+                    default_nombre_from_file(
+                        uploaded_file
                     )
+                )
 
-                nombre = (item.get("nombre") or "").strip()
-                if not nombre:
-                    nombre = default_nombre_from_file(files[index - 1])
+            if len(nombre) > 150:
+                raise ValidationError(
+                    {
+                        "meta": [
+                            f"El nombre del archivo "
+                            f"#{index} supera "
+                            "150 caracteres."
+                        ]
+                    }
+                )
 
-                orden = item.get("orden")
-                if orden in (None, ""):
-                    orden = index
+            orden = item.get(
+                "orden",
+                None,
+            )
 
+            if orden not in (
+                None,
+                "",
+            ):
                 try:
-                    orden = int(orden)
-                except Exception:
+                    orden = int(
+                        orden
+                    )
+                except (
+                    TypeError,
+                    ValueError,
+                ):
                     raise ValidationError(
-                        {"meta": [f"El 'orden' del archivo #{index} debe ser numérico."]}
+                        {
+                            "meta": [
+                                f"El orden del archivo "
+                                f"#{index} debe ser numérico."
+                            ]
+                        }
                     )
 
                 if orden < 1:
                     raise ValidationError(
-                        {"meta": [f"El 'orden' del archivo #{index} debe ser >= 1."]}
+                        {
+                            "meta": [
+                                f"El orden del archivo "
+                                f"#{index} debe ser mayor "
+                                "o igual a 1."
+                            ]
+                        }
                     )
+            else:
+                orden = None
 
-                normalized.append(
-                    {
-                        "nombre": nombre,
-                        "orden": orden,
-                    }
-                )
-
-        ordenes = [item["orden"] for item in normalized]
-        if len(ordenes) != len(set(ordenes)):
-            raise ValidationError(
-                {"meta": ["No se permite repetir el campo 'orden' en adjuntos."]}
+            normalized.append(
+                {
+                    "nombre": nombre,
+                    "orden": orden,
+                }
             )
 
-        attrs["publicacion"] = publicacion
-        attrs["meta_list"] = sorted(normalized, key=lambda item: item["orden"])
+        explicit_orders = [
+            item["orden"]
+            for item in normalized
+            if item["orden"] is not None
+        ]
+
+        if (
+            len(explicit_orders)
+            != len(
+                set(explicit_orders)
+            )
+        ):
+            raise ValidationError(
+                {
+                    "meta": [
+                        "No se permite repetir "
+                        "el orden de los adjuntos."
+                    ]
+                }
+            )
+
+        attrs["publicacion"] = (
+            publicacion
+        )
+
+        attrs["meta_list"] = (
+            normalized
+        )
+
         return attrs
 
-    def create(self, validated_data):
-        publicacion = validated_data["publicacion"]
-        meta_list = validated_data["meta_list"]
-        files = validated_data["files"]
+    @transaction.atomic
+    def create(
+        self,
+        validated_data,
+    ):
+        publicacion = (
+            validated_data[
+                "publicacion"
+            ]
+        )
+
+        files = validated_data[
+            "files"
+        ]
+
+        meta_list = validated_data[
+            "meta_list"
+        ]
+
+        publicacion = (
+            Publicacion.objects
+            .select_for_update()
+            .get(
+                pk=publicacion.pk
+            )
+        )
+
+        existing = list(
+            PublicacionArchivo.objects
+            .filter(
+                publicacion=publicacion
+            )
+            .values_list(
+                "orden",
+                flat=True,
+            )
+        )
+
+        if (
+            len(existing)
+            + len(files)
+            > MAX_ADJUNTOS_POR_PUBLICACION
+        ):
+            disponibles = max(
+                MAX_ADJUNTOS_POR_PUBLICACION
+                - len(existing),
+                0,
+            )
+
+            raise ValidationError(
+                {
+                    "files": [
+                        "La publicación solo admite "
+                        f"{MAX_ADJUNTOS_POR_PUBLICACION} "
+                        "adjuntos. "
+                        f"Puede agregar {disponibles} "
+                        "archivo(s) adicional(es)."
+                    ]
+                }
+            )
+
+        used_orders = set(
+            existing
+        )
+
+        assigned = []
+
+        for item in meta_list:
+            order = item[
+                "orden"
+            ]
+
+            if order is not None:
+                if order in used_orders:
+                    raise ValidationError(
+                        {
+                            "meta": [
+                                f"Ya existe un archivo "
+                                f"con orden {order}."
+                            ]
+                        }
+                    )
+            else:
+                order = _next_free_order(
+                    used_orders
+                )
+
+            used_orders.add(
+                order
+            )
+
+            assigned.append(
+                {
+                    "nombre": item[
+                        "nombre"
+                    ],
+                    "orden": order,
+                }
+            )
 
         created = []
-        for item, uploaded_file in zip(meta_list, files):
-            created.append(
-                PublicacionArchivo.objects.create(
-                    publicacion=publicacion,
-                    nombre=item["nombre"],
-                    orden=item["orden"],
-                    archivo=uploaded_file,
+
+        try:
+            for metadata, uploaded_file in zip(
+                assigned,
+                files,
+            ):
+                obj = (
+                    PublicacionArchivo.objects
+                    .create(
+                        publicacion=publicacion,
+                        nombre=metadata[
+                            "nombre"
+                        ],
+                        orden=metadata[
+                            "orden"
+                        ],
+                        archivo=uploaded_file,
+                    )
                 )
+
+                created.append(
+                    obj
+                )
+
+        except DjangoValidationError as exc:
+            raise _django_validation_to_drf(
+                exc
             )
 
         return created

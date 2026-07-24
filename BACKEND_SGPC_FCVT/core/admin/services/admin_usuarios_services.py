@@ -1,144 +1,166 @@
-"""
-Servicios administrativos para gestión de usuarios.
-Contiene lógica de negocio reutilizable y separada del ViewSet.
-Complementa el módulo administrativo al validar cambios de acceso,
-activar usuarios externos, habilitar o extender edición de perfil y bloquear
-la edición cuando sea necesario.
-"""
+"""Servicios administrativos para usuarios."""
 
 from datetime import timedelta
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
+from django.db.models import Q
 from django.utils import timezone
-from rest_framework import status
-
-from core.admin.selectors.admin_usuarios_selectors import active_admins_qs
 
 
 class AdminUsuariosServiceError(Exception):
-    def __init__(self, detail, status_code=status.HTTP_400_BAD_REQUEST):
+    def __init__(self, detail, *, status_code=400):
         self.detail = detail
         self.status_code = status_code
         super().__init__(str(detail))
 
 
-def parse_bool(value):
+def parse_bool(value, *, default=None):
     if value is None:
-        return None
+        return default
 
     if isinstance(value, bool):
         return value
 
-    if isinstance(value, (int, float)):
-        if value in (0, 1):
-            return bool(value)
-        return None
+    normalized = str(value).strip().lower()
 
-    s = str(value).strip().lower()
-
-    if s in ("1", "true", "yes", "y", "on"):
+    if normalized in {"1", "true", "yes", "y", "on", "si", "sí"}:
         return True
 
-    if s in ("0", "false", "no", "n", "off"):
+    if normalized in {"0", "false", "no", "n", "off"}:
         return False
 
-    return None
-
-
-def validate_admin_guard(usuario, actor, *, new_is_active=None, new_is_staff=None):
-    final_is_active = usuario.is_active if new_is_active is None else bool(new_is_active)
-    final_is_staff = usuario.is_staff if new_is_staff is None else bool(new_is_staff)
-
-    current_is_admin = bool(usuario.is_superuser or usuario.is_staff)
-    final_is_admin = bool(usuario.is_superuser or final_is_staff)
-
-    current_is_active_admin = current_is_admin and bool(usuario.is_active)
-    final_is_active_admin = final_is_admin and final_is_active
-
-    changing_access = (
-        (new_is_active is not None and final_is_active != usuario.is_active)
-        or (new_is_staff is not None and final_is_staff != usuario.is_staff)
+    raise AdminUsuariosServiceError(
+        {"detail": "El valor debe ser verdadero o falso."}
     )
 
-    if changing_access and usuario.pk == getattr(actor, "pk", None):
+
+def validate_admin_guard(
+    target,
+    actor,
+    *,
+    new_is_active=None,
+    new_is_staff=None,
+):
+    if getattr(target, "is_superuser", False):
+        if new_is_active is False or new_is_staff is False:
+            raise AdminUsuariosServiceError(
+                {
+                    "detail": (
+                        "No se puede desactivar ni revocar "
+                        "a un superusuario."
+                    )
+                }
+            )
+
+    if getattr(target, "pk", None) == getattr(actor, "pk", None):
+        if new_is_active is False or new_is_staff is False:
+            raise AdminUsuariosServiceError(
+                {
+                    "detail": (
+                        "No puede retirar su propio acceso "
+                        "administrativo."
+                    )
+                }
+            )
+
+    removing_admin = (
+        (new_is_active is False and target.is_active)
+        or (
+            new_is_staff is False
+            and target.is_staff
+            and not target.is_superuser
+        )
+    )
+
+    if removing_admin:
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        remaining = (
+            User.objects
+            .filter(is_active=True)
+            .filter(Q(is_staff=True) | Q(is_superuser=True))
+            .exclude(pk=target.pk)
+            .exists()
+        )
+
+        if not remaining:
+            raise AdminUsuariosServiceError(
+                {
+                    "detail": (
+                        "No se puede retirar al último "
+                        "administrador activo."
+                    )
+                }
+            )
+
+
+def activate_external_user(user, *, email=None, password=None):
+    if email is not None:
+        email = str(email).strip().lower()
+
+        try:
+            validate_email(email)
+        except DjangoValidationError as exc:
+            raise AdminUsuariosServiceError(
+                {"email": "Ingrese un correo válido."}
+            ) from exc
+
+        user.email = email
+
+    if password is not None:
+        password = str(password)
+
+        if not password:
+            raise AdminUsuariosServiceError(
+                {"password": "La contraseña es obligatoria."}
+            )
+
+        try:
+            validate_password(password, user=user)
+        except DjangoValidationError as exc:
+            raise AdminUsuariosServiceError(
+                {"password": list(exc.messages)}
+            ) from exc
+
+        user.set_password(password)
+
+    user.is_active = True
+
+    fields = ["is_active"]
+
+    if email is not None:
+        fields.append("email")
+
+    if password is not None:
+        fields.append("password")
+
+    return fields
+
+
+def enable_profile_edit(user, *, hours=48, attempts=3):
+    try:
+        hours = int(hours)
+        attempts = int(attempts)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise AdminUsuariosServiceError(
+            {"detail": "Horas e intentos deben ser numéricos."}
+        ) from exc
+
+    if hours <= 0 or attempts <= 0:
         raise AdminUsuariosServiceError(
             {
                 "detail": (
-                    "No puedes modificar tu propio acceso administrativo "
-                    "o estado activo desde este endpoint."
+                    "Horas e intentos deben ser mayores "
+                    "que cero."
                 )
             }
         )
 
-    if current_is_active_admin and not final_is_active_admin:
-        if not active_admins_qs().exclude(pk=usuario.pk).exists():
-            raise AdminUsuariosServiceError(
-                {"detail": "No se puede dejar el sistema sin administradores activos."}
-            )
-
-    return True
-
-
-def _ensure_external_local_user(user):
-    if (
-        str(getattr(user, "rol", "")).lower() != "autor_externo"
-        or str(getattr(user, "auth_source", "")).lower() != "local"
-    ):
-        raise AdminUsuariosServiceError(
-            {"detail": "Solo se pueden activar usuarios externos (local)."}
-        )
-
-
-def activate_external_user(user, *, email=None, password=""):
-    _ensure_external_local_user(user)
-
-    if email is not None:
-        email = str(email).strip().lower()
-
-        if not email:
-            raise AdminUsuariosServiceError(
-                {"email": "Ingrese un correo válido."}
-            )
-
-        try:
-            validate_email(email)
-        except DjangoValidationError:
-            raise AdminUsuariosServiceError(
-                {"email": "Ingrese un correo válido."}
-            )
-
-    password = str(password).strip() if password is not None else ""
-    if not password:
-        raise AdminUsuariosServiceError(
-            {"password": "La contraseña es obligatoria."}
-        )
-
-    try:
-        validate_password(password, user=user)
-    except DjangoValidationError as exc:
-        raise AdminUsuariosServiceError(
-            {"password": list(exc.messages)}
-        )
-
-    update_fields = []
-
-    if email is not None:
-        user.email = email
-        update_fields.append("email")
-
-    user.set_password(password)
-    user.is_active = True
-    update_fields.extend(["password", "is_active"])
-
-    return update_fields
-
-
-def enable_profile_edit(user, *, hours=48, attempts=3):
-    now = timezone.now()
-
-    user.profile_edit_until = now + timedelta(hours=hours)
+    user.profile_edit_until = timezone.now() + timedelta(hours=hours)
     user.profile_edit_attempts_left = attempts
     user.profile_edit_locked = False
     user.profile_edit_lock_reason = None
@@ -154,24 +176,31 @@ def enable_profile_edit(user, *, hours=48, attempts=3):
 def extend_profile_edit(user, *, hours):
     try:
         hours = int(hours)
-    except Exception:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise AdminUsuariosServiceError(
-            {"detail": "El valor de 'horas' debe ser numérico."}
-        )
+            {"detail": "El valor de horas debe ser numérico."}
+        ) from exc
 
     if hours <= 0:
         raise AdminUsuariosServiceError(
-            {"detail": "Las horas deben ser mayores a 0."}
+            {"detail": "Las horas deben ser mayores que cero."}
         )
 
     now = timezone.now()
-    base = now
-
-    if getattr(user, "profile_edit_until", None) and user.profile_edit_until > now:
-        base = user.profile_edit_until
+    base = (
+        user.profile_edit_until
+        if (
+            getattr(user, "profile_edit_until", None)
+            and user.profile_edit_until > now
+        )
+        else now
+    )
 
     user.profile_edit_until = base + timedelta(hours=hours)
-    user.profile_edit_attempts_left = 3
+    user.profile_edit_attempts_left = max(
+        int(getattr(user, "profile_edit_attempts_left", 0) or 0),
+        3,
+    )
     user.profile_edit_locked = False
     user.profile_edit_lock_reason = None
 
@@ -184,18 +213,17 @@ def extend_profile_edit(user, *, hours):
 
 
 def block_profile_edit(user, *, reason=None):
-    if reason is not None:
-        reason = str(reason).strip()
-        if reason == "":
-            reason = None
+    reason = str(reason or "").strip() or (
+        "Bloqueado por el administrador."
+    )
 
-    if reason and len(reason) > 255:
+    if len(reason) > 255:
         raise AdminUsuariosServiceError(
-            {"reason": "El motivo no puede exceder 255 caracteres."}
+            {"reason": "El motivo no puede superar 255 caracteres."}
         )
 
     user.profile_edit_locked = True
-    user.profile_edit_lock_reason = reason or "Bloqueado por el administrador."
+    user.profile_edit_lock_reason = reason
     user.profile_edit_attempts_left = 0
     user.profile_edit_until = None
 

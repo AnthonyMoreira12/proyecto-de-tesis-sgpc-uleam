@@ -18,14 +18,30 @@ def _norm_upper(value):
 
 
 class Pais(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+    )
 
-    # ISO-3166
-    iso2 = models.CharField(max_length=2, null=True, blank=True, db_index=True)
-    iso3 = models.CharField(max_length=3, null=True, blank=True, db_index=True)
+    iso2 = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
-    # GeoNames countryId (opcional)
-    geoname_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    iso3 = models.CharField(
+        max_length=3,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    geoname_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
     class Meta:
         db_table = "paises"
@@ -38,16 +54,24 @@ class Pais(models.Model):
             models.UniqueConstraint(
                 fields=["iso2"],
                 name="unique_pais_iso2",
-                condition=Q(iso2__isnull=False)
+                condition=(
+                    Q(iso2__isnull=False)
+                    & ~Q(iso2="")
+                ),
             ),
             models.UniqueConstraint(
                 fields=["iso3"],
                 name="unique_pais_iso3",
-                condition=Q(iso3__isnull=False)
+                condition=(
+                    Q(iso3__isnull=False)
+                    & ~Q(iso3="")
+                ),
             ),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
@@ -55,13 +79,21 @@ class Pais(models.Model):
         self.iso3 = _norm_upper(self.iso3)
 
         if not self.nombre:
-            errors["nombre"] = "El nombre del país es obligatorio."
+            errors["nombre"] = (
+                "El nombre del país es obligatorio."
+            )
 
         if self.iso2 and len(self.iso2) != 2:
-            errors["iso2"] = "El código ISO2 debe tener exactamente 2 caracteres."
+            errors["iso2"] = (
+                "El código ISO2 debe tener "
+                "exactamente 2 caracteres."
+            )
 
         if self.iso3 and len(self.iso3) != 3:
-            errors["iso3"] = "El código ISO3 debe tener exactamente 3 caracteres."
+            errors["iso3"] = (
+                "El código ISO3 debe tener "
+                "exactamente 3 caracteres."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -75,26 +107,38 @@ class Pais(models.Model):
 
 
 class Ciudad(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(
+        max_length=100,
+    )
 
     pais = models.ForeignKey(
         Pais,
         on_delete=models.CASCADE,
-        related_name="ciudades"
+        related_name="ciudades",
     )
 
-    # GeoNames ID para evitar ambigüedades
-    geoname_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    geoname_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
-    # Región/Provincia opcional
-    admin1 = models.CharField(max_length=120, null=True, blank=True)
+    admin1 = models.CharField(
+        max_length=120,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "ciudades"
         ordering = ["nombre"]
         indexes = [
-            models.Index(fields=["pais", "nombre"]),
-            models.Index(fields=["geoname_id"]),
+            models.Index(
+                fields=["pais", "nombre"],
+            ),
+            models.Index(
+                fields=["geoname_id"],
+            ),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -104,21 +148,29 @@ class Ciudad(models.Model):
             models.UniqueConstraint(
                 fields=["pais", "geoname_id"],
                 name="unique_ciudad_geoname_por_pais",
-                condition=Q(geoname_id__isnull=False)
-            )
+                condition=Q(
+                    geoname_id__isnull=False
+                ),
+            ),
         ]
 
     def clean(self):
+        super().clean()
+
         errors = {}
 
         self.nombre = _norm_text(self.nombre)
         self.admin1 = _norm_optional_text(self.admin1)
 
         if not self.nombre:
-            errors["nombre"] = "El nombre de la ciudad es obligatorio."
+            errors["nombre"] = (
+                "El nombre de la ciudad es obligatorio."
+            )
 
         if not self.pais_id:
-            errors["pais"] = "El país es obligatorio."
+            errors["pais"] = (
+                "El país es obligatorio."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -128,4 +180,10 @@ class Ciudad(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.pais.nombre})"
+        country_name = (
+            self.pais.nombre
+            if self.pais_id
+            else "Sin país"
+        )
+
+        return f"{self.nombre} ({country_name})"

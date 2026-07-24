@@ -1,5 +1,8 @@
 <template>
   <div class="dg">
+    <!-- =====================================================
+         CONTEXTO INSTITUCIONAL
+    ====================================================== -->
     <section class="dg-section surface-enter surface-enter--1">
       <header class="dg-section-head">
         <div>
@@ -26,7 +29,7 @@
             for="dg-facultad"
           >
             Facultad
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -35,6 +38,11 @@
               class="dg-input"
               :value="local.facultad"
               :aria-invalid="Boolean(props.errors?.facultad)"
+              :aria-describedby="
+                props.errors?.facultad
+                  ? 'dg-facultad-error'
+                  : undefined
+              "
               required
               @change="setField('facultad', $event.target.value)"
             >
@@ -56,7 +64,9 @@
 
             <p
               v-if="props.errors?.facultad"
+              id="dg-facultad-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.facultad }}
             </p>
@@ -70,7 +80,7 @@
             for="dg-carrera"
           >
             Carrera
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -81,6 +91,7 @@
               :disabled="!local.facultad || loadingCarreras"
               :aria-busy="loadingCarreras ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.carrera)"
+              :aria-describedby="carreraDescriptionIds"
               required
               @change="setField('carrera', $event.target.value)"
             >
@@ -110,22 +121,28 @@
 
             <p
               v-if="!local.facultad"
+              id="dg-carrera-help"
               class="dg-hint"
             >
               Seleccione una facultad para habilitar las carreras.
             </p>
 
             <p
-              v-else-if="!loadingCarreras && carreras.length === 0"
+              v-else-if="
+                !loadingCarreras &&
+                carreras.length === 0
+              "
+              id="dg-carrera-empty"
               class="dg-hint dg-hint-warn"
             >
-              No hay carreras disponibles para esta facultad. Revise los
-              catálogos.
+              No hay carreras disponibles para esta facultad.
             </p>
 
             <p
               v-if="props.errors?.carrera"
+              id="dg-carrera-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.carrera }}
             </p>
@@ -143,6 +160,7 @@
             <span
               v-if="!props.proyectoOpcional"
               class="req"
+              aria-hidden="true"
             >
               *
             </span>
@@ -156,6 +174,7 @@
               :disabled="!local.carrera || loadingProyectos"
               :aria-busy="loadingProyectos ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.proyecto)"
+              :aria-describedby="proyectoDescriptionIds"
               :required="!props.proyectoOpcional"
               @change="setField('proyecto', $event.target.value)"
             >
@@ -184,12 +203,13 @@
                 :key="proyecto.id"
                 :value="String(proyecto.id)"
               >
-                {{ proyecto.nombre }}
+                {{ proyectoOptionLabel(proyecto) }}
               </option>
             </select>
 
             <p
               v-if="!local.carrera"
+              id="dg-proyecto-help"
               class="dg-hint"
             >
               Seleccione una carrera para habilitar los proyectos.
@@ -200,9 +220,10 @@
                 !loadingProyectos &&
                 proyectosVisibles.length === 0
               "
+              id="dg-proyecto-empty"
               class="dg-hint dg-hint-warn"
             >
-              No existen proyectos para esta carrera.
+              No existen proyectos disponibles para esta carrera.
 
               <span v-if="props.proyectoOpcional">
                 Puede seleccionar “Sin proyecto asociado”.
@@ -211,7 +232,9 @@
 
             <p
               v-if="props.errors?.proyecto"
+              id="dg-proyecto-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.proyecto }}
             </p>
@@ -225,7 +248,7 @@
             for="dg-area"
           >
             {{ areaLabelComputed }}
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -234,6 +257,11 @@
               class="dg-input"
               :value="local.area"
               :aria-invalid="Boolean(props.errors?.area)"
+              :aria-describedby="
+                props.errors?.area
+                  ? 'dg-area-error'
+                  : undefined
+              "
               required
               @change="setField('area', $event.target.value)"
             >
@@ -255,7 +283,9 @@
 
             <p
               v-if="props.errors?.area"
+              id="dg-area-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.area }}
             </p>
@@ -269,7 +299,7 @@
             for="dg-subarea"
           >
             {{ subareaLabelComputed }}
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -280,6 +310,7 @@
               :disabled="!local.area || loadingSubareas"
               :aria-busy="loadingSubareas ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.subarea)"
+              :aria-describedby="subareaDescriptionIds"
               required
               @change="setField('subarea', $event.target.value)"
             >
@@ -309,6 +340,7 @@
 
             <p
               v-if="!local.area"
+              id="dg-subarea-help"
               class="dg-hint"
             >
               Seleccione un área para habilitar las subáreas.
@@ -319,14 +351,17 @@
                 !loadingSubareas &&
                 subareas.length === 0
               "
+              id="dg-subarea-empty"
               class="dg-hint dg-hint-warn"
             >
-              No hay subáreas para esta área. Revise los catálogos.
+              No hay subáreas disponibles para el área seleccionada.
             </p>
 
             <p
               v-if="props.errors?.subarea"
+              id="dg-subarea-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.subarea }}
             </p>
@@ -335,7 +370,11 @@
       </div>
     </section>
 
-    <!-- Ubicación -->
+    <!-- =====================================================
+         UBICACIÓN GEOGRÁFICA
+         Solo se muestra en formularios que la necesitan,
+         principalmente Ponencia.
+    ====================================================== -->
     <section
       v-if="!props.hideUbicacion"
       class="dg-section surface-enter surface-enter--2"
@@ -347,11 +386,11 @@
           </p>
 
           <h4 class="dg-section-title">
-            País y ciudad
+            Contexto geográfico
           </h4>
 
           <p class="dg-section-desc">
-            Seleccione el país y la ciudad asociados a la publicación.
+            Seleccione el país y la ciudad relacionados con la publicación.
           </p>
         </div>
       </header>
@@ -364,7 +403,7 @@
             for="dg-pais"
           >
             País
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -373,6 +412,11 @@
               class="dg-input"
               :value="local.pais"
               :aria-invalid="Boolean(props.errors?.pais)"
+              :aria-describedby="
+                props.errors?.pais
+                  ? 'dg-pais-error'
+                  : undefined
+              "
               required
               @change="setField('pais', $event.target.value)"
             >
@@ -394,7 +438,9 @@
 
             <p
               v-if="props.errors?.pais"
+              id="dg-pais-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.pais }}
             </p>
@@ -408,7 +454,7 @@
             for="dg-ciudad"
           >
             Ciudad
-            <span class="req">*</span>
+            <span class="req" aria-hidden="true">*</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -419,6 +465,7 @@
               :disabled="!local.pais || loadingCiudades"
               :aria-busy="loadingCiudades ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.ciudad)"
+              :aria-describedby="ciudadDescriptionIds"
               required
               @change="setField('ciudad', $event.target.value)"
             >
@@ -448,6 +495,7 @@
 
             <p
               v-if="!local.pais"
+              id="dg-ciudad-help"
               class="dg-hint"
             >
               Seleccione un país para habilitar las ciudades.
@@ -458,14 +506,17 @@
                 !loadingCiudades &&
                 ciudades.length === 0
               "
+              id="dg-ciudad-empty"
               class="dg-hint dg-hint-warn"
             >
-              No hay ciudades para este país. Revise los catálogos.
+              No hay ciudades disponibles para este país.
             </p>
 
             <p
               v-if="props.errors?.ciudad"
+              id="dg-ciudad-error"
               class="dg-hint dg-hint-err"
+              role="alert"
             >
               {{ props.errors.ciudad }}
             </p>
@@ -474,10 +525,7 @@
       </div>
     </section>
 
-    <!--
-      El error general se mantiene fuera de la sección de ubicación.
-      De este modo también se muestra cuando hideUbicacion es true.
-    -->
+    <!-- Error general de catálogos -->
     <p
       v-if="error"
       class="dg-alert dg-alert-error"
@@ -492,6 +540,7 @@
 <script setup>
 import {
   computed,
+  onBeforeUnmount,
   onMounted,
   reactive,
   ref,
@@ -546,14 +595,10 @@ const emit = defineEmits([
 ]);
 
 /* =========================================================
-   NORMALIZACIÓN
+   HELPERS
 ========================================================= */
 
 const asStr = (value) => {
-  if (value === 0 || value === "0") {
-    return "0";
-  }
-
   if (
     value === null ||
     value === undefined ||
@@ -578,7 +623,7 @@ const toNumOrNull = (value) => {
 
   const number = Number(value);
 
-  return Number.isFinite(number)
+  return Number.isFinite(number) && number > 0
     ? number
     : null;
 };
@@ -587,7 +632,10 @@ const resolveProyectoLocal = (
   value,
   carrera
 ) => {
-  if (value === 0 || value === "0") {
+  if (
+    value === 0 ||
+    value === "0"
+  ) {
     return "0";
   }
 
@@ -625,7 +673,10 @@ const asArrayResponse = (data) => {
 const normalizeCatalogItem = (item) => ({
   ...item,
 
-  id: item?.id,
+  id:
+    item?.id ??
+    item?.value ??
+    null,
 
   nombre: String(
     item?.nombre ||
@@ -638,7 +689,10 @@ const normalizeCatalogItem = (item) => ({
 const normalizeProyecto = (item) => ({
   ...item,
 
-  id: item?.id,
+  id:
+    item?.id ??
+    item?.value ??
+    null,
 
   nombre: String(
     item?.nombre ||
@@ -646,6 +700,18 @@ const normalizeProyecto = (item) => ({
     item?.label ||
     item?.name ||
     `Proyecto #${item?.id || ""}`
+  ).trim(),
+
+  estado: String(
+    item?.estado || ""
+  )
+    .trim()
+    .toLowerCase(),
+
+  estado_label: String(
+    item?.estado_label ||
+    item?.estadoLabel ||
+    ""
   ).trim(),
 });
 
@@ -662,16 +728,59 @@ const sortByNombre = (list) => (
   ))
 );
 
+const hasItemId = (
+  list,
+  value
+) => {
+  const target = asStr(value);
+
+  if (!target) {
+    return false;
+  }
+
+  return list.some(
+    (item) => (
+      String(item?.id) === target
+    )
+  );
+};
+
+const catalogErrorMessage = (
+  catalogError,
+  fallback
+) => {
+  const status =
+    catalogError?.response?.status;
+
+  if (status === 401) {
+    return (
+      "La sesión ha expirado. Inicie sesión nuevamente para cargar los catálogos."
+    );
+  }
+
+  if (status === 403) {
+    return (
+      "No tiene permisos para consultar los catálogos requeridos."
+    );
+  }
+
+  return fallback;
+};
+
 /* =========================================================
    ESTADO LOCAL
 ========================================================= */
 
 const local = reactive({
   facultad:
-    asStr(props.modelValue?.facultad),
+    asStr(
+      props.modelValue?.facultad
+    ),
 
   carrera:
-    asStr(props.modelValue?.carrera),
+    asStr(
+      props.modelValue?.carrera
+    ),
 
   proyecto:
     resolveProyectoLocal(
@@ -680,16 +789,28 @@ const local = reactive({
     ),
 
   area:
-    asStr(props.modelValue?.area),
+    asStr(
+      props.modelValue?.area
+    ),
 
   subarea:
-    asStr(props.modelValue?.subarea),
+    asStr(
+      props.modelValue?.subarea
+    ),
 
   pais:
-    asStr(props.modelValue?.pais),
+    props.hideUbicacion
+      ? ""
+      : asStr(
+          props.modelValue?.pais
+        ),
 
   ciudad:
-    asStr(props.modelValue?.ciudad),
+    props.hideUbicacion
+      ? ""
+      : asStr(
+          props.modelValue?.ciudad
+        ),
 });
 
 const facultades = ref([]);
@@ -711,13 +832,15 @@ const error = ref("");
    IDENTIFICADORES DE SOLICITUD
 
    Permiten ignorar respuestas antiguas cuando el usuario
-   cambia rápidamente una selección dependiente.
+   cambia rápidamente un select dependiente.
 ========================================================= */
 
 let carrerasReq = 0;
 let proyectosReq = 0;
 let subareasReq = 0;
 let ciudadesReq = 0;
+
+let destroyed = false;
 
 const invalidateCarreras = () => {
   carrerasReq += 1;
@@ -768,8 +891,118 @@ const subareaLabelComputed = computed(
   )
 );
 
+const carreraDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.facultad) {
+    ids.push("dg-carrera-help");
+  }
+
+  if (
+    local.facultad &&
+    !loadingCarreras.value &&
+    carreras.value.length === 0
+  ) {
+    ids.push("dg-carrera-empty");
+  }
+
+  if (props.errors?.carrera) {
+    ids.push("dg-carrera-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
+const proyectoDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.carrera) {
+    ids.push("dg-proyecto-help");
+  }
+
+  if (
+    local.carrera &&
+    !loadingProyectos.value &&
+    proyectosVisibles.value.length === 0
+  ) {
+    ids.push("dg-proyecto-empty");
+  }
+
+  if (props.errors?.proyecto) {
+    ids.push("dg-proyecto-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
+const subareaDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.area) {
+    ids.push("dg-subarea-help");
+  }
+
+  if (
+    local.area &&
+    !loadingSubareas.value &&
+    subareas.value.length === 0
+  ) {
+    ids.push("dg-subarea-empty");
+  }
+
+  if (props.errors?.subarea) {
+    ids.push("dg-subarea-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
+const ciudadDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.pais) {
+    ids.push("dg-ciudad-help");
+  }
+
+  if (
+    local.pais &&
+    !loadingCiudades.value &&
+    ciudades.value.length === 0
+  ) {
+    ids.push("dg-ciudad-empty");
+  }
+
+  if (props.errors?.ciudad) {
+    ids.push("dg-ciudad-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
+/* =========================================================
+   PROYECTOS
+
+   La política de qué proyectos puede consultar cada usuario
+   corresponde al backend.
+
+   Aquí únicamente se conservan comprobaciones de
+   compatibilidad con respuestas antiguas.
+========================================================= */
+
 const isProyectoVisible = (proyecto) => {
   if (!proyecto) {
+    return false;
+  }
+
+  if (proyecto.visible === false) {
     return false;
   }
 
@@ -781,131 +1014,204 @@ const isProyectoVisible = (proyecto) => {
     return false;
   }
 
-  if (proyecto.visible === false) {
-    return false;
-  }
-
-  if (typeof proyecto.estado === "boolean") {
-    return proyecto.estado;
-  }
-
   return true;
 };
 
 const proyectosVisibles = computed(() => {
-  const seleccionado = local.proyecto
-    ? String(local.proyecto)
-    : null;
+  const seleccionado =
+    local.proyecto &&
+    local.proyecto !== "0"
+      ? String(local.proyecto)
+      : "";
 
-  const base = Array.isArray(proyectos.value)
-    ? proyectos.value
-    : [];
+  const base =
+    Array.isArray(proyectos.value)
+      ? proyectos.value
+      : [];
 
   const visibles = sortByNombre(
-    base.filter(isProyectoVisible)
-  );
-
-  if (seleccionado === "0") {
-    return visibles;
-  }
-
-  const incluido = visibles.some(
-    (proyecto) => (
-      String(proyecto.id) === seleccionado
+    base.filter(
+      isProyectoVisible
     )
   );
 
-  if (seleccionado && !incluido) {
-    const proyectoSeleccionado = base.find(
+  if (!seleccionado) {
+    return visibles;
+  }
+
+  const seleccionadoYaVisible =
+    visibles.some(
       (proyecto) => (
-        String(proyecto.id) === seleccionado
+        String(proyecto.id) ===
+        seleccionado
       )
     );
 
-    if (proyectoSeleccionado) {
-      return [
-        proyectoSeleccionado,
-        ...visibles,
-      ];
-    }
+  if (seleccionadoYaVisible) {
+    return visibles;
   }
 
-  return visibles;
+  /*
+   * Permite mantener visible un proyecto previamente
+   * seleccionado aunque la respuesta lo marque con alguna
+   * bandera heredada de visibilidad.
+   */
+  const proyectoSeleccionado =
+    base.find(
+      (proyecto) => (
+        String(proyecto.id) ===
+        seleccionado
+      )
+    );
+
+  if (!proyectoSeleccionado) {
+    return visibles;
+  }
+
+  return [
+    proyectoSeleccionado,
+    ...visibles.filter(
+      (proyecto) => (
+        String(proyecto.id) !==
+        seleccionado
+      )
+    ),
+  ];
 });
+
+const proyectoOptionLabel = (
+  proyecto
+) => {
+  const nombre =
+    String(
+      proyecto?.nombre || ""
+    ).trim() ||
+    `Proyecto #${proyecto?.id || ""}`;
+
+  const estadoLabel =
+    String(
+      proyecto?.estado_label || ""
+    ).trim();
+
+  if (!estadoLabel) {
+    return nombre;
+  }
+
+  return `${nombre} · ${estadoLabel}`;
+};
 
 /* =========================================================
    SINCRONIZACIÓN DEL MODELO
 ========================================================= */
 
 const pushModel = () => {
-  emit("update:modelValue", {
-    facultad:
-      toNumOrNull(local.facultad),
+  emit(
+    "update:modelValue",
+    {
+      /*
+       * Facultad se mantiene como contexto de selección y
+       * validación. El backend deriva la facultad real de
+       * carrera.facultad.
+       */
+      facultad:
+        toNumOrNull(
+          local.facultad
+        ),
 
-    carrera:
-      toNumOrNull(local.carrera),
+      carrera:
+        toNumOrNull(
+          local.carrera
+        ),
 
-    proyecto:
-      toNumOrNull(local.proyecto),
+      /*
+       * "0" existe únicamente dentro del select para
+       * representar "Sin proyecto".
+       *
+       * Nunca sale del componente como 0:
+       * "0" -> null.
+       */
+      proyecto:
+        toNumOrNull(
+          local.proyecto
+        ),
 
-    area:
-      toNumOrNull(local.area),
+      area:
+        toNumOrNull(
+          local.area
+        ),
 
-    subarea:
-      toNumOrNull(local.subarea),
+      subarea:
+        toNumOrNull(
+          local.subarea
+        ),
 
-    pais:
-      props.hideUbicacion
-        ? null
-        : toNumOrNull(local.pais),
+      pais:
+        props.hideUbicacion
+          ? null
+          : toNumOrNull(
+              local.pais
+            ),
 
-    ciudad:
-      props.hideUbicacion
-        ? null
-        : toNumOrNull(local.ciudad),
-  });
+      ciudad:
+        props.hideUbicacion
+          ? null
+          : toNumOrNull(
+              local.ciudad
+            ),
+    }
+  );
 };
 
 const setField = (
   key,
   value
 ) => {
-  local[key] = value;
+  error.value = "";
 
+  local[key] =
+    value === null ||
+    value === undefined
+      ? ""
+      : String(value);
+
+  /*
+   * Facultad -> Carrera -> Proyecto
+   */
   if (key === "facultad") {
     local.carrera = "";
     local.proyecto = "";
-
-    invalidateCarreras();
-    invalidateProyectos();
   }
 
+  /*
+   * Al cambiar Carrera, cualquier proyecto anterior deja
+   * de ser válido.
+   */
   if (key === "carrera") {
     local.proyecto =
       props.proyectoOpcional
         ? "0"
         : "";
-
-    invalidateProyectos();
   }
 
+  /*
+   * Área -> Subárea
+   */
   if (key === "area") {
     local.subarea = "";
-
-    invalidateSubareas();
   }
 
+  /*
+   * País -> Ciudad
+   */
   if (key === "pais") {
     local.ciudad = "";
-
-    invalidateCiudades();
   }
 
   pushModel();
 };
 
 /* =========================================================
-   CARGA DE CATÁLOGOS BASE
+   CATÁLOGOS BASE
 ========================================================= */
 
 const cargarFacultades = async () => {
@@ -913,10 +1219,20 @@ const cargarFacultades = async () => {
     "/selects/facultades/"
   );
 
+  if (destroyed) {
+    return;
+  }
+
   facultades.value = sortByNombre(
-    asArrayResponse(response.data)
-      .map(normalizeCatalogItem)
-      .filter((item) => item.id)
+    asArrayResponse(
+      response.data
+    )
+      .map(
+        normalizeCatalogItem
+      )
+      .filter(
+        (item) => item.id
+      )
   );
 };
 
@@ -925,10 +1241,20 @@ const cargarAreas = async () => {
     "/selects/areas/"
   );
 
+  if (destroyed) {
+    return;
+  }
+
   areas.value = sortByNombre(
-    asArrayResponse(response.data)
-      .map(normalizeCatalogItem)
-      .filter((item) => item.id)
+    asArrayResponse(
+      response.data
+    )
+      .map(
+        normalizeCatalogItem
+      )
+      .filter(
+        (item) => item.id
+      )
   );
 };
 
@@ -937,25 +1263,37 @@ const cargarPaises = async () => {
     "/selects/paises/"
   );
 
+  if (destroyed) {
+    return;
+  }
+
   paises.value = sortByNombre(
-    asArrayResponse(response.data)
-      .map(normalizeCatalogItem)
-      .filter((item) => item.id)
+    asArrayResponse(
+      response.data
+    )
+      .map(
+        normalizeCatalogItem
+      )
+      .filter(
+        (item) => item.id
+      )
   );
 };
 
 /* =========================================================
-   CARGA DE CATÁLOGOS DEPENDIENTES
+   CATÁLOGOS DEPENDIENTES
 ========================================================= */
 
 const cargarCarreras = async (
   facultadId
 ) => {
   if (!facultadId) {
+    carreras.value = [];
     return;
   }
 
-  const requestId = ++carrerasReq;
+  const requestId =
+    ++carrerasReq;
 
   loadingCarreras.value = true;
 
@@ -964,19 +1302,51 @@ const cargarCarreras = async (
       `/selects/carreras/${facultadId}/`
     );
 
-    if (requestId !== carrerasReq) {
+    if (
+      destroyed ||
+      requestId !== carrerasReq
+    ) {
       return;
     }
 
     carreras.value = sortByNombre(
-      asArrayResponse(response.data)
-        .map(normalizeCatalogItem)
-        .filter((item) => item.id)
+      asArrayResponse(
+        response.data
+      )
+        .map(
+          normalizeCatalogItem
+        )
+        .filter(
+          (item) => item.id
+        )
     );
+
+    /*
+     * Si existe una carrera restaurada desde un borrador
+     * pero ya no pertenece a esta facultad, se limpia.
+     */
+    if (
+      local.carrera &&
+      !hasItemId(
+        carreras.value,
+        local.carrera
+      )
+    ) {
+      local.carrera = "";
+
+      local.proyecto =
+        props.proyectoOpcional
+          ? "0"
+          : "";
+
+      pushModel();
+    }
 
     error.value = "";
   } finally {
-    if (requestId === carrerasReq) {
+    if (
+      requestId === carrerasReq
+    ) {
       loadingCarreras.value = false;
     }
   }
@@ -986,21 +1356,28 @@ const cargarProyectos = async (
   carreraId
 ) => {
   if (!carreraId) {
+    proyectos.value = [];
     return;
   }
 
-  const requestId = ++proyectosReq;
+  const requestId =
+    ++proyectosReq;
 
   loadingProyectos.value = true;
 
   try {
     const params = {};
 
+    /*
+     * El backend permite mantener un proyecto ya
+     * seleccionado mediante ?include=<id>.
+     */
     if (
       local.proyecto &&
       local.proyecto !== "0"
     ) {
-      params.include = local.proyecto;
+      params.include =
+        local.proyecto;
     }
 
     const response = await api.get(
@@ -1010,28 +1387,54 @@ const cargarProyectos = async (
       }
     );
 
-    if (requestId !== proyectosReq) {
+    if (
+      destroyed ||
+      requestId !== proyectosReq
+    ) {
       return;
     }
 
     proyectos.value = sortByNombre(
-      asArrayResponse(response.data)
-        .map(normalizeProyecto)
-        .filter((item) => item.id)
+      asArrayResponse(
+        response.data
+      )
+        .map(
+          normalizeProyecto
+        )
+        .filter(
+          (item) => item.id
+        )
     );
 
-    error.value = "";
+    if (
+      local.proyecto &&
+      local.proyecto !== "0" &&
+      !hasItemId(
+        proyectos.value,
+        local.proyecto
+      )
+    ) {
+      local.proyecto =
+        props.proyectoOpcional
+          ? "0"
+          : "";
+
+      pushModel();
+    }
 
     if (
       props.proyectoOpcional &&
       !local.proyecto
     ) {
       local.proyecto = "0";
-
       pushModel();
     }
+
+    error.value = "";
   } finally {
-    if (requestId === proyectosReq) {
+    if (
+      requestId === proyectosReq
+    ) {
       loadingProyectos.value = false;
     }
   }
@@ -1041,10 +1444,12 @@ const cargarSubareas = async (
   areaId
 ) => {
   if (!areaId) {
+    subareas.value = [];
     return;
   }
 
-  const requestId = ++subareasReq;
+  const requestId =
+    ++subareasReq;
 
   loadingSubareas.value = true;
 
@@ -1053,19 +1458,41 @@ const cargarSubareas = async (
       `/selects/subareas/${areaId}/`
     );
 
-    if (requestId !== subareasReq) {
+    if (
+      destroyed ||
+      requestId !== subareasReq
+    ) {
       return;
     }
 
     subareas.value = sortByNombre(
-      asArrayResponse(response.data)
-        .map(normalizeCatalogItem)
-        .filter((item) => item.id)
+      asArrayResponse(
+        response.data
+      )
+        .map(
+          normalizeCatalogItem
+        )
+        .filter(
+          (item) => item.id
+        )
     );
+
+    if (
+      local.subarea &&
+      !hasItemId(
+        subareas.value,
+        local.subarea
+      )
+    ) {
+      local.subarea = "";
+      pushModel();
+    }
 
     error.value = "";
   } finally {
-    if (requestId === subareasReq) {
+    if (
+      requestId === subareasReq
+    ) {
       loadingSubareas.value = false;
     }
   }
@@ -1074,11 +1501,16 @@ const cargarSubareas = async (
 const cargarCiudades = async (
   paisId
 ) => {
-  if (!paisId) {
+  if (
+    props.hideUbicacion ||
+    !paisId
+  ) {
+    ciudades.value = [];
     return;
   }
 
-  const requestId = ++ciudadesReq;
+  const requestId =
+    ++ciudadesReq;
 
   loadingCiudades.value = true;
 
@@ -1087,19 +1519,41 @@ const cargarCiudades = async (
       `/selects/ciudades/${paisId}/`
     );
 
-    if (requestId !== ciudadesReq) {
+    if (
+      destroyed ||
+      requestId !== ciudadesReq
+    ) {
       return;
     }
 
     ciudades.value = sortByNombre(
-      asArrayResponse(response.data)
-        .map(normalizeCatalogItem)
-        .filter((item) => item.id)
+      asArrayResponse(
+        response.data
+      )
+        .map(
+          normalizeCatalogItem
+        )
+        .filter(
+          (item) => item.id
+        )
     );
+
+    if (
+      local.ciudad &&
+      !hasItemId(
+        ciudades.value,
+        local.ciudad
+      )
+    ) {
+      local.ciudad = "";
+      pushModel();
+    }
 
     error.value = "";
   } finally {
-    if (requestId === ciudadesReq) {
+    if (
+      requestId === ciudadesReq
+    ) {
       loadingCiudades.value = false;
     }
   }
@@ -1109,15 +1563,24 @@ const cargarCiudades = async (
    OBSERVADORES
 ========================================================= */
 
+/*
+ * Sincroniza cambios que lleguen desde el componente padre:
+ * restauración de borrador, edición, limpieza del formulario,
+ * etc.
+ */
 watch(
   () => props.modelValue,
 
   (value) => {
     const nextFacultad =
-      asStr(value?.facultad);
+      asStr(
+        value?.facultad
+      );
 
     const nextCarrera =
-      asStr(value?.carrera);
+      asStr(
+        value?.carrera
+      );
 
     local.facultad =
       nextFacultad;
@@ -1132,20 +1595,30 @@ watch(
       );
 
     local.area =
-      asStr(value?.area);
+      asStr(
+        value?.area
+      );
 
     local.subarea =
-      asStr(value?.subarea);
+      asStr(
+        value?.subarea
+      );
 
-    if (!props.hideUbicacion) {
-      local.pais =
-        asStr(value?.pais);
-
-      local.ciudad =
-        asStr(value?.ciudad);
-    } else {
+    if (
+      props.hideUbicacion
+    ) {
       local.pais = "";
       local.ciudad = "";
+    } else {
+      local.pais =
+        asStr(
+          value?.pais
+        );
+
+      local.ciudad =
+        asStr(
+          value?.ciudad
+        );
     }
   },
 
@@ -1154,27 +1627,61 @@ watch(
   }
 );
 
+/*
+ * Al ocultar la ubicación se eliminan explícitamente país y
+ * ciudad para impedir que una publicación que no los admite
+ * los conserve en el payload.
+ */
 watch(
   () => props.hideUbicacion,
 
-  (hidden) => {
-    if (!hidden) {
+  async (hidden) => {
+    if (hidden) {
+      local.pais = "";
+      local.ciudad = "";
+
+      invalidateCiudades();
+
+      pushModel();
       return;
     }
 
-    local.pais = "";
-    local.ciudad = "";
+    try {
+      await cargarPaises();
 
-    invalidateCiudades();
-    pushModel();
+      if (local.pais) {
+        await cargarCiudades(
+          local.pais
+        );
+      }
+    } catch (catalogError) {
+      console.warn(
+        "Error cargando ubicación:",
+        catalogError
+      );
+
+      error.value =
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar los catálogos de ubicación."
+        );
+    }
   }
 );
 
+/*
+ * Facultad -> Carreras
+ */
 watch(
   () => local.facultad,
 
   async (value) => {
     invalidateCarreras();
+
+    /*
+     * Un cambio de facultad invalida también cualquier
+     * solicitud anterior de proyectos.
+     */
     invalidateProyectos();
 
     if (!value) {
@@ -1182,16 +1689,27 @@ watch(
     }
 
     try {
-      await cargarCarreras(value);
+      await cargarCarreras(
+        value
+      );
     } catch (catalogError) {
-      console.warn(catalogError);
+      console.warn(
+        "Error cargando carreras:",
+        catalogError
+      );
 
       error.value =
-        "No se pudieron cargar las carreras.";
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar las carreras."
+        );
     }
   }
 );
 
+/*
+ * Carrera -> Proyectos
+ */
 watch(
   () => local.carrera,
 
@@ -1203,16 +1721,27 @@ watch(
     }
 
     try {
-      await cargarProyectos(value);
+      await cargarProyectos(
+        value
+      );
     } catch (catalogError) {
-      console.warn(catalogError);
+      console.warn(
+        "Error cargando proyectos:",
+        catalogError
+      );
 
       error.value =
-        "No se pudieron cargar los proyectos.";
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar los proyectos."
+        );
     }
   }
 );
 
+/*
+ * Área -> Subáreas
+ */
 watch(
   () => local.area,
 
@@ -1224,16 +1753,27 @@ watch(
     }
 
     try {
-      await cargarSubareas(value);
+      await cargarSubareas(
+        value
+      );
     } catch (catalogError) {
-      console.warn(catalogError);
+      console.warn(
+        "Error cargando subáreas:",
+        catalogError
+      );
 
       error.value =
-        "No se pudieron cargar las subáreas.";
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar las subáreas."
+        );
     }
   }
 );
 
+/*
+ * País -> Ciudades
+ */
 watch(
   () => local.pais,
 
@@ -1248,12 +1788,20 @@ watch(
     }
 
     try {
-      await cargarCiudades(value);
+      await cargarCiudades(
+        value
+      );
     } catch (catalogError) {
-      console.warn(catalogError);
+      console.warn(
+        "Error cargando ciudades:",
+        catalogError
+      );
 
       error.value =
-        "No se pudieron cargar las ciudades.";
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar las ciudades."
+        );
     }
   }
 );
@@ -1271,27 +1819,41 @@ onMounted(async () => {
       cargarAreas(),
     ];
 
-    if (!props.hideUbicacion) {
+    if (
+      !props.hideUbicacion
+    ) {
       baseLoads.push(
         cargarPaises()
       );
     }
 
-    await Promise.all(baseLoads);
+    await Promise.all(
+      baseLoads
+    );
 
-    if (local.facultad) {
+    /*
+     * Carga inicial de catálogos dependientes cuando el
+     * formulario viene restaurado desde borrador o edición.
+     */
+    if (
+      local.facultad
+    ) {
       await cargarCarreras(
         local.facultad
       );
     }
 
-    if (local.carrera) {
+    if (
+      local.carrera
+    ) {
       await cargarProyectos(
         local.carrera
       );
     }
 
-    if (local.area) {
+    if (
+      local.area
+    ) {
       await cargarSubareas(
         local.area
       );
@@ -1306,21 +1868,46 @@ onMounted(async () => {
       );
     }
 
+    /*
+     * El valor "0" es exclusivamente visual.
+     * pushModel() lo transforma inmediatamente en null.
+     */
     if (
       props.proyectoOpcional &&
       local.carrera &&
       !local.proyecto
     ) {
       local.proyecto = "0";
-
       pushModel();
     }
   } catch (catalogError) {
-    console.warn(catalogError);
+    console.warn(
+      "Error inicializando DatosGenerales:",
+      catalogError
+    );
 
     error.value =
-      "No se pudieron cargar los catálogos requeridos. Revise los endpoints /selects/*.";
+      catalogErrorMessage(
+        catalogError,
+        "No se pudieron cargar los catálogos requeridos. Verifique la conexión con el servidor."
+      );
   }
+});
+
+/* =========================================================
+   LIMPIEZA
+========================================================= */
+
+onBeforeUnmount(() => {
+  destroyed = true;
+
+  /*
+   * Invalida cualquier respuesta asíncrona pendiente.
+   */
+  carrerasReq += 1;
+  proyectosReq += 1;
+  subareasReq += 1;
+  ciudadesReq += 1;
 });
 </script>
 

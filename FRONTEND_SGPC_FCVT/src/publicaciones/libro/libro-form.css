@@ -1,16 +1,9 @@
 /* ============================================================
    SGPC ULEAM
-   Registro de Libro Científico
+   Registro de Libro
    Ajustes exclusivos del formulario LIB
-
-   La estructura visual compartida se encuentra en:
-   ../componentes/sgpc-fcvt.css
 ============================================================ */
 
 .sgpc-form-page--libro {
-  /*
-   * Punto de extensión visual del formulario de libro.
-   * Mantiene actualmente la identidad institucional general.
-   */
   --sgpc-primary: var(--color-primary, #315fcb);
 }

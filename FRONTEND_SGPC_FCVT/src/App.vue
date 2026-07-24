@@ -85,23 +85,38 @@ const showGlobalAvisos = computed(() => {
 
 <style>
 #app {
+  display: flex;
+  flex-direction: column;
+
   width: 100%;
   min-width: 0;
+
   min-height: 100vh;
   min-height: 100dvh;
 
-  display: flex;
-  flex-direction: column;
+  /*
+   * clip evita el desbordamiento horizontal sin crear
+   * un contenedor de desplazamiento que bloquee sticky.
+   */
+  overflow-x: clip;
+  overflow-y: visible;
 
   background: var(--bg-main, #f4f2ed);
 }
 
 html,
-body,
-#app {
+body {
   min-width: 0;
+  min-height: 100%;
+
   margin: 0;
-  overflow-x: hidden;
+
+  /*
+   * No usar hidden aquí. hidden puede crear un ancestro
+   * de desplazamiento para position: sticky.
+   */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* =========================================================
@@ -109,10 +124,18 @@ body,
 ========================================================= */
 
 .app-main {
+  flex: 1 0 auto;
+
+  position: relative;
+
   width: 100%;
   min-width: 0;
 
-  flex: 1 0 auto;
+  /*
+   * El contenido debe permitir que los componentes sticky
+   * utilicen el desplazamiento principal de la ventana.
+   */
+  overflow: visible;
 }
 
 /* =========================================================
@@ -132,9 +155,16 @@ body,
   min-height: 100dvh;
 
   margin-left: var(--sgpc-sidebar-width, 250px);
+
   padding-top: var(--sgpc-nav-offset, 66px);
 
-  overflow-x: hidden;
+  /*
+   * clip controla únicamente el exceso horizontal.
+   * visible mantiene funcional position: sticky.
+   */
+  overflow-x: clip;
+  overflow-y: visible;
+
   box-sizing: border-box;
 
   transition:
@@ -157,7 +187,8 @@ body,
   margin-left: 0;
   padding-top: 0;
 
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .app-public-layout {
@@ -169,9 +200,17 @@ body,
 ========================================================= */
 
 .route-transition-shell {
+  position: relative;
+
   width: 100%;
   min-width: 0;
+
   min-height: inherit;
+
+  /*
+   * No debe convertirse en un contenedor de scroll.
+   */
+  overflow: visible;
 
   box-sizing: border-box;
 }
@@ -200,7 +239,12 @@ body,
 
   margin-left: 0 !important;
 
-  overflow-x: hidden !important;
+  /*
+   * clip no crea el ancestro de scroll que bloqueaba sticky.
+   */
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+
   box-sizing: border-box !important;
 }
 
@@ -233,6 +277,34 @@ body,
   .route-transition-shell {
   min-height: 100vh;
   min-height: 100dvh;
+
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* =========================================================
+   FORMULARIOS CON RESUMEN STICKY
+========================================================= */
+
+.app-main.has-navbar
+  .route-transition-shell
+  > .sgpc-form-page {
+  width: 100%;
+  min-width: 0;
+
+  overflow: visible !important;
+}
+
+.app-main.has-navbar
+  .sgpc-form-page
+  .sgpc-form-shell,
+.app-main.has-navbar
+  .sgpc-form-page
+  .sgpc-form,
+.app-main.has-navbar
+  .sgpc-form-page
+  .sgpc-form--with-aside {
+  overflow: visible !important;
 }
 
 /* =========================================================
@@ -269,7 +341,12 @@ body,
     max-width: 100vw;
 
     margin-left: 0;
-    padding-top: var(--sgpc-nav-offset, 66px);
+
+    padding-top:
+      var(--sgpc-nav-offset, 66px);
+
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .app-footer-with-navbar {
@@ -290,6 +367,9 @@ body,
     max-width: 100vw !important;
 
     margin-left: 0 !important;
+
+    overflow-x: clip !important;
+    overflow-y: visible !important;
   }
 
   .app-main.has-navbar
@@ -322,4 +402,4 @@ body,
     transition: none !important;
   }
 }
-</style>
+</style>  

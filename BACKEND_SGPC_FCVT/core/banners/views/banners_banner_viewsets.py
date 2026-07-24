@@ -1,9 +1,61 @@
+"""
+ViewSet para gestionar los banners institucionales y su
+configuración visual global.
+
+Permisos:
+
+- Usuarios autenticados:
+    - Listar banners.
+    - Consultar banners.
+    - Consultar estado.
+    - Consultar configuración.
+
+- Administradores:
+    - Crear banners.
+    - Modificar banners.
+    - Eliminar banners.
+    - Modificar la configuración global.
+
+El módulo mantiene respuestas controladas cuando las tablas
+todavía no existen, para evitar que el frontend falle durante
+despliegues o migraciones pendientes.
+"""
+
+import logging
+
+from django.core.exceptions import (
+    ValidationError as DjangoValidationError,
+)
+from django.db import (
+    DatabaseError,
+    IntegrityError,
+    transaction,
+)
 from django.db.models import Max
-from django.db.utils import OperationalError, ProgrammingError
-from rest_framework import permissions, status, viewsets
+from django.db.models.deletion import ProtectedError
+from django.db.utils import (
+    OperationalError,
+    ProgrammingError,
+)
+from django.shortcuts import get_object_or_404
+
+from rest_framework import (
+    permissions,
+    status,
+    viewsets,
+)
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import (
+    FormParser,
+    JSONParser,
+    MultiPartParser,
+)
 from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
+
+from rest_framework_simplejwt.authentication import (
+    JWTAuthentication,
+)
 
 from core.banners.serializers.banners_banner_serializers import (
     BannerConfiguracionSerializer,
@@ -24,198 +76,988 @@ from core.models.banners import (
 from core.permisos.es_admin import EsAdmin
 
 
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# UTILIDADES
+# ============================================================
+
+def _django_validation_payload(exc):
+    """
+    Convierte ValidationError de Django en una estructura
+    compatible con Django REST Framework.
+    """
+    if hasattr(
+        exc,
+        "message_dict",
+    ):
+        return exc.message_dict
+
+    if hasattr(
+        exc,
+        "messages",
+    ):
+        return {
+            "detail": list(
+                exc.messages
+            )
+        }
+
+    return {
+        "detail": str(exc),
+    }
+
+
+# ============================================================
+# VIEWSET
+# ============================================================
+
 class BannerViewSet(viewsets.ModelViewSet):
-    authentication_classes = [JWTAuthentication]
+    """
+    Gestiona banners y la configuración global de presentación.
+    """
+
+    authentication_classes = [
+        JWTAuthentication,
+    ]
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+    ]
+
+    parser_classes = [
+        JSONParser,
+        FormParser,
+        MultiPartParser,
+    ]
+
     serializer_class = BannerSerializer
-    queryset = Banner.objects.all().order_by("-created_at", "-id")
-    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
+
+    queryset = (
+        Banner.objects
+        .all()
+        .order_by(
+            "-created_at",
+            "-pk",
+        )
+    )
+
+    http_method_names = [
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+    ]
+
+    lookup_field = "pk"
+
+    lookup_value_regex = r"\d+"
+
+    # ========================================================
+    # ENCABEZADOS
+    # ========================================================
+
+    def finalize_response(
+        self,
+        request,
+        response,
+        *args,
+        **kwargs,
+    ):
+        """
+        Impide almacenar banners y configuraciones en caché.
+
+        El frontend ya utiliza el endpoint status para detectar
+        cambios, por lo que las respuestas deben representar
+        siempre el estado actual.
+        """
+        response = super().finalize_response(
+            request,
+            response,
+            *args,
+            **kwargs,
+        )
+
+        response["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, "
+            "max-age=0, private"
+        )
+
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+
+        return response
+
+    # ========================================================
+    # PERMISOS
+    # ========================================================
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [permissions.IsAuthenticated(), EsAdmin()]
+        """
+        Las operaciones de escritura requieren privilegios
+        administrativos.
+        """
+        action_name = getattr(
+            self,
+            "action",
+            None,
+        )
 
-        if self.action == "config" and self.request.method.upper() in ["PUT", "PATCH"]:
-            return [permissions.IsAuthenticated(), EsAdmin()]
+        write_actions = {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }
 
-        return [permissions.IsAuthenticated()]
+        config_write = bool(
+            action_name == "config"
+            and self.request.method.upper()
+            in {
+                "PATCH",
+                "PUT",
+            }
+        )
+
+        if (
+            action_name in write_actions
+            or config_write
+        ):
+            permission_classes = [
+                permissions.IsAuthenticated,
+                EsAdmin,
+            ]
+
+        else:
+            permission_classes = [
+                permissions.IsAuthenticated,
+            ]
+
+        return [
+            permission_class()
+            for permission_class
+            in permission_classes
+        ]
+
+    # ========================================================
+    # CONTEXTO DEL SERIALIZER
+    # ========================================================
 
     def get_serializer_context(self):
+        """
+        Incluye la petición para construir URLs absolutas.
+        """
         context = super().get_serializer_context()
+
         context["request"] = self.request
+
         return context
 
+    # ========================================================
+    # DISPONIBILIDAD DE TABLAS
+    # ========================================================
+
     def _banner_table_ready(self):
+        """
+        Comprueba que la tabla de banners exista.
+
+        La consulta funciona aunque la tabla esté vacía.
+        """
         try:
-            list(Banner.objects.values_list("id", flat=True)[:1])
+            list(
+                Banner.objects
+                .values_list(
+                    "pk",
+                    flat=True,
+                )[:1]
+            )
+
             return True
-        except (ProgrammingError, OperationalError):
+
+        except (
+            ProgrammingError,
+            OperationalError,
+        ):
             return False
 
     def _config_table_ready(self):
+        """
+        Comprueba que la tabla de configuración exista sin crear
+        automáticamente un registro.
+        """
         try:
-            BannerConfiguracion.get_solo()
+            list(
+                BannerConfiguracion.objects
+                .values_list(
+                    "pk",
+                    flat=True,
+                )[:1]
+            )
+
             return True
-        except (ProgrammingError, OperationalError):
+
+        except (
+            ProgrammingError,
+            OperationalError,
+        ):
             return False
 
     def _tables_unavailable_response(
         self,
-        detail="Las tablas de banners aún no han sido migradas.",
+        detail=(
+            "Las tablas de banners todavía no han "
+            "sido migradas."
+        ),
     ):
-        response = Response(
-            {"detail": detail},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        """
+        Respuesta controlada cuando una tabla no existe.
+        """
+        return Response(
+            {
+                "detail": detail,
+            },
+            status=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
         )
-        return self._apply_no_cache_headers(response)
+
+    # ========================================================
+    # CONFIGURACIÓN PREDETERMINADA
+    # ========================================================
 
     def _default_config_payload(self):
+        """
+        Devuelve la configuración visual predeterminada.
+        """
         return {
-            "eyebrow": DEFAULT_BANNER_EYEBROW,
-            "title": DEFAULT_BANNER_TITLE,
-            "text": DEFAULT_BANNER_TEXT,
-            "recentLabel": DEFAULT_BANNER_RECENT_LABEL,
-            "stageWidth": STAGE_WIDTH_DEFAULT,
-            "stageHeight": STAGE_HEIGHT_DEFAULT,
-            "mediaPaneWidth": MEDIA_PANE_WIDTH_DEFAULT,
-            "displayMode": DISPLAY_MODE_DEFAULT,
+            "eyebrow": (
+                DEFAULT_BANNER_EYEBROW
+            ),
+            "title": (
+                DEFAULT_BANNER_TITLE
+            ),
+            "text": (
+                DEFAULT_BANNER_TEXT
+            ),
+            "recentLabel": (
+                DEFAULT_BANNER_RECENT_LABEL
+            ),
+            "stageWidth": (
+                STAGE_WIDTH_DEFAULT
+            ),
+            "stageHeight": (
+                STAGE_HEIGHT_DEFAULT
+            ),
+            "mediaPaneWidth": (
+                MEDIA_PANE_WIDTH_DEFAULT
+            ),
+            "displayMode": (
+                DISPLAY_MODE_DEFAULT
+            ),
             "created_at": None,
             "updated_at": None,
         }
 
-    def _apply_no_cache_headers(self, response):
-        response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
-        response["Pragma"] = "no-cache"
-        response["Expires"] = "0"
-        return response
+    # ========================================================
+    # QUERYSET
+    # ========================================================
 
     def get_queryset(self):
-        try:
-            list(Banner.objects.values_list("id", flat=True)[:1])
-            return Banner.objects.all().order_by("-created_at", "-id")
-        except (ProgrammingError, OperationalError):
+        """
+        Retorna un queryset vacío cuando la tabla aún no existe.
+
+        Esto permite que el listado inicial del frontend no falle
+        durante una instalación nueva.
+        """
+        if not self._banner_table_ready():
             return Banner.objects.none()
 
-    def list(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._apply_no_cache_headers(Response([], status=status.HTTP_200_OK))
-
-        response = super().list(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    def retrieve(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._tables_unavailable_response()
-
-        response = super().retrieve(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    def create(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._tables_unavailable_response()
-
-        response = super().create(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    def update(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._tables_unavailable_response()
-
-        response = super().update(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    def partial_update(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._tables_unavailable_response()
-
-        response = super().partial_update(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    def destroy(self, request, *args, **kwargs):
-        if not self._banner_table_ready():
-            return self._tables_unavailable_response()
-
-        response = super().destroy(request, *args, **kwargs)
-        return self._apply_no_cache_headers(response)
-
-    @action(detail=False, methods=["get"], url_path="status")
-    def status(self, request):
-        try:
-            qs = self.get_queryset()
-            total = qs.count()
-            last_banner_updated = qs.aggregate(last=Max("updated_at")).get("last")
-
-            config_updated = None
-            if self._config_table_ready():
-                config = BannerConfiguracion.get_solo()
-                config_updated = getattr(config, "updated_at", None)
-
-            version_parts = [str(total)]
-
-            if last_banner_updated:
-                version_parts.append(last_banner_updated.isoformat())
-
-            if config_updated:
-                version_parts.append(config_updated.isoformat())
-
-            version = "|".join(version_parts)
-
-            response = Response(
-                {
-                    "has_items": total > 0,
-                    "total": total,
-                    "version": version,
-                }
+        return (
+            Banner.objects
+            .all()
+            .order_by(
+                "-created_at",
+                "-pk",
             )
-            return self._apply_no_cache_headers(response)
-        except (ProgrammingError, OperationalError):
-            response = Response(
+        )
+
+    # ========================================================
+    # RECUPERACIÓN BLOQUEADA
+    # ========================================================
+
+    def _get_locked_banner(self):
+        """
+        Recupera y bloquea un banner durante una modificación o
+        eliminación.
+        """
+        lookup_url_kwarg = (
+            self.lookup_url_kwarg
+            or self.lookup_field
+        )
+
+        lookup_value = self.kwargs.get(
+            lookup_url_kwarg
+        )
+
+        queryset = (
+            Banner.objects
+            .select_for_update()
+            .all()
+        )
+
+        banner = get_object_or_404(
+            queryset,
+            **{
+                self.lookup_field: (
+                    lookup_value
+                )
+            },
+        )
+
+        self.check_object_permissions(
+            self.request,
+            banner,
+        )
+
+        return banner
+
+    # ========================================================
+    # LISTADO Y DETALLE
+    # ========================================================
+
+    def list(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Devuelve una lista vacía cuando todavía no se ha creado
+        la tabla.
+        """
+        if not self._banner_table_ready():
+            return Response(
+                [],
+                status=status.HTTP_200_OK,
+            )
+
+        return super().list(
+            request,
+            *args,
+            **kwargs,
+        )
+
+    def retrieve(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        if not self._banner_table_ready():
+            return self._tables_unavailable_response()
+
+        return super().retrieve(
+            request,
+            *args,
+            **kwargs,
+        )
+
+    # ========================================================
+    # CREACIÓN
+    # ========================================================
+
+    def create(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Crea un banner dentro de una transacción.
+        """
+        if not self._banner_table_ready():
+            return self._tables_unavailable_response()
+
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        try:
+            with transaction.atomic():
+                banner = serializer.save()
+
+                created_banner = (
+                    Banner.objects
+                    .get(
+                        pk=banner.pk
+                    )
+                )
+
+        except DjangoValidationError as exc:
+            raise ValidationError(
+                _django_validation_payload(
+                    exc
+                )
+            ) from exc
+
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No fue posible crear el banner "
+                        "debido a un conflicto con los "
+                        "datos almacenados."
+                    )
+                }
+            ) from exc
+
+        except OSError:
+            logger.exception(
+                "No se pudo almacenar la imagen del banner."
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible almacenar la imagen "
+                        "del banner. Revise el almacenamiento "
+                        "de archivos."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        response_serializer = self.get_serializer(
+            created_banner
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=self.get_success_headers(
+                response_serializer.data
+            ),
+        )
+
+    # ========================================================
+    # ACTUALIZACIÓN
+    # ========================================================
+
+    def _update_banner(
+        self,
+        request,
+        *,
+        partial,
+    ):
+        """
+        Implementación compartida por PUT y PATCH.
+        """
+        if not self._banner_table_ready():
+            return self._tables_unavailable_response()
+
+        try:
+            with transaction.atomic():
+                banner = self._get_locked_banner()
+
+                serializer = self.get_serializer(
+                    banner,
+                    data=request.data,
+                    partial=partial,
+                )
+
+                serializer.is_valid(
+                    raise_exception=True
+                )
+
+                updated_banner = serializer.save()
+
+                updated_banner = (
+                    Banner.objects
+                    .get(
+                        pk=updated_banner.pk
+                    )
+                )
+
+        except DjangoValidationError as exc:
+            raise ValidationError(
+                _django_validation_payload(
+                    exc
+                )
+            ) from exc
+
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No fue posible actualizar el banner "
+                        "debido a un conflicto con los "
+                        "datos almacenados."
+                    )
+                }
+            ) from exc
+
+        except OSError:
+            logger.exception(
+                (
+                    "No se pudo reemplazar la imagen "
+                    "del banner."
+                )
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible almacenar la nueva "
+                        "imagen del banner."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        response_serializer = self.get_serializer(
+            updated_banner
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    def update(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        return self._update_banner(
+            request,
+            partial=False,
+        )
+
+    def partial_update(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        return self._update_banner(
+            request,
+            partial=True,
+        )
+
+    # ========================================================
+    # ELIMINACIÓN
+    # ========================================================
+
+    def destroy(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Elimina un banner protegiendo la operación frente a
+        actualizaciones concurrentes.
+        """
+        if not self._banner_table_ready():
+            return self._tables_unavailable_response()
+
+        try:
+            with transaction.atomic():
+                banner = self._get_locked_banner()
+
+                self.perform_destroy(
+                    banner
+                )
+
+        except ProtectedError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No se puede eliminar el banner "
+                        "porque está relacionado con otros "
+                        "registros del sistema."
+                    )
+                }
+            ) from exc
+
+        except IntegrityError as exc:
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No se puede eliminar el banner "
+                        "porque mantiene relaciones activas."
+                    )
+                }
+            ) from exc
+
+        except OSError:
+            logger.exception(
+                (
+                    "No se pudo eliminar el archivo físico "
+                    "del banner."
+                )
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "El banner no pudo eliminarse por un "
+                        "problema con el almacenamiento."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al eliminar "
+                    "un banner."
+                )
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible eliminar el banner "
+                        "debido a un error temporal de la "
+                        "base de datos."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    # ========================================================
+    # ESTADO
+    # ========================================================
+
+    @action(
+        detail=False,
+        methods=[
+            "get",
+        ],
+        url_path="status",
+        url_name="status",
+    )
+    def status(
+        self,
+        request,
+    ):
+        """
+        Devuelve un identificador de versión para que el frontend
+        detecte cambios en banners o configuración.
+        """
+        if not self._banner_table_ready():
+            return Response(
                 {
                     "has_items": False,
                     "total": 0,
                     "version": "",
-                }
+                },
+                status=status.HTTP_200_OK,
             )
-            return self._apply_no_cache_headers(response)
 
-    @action(detail=False, methods=["get", "patch"], url_path="config")
-    def config(self, request):
         try:
-            config = BannerConfiguracion.get_solo()
-        except (ProgrammingError, OperationalError):
+            queryset = (
+                Banner.objects
+                .all()
+            )
+
+            banner_summary = (
+                queryset.aggregate(
+                    total=Max("pk"),
+                    last_updated=Max(
+                        "updated_at"
+                    ),
+                )
+            )
+
+            total = queryset.count()
+
+            last_banner_updated = (
+                banner_summary.get(
+                    "last_updated"
+                )
+            )
+
+            config_updated = None
+
+            if self._config_table_ready():
+                configuration = (
+                    BannerConfiguracion.objects
+                    .order_by("pk")
+                    .first()
+                )
+
+                if configuration is not None:
+                    config_updated = getattr(
+                        configuration,
+                        "updated_at",
+                        None,
+                    )
+
+            version_parts = [
+                str(total),
+            ]
+
+            if last_banner_updated:
+                version_parts.append(
+                    last_banner_updated.isoformat()
+                )
+
+            if config_updated:
+                version_parts.append(
+                    config_updated.isoformat()
+                )
+
+            return Response(
+                {
+                    "has_items": total > 0,
+                    "total": total,
+                    "version": "|".join(
+                        version_parts
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except (
+            ProgrammingError,
+            OperationalError,
+        ):
+            return Response(
+                {
+                    "has_items": False,
+                    "total": 0,
+                    "version": "",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "No se pudo calcular el estado "
+                    "de los banners."
+                )
+            )
+
+            return Response(
+                {
+                    "has_items": False,
+                    "total": 0,
+                    "version": "",
+                },
+                status=status.HTTP_200_OK,
+            )
+
+    # ========================================================
+    # CONFIGURACIÓN GLOBAL
+    # ========================================================
+
+    @action(
+        detail=False,
+        methods=[
+            "get",
+            "patch",
+        ],
+        url_path="config",
+        url_name="config",
+    )
+    def config(
+        self,
+        request,
+    ):
+        """
+        Consulta o modifica la configuración singleton.
+
+        GET no crea registros automáticamente. Cuando todavía no
+        existe una configuración, devuelve los valores
+        predeterminados.
+
+        PATCH crea o actualiza el singleton.
+        """
+        if not self._config_table_ready():
             if request.method.upper() == "GET":
-                response = Response(
+                return Response(
                     self._default_config_payload(),
                     status=status.HTTP_200_OK,
                 )
-                return self._apply_no_cache_headers(response)
 
-            response = Response(
-                {"detail": "Las tablas de banners aún no han sido migradas."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-            return self._apply_no_cache_headers(response)
+            return self._tables_unavailable_response()
 
         if request.method.upper() == "GET":
-            serializer = BannerConfiguracionSerializer(
-                config,
-                context=self.get_serializer_context(),
-            )
-            response = Response(serializer.data)
-            return self._apply_no_cache_headers(response)
+            try:
+                configuration = (
+                    BannerConfiguracion.objects
+                    .order_by("pk")
+                    .first()
+                )
 
-        serializer = BannerConfiguracionSerializer(
-            config,
-            data=request.data,
-            partial=True,
-            context=self.get_serializer_context(),
+            except DatabaseError:
+                logger.exception(
+                    (
+                        "No se pudo consultar la configuración "
+                        "de banners."
+                    )
+                )
+
+                return Response(
+                    {
+                        "detail": (
+                            "No fue posible consultar la "
+                            "configuración de banners."
+                        )
+                    },
+                    status=(
+                        status.HTTP_503_SERVICE_UNAVAILABLE
+                    ),
+                )
+
+            if configuration is None:
+                return Response(
+                    self._default_config_payload(),
+                    status=status.HTTP_200_OK,
+                )
+
+            serializer = (
+                BannerConfiguracionSerializer(
+                    configuration,
+                    context=(
+                        self.get_serializer_context()
+                    ),
+                )
+            )
+
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK,
+            )
+
+        try:
+            with transaction.atomic():
+                configuration = (
+                    BannerConfiguracion.objects
+                    .select_for_update()
+                    .order_by("pk")
+                    .first()
+                )
+
+                if configuration is None:
+                    serializer = (
+                        BannerConfiguracionSerializer(
+                            data=request.data,
+                            partial=True,
+                            context=(
+                                self.get_serializer_context()
+                            ),
+                        )
+                    )
+
+                else:
+                    serializer = (
+                        BannerConfiguracionSerializer(
+                            configuration,
+                            data=request.data,
+                            partial=True,
+                            context=(
+                                self.get_serializer_context()
+                            ),
+                        )
+                    )
+
+                serializer.is_valid(
+                    raise_exception=True
+                )
+
+                saved_configuration = (
+                    serializer.save()
+                )
+
+                saved_configuration = (
+                    BannerConfiguracion.objects
+                    .get(
+                        pk=saved_configuration.pk
+                    )
+                )
+
+        except DjangoValidationError as exc:
+            raise ValidationError(
+                _django_validation_payload(
+                    exc
+                )
+            ) from exc
+
+        except IntegrityError as exc:
+            logger.exception(
+                (
+                    "Conflicto de integridad al guardar "
+                    "la configuración de banners."
+                )
+            )
+
+            raise ValidationError(
+                {
+                    "detail": (
+                        "No fue posible guardar la "
+                        "configuración de banners debido "
+                        "a un conflicto de integridad."
+                    )
+                }
+            ) from exc
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al actualizar "
+                    "la configuración de banners."
+                )
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible actualizar la "
+                        "configuración debido a un error "
+                        "temporal de la base de datos."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        response_serializer = (
+            BannerConfiguracionSerializer(
+                saved_configuration,
+                context=(
+                    self.get_serializer_context()
+                ),
+            )
         )
 
-        if not serializer.is_valid():
-            print("❌ Errores PATCH /api/banners/config/:", serializer.errors)
-            response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            return self._apply_no_cache_headers(response)
-
-        serializer.save()
-
-        response = Response(serializer.data, status=status.HTTP_200_OK)
-        return self._apply_no_cache_headers(response)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
+        )

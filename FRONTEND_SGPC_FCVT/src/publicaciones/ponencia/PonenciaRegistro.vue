@@ -5,7 +5,9 @@
            ENCABEZADO
       ====================================================== -->
 
-      <header class="sgpc-form-header sgpc-publication-header page-stage page-header">
+      <header
+        class="sgpc-form-header sgpc-publication-header page-stage page-header"
+      >
         <div class="sgpc-form-heading">
           <div class="sgpc-publication-header__topline">
             <p class="sgpc-form-kicker">
@@ -20,7 +22,9 @@
                 Producción científica
               </span>
 
-              <span class="sgpc-publication-chip sgpc-publication-chip--accent">
+              <span
+                class="sgpc-publication-chip sgpc-publication-chip--accent"
+              >
                 Ponencia
               </span>
             </div>
@@ -101,7 +105,10 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="pn-admin-context-anchor" tabindex="-1"></div>
+              <div
+                id="pn-admin-context-anchor"
+                tabindex="-1"
+              ></div>
 
               <div class="sgpc-admin-context">
                 <article class="sgpc-admin-context__item">
@@ -189,7 +196,7 @@
           </section>
 
           <!-- =================================================
-               ORIGEN DE LA PUBLICACIÓN
+               ORIGEN
           ================================================== -->
 
           <section
@@ -218,16 +225,26 @@
                     for="pn-origen_tipo"
                   >
                     Origen de la publicación
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <select
                     id="pn-origen_tipo"
-                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
-                    :aria-describedby="fieldErrors.origen_tipo ? 'pn-origen-tipo-error' : undefined"
                     v-model="form.origen_tipo"
                     class="sgpc-input"
                     required
+                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
+                    :aria-describedby="
+                      fieldErrors.origen_tipo
+                        ? 'pn-origen-tipo-error'
+                        : undefined
+                    "
                   >
                     <option
                       disabled
@@ -255,10 +272,10 @@
 
                   <p
                     v-if="fieldErrors.origen_tipo"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-origen-tipo-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.origen_tipo }}
                   </p>
                 </div>
@@ -273,6 +290,7 @@
                     <span
                       v-if="form.origen_tipo === 'tic'"
                       class="req"
+                      aria-hidden="true"
                     >
                       *
                     </span>
@@ -280,14 +298,18 @@
 
                   <input
                     id="pn-origen_grado"
-                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
-                    :aria-describedby="fieldErrors.origen_grado ? 'pn-origen-grado-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.origen_grado"
                     class="sgpc-input"
                     type="text"
+                    maxlength="120"
                     :disabled="form.origen_tipo !== 'tic'"
                     :required="form.origen_tipo === 'tic'"
+                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
+                    :aria-describedby="
+                      fieldErrors.origen_grado
+                        ? 'pn-origen-grado-error'
+                        : undefined
+                    "
                     placeholder="Ej. Ingeniería de Software"
                   />
 
@@ -298,10 +320,10 @@
 
                   <p
                     v-if="fieldErrors.origen_grado"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-origen-grado-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.origen_grado }}
                   </p>
                 </div>
@@ -333,85 +355,118 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
+                <!-- Nombre evento -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="pn-nombre_evento"
                   >
                     Nombre del evento
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="pn-nombre_evento"
-                    :aria-invalid="Boolean(fieldErrors.nombre_evento)"
-                    :aria-describedby="fieldErrors.nombre_evento ? 'pn-nombre-evento-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.nombre_evento"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
                     required
+                    :aria-invalid="Boolean(fieldErrors.nombre_evento)"
+                    :aria-describedby="
+                      fieldErrors.nombre_evento
+                        ? 'pn-nombre-evento-error'
+                        : undefined
+                    "
                     placeholder="Ej. Congreso Internacional de Ciencia y Tecnología"
                   />
 
                   <p
                     v-if="fieldErrors.nombre_evento"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-nombre-evento-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.nombre_evento }}
                   </p>
                 </div>
 
+                <!-- Nombre ponencia -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="pn-nombre_ponencia"
                   >
                     Nombre de la ponencia
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="pn-nombre_ponencia"
-                    :aria-invalid="Boolean(fieldErrors.nombre_ponencia)"
-                    :aria-describedby="fieldErrors.nombre_ponencia ? 'pn-nombre-ponencia-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.nombre_ponencia"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
                     required
+                    :aria-invalid="Boolean(fieldErrors.nombre_ponencia)"
+                    :aria-describedby="
+                      fieldErrors.nombre_ponencia
+                        ? 'pn-nombre-ponencia-error'
+                        : undefined
+                    "
                     placeholder="Ej. Innovación tecnológica aplicada a la investigación científica"
                   />
 
                   <p
                     v-if="fieldErrors.nombre_ponencia"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-nombre-ponencia-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.nombre_ponencia }}
                   </p>
                 </div>
 
+                <!-- Fecha -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="pn-fecha_publicacion"
                   >
                     Fecha de presentación
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="pn-fecha_publicacion"
-                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
-                    :aria-describedby="fieldErrors.fecha_publicacion ? 'pn-fecha-publicacion-error' : undefined"
                     v-model="form.fecha_publicacion"
                     class="sgpc-input"
                     type="date"
                     required
+                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    :aria-describedby="
+                      fieldErrors.fecha_publicacion
+                        ? 'pn-fecha-publicacion-error'
+                        : undefined
+                    "
                   />
 
                   <p class="sgpc-hint">
@@ -421,14 +476,15 @@
 
                   <p
                     v-if="fieldErrors.fecha_publicacion"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-fecha-publicacion-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.fecha_publicacion }}
                   </p>
                 </div>
 
+                <!-- ISSN / ISBN -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
@@ -439,12 +495,16 @@
 
                   <input
                     id="pn-codigo_issn_isbn"
-                    :aria-invalid="Boolean(fieldErrors.codigo_issn_isbn)"
-                    :aria-describedby="fieldErrors.codigo_issn_isbn ? 'pn-codigo-issn-isbn-error' : undefined"
-                    maxlength="64"
                     v-model.trim="form.codigo_issn_isbn"
                     class="sgpc-input"
                     type="text"
+                    maxlength="100"
+                    :aria-invalid="Boolean(fieldErrors.codigo_issn_isbn)"
+                    :aria-describedby="
+                      fieldErrors.codigo_issn_isbn
+                        ? 'pn-codigo-issn-isbn-error'
+                        : undefined
+                    "
                     placeholder="Ej. 1234-5678 o 978-9942-00-0000-0"
                   />
 
@@ -455,14 +515,15 @@
 
                   <p
                     v-if="fieldErrors.codigo_issn_isbn"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-codigo-issn-isbn-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.codigo_issn_isbn }}
                   </p>
                 </div>
 
+                <!-- Tipo presentación -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
@@ -473,10 +534,14 @@
 
                   <select
                     id="pn-tipo_presentacion"
-                    :aria-invalid="Boolean(fieldErrors.tipo_presentacion)"
-                    :aria-describedby="fieldErrors.tipo_presentacion ? 'pn-tipo-presentacion-error' : undefined"
                     v-model="form.tipo_presentacion"
                     class="sgpc-input"
+                    :aria-invalid="Boolean(fieldErrors.tipo_presentacion)"
+                    :aria-describedby="
+                      fieldErrors.tipo_presentacion
+                        ? 'pn-tipo-presentacion-error'
+                        : undefined
+                    "
                   >
                     <option value="">
                       Seleccione...
@@ -501,14 +566,15 @@
 
                   <p
                     v-if="fieldErrors.tipo_presentacion"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-tipo-presentacion-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.tipo_presentacion }}
                   </p>
                 </div>
 
+                <!-- Otro -->
                 <div
                   v-if="form.tipo_presentacion === 'otro'"
                   class="sgpc-field sgpc-col-span-6"
@@ -518,31 +584,44 @@
                     for="pn-tipo_presentacion_otro"
                   >
                     Especifique el tipo de presentación
-                    <span class="req" aria-hidden="true">*</span>
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="pn-tipo_presentacion_otro"
-                    :aria-invalid="Boolean(fieldErrors.tipo_presentacion_otro)"
-                    :aria-describedby="fieldErrors.tipo_presentacion_otro ? 'pn-tipo-presentacion-otro-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.tipo_presentacion_otro"
                     class="sgpc-input"
                     type="text"
+                    maxlength="150"
                     required
+                    :aria-invalid="
+                      Boolean(fieldErrors.tipo_presentacion_otro)
+                    "
+                    :aria-describedby="
+                      fieldErrors.tipo_presentacion_otro
+                        ? 'pn-tipo-presentacion-otro-error'
+                        : undefined
+                    "
                     placeholder="Ej. Mesa redonda, taller o panel"
                   />
 
                   <p
                     v-if="fieldErrors.tipo_presentacion_otro"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-tipo-presentacion-otro-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.tipo_presentacion_otro }}
                   </p>
                 </div>
 
+                <!-- Link -->
                 <div
                   class="sgpc-field"
                   :class="
@@ -560,12 +639,17 @@
 
                   <input
                     id="pn-link_evento"
-                    :aria-invalid="Boolean(fieldErrors.link_evento)"
-                    :aria-describedby="fieldErrors.link_evento ? 'pn-link-evento-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.link_evento"
                     class="sgpc-input"
                     type="url"
+                    inputmode="url"
+                    maxlength="500"
+                    :aria-invalid="Boolean(fieldErrors.link_evento)"
+                    :aria-describedby="
+                      fieldErrors.link_evento
+                        ? 'pn-link-evento-error'
+                        : undefined
+                    "
                     placeholder="https://..."
                   />
 
@@ -576,10 +660,10 @@
 
                   <p
                     v-if="fieldErrors.link_evento"
-                    class="sgpc-hint sgpc-hint-error"
-                  
                     id="pn-link-evento-error"
-                    role="alert">
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
                     {{ fieldErrors.link_evento }}
                   </p>
                 </div>
@@ -610,24 +694,20 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="pn-autores-anchor" tabindex="-1"></div>
+              <div
+                id="pn-autores-anchor"
+                tabindex="-1"
+              ></div>
 
               <AutoresSelector
                 v-model="form.autores"
                 :error="fieldErrors.autores"
               />
-
-              <p
-                v-if="fieldErrors.autores"
-                class="sgpc-hint sgpc-hint-error"
-              >
-                {{ fieldErrors.autores }}
-              </p>
             </div>
           </section>
 
           <!-- =================================================
-               ADJUNTOS
+               ARCHIVOS PDF
           ================================================== -->
 
           <section
@@ -638,7 +718,7 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Adjuntos PDF
+                  Archivos PDF
                 </h2>
 
                 <p class="sgpc-card-desc">
@@ -666,7 +746,7 @@
           </section>
 
           <!-- =================================================
-               MENSAJES
+               MENSAJE GLOBAL
           ================================================== -->
 
           <div
@@ -676,15 +756,19 @@
               `is-${mensajeTipo}`,
             ]"
             :role="mensajeTipo === 'error' ? 'alert' : 'status'"
-            :aria-live="mensajeTipo === 'error' ? 'assertive' : 'polite'"
+            :aria-live="
+              mensajeTipo === 'error'
+                ? 'assertive'
+                : 'polite'
+            "
           >
             {{ mensaje }}
           </div>
         </main>
 
-        <!-- =====================================================
-             RESUMEN LATERAL
-        ====================================================== -->
+        <!-- ===================================================
+             RESUMEN
+        ==================================================== -->
 
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
@@ -744,7 +828,8 @@
 
               <p class="sgpc-progress-caption">
                 {{ completedRequiredCount }} de
-                {{ totalRequiredCount }} secciones obligatorias completas
+                {{ totalRequiredCount }}
+                secciones obligatorias completas
               </p>
             </div>
 
@@ -915,7 +1000,7 @@
               >
                 <div>
                   <strong>
-                    Adjuntos PDF
+                    Archivos PDF
                   </strong>
 
                   <span>
@@ -997,9 +1082,9 @@ import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
 import api from "../../scripts/api/axios";
 
 import {
+  appendArchivosToFormData,
   restoreDraftArchivos,
   serializeDraftArchivos,
-  appendArchivosToFormData,
 } from "../../scripts/utils/adjuntosPdf";
 
 /* ============================================================
@@ -1007,7 +1092,7 @@ import {
 ============================================================ */
 
 const BASE_STORAGE_KEY =
-  "sgpc-ponencia-draft:v22";
+  "sgpc-ponencia-draft:v23";
 
 const STANDARD_CREATE_ENDPOINT =
   "/ponencias/registrar/";
@@ -1015,11 +1100,37 @@ const STANDARD_CREATE_ENDPOINT =
 const ADMIN_CREATE_ENDPOINT =
   "/admin/publicaciones/ponencias/crear/";
 
+const BULK_ATTACHMENTS_ENDPOINT =
+  "/archivos-publicacion/bulk-upload/";
+
+const FIELD_LIMITS = Object.freeze({
+  origen_grado: 120,
+  nombre_evento: 255,
+  nombre_ponencia: 255,
+  codigo_issn_isbn: 100,
+  tipo_presentacion_otro: 150,
+  link_evento: 500,
+});
+
+const VALID_PRESENTATION_TYPES =
+  new Set([
+    "",
+    "magistral",
+    "oral",
+    "poster",
+    "otro",
+  ]);
+
+/* ============================================================
+   ERRORES
+============================================================ */
+
 const ERROR_KEY_ALIASES = Object.freeze({
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  archivo: "archivos",
   archivo_pdf: "archivos",
   non_field_errors: "admin_context",
 });
@@ -1043,7 +1154,7 @@ const FIELD_LABELS = Object.freeze({
   tipo_presentacion_otro: "Otro tipo de presentación",
   link_evento: "Link del evento",
   autores: "Autores",
-  archivos: "Adjuntos PDF",
+  archivos: "Archivos PDF",
 });
 
 const ERROR_FIELD_ORDER = Object.freeze([
@@ -1069,7 +1180,7 @@ const ERROR_FIELD_ORDER = Object.freeze([
 ]);
 
 /* ============================================================
-   VALORES INICIALES
+   ESTADO INICIAL
 ============================================================ */
 
 function createDefaultDatosGenerales() {
@@ -1106,7 +1217,7 @@ function createDefaultForm() {
 }
 
 /* ============================================================
-   UTILIDADES
+   HELPERS
 ============================================================ */
 
 function asText(value) {
@@ -1149,7 +1260,6 @@ function normalizeDrfErrors(data) {
   if (!data) {
     return {
       fields: {},
-
       message:
         "No se pudo guardar. Verifique los campos.",
     };
@@ -1157,7 +1267,8 @@ function normalizeDrfErrors(data) {
 
   const rawErrors =
     data?.errors &&
-    typeof data.errors === "object"
+    typeof data.errors === "object" &&
+    data.errors !== null
       ? data.errors
       : typeof data === "object" &&
           data !== null
@@ -1191,7 +1302,8 @@ function normalizeDrfErrors(data) {
           message;
 
         if (!first) {
-          first = normalizedKey;
+          first =
+            normalizedKey;
         }
       }
     );
@@ -1210,7 +1322,7 @@ function normalizeDrfErrors(data) {
           "Revise la sección de autores: debe existir al menos un autor y el orden debe ser válido.";
       } else if (fields.archivos) {
         message =
-          "Revise la sección de adjuntos PDF.";
+          "Revise la sección de archivos PDF.";
       } else if (first) {
         const label =
           FIELD_LABELS[first] ||
@@ -1233,20 +1345,23 @@ function normalizeDrfErrors(data) {
   ) {
     return {
       fields: {},
-      message: data.detail,
+      message:
+        data.detail,
     };
   }
 
   return {
     fields: {},
-
     message:
       "No se pudo guardar. Verifique los campos.",
   };
 }
 
 function firstErrorField(fields) {
-  for (const key of ERROR_FIELD_ORDER) {
+  for (
+    const key
+    of ERROR_FIELD_ORDER
+  ) {
     if (fields?.[key]) {
       return key;
     }
@@ -1255,7 +1370,8 @@ function firstErrorField(fields) {
   return (
     Object.keys(
       fields || {}
-    )[0] || null
+    )[0] ||
+    null
   );
 }
 
@@ -1285,13 +1401,36 @@ function appendIfPresent(
   );
 }
 
-function normalizeComparableText(
-  value
+function positiveId(value) {
+  const parsed =
+    Number(value);
+
+  return (
+    Number.isInteger(parsed) &&
+    parsed > 0
+      ? parsed
+      : null
+  );
+}
+
+function exceedsLength(
+  value,
+  maxLength
 ) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+  return (
+    String(value || "")
+      .trim()
+      .length >
+    maxLength
+  );
+}
+
+function extractPublicacionId(data) {
+  return positiveId(
+    data?.publicacion_id ??
+    data?.publicacion?.id ??
+    data?.ponencia?.publicacion_id
+  );
 }
 
 /* ============================================================
@@ -1332,6 +1471,10 @@ export default {
     };
   },
 
+  /* ==========================================================
+     COMPUTED
+  ========================================================== */
+
   computed: {
     isAdminDelegado() {
       const path =
@@ -1370,7 +1513,9 @@ export default {
     },
 
     draftStorageKey() {
-      if (!this.isAdminDelegado) {
+      if (
+        !this.isAdminDelegado
+      ) {
         return (
           `${BASE_STORAGE_KEY}:self`
         );
@@ -1380,10 +1525,9 @@ export default {
         this.adminContext
           .usuarioId ||
 
-        Number(
+        positiveId(
           this.$route?.params
-            ?.usuarioId ||
-          0
+            ?.usuarioId
         ) ||
 
         "sin-usuario";
@@ -1394,7 +1538,9 @@ export default {
     },
 
     adminReady() {
-      if (!this.isAdminDelegado) {
+      if (
+        !this.isAdminDelegado
+      ) {
         return true;
       }
 
@@ -1433,7 +1579,10 @@ export default {
           .autorId
       ) {
         return (
-          `ID ${this.adminContext.autorId}`
+          `ID ${
+            this.adminContext
+              .autorId
+          }`
         );
       }
 
@@ -1443,91 +1592,64 @@ export default {
     },
 
     showAutorObjetivo() {
-      if (!this.isAdminDelegado) {
+      if (
+        !this.isAdminDelegado
+      ) {
         return false;
       }
 
-      const usuarioNombre =
-        normalizeComparableText(
+      /*
+       * Usuario.id y Autor.id pertenecen a tablas distintas.
+       * Nunca deben compararse entre sí.
+       */
+      return Boolean(
+        this.adminContext
+          .autorId ||
+
+        String(
           this.adminContext
-            .usuarioNombre
-        );
-
-      const autorNombre =
-        normalizeComparableText(
-          this.adminContext
-            .autorNombre
-        );
-
-      if (
-        autorNombre &&
-        usuarioNombre &&
-        autorNombre !==
-          usuarioNombre
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext
-          .autorId &&
-
-        this.adminContext
-          .usuarioId &&
-
-        this.adminContext
-          .autorId !==
-          this.adminContext
-            .usuarioId
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext
-          .autorId &&
-
-        !this.adminContext
-          .usuarioNombre
-      ) {
-        return true;
-      }
-
-      return false;
+            .autorNombre ||
+          ""
+        ).trim()
+      );
     },
 
     pageKicker() {
-      return this.isAdminDelegado
-        ? "Administración · Ponencias"
-        : "Ponencias y eventos";
+      return (
+        this.isAdminDelegado
+          ? "Administración · Ponencias"
+          : "Ponencias y eventos"
+      );
     },
 
     pageTitle() {
-      return "Registrar Ponencia";
+      return (
+        "Registrar Ponencia"
+      );
     },
 
     pageSubtitle() {
-      if (this.isAdminDelegado) {
-        return (
-          "Registre la información del evento, ubicación, presentación, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios."
-        );
-      }
-
       return (
-        "Registre la información del evento, ubicación, presentación, autores y adjuntos. Los campos marcados con * son obligatorios."
+        this.isAdminDelegado
+          ? "Registre la información del evento, ubicación, presentación, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios."
+          : "Registre la información del evento, ubicación, presentación, autores y adjuntos. Los campos marcados con * son obligatorios."
       );
     },
 
     submitText() {
-      return this.isAdminDelegado
-        ? "Registrar ponencia para el usuario"
-        : "Registrar ponencia";
+      return (
+        this.isAdminDelegado
+          ? "Registrar ponencia para el usuario"
+          : "Registrar ponencia"
+      );
     },
 
     submitLoadingText() {
-      return this.isAdminDelegado
-        ? "Guardando registro delegado..."
-        : "Guardando...";
+      return (
+        this.isAdminDelegado
+          ? "Guardando registro delegado..."
+          : "Guardando..."
+      );
     },
 
     hasRequiredContext() {
@@ -1572,7 +1694,7 @@ export default {
     },
 
     hasRequiredEvent() {
-      const hasBasicData =
+      const basic =
         Boolean(
           String(
             this.form
@@ -1590,7 +1712,7 @@ export default {
             .fecha_publicacion
         );
 
-      if (!hasBasicData) {
+      if (!basic) {
         return false;
       }
 
@@ -1660,7 +1782,9 @@ export default {
         },
       ];
 
-      if (this.isAdminDelegado) {
+      if (
+        this.isAdminDelegado
+      ) {
         return [
           {
             key: "admin",
@@ -1676,12 +1800,14 @@ export default {
     },
 
     completedRequiredCount() {
-      return this.requiredSections
-        .filter(
-          (section) =>
-            section.done
-        )
-        .length;
+      return (
+        this.requiredSections
+          .filter(
+            (section) =>
+              section.done
+          )
+          .length
+      );
     },
 
     totalRequiredCount() {
@@ -1702,10 +1828,15 @@ export default {
         (
           this.completedRequiredCount /
           this.totalRequiredCount
-        ) * 100
+        ) *
+        100
       );
     },
   },
+
+  /* ==========================================================
+     CICLO DE VIDA
+  ========================================================== */
 
   created() {
     this.hydrateAdminContextFromRoute();
@@ -1717,6 +1848,10 @@ export default {
       this.draftTimer
     );
   },
+
+  /* ==========================================================
+     WATCHERS
+  ========================================================== */
 
   watch: {
     form: {
@@ -1734,85 +1869,104 @@ export default {
         );
 
         this.draftTimer =
-          setTimeout(() => {
-            const payload = {
-              form: {
-                datos_generales: {
-                  ...value
-                    .datos_generales,
+          setTimeout(
+            () => {
+              const payload = {
+                form: {
+                  datos_generales: {
+                    ...(
+                      value
+                        .datos_generales ||
+                      {}
+                    ),
+                  },
+
+                  origen_tipo:
+                    value.origen_tipo,
+
+                  origen_grado:
+                    value.origen_grado,
+
+                  nombre_evento:
+                    value.nombre_evento,
+
+                  nombre_ponencia:
+                    value.nombre_ponencia,
+
+                  fecha_publicacion:
+                    value.fecha_publicacion,
+
+                  codigo_issn_isbn:
+                    value.codigo_issn_isbn,
+
+                  tipo_presentacion:
+                    value.tipo_presentacion,
+
+                  tipo_presentacion_otro:
+                    value.tipo_presentacion_otro,
+
+                  link_evento:
+                    value.link_evento,
+
+                  autores:
+                    value.autores,
+
+                  archivos:
+                    serializeDraftArchivos(
+                      value.archivos
+                    ),
                 },
 
-                origen_tipo:
-                  value.origen_tipo,
+                updatedAt:
+                  new Date()
+                    .toISOString(),
+              };
 
-                origen_grado:
-                  value.origen_grado,
+              try {
+                localStorage
+                  .setItem(
+                    this
+                      .draftStorageKey,
 
-                nombre_evento:
-                  value.nombre_evento,
-
-                nombre_ponencia:
-                  value.nombre_ponencia,
-
-                fecha_publicacion:
-                  value.fecha_publicacion,
-
-                codigo_issn_isbn:
-                  value.codigo_issn_isbn,
-
-                tipo_presentacion:
-                  value.tipo_presentacion,
-
-                tipo_presentacion_otro:
-                  value.tipo_presentacion_otro,
-
-                link_evento:
-                  value.link_evento,
-
-                autores:
-                  value.autores,
-
-                archivos:
-                  serializeDraftArchivos(
-                    value.archivos
-                  ),
-              },
-
-              updatedAt:
-                new Date()
-                  .toISOString(),
-            };
-
-            try {
-              localStorage.setItem(
-                this.draftStorageKey,
-                JSON.stringify(
-                  payload
-                )
-              );
-            } catch (error) {
-              console.warn(
-                "No se pudo guardar el borrador de la ponencia.",
+                    JSON.stringify(
+                      payload
+                    )
+                  );
+              } catch (
                 error
-              );
-            }
-          }, 250);
+              ) {
+                console.warn(
+                  "No se pudo guardar el borrador de la ponencia.",
+                  error
+                );
+              }
+            },
+
+            250
+          );
       },
     },
 
     "form.origen_tipo"(
       value
     ) {
-      if (value !== "tic") {
+      if (
+        value !==
+        "tic"
+      ) {
         this.form
-          .origen_grado = "";
+          .origen_grado =
+          "";
       }
     },
 
     "form.tipo_presentacion"(
       value
     ) {
-      if (value !== "otro") {
+      if (
+        value !==
+        "otro"
+      ) {
         this.form
           .tipo_presentacion_otro =
           "";
@@ -1824,7 +1978,15 @@ export default {
     },
   },
 
+  /* ==========================================================
+     MÉTODOS
+  ========================================================== */
+
   methods: {
+    /* ========================================================
+       CONTEXTO ADMINISTRATIVO
+    ======================================================== */
+
     hydrateAdminContextFromRoute() {
       const query =
         this.$route?.query ||
@@ -1834,62 +1996,38 @@ export default {
         this.$route?.params ||
         {};
 
-      const usuarioId =
-        Number(
-          params.usuarioId ||
-
-          query
-            .usuario_objetivo_id ||
-
-          query.usuario_id ||
-
-          query.usuarioId ||
-
-          query.user_id ||
-
-          0
-        );
-
-      const autorId =
-        Number(
-          params.autorId ||
-
-          query
-            .autor_objetivo_id ||
-
-          query.autor_id ||
-
-          query.autorId ||
-
-          query.author_id ||
-
-          0
-        );
-
       this.adminContext = {
         usuarioId:
-          Number.isFinite(
-            usuarioId
-          ) &&
-          usuarioId > 0
-            ? usuarioId
-            : null,
+          positiveId(
+            params.usuarioId ||
+
+            query.usuario_objetivo_id ||
+
+            query.usuario_id ||
+
+            query.usuarioId ||
+
+            query.user_id
+          ),
 
         autorId:
-          Number.isFinite(
-            autorId
-          ) &&
-          autorId > 0
-            ? autorId
-            : null,
+          positiveId(
+            params.autorId ||
+
+            query.autor_objetivo_id ||
+
+            query.autor_id ||
+
+            query.autorId ||
+
+            query.author_id
+          ),
 
         usuarioNombre:
           String(
-            query
-              .usuario_nombre ||
+            query.usuario_nombre ||
 
-            query
-              .usuarioNombre ||
+            query.usuarioNombre ||
 
             query.user_name ||
 
@@ -1909,15 +2047,43 @@ export default {
       };
     },
 
+    validateAdminContext() {
+      if (
+        !this.isAdminDelegado
+      ) {
+        return null;
+      }
+
+      if (
+        !this.adminContext
+          .usuarioId
+      ) {
+        return (
+          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
+        );
+      }
+
+      return null;
+    },
+
+    /* ========================================================
+       BORRADOR
+    ======================================================== */
+
     loadDraft() {
-      let raw = null;
+      let raw =
+        null;
 
       try {
         raw =
-          localStorage.getItem(
-            this.draftStorageKey
-          );
-      } catch (error) {
+          localStorage
+            .getItem(
+              this
+                .draftStorageKey
+            );
+      } catch (
+        error
+      ) {
         console.warn(
           "No se pudo leer el borrador de la ponencia.",
           error
@@ -1932,19 +2098,25 @@ export default {
 
       try {
         const parsed =
-          JSON.parse(raw);
+          JSON.parse(
+            raw
+          );
 
         const incoming =
           parsed.form ||
           parsed ||
           {};
 
+        const empty =
+          createDefaultForm();
+
         this.form = {
-          ...createDefaultForm(),
+          ...empty,
           ...incoming,
 
           datos_generales: {
-            ...createDefaultDatosGenerales(),
+            ...empty
+              .datos_generales,
 
             ...(
               incoming
@@ -1966,20 +2138,27 @@ export default {
             ),
         };
 
-        if (parsed?.updatedAt) {
+        if (
+          parsed?.updatedAt
+        ) {
           const date =
             new Date(
               parsed.updatedAt
             );
 
           this.draftInfo =
-            `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
+            Number.isNaN(
+              date.getTime()
+            )
+              ? "Se recuperó un borrador guardado."
+              : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
         } else {
           this.draftInfo =
             "Se recuperó un borrador guardado.";
         }
-
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
           "El borrador de la ponencia está corrupto y será ignorado.",
           error
@@ -1988,48 +2167,43 @@ export default {
     },
 
     suspendDraftOnce() {
-      this.draftSuspended = true;
+      this.draftSuspended =
+        true;
 
-      this.$nextTick(() => {
-        this.draftSuspended = false;
-      });
+      this.$nextTick(
+        () => {
+          this.draftSuspended =
+            false;
+        }
+      );
     },
 
-    handleRouteContextChange() {
-      clearTimeout(this.draftTimer);
-      this.hydrateAdminContextFromRoute();
-      this.suspendDraftOnce();
-      this.resetForm();
-      this.loadDraft();
-    },
-
-    goTo(id) {
-      const element =
-        document.getElementById(
-          id
-        );
-
-      element?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    },
-
-    clearDraft() {
-      clearTimeout(this.draftTimer);
+    removeStoredDraft() {
+      clearTimeout(
+        this.draftTimer
+      );
 
       try {
-        localStorage.removeItem(
-          this.draftStorageKey
-        );
-      } catch (error) {
+        localStorage
+          .removeItem(
+            this
+              .draftStorageKey
+          );
+      } catch (
+        error
+      ) {
         console.warn(
           "No se pudo eliminar el borrador de la ponencia.",
           error
         );
       }
+    },
+
+    clearDraft() {
+      this.removeStoredDraft();
 
       this.suspendDraftOnce();
+
       this.resetForm();
 
       this.mensaje =
@@ -2039,10 +2213,50 @@ export default {
         "info";
     },
 
+    handleRouteContextChange() {
+      clearTimeout(
+        this.draftTimer
+      );
+
+      this.hydrateAdminContextFromRoute();
+
+      this.suspendDraftOnce();
+
+      this.resetForm();
+
+      this.loadDraft();
+    },
+
+    /* ========================================================
+       NAVEGACIÓN / ERRORES
+    ======================================================== */
+
     clearErrors() {
-      this.fieldErrors = {};
-      this.mensaje = "";
-      this.mensajeTipo = "";
+      this.fieldErrors =
+        {};
+
+      this.mensaje =
+        "";
+
+      this.mensajeTipo =
+        "";
+    },
+
+    goTo(id) {
+      const element =
+        document
+          .getElementById(
+            id
+          );
+
+      element
+        ?.scrollIntoView({
+          behavior:
+            "smooth",
+
+          block:
+            "start",
+        });
     },
 
     focusField(key) {
@@ -2085,64 +2299,76 @@ export default {
       };
 
       const element =
-        document.getElementById(
-          `dg-${key}`
-        ) ||
+        document
+          .getElementById(
+            `dg-${key}`
+          ) ||
 
-        document.getElementById(
-          localIdMap[key] ||
-          ""
-        );
+        document
+          .getElementById(
+            localIdMap[key] ||
+            ""
+          );
 
       if (!element) {
         return;
       }
 
-      if (
-        key === "autores" ||
-        key === "archivos" ||
-        key === "admin_context"
-      ) {
-        element.scrollIntoView?.({
-          behavior: "smooth",
-          block: "center",
+      element
+        .scrollIntoView
+        ?.({
+          behavior:
+            "smooth",
+
+          block:
+            "center",
         });
 
-        element.focus?.({
-          preventScroll: true,
-        });
-
-        return;
-      }
-
       if (
+        ![
+          "autores",
+          "archivos",
+          "admin_context",
+        ].includes(key) &&
+
         typeof element.focus ===
-        "function"
+          "function"
       ) {
-        element.focus({
-          preventScroll: false,
-        });
-      } else {
-        element.scrollIntoView?.({
-          behavior: "smooth",
-          block: "center",
-        });
+        window.setTimeout(
+          () => {
+            element.focus({
+              preventScroll:
+                true,
+            });
+          },
+
+          250
+        );
       }
     },
+
+    /* ========================================================
+       AUTORES
+    ======================================================== */
 
     buildAutoresPayload() {
       const raw =
         Array.isArray(
-          this.form.autores
+          this.form
+            .autores
         )
-          ? this.form.autores
+          ? this.form
+              .autores
           : [];
 
       return raw
         .map(
-          (autor, index) => {
+          (
+            autor,
+            index
+          ) => {
             const id =
-              Number(
+              positiveId(
                 autor?.autor_id ??
 
                 autor?.id ??
@@ -2150,64 +2376,79 @@ export default {
                 autor?.autor?.id
               );
 
-            if (
-              !Number.isFinite(id) ||
-              id <= 0
-            ) {
+            if (!id) {
               return null;
             }
 
             const orden =
-              index + 1;
+              index +
+              1;
 
             return {
-              autor_id: id,
+              autor_id:
+                id,
+
               orden,
 
               rol_autoria:
-                orden === 1
+                orden ===
+                1
                   ? "principal"
                   : "coautor",
             };
           }
         )
-        .filter(Boolean);
+        .filter(
+          Boolean
+        );
     },
+
+    /* ========================================================
+       ARCHIVOS
+    ======================================================== */
 
     hasPendingRecoveredFiles() {
       const archivos =
         Array.isArray(
-          this.form.archivos
+          this.form
+            .archivos
         )
-          ? this.form.archivos
+          ? this.form
+              .archivos
           : [];
 
-      return archivos.some(
+      return archivos
+        .some(
+          (item) =>
+            !item?.file &&
+            Boolean(
+              item?.originalName
+            )
+        );
+    },
+
+    selectedUploadItems() {
+      return (
+        Array.isArray(
+          this.form
+            .archivos
+        )
+          ? this.form
+              .archivos
+          : []
+      ).filter(
         (item) =>
-          !item?.file &&
-          item?.originalName
+          item?.file
       );
     },
 
-    validateAdminContext() {
-      if (!this.isAdminDelegado) {
-        return null;
-      }
-
-      if (
-        !this.adminContext
-          .usuarioId
-      ) {
-        return (
-          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
-        );
-      }
-
-      return null;
-    },
+    /* ========================================================
+       VALIDACIÓN
+    ======================================================== */
 
     validateFront() {
-      const errors = {};
+      const errors =
+        {};
 
       const general =
         this.form
@@ -2223,35 +2464,57 @@ export default {
           "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
       }
 
-      if (!general.facultad) {
+      if (
+        !general
+          .facultad
+      ) {
         errors.facultad =
           "Seleccione una facultad.";
       }
 
-      if (!general.carrera) {
+      if (
+        !general
+          .carrera
+      ) {
         errors.carrera =
           "Seleccione una carrera.";
       }
 
-      if (!general.area) {
+      if (
+        !general
+          .area
+      ) {
         errors.area =
           "Seleccione un área del conocimiento.";
       }
 
-      if (!general.subarea) {
+      if (
+        !general
+          .subarea
+      ) {
         errors.subarea =
           "Seleccione una subárea del conocimiento.";
       }
 
-      if (!general.pais) {
+      if (
+        !general
+          .pais
+      ) {
         errors.pais =
           "Seleccione un país.";
       }
 
-      if (!general.ciudad) {
+      if (
+        !general
+          .ciudad
+      ) {
         errors.ciudad =
           "Seleccione una ciudad.";
       }
+
+      /* ----------------------------------------------------
+         Origen
+      ---------------------------------------------------- */
 
       if (
         !String(
@@ -2280,6 +2543,23 @@ export default {
       }
 
       if (
+        exceedsLength(
+          this.form
+            .origen_grado,
+
+          FIELD_LIMITS
+            .origen_grado
+        )
+      ) {
+        errors.origen_grado =
+          `El grado / programa no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+      }
+
+      /* ----------------------------------------------------
+         Evento
+      ---------------------------------------------------- */
+
+      if (
         !String(
           this.form
             .nombre_evento ||
@@ -2288,6 +2568,17 @@ export default {
       ) {
         errors.nombre_evento =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form
+            .nombre_evento,
+
+          FIELD_LIMITS
+            .nombre_evento
+        )
+      ) {
+        errors.nombre_evento =
+          `El nombre del evento no puede superar ${FIELD_LIMITS.nombre_evento} caracteres.`;
       }
 
       if (
@@ -2299,6 +2590,17 @@ export default {
       ) {
         errors.nombre_ponencia =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form
+            .nombre_ponencia,
+
+          FIELD_LIMITS
+            .nombre_ponencia
+        )
+      ) {
+        errors.nombre_ponencia =
+          `El nombre de la ponencia no puede superar ${FIELD_LIMITS.nombre_ponencia} caracteres.`;
       }
 
       if (
@@ -2310,8 +2612,43 @@ export default {
       }
 
       if (
-        this.form
-          .tipo_presentacion ===
+        exceedsLength(
+          this.form
+            .codigo_issn_isbn,
+
+          FIELD_LIMITS
+            .codigo_issn_isbn
+        )
+      ) {
+        errors.codigo_issn_isbn =
+          `El código ISSN / ISBN no puede superar ${FIELD_LIMITS.codigo_issn_isbn} caracteres.`;
+      }
+
+      /* ----------------------------------------------------
+         Presentación
+      ---------------------------------------------------- */
+
+      const presentation =
+        String(
+          this.form
+            .tipo_presentacion ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        !VALID_PRESENTATION_TYPES
+          .has(
+            presentation
+          )
+      ) {
+        errors.tipo_presentacion =
+          "Seleccione un tipo de presentación válido.";
+      }
+
+      if (
+        presentation ===
           "otro" &&
 
         !String(
@@ -2325,30 +2662,68 @@ export default {
       }
 
       if (
+        exceedsLength(
+          this.form
+            .tipo_presentacion_otro,
+
+          FIELD_LIMITS
+            .tipo_presentacion_otro
+        )
+      ) {
+        errors.tipo_presentacion_otro =
+          `El tipo de presentación no puede superar ${FIELD_LIMITS.tipo_presentacion_otro} caracteres.`;
+      }
+
+      if (
+        exceedsLength(
+          this.form
+            .link_evento,
+
+          FIELD_LIMITS
+            .link_evento
+        )
+      ) {
+        errors.link_evento =
+          `El enlace no puede superar ${FIELD_LIMITS.link_evento} caracteres.`;
+      }
+
+      /* ----------------------------------------------------
+         Autores
+      ---------------------------------------------------- */
+
+      if (
         !Array.isArray(
-          this.form.autores
+          this.form
+            .autores
         ) ||
 
-        this.form.autores
-          .length === 0
+        this.form
+          .autores
+          .length ===
+          0
       ) {
         errors.autores =
           "Debe registrar al menos un autor.";
       }
 
+      /* ----------------------------------------------------
+         Borradores de archivos
+      ---------------------------------------------------- */
+
       if (
         this.hasPendingRecoveredFiles()
       ) {
         errors.archivos =
-          "Hay adjuntos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
+          "Hay archivos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
       }
 
       this.fieldErrors =
         errors;
 
       if (
-        Object.keys(errors)
-          .length
+        Object.keys(
+          errors
+        ).length
       ) {
         const first =
           firstErrorField(
@@ -2356,13 +2731,19 @@ export default {
           );
 
         this.mensaje =
-          "Complete los campos obligatorios antes de guardar.";
+          "Complete o corrija los campos marcados antes de guardar.";
 
         this.mensajeTipo =
           "error";
 
         if (first) {
-          this.focusField(first);
+          this.$nextTick(
+            () => {
+              this.focusField(
+                first
+              );
+            }
+          );
         }
 
         return false;
@@ -2371,75 +2752,401 @@ export default {
       return true;
     },
 
-    buildCreateUrl() {
-      if (!this.isAdminDelegado) {
-        return (
-          STANDARD_CREATE_ENDPOINT
+    /* ========================================================
+       FORMDATA BASE
+    ======================================================== */
+
+    buildCreateFormData(
+      autoresPayload
+    ) {
+      const formData =
+        new FormData();
+
+      const general =
+        this.form
+          .datos_generales ||
+        {};
+
+      Object.entries(
+        general
+      ).forEach(
+        (
+          [
+            key,
+            value,
+          ]
+        ) => {
+          /*
+           * PonenciaRegistroSerializer no recibe Facultad.
+           *
+           * Facultad se deriva de:
+           *
+           * carrera.facultad
+           *
+           * El selector de Facultad sigue siendo necesario
+           * en la interfaz para filtrar Carreras.
+           */
+          if (
+            key ===
+            "facultad"
+          ) {
+            return;
+          }
+
+          appendIfPresent(
+            formData,
+            key,
+            value
+          );
+        }
+      );
+
+      appendIfPresent(
+        formData,
+        "origen_tipo",
+        this.form
+          .origen_tipo ||
+        "ninguno"
+      );
+
+      if (
+        this.form
+          .origen_tipo ===
+        "tic"
+      ) {
+        appendIfPresent(
+          formData,
+          "origen_grado",
+          this.form
+            .origen_grado
         );
       }
 
-      const params =
-        new URLSearchParams();
+      [
+        "nombre_evento",
+        "nombre_ponencia",
+        "fecha_publicacion",
+        "codigo_issn_isbn",
+        "tipo_presentacion",
+        "link_evento",
+      ].forEach(
+        (key) => {
+          appendIfPresent(
+            formData,
+            key,
+            this.form[
+              key
+            ]
+          );
+        }
+      );
 
       if (
+        this.form
+          .tipo_presentacion ===
+        "otro"
+      ) {
+        appendIfPresent(
+          formData,
+          "tipo_presentacion_otro",
+          this.form
+            .tipo_presentacion_otro
+        );
+      }
+
+      formData.append(
+        "autores",
+        JSON.stringify(
+          autoresPayload
+        )
+      );
+
+      /*
+       * La creación administrativa obtiene el usuario
+       * objetivo mediante estos campos.
+       */
+      if (
+        this.isAdminDelegado &&
         this.adminContext
           .usuarioId
       ) {
-        params.set(
-          "usuario_id",
-
+        formData.append(
+          "usuario_objetivo_id",
           String(
             this.adminContext
               .usuarioId
           )
         );
+
+        if (
+          this.adminContext
+            .autorId
+        ) {
+          formData.append(
+            "autor_objetivo_id",
+            String(
+              this.adminContext
+                .autorId
+            )
+          );
+        }
+      }
+
+      return formData;
+    },
+
+    /* ========================================================
+       PDF PRINCIPAL Y ADJUNTOS
+    ======================================================== */
+
+    appendCreateFiles(
+      formData
+    ) {
+      const uploadItems =
+        this
+          .selectedUploadItems();
+
+      if (
+        !uploadItems
+          .length
+      ) {
+        return {
+          attachments:
+            [],
+        };
+      }
+
+      /*
+       * ADMINISTRADOR
+       *
+       * AdminPublicacionViewSet procesa:
+       *
+       * - archivo_pdf
+       * - archivos
+       * - archivos_meta
+       *
+       * en la misma transacción de creación.
+       */
+      if (
+        this.isAdminDelegado
+      ) {
+        appendArchivosToFormData(
+          formData,
+          uploadItems,
+          {
+            primaryField:
+              "archivo_pdf",
+
+            filesField:
+              "archivos",
+
+            metaField:
+              "archivos_meta",
+          }
+        );
+
+        return {
+          attachments:
+            [],
+        };
+      }
+
+      /*
+       * USUARIO NORMAL
+       *
+       * PonenciaRegistroSerializer procesa únicamente:
+       *
+       * archivo_pdf
+       *
+       * Por eso mandamos aquí solamente el primero.
+       */
+      appendArchivosToFormData(
+        formData,
+        uploadItems.slice(
+          0,
+          1
+        ),
+        {
+          primaryField:
+            "archivo_pdf",
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      /*
+       * Los demás se subirán después de conocer
+       * publicacion_id.
+       */
+      return {
+        attachments:
+          uploadItems.slice(
+            1
+          ),
+      };
+    },
+
+    async uploadStandardAttachments(
+      publicacionId,
+      attachments
+    ) {
+      if (
+        !attachments
+          .length
+      ) {
+        return 0;
       }
 
       if (
-        this.adminContext
-          .autorId
+        !positiveId(
+          publicacionId
+        )
       ) {
-        params.set(
-          "autor_id",
-
-          String(
-            this.adminContext
-              .autorId
-          )
+        throw new Error(
+          "El backend no devolvió un publicacion_id válido para asociar los adjuntos."
         );
       }
 
-      const queryString =
-        params.toString();
+      const formData =
+        new FormData();
 
-      return queryString
-        ? `${ADMIN_CREATE_ENDPOINT}?${queryString}`
-        : ADMIN_CREATE_ENDPOINT;
+      formData.append(
+        "publicacion_id",
+        String(
+          publicacionId
+        )
+      );
+
+      appendArchivosToFormData(
+        formData,
+        attachments,
+        {
+          primaryField:
+            null,
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      await api.post(
+        BULK_ATTACHMENTS_ENDPOINT,
+        formData
+      );
+
+      return (
+        attachments
+          .length
+      );
     },
 
+    /* ========================================================
+       FINALIZACIÓN
+    ======================================================== */
+
+    finalizeSuccess(
+      message
+    ) {
+      this.removeStoredDraft();
+
+      this.suspendDraftOnce();
+
+      this.resetForm();
+
+      this.mensaje =
+        message;
+
+      this.mensajeTipo =
+        "success";
+    },
+
+    finalizePartialAttachmentFailure(
+      publicacionId,
+      error
+    ) {
+      /*
+       * La publicación YA fue creada.
+       *
+       * No debemos conservar el formulario completo porque
+       * el usuario podría pulsar nuevamente "Registrar" y
+       * crear una ponencia duplicada.
+       */
+      this.removeStoredDraft();
+
+      this.suspendDraftOnce();
+
+      this.resetForm();
+
+      this.fieldErrors =
+        {};
+
+      this.mensaje =
+        `La ponencia fue registrada correctamente${
+          publicacionId
+            ? ` (publicación #${publicacionId})`
+            : ""
+        }, pero no se pudieron cargar los adjuntos complementarios. No vuelva a registrar la ponencia; agregue los adjuntos desde el detalle de la publicación.`;
+
+      this.mensajeTipo =
+        "error";
+
+      console.error(
+        "Ponencia creada, pero falló la carga de adjuntos:",
+        error?.response
+          ?.data ||
+        error
+      );
+    },
+
+    /* ========================================================
+       REGISTRO
+    ======================================================== */
+
     async registrarPonencia() {
-      if (this.loading) {
+      if (
+        this.loading
+      ) {
         return;
       }
 
-      this.loading = true;
+      this.loading =
+        true;
+
       this.clearErrors();
 
       try {
+        /* --------------------------------------------------
+           1. Validación frontend
+        -------------------------------------------------- */
+
         if (
           !this.validateFront()
         ) {
           return;
         }
 
+        /* --------------------------------------------------
+           2. Autores
+        -------------------------------------------------- */
+
         const autoresPayload =
-          this.buildAutoresPayload();
+          this
+            .buildAutoresPayload();
 
         if (
-          !autoresPayload.length
+          !autoresPayload
+            .length
         ) {
           this.fieldErrors = {
-            ...this.fieldErrors,
+            ...this
+              .fieldErrors,
 
             autores:
               "Los autores seleccionados no tienen un identificador válido.",
@@ -2458,14 +3165,20 @@ export default {
           return;
         }
 
+        /* --------------------------------------------------
+           3. Contexto administrativo
+        -------------------------------------------------- */
+
         const adminValidationError =
-          this.validateAdminContext();
+          this
+            .validateAdminContext();
 
         if (
           adminValidationError
         ) {
           this.fieldErrors = {
-            ...this.fieldErrors,
+            ...this
+              .fieldErrors,
 
             admin_context:
               adminValidationError,
@@ -2484,159 +3197,83 @@ export default {
           return;
         }
 
+        /* --------------------------------------------------
+           4. FormData
+        -------------------------------------------------- */
+
         const formData =
-          new FormData();
-
-        const general =
-          this.form
-            .datos_generales ||
-          {};
-
-        Object.entries(
-          general
-        ).forEach(
-          ([key, value]) => {
-            appendIfPresent(
-              formData,
-              key,
-              value
+          this
+            .buildCreateFormData(
+              autoresPayload
             );
-          }
-        );
 
-        appendIfPresent(
-          formData,
-          "origen_tipo",
-          this.form
-            .origen_tipo ||
-            "ninguno"
-        );
-
-        if (
-          this.form
-            .origen_tipo ===
-            "tic"
-        ) {
-          appendIfPresent(
-            formData,
-            "origen_grado",
-            this.form
-              .origen_grado
-          );
-        }
-
-        const fields = [
-          "nombre_evento",
-          "nombre_ponencia",
-          "fecha_publicacion",
-          "codigo_issn_isbn",
-          "tipo_presentacion",
-          "link_evento",
-        ];
-
-        fields.forEach(
-          (key) => {
-            appendIfPresent(
-              formData,
-              key,
-              this.form[key]
+        const {
+          attachments,
+        } =
+          this
+            .appendCreateFiles(
+              formData
             );
-          }
-        );
 
-        if (
-          this.form
-            .tipo_presentacion ===
-          "otro"
-        ) {
-          appendIfPresent(
-            formData,
-            "tipo_presentacion_otro",
-            this.form
-              .tipo_presentacion_otro
-          );
-        }
+        /* --------------------------------------------------
+           5. Crear publicación
+        -------------------------------------------------- */
 
-        formData.append(
-          "autores",
+        const endpoint =
+          this.isAdminDelegado
+            ? ADMIN_CREATE_ENDPOINT
+            : STANDARD_CREATE_ENDPOINT;
 
-          JSON.stringify(
-            autoresPayload
-          )
-        );
-
-        if (
-          this.isAdminDelegado &&
-          this.adminContext
-            .usuarioId
-        ) {
-          formData.append(
-            "usuario_objetivo_id",
-
-            String(
-              this.adminContext
-                .usuarioId
-            )
+        const response =
+          await api.post(
+            endpoint,
+            formData
           );
 
-          if (
-            this.adminContext
-              .autorId
+        const publicacionId =
+          extractPublicacionId(
+            response?.data
+          );
+
+        /* --------------------------------------------------
+           6. Adjuntos adicionales usuario normal
+        -------------------------------------------------- */
+
+        if (
+          !this.isAdminDelegado &&
+          attachments.length
+        ) {
+          try {
+            await this
+              .uploadStandardAttachments(
+                publicacionId,
+                attachments
+              );
+          } catch (
+            attachmentError
           ) {
-            formData.append(
-              "autor_objetivo_id",
+            this
+              .finalizePartialAttachmentFailure(
+                publicacionId,
+                attachmentError
+              );
 
-              String(
-                this.adminContext
-                  .autorId
-              )
-            );
+            return;
           }
         }
 
-        appendArchivosToFormData(
-          formData,
-          this.form.archivos,
-          {
-            primaryField:
-              "archivo_pdf",
+        /* --------------------------------------------------
+           7. Éxito
+        -------------------------------------------------- */
 
-            filesField:
-              "archivos",
-
-            metaField:
-              "archivos_meta",
-          }
-        );
-
-        await api.post(
-          this.buildCreateUrl(),
-          formData
-        );
-
-        this.suspendDraftOnce();
-
-        try {
-          localStorage.removeItem(
-            this.draftStorageKey
-          );
-        } catch (error) {
-          console.warn(
-            "No se pudo eliminar el borrador después del registro.",
-            error
-          );
-        }
-
-        this.resetForm();
-
-        this.mensaje =
+        this.finalizeSuccess(
           this.isAdminDelegado
             ? "Ponencia registrada correctamente para el usuario seleccionado."
-            : "Ponencia registrada correctamente.";
-
-        this.mensajeTipo =
-          "success";
-      } catch (error) {
+            : "Ponencia registrada correctamente."
+        );
+      } catch (
+        error
+      ) {
         const status =
           error?.response
             ?.status;
@@ -2645,7 +3282,14 @@ export default {
           error?.response
             ?.data;
 
-        if (status === 401) {
+        /* --------------------------------------------------
+           401
+        -------------------------------------------------- */
+
+        if (
+          status ===
+          401
+        ) {
           this.mensaje =
             "La sesión ha expirado. Vuelva a iniciar sesión.";
 
@@ -2655,17 +3299,40 @@ export default {
           return;
         }
 
+        /* --------------------------------------------------
+           403
+        -------------------------------------------------- */
+
+        if (
+          status ===
+          403
+        ) {
+          this.mensaje =
+            "No tiene permisos para registrar esta ponencia.";
+
+          this.mensajeTipo =
+            "error";
+
+          return;
+        }
+
+        /* --------------------------------------------------
+           DRF
+        -------------------------------------------------- */
+
         const normalized =
           normalizeDrfErrors(
             data
           );
 
         this.fieldErrors =
-          normalized.fields ||
+          normalized
+            .fields ||
           {};
 
         this.mensaje =
-          normalized.message ||
+          normalized
+            .message ||
           "No se pudo registrar la ponencia.";
 
         this.mensajeTipo =
@@ -2673,25 +3340,41 @@ export default {
 
         const first =
           firstErrorField(
-            this.fieldErrors
+            this
+              .fieldErrors
           );
 
         if (first) {
-          this.focusField(first);
+          this.$nextTick(
+            () => {
+              this.focusField(
+                first
+              );
+            }
+          );
         }
 
         console.error(
           "Error al registrar la ponencia:",
-          data || error
+          data ||
+          error
         );
       } finally {
-        this.loading = false;
+        this.loading =
+          false;
       }
     },
 
+    /* ========================================================
+       RESET
+    ======================================================== */
+
     resetForm() {
-      this.fieldErrors = {};
-      this.draftInfo = "";
+      this.fieldErrors =
+        {};
+
+      this.draftInfo =
+        "";
 
       this.form =
         createDefaultForm();

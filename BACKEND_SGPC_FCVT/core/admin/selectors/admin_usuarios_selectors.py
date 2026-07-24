@@ -1,106 +1,197 @@
-# Archivo selector para consultas administrativas de usuarios:
-# centraliza querysets, filtros de búsqueda y clasificación de usuarios del módulo administrativo.
-# Complementa la lógica de administración al optimizar relaciones, búsquedas y consultas reutilizables.
-
-"""
-Selectors administrativos para consultas de usuarios.
-Centraliza querysets y filtros reutilizables del módulo admin.
-"""
+"""Selectors administrativos para usuarios."""
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Prefetch
+from django.db.models import CharField, Count, Prefetch, Q, Value
+from django.db.models.functions import Coalesce, Concat
 
 from core.models import PublicacionAutor
+
 
 User = get_user_model()
 
 
-def _safe_int(value):
-    try:
-        return int(value)
-    except Exception:
+def _text(value):
+    return str(value or "").strip()
+
+
+def _positive_int(value):
+    if value in (None, "", "null", "None") or isinstance(value, bool):
         return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return parsed if parsed > 0 else None
 
 
-def admin_users_base_queryset():
-    participaciones_qs = (
+def _bool(value):
+    if value is None or isinstance(value, bool):
+        return value
+    value = _text(value).lower()
+    if value in {"1", "true", "yes", "y", "on", "si", "sí"}:
+        return True
+    if value in {"0", "false", "no", "n", "off"}:
+        return False
+    return None
+
+
+def _participations_queryset():
+    return (
         PublicacionAutor.objects
-        .select_related("publicacion", "publicacion__tipo", "autor")
-        .order_by("orden", "id")
+        .select_related(
+            "publicacion",
+            "publicacion__tipo",
+            "autor",
+        )
+        .order_by(
+            "-publicacion__anio_publicacion",
+            "-publicacion_id",
+            "orden",
+            "id",
+        )
     )
 
-    return (
+
+def admin_users_base_queryset(*, include_publications=True):
+    queryset = (
         User.objects
-        .select_related("carrera__facultad", "carrera", "autor")
-        .prefetch_related(
+        .select_related(
+            "carrera",
+            "carrera__facultad",
+            "autor",
+        )
+        .annotate(
+            total_publicaciones=Count(
+                "autor__participaciones",
+                distinct=True,
+            ),
+            nombre_completo_busqueda=Concat(
+                Coalesce("nombres", Value("")),
+                Value(" "),
+                Coalesce("apellidos", Value("")),
+                output_field=CharField(),
+            ),
+            autor_nombre_completo_busqueda=Concat(
+                Coalesce("autor__nombres", Value("")),
+                Value(" "),
+                Coalesce("autor__apellidos", Value("")),
+                output_field=CharField(),
+            ),
+        )
+    )
+
+    if include_publications:
+        queryset = queryset.prefetch_related(
             Prefetch(
                 "autor__participaciones",
-                queryset=participaciones_qs,
+                queryset=_participations_queryset(),
+                to_attr="participaciones_admin",
             )
         )
-        .all()
-    )
+
+    return queryset.order_by("apellidos", "nombres", "id")
+
+
+def admin_users_list_queryset():
+    return admin_users_base_queryset(include_publications=False)
+
+
+def admin_users_detail_queryset():
+    return admin_users_base_queryset(include_publications=True)
 
 
 def active_admins_qs():
-    return User.objects.filter(is_active=True).filter(
-        Q(is_superuser=True) | Q(is_staff=True)
+    return (
+        User.objects
+        .filter(is_active=True)
+        .filter(Q(is_staff=True) | Q(is_superuser=True))
+        .order_by("pk")
     )
 
 
-def filter_admin_users_queryset(qs, *, q="", scope="", incompletos=False):
-    q = (q or "").strip()
-    scope = (scope or "").strip().lower()
-    incompletos = bool(incompletos)
+def filter_admin_users_queryset(
+    queryset,
+    *,
+    q="",
+    scope="",
+    incompletos=False,
+):
+    query = _text(q)
+    scope = _text(scope).lower()
+    incomplete = _bool(incompletos)
 
-    if scope == "institucionales":
-        qs = qs.filter(auth_source="microsoft")
+    scope_filters = {
+        "institucionales": {
+            "auth_source": "microsoft",
+            "rol": "autor",
+        },
+        "externos": {
+            "rol": "autor_externo",
+            "auth_source": "local",
+        },
+        "pendientes": {
+            "rol": "autor_externo",
+            "auth_source": "local",
+            "is_active": False,
+        },
+        "activos": {"is_active": True},
+        "inactivos": {"is_active": False},
+        "completos": {"perfil_completo": True},
+        "incompletos": {"perfil_completo": False},
+    }
 
-    elif scope == "externos":
-        qs = qs.filter(
-            rol="autor_externo",
-            auth_source="local",
+    if scope in scope_filters:
+        queryset = queryset.filter(**scope_filters[scope])
+    elif scope == "administradores":
+        queryset = queryset.filter(
+            Q(is_staff=True) | Q(is_superuser=True)
         )
 
-    elif scope == "pendientes":
-        qs = qs.filter(
-            rol="autor_externo",
-            auth_source="local",
-            is_active=False,
+    if incomplete is True:
+        queryset = queryset.filter(perfil_completo=False)
+
+    if query:
+        search = (
+            Q(nombres__icontains=query)
+            | Q(apellidos__icontains=query)
+            | Q(nombre_completo_busqueda__icontains=query)
+            | Q(email__icontains=query)
+            | Q(identificacion__icontains=query)
+            | Q(carrera__nombre__icontains=query)
+            | Q(carrera__facultad__nombre__icontains=query)
+            | Q(carrera__facultad__siglas__icontains=query)
+            | Q(autor__nombres__icontains=query)
+            | Q(autor__apellidos__icontains=query)
+            | Q(autor_nombre_completo_busqueda__icontains=query)
+            | Q(autor__correo__icontains=query)
+            | Q(autor__identificacion__icontains=query)
+            | Q(autor__institucion__icontains=query)
+            | Q(microsoft_id__icontains=query)
+            | Q(ms_graph_id__icontains=query)
+            | Q(ms_display_name__icontains=query)
+            | Q(ms_mail__icontains=query)
+            | Q(ms_user_principal_name__icontains=query)
+            | Q(ms_job_title__icontains=query)
+            | Q(ms_department__icontains=query)
+            | Q(ms_office_location__icontains=query)
+            | Q(
+                autor__participaciones__publicacion__tipo__nombre__icontains=query
+            )
+            | Q(
+                autor__participaciones__publicacion__tipo__codigo__icontains=query
+            )
         )
 
-    elif scope == "activos":
-        qs = qs.filter(is_active=True)
-
-    else:
-        qs = qs.all()
-
-    if q:
-        search_filter = (
-            Q(nombres__icontains=q)
-            | Q(apellidos__icontains=q)
-            | Q(email__icontains=q)
-            | Q(identificacion__icontains=q)
-            | Q(carrera__facultad__nombre__icontains=q)
-            | Q(carrera__nombre__icontains=q)
-            | Q(autor__nombres__icontains=q)
-            | Q(autor__apellidos__icontains=q)
-            | Q(autor__correo__icontains=q)
-            | Q(autor__identificacion__icontains=q)
-            | Q(autor__institucion__icontains=q)
-            | Q(autor__participaciones__publicacion__tipo__nombre__icontains=q)
-            | Q(autor__participaciones__publicacion__tipo__codigo__icontains=q)
-        )
-
-        numero_q = _safe_int(q)
-        if numero_q:
-            search_filter = search_filter | Q(
-                autor__participaciones__publicacion__numero=numero_q
+        numeric = _positive_int(query)
+        if numeric is not None:
+            search |= (
+                Q(
+                    autor__participaciones__publicacion__numero=numeric
+                )
+                | Q(pk=numeric)
+                | Q(autor__pk=numeric)
             )
 
-        qs = qs.filter(search_filter).distinct()
+        queryset = queryset.filter(search).distinct()
 
-    if incompletos:
-        qs = qs.filter(perfil_completo=False)
-
-    return qs.order_by("apellidos", "nombres", "id")
+    return queryset.order_by("apellidos", "nombres", "id")

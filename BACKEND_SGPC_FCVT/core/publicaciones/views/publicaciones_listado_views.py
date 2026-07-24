@@ -1,13 +1,20 @@
 """
-View para listar publicaciones del sistema.
-Permite filtrar por tipo final de publicación.
+Vista para listar publicaciones del sistema.
+
+Permite filtrar por el tipo final normalizado de
+publicación y devuelve la información optimizada para
+PublicacionListadoSerializer.
 """
 
 from django.db.models import Prefetch
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Publicacion, PublicacionAutor
+from core.models import (
+    Publicacion,
+    PublicacionAutor,
+)
 from core.publicaciones.mixins.publicaciones_auth_mixins import (
     PublicacionesJWTAuthAPIViewMixin,
 )
@@ -20,50 +27,128 @@ from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
 )
 
 
-class PublicacionListAPIView(PublicacionesJWTAuthAPIViewMixin, APIView):
-    def get(self, request):
-        tipo = request.query_params.get("tipo") or request.query_params.get(
-            "tipo_publicacion_final"
-        )
+def _normalize_tipo(value):
+    return str(
+        value or ""
+    ).strip().lower()
 
+
+class PublicacionListAPIView(
+    PublicacionesJWTAuthAPIViewMixin,
+    APIView,
+):
+    def _build_queryset(self):
         autores_prefetch = Prefetch(
             "participaciones",
             queryset=(
                 PublicacionAutor.objects
-                .select_related("autor")
-                .order_by("orden", "id")
+                .select_related(
+                    "autor"
+                )
+                .order_by(
+                    "orden",
+                    "id",
+                )
             ),
+            to_attr="participaciones_ordenadas",
         )
 
-        publicaciones = (
+        queryset = (
             Publicacion.objects
             .select_related(
                 "tipo",
                 "proyecto",
                 "usuario_creador",
+                "admin_registrador",
+
                 "carrera",
-                "carrera__facultad",  # <-- CORRECCIÓN: Buscamos la facultad a través de la carrera
+                "carrera__facultad",
+
+                "area",
+                "subarea",
+
+                "pais",
+                "ciudad",
+
                 "articulo",
                 "ponencia",
                 "libro",
                 "capitulo_libro",
             )
-            .prefetch_related(autores_prefetch)
-            .order_by("-fecha_publicacion", "-id")
+            .prefetch_related(
+                autores_prefetch,
+                "archivos",
+            )
+            .order_by(
+                "-fecha_publicacion",
+                "-id",
+            )
         )
 
-        publicaciones = annotate_tipo_publicacion_final(publicaciones).exclude(
-            tipo_publicacion_final="sin_clasificar"
+        queryset = (
+            annotate_tipo_publicacion_final(
+                queryset
+            )
+            .exclude(
+                tipo_publicacion_final=(
+                    "sin_clasificar"
+                )
+            )
+        )
+
+        return queryset
+
+    def get(
+        self,
+        request,
+    ):
+        tipo = (
+            request.query_params.get(
+                "tipo"
+            )
+            or request.query_params.get(
+                "tipo_publicacion_final"
+            )
+        )
+
+        publicaciones = (
+            self._build_queryset()
         )
 
         if tipo:
-            tipo = str(tipo).strip().lower()
-            if tipo in TIPOS_PUBLICACION_FINALES:
-                publicaciones = publicaciones.filter(tipo_publicacion_final=tipo)
+            tipo = _normalize_tipo(
+                tipo
+            )
 
-        serializer = PublicacionListadoSerializer(
-            publicaciones,
-            many=True,
-            context={"request": request},
+            if (
+                tipo
+                not in TIPOS_PUBLICACION_FINALES
+            ):
+                raise ValidationError(
+                    {
+                        "tipo": [
+                            "El tipo de publicación "
+                            "seleccionado no es válido."
+                        ]
+                    }
+                )
+
+            publicaciones = (
+                publicaciones.filter(
+                    tipo_publicacion_final=tipo
+                )
+            )
+
+        serializer = (
+            PublicacionListadoSerializer(
+                publicaciones,
+                many=True,
+                context={
+                    "request": request,
+                },
+            )
         )
-        return Response(serializer.data)
+
+        return Response(
+            serializer.data
+        )

@@ -6,6 +6,9 @@
           class="login-panel page-stage page-stage-1"
           aria-labelledby="login-title"
         >
+          <!-- =====================================================
+               CABECERA
+          ====================================================== -->
           <div class="login-panel__topbar">
             <div class="login-panel__brand">
               <img
@@ -33,6 +36,7 @@
               :aria-pressed="darkMode ? 'true' : 'false'"
               @click="toggleTheme"
             >
+              <!-- SOL -->
               <svg
                 v-if="darkMode"
                 viewBox="0 0 24 24"
@@ -57,6 +61,7 @@
                 />
               </svg>
 
+              <!-- LUNA -->
               <svg
                 v-else
                 viewBox="0 0 24 24"
@@ -79,6 +84,9 @@
             </button>
           </div>
 
+          <!-- =====================================================
+               CONTENIDO
+          ====================================================== -->
           <div class="login-panel__content">
             <header class="login-panel__head">
               <h1
@@ -93,6 +101,9 @@
               </p>
             </header>
 
+            <!-- =================================================
+                 MICROSOFT 365
+            ================================================== -->
             <section
               class="login-panel__section"
               aria-labelledby="institutional-access-title"
@@ -130,12 +141,15 @@
                 v-if="msError"
                 class="error-msg login-backend-error"
                 aria-live="polite"
-                role="status"
+                role="alert"
               >
                 {{ msError }}
               </p>
             </section>
 
+            <!-- =================================================
+                 DIVISOR
+            ================================================== -->
             <div
               class="auth-divider auth-divider--login"
               role="separator"
@@ -144,6 +158,9 @@
               <span>Cuenta externa</span>
             </div>
 
+            <!-- =================================================
+                 LOGIN LOCAL
+            ================================================== -->
             <section
               class="login-panel__section"
               aria-labelledby="external-access-title"
@@ -160,6 +177,7 @@
                 novalidate
                 @submit.prevent="loginBD"
               >
+                <!-- CORREO -->
                 <div
                   class="input-group login-field"
                   :class="{ invalid: Boolean(errors.email) }"
@@ -179,6 +197,10 @@
                     placeholder="correo@dominio.com"
                     autocomplete="username"
                     inputmode="email"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    maxlength="150"
+                    :disabled="loadingBD || loadingMS"
                     :aria-invalid="Boolean(errors.email)"
                     :aria-describedby="
                       errors.email
@@ -198,6 +220,7 @@
                   </p>
                 </div>
 
+                <!-- CONTRASEÑA -->
                 <div
                   class="input-group login-field"
                   :class="{ invalid: Boolean(errors.password) }"
@@ -217,6 +240,8 @@
                       :type="passwordVisible ? 'text' : 'password'"
                       placeholder="Ingrese su contraseña"
                       autocomplete="current-password"
+                      maxlength="128"
+                      :disabled="loadingBD || loadingMS"
                       :aria-invalid="Boolean(errors.password)"
                       :aria-describedby="
                         errors.password
@@ -229,6 +254,7 @@
                     <button
                       class="toggle-password login-password__toggle"
                       type="button"
+                      :disabled="loadingBD || loadingMS"
                       :aria-label="
                         passwordVisible
                           ? 'Ocultar contraseña'
@@ -282,15 +308,17 @@
                   </p>
                 </div>
 
+                <!-- ERROR DEL BACKEND -->
                 <p
                   v-if="error"
                   class="error-msg login-backend-error"
                   aria-live="polite"
-                  role="status"
+                  role="alert"
                 >
                   {{ error }}
                 </p>
 
+                <!-- ACCIONES -->
                 <div class="login-actions">
                   <button
                     class="btn btn-primary btn-primary--login"
@@ -318,12 +346,20 @@
           </div>
         </section>
 
+        <!-- =====================================================
+             PANEL VISUAL
+        ====================================================== -->
         <aside
           class="login-visual page-stage page-stage-2"
           aria-hidden="true"
         >
-          <span class="login-visual__glow login-visual__glow--one"></span>
-          <span class="login-visual__glow login-visual__glow--two"></span>
+          <span
+            class="login-visual__glow login-visual__glow--one"
+          ></span>
+
+          <span
+            class="login-visual__glow login-visual__glow--two"
+          ></span>
 
           <div class="login-visual__content">
             <div class="login-visual__logo-surface">
@@ -352,13 +388,29 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { storeToRefs } from "pinia";
-import { useRouter, useRoute } from "vue-router";
+import {
+  computed,
+  onMounted,
+  ref,
+} from "vue";
+
+import {
+  storeToRefs,
+} from "pinia";
+
+import {
+  useRoute,
+  useRouter,
+} from "vue-router";
 
 import api from "../../scripts/api/axios";
 import { useUserStore } from "../../scripts/stores/userStore";
 import { useThemeStore } from "../../scripts/stores/themeStore";
+
+
+/* ============================================================
+   ROUTER Y STORES
+============================================================ */
 
 const router = useRouter();
 const route = useRoute();
@@ -366,7 +418,42 @@ const route = useRoute();
 const userStore = useUserStore();
 const themeStore = useThemeStore();
 
-const { darkMode } = storeToRefs(themeStore);
+const {
+  darkMode,
+} = storeToRefs(themeStore);
+
+
+/* ============================================================
+   CONFIGURACIÓN
+============================================================ */
+
+const AUTH_HOME_ROUTE = "/home";
+
+const EMAIL_REGEX =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+/* ============================================================
+   ESTADO
+============================================================ */
+
+const email = ref("");
+const password = ref("");
+
+const passwordVisible = ref(false);
+
+const errors = ref({});
+
+const error = ref("");
+const msError = ref("");
+
+const loadingBD = ref(false);
+const loadingMS = ref(false);
+
+
+/* ============================================================
+   TEMA
+============================================================ */
 
 const themeToggleLabel = computed(() => {
   return darkMode.value
@@ -374,74 +461,121 @@ const themeToggleLabel = computed(() => {
     : "Activar modo oscuro";
 });
 
+
 const toggleTheme = () => {
   themeStore.toggleTheme();
 };
 
-const AUTH_HOME_ROUTE = "/home";
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const email = ref("");
-const password = ref("");
-const passwordVisible = ref(false);
+/* ============================================================
+   UTILIDADES GENERALES
+============================================================ */
 
-const errors = ref({});
-const error = ref("");
-const msError = ref("");
+const normalizeRouteQueryValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.length
+      ? String(value[0] ?? "").trim()
+      : "";
+  }
 
-const loadingBD = ref(false);
-const loadingMS = ref(false);
+  return String(
+    value ?? ""
+  ).trim();
+};
+
 
 const isValidEmail = (value = "") => {
-  return EMAIL_REGEX.test(String(value).trim());
+  return EMAIL_REGEX.test(
+    String(value).trim()
+  );
 };
 
-const clearObjectField = (targetRef, field) => {
-  const copy = { ...targetRef.value };
+
+const clearObjectField = (
+  targetRef,
+  field
+) => {
+  const copy = {
+    ...targetRef.value,
+  };
+
   delete copy[field];
+
   targetRef.value = copy;
 };
+
 
 const resetAuthFeedback = () => {
   error.value = "";
   msError.value = "";
 };
 
+
 const togglePassword = () => {
-  passwordVisible.value = !passwordVisible.value;
+  passwordVisible.value =
+    !passwordVisible.value;
 };
+
+
+/* ============================================================
+   VALIDACIÓN LOCAL
+============================================================ */
 
 const validateBD = () => {
   const nextErrors = {};
-  const trimmedEmail = email.value.trim();
+
+  const trimmedEmail =
+    email.value.trim();
 
   if (!trimmedEmail) {
-    nextErrors.email = "El correo es obligatorio.";
-  } else if (!isValidEmail(trimmedEmail)) {
-    nextErrors.email = "Ingrese un correo válido.";
+    nextErrors.email =
+      "El correo es obligatorio.";
+  } else if (
+    !isValidEmail(trimmedEmail)
+  ) {
+    nextErrors.email =
+      "Ingrese un correo válido.";
   }
 
   if (!password.value) {
-    nextErrors.password = "La contraseña es obligatoria.";
+    nextErrors.password =
+      "La contraseña es obligatoria.";
   }
 
   errors.value = nextErrors;
 
-  return Object.keys(nextErrors).length === 0;
+  return (
+    Object.keys(nextErrors).length === 0
+  );
 };
 
+
 const clearError = (field) => {
-  clearObjectField(errors, field);
+  clearObjectField(
+    errors,
+    field
+  );
+
   resetAuthFeedback();
 };
 
-const saveSession = ({ access, refresh, user }) => {
+
+/* ============================================================
+   SESIÓN
+============================================================ */
+
+const saveSession = ({
+  access,
+  refresh,
+  user,
+}) => {
   userStore.setSession({
     access,
     refresh,
     user,
   });
 };
+
 
 const ensureAuthenticatedSession = async ({
   access,
@@ -454,6 +588,10 @@ const ensureAuthenticatedSession = async ({
     user,
   });
 
+  /*
+   * Algunos endpoints pueden entregar tokens sin incluir el
+   * perfil completo. En ese caso se recupera desde el backend.
+   */
   if (
     !userStore.user &&
     typeof userStore.refreshProfile === "function"
@@ -463,32 +601,131 @@ const ensureAuthenticatedSession = async ({
     });
   }
 
-  return userStore.isAuthenticated;
+  return Boolean(
+    userStore.isAuthenticated
+  );
 };
 
-const parseBackendAuthError = (err, fallback) => {
-  const data = err?.response?.data || {};
 
-  if (typeof data.detail === "string" && data.detail) {
-    return data.detail;
+/* ============================================================
+   ERRORES DEL BACKEND
+============================================================ */
+
+const firstErrorMessage = (value) => {
+  if (!value) {
+    return "";
   }
 
-  if (typeof data.error === "string" && data.error) {
-    return data.error;
+  if (
+    typeof value === "string"
+  ) {
+    return value;
   }
 
-  return fallback;
+  if (
+    Array.isArray(value)
+  ) {
+    for (
+      const item of value
+    ) {
+      const message =
+        firstErrorMessage(item);
+
+      if (message) {
+        return message;
+      }
+    }
+
+    return "";
+  }
+
+  if (
+    typeof value === "object"
+  ) {
+    for (
+      const nestedValue
+      of Object.values(value)
+    ) {
+      const message =
+        firstErrorMessage(
+          nestedValue
+        );
+
+      if (message) {
+        return message;
+      }
+    }
+  }
+
+  return "";
 };
+
+
+const parseBackendAuthError = (
+  err,
+  fallback
+) => {
+  const data =
+    err?.response?.data;
+
+  if (!data) {
+    return fallback;
+  }
+
+  if (
+    typeof data.detail === "string"
+    && data.detail.trim()
+  ) {
+    return data.detail.trim();
+  }
+
+  if (
+    typeof data.error === "string"
+    && data.error.trim()
+  ) {
+    return data.error.trim();
+  }
+
+  const nestedMessage =
+    firstErrorMessage(data);
+
+  return (
+    nestedMessage
+    || fallback
+  );
+};
+
+
+/* ============================================================
+   NAVEGACIÓN
+============================================================ */
 
 const redirectToHome = () => {
-  return router.replace(AUTH_HOME_ROUTE);
+  return router.replace(
+    AUTH_HOME_ROUTE
+  );
 };
+
 
 const goForgotPassword = () => {
-  router.push("/recuperar-contrasena");
+  return router.push(
+    "/recuperar-contrasena"
+  );
 };
 
+
+/* ============================================================
+   LOGIN LOCAL
+============================================================ */
+
 const loginBD = async () => {
+  if (
+    loadingBD.value
+    || loadingMS.value
+  ) {
+    return;
+  }
+
   resetAuthFeedback();
 
   if (!validateBD()) {
@@ -498,27 +735,45 @@ const loginBD = async () => {
   loadingBD.value = true;
 
   try {
-    const response = await api.post("/auth/login/", {
-      email: email.value.trim().toLowerCase(),
-      password: password.value,
-    });
+    const response =
+      await api.post(
+        "/auth/login/",
+        {
+          email:
+            email.value
+              .trim()
+              .toLowerCase(),
 
-    const access = response.data?.tokens?.access;
-    const refresh = response.data?.tokens?.refresh;
-    const user = response.data?.user || null;
+          password:
+            password.value,
+        }
+      );
 
-    if (!access || !refresh) {
+    const access =
+      response.data?.tokens?.access;
+
+    const refresh =
+      response.data?.tokens?.refresh;
+
+    const user =
+      response.data?.user ?? null;
+
+    if (
+      !access
+      || !refresh
+    ) {
       error.value =
         "No se pudo iniciar sesión. Inténtelo nuevamente.";
 
       return;
     }
 
-    const sessionReady = await ensureAuthenticatedSession({
-      access,
-      refresh,
-      user,
-    });
+    const sessionReady =
+      await ensureAuthenticatedSession({
+        access,
+        refresh,
+        user,
+      });
 
     if (!sessionReady) {
       userStore.clearUser();
@@ -530,72 +785,142 @@ const loginBD = async () => {
     }
 
     await redirectToHome();
+
   } catch (err) {
     userStore.clearUser();
 
-    if (err?.response?.status === 401) {
+    const statusCode =
+      err?.response?.status;
+
+    if (statusCode === 401) {
       error.value =
         "No se pudo iniciar sesión. Verifique su correo y contraseña.";
-    } else if (err?.response?.status === 403) {
-      error.value = parseBackendAuthError(
-        err,
-        "La cuenta está inactiva o no tiene acceso autorizado."
-      );
-    } else if (err?.response?.status === 400) {
+
+      return;
+    }
+
+    if (statusCode === 403) {
       error.value =
-        "Datos inválidos. Verifique los campos.";
-    } else {
-      error.value = parseBackendAuthError(
+        parseBackendAuthError(
+          err,
+          "La cuenta está inactiva o no tiene acceso autorizado."
+        );
+
+      return;
+    }
+
+    if (statusCode === 400) {
+      error.value =
+        parseBackendAuthError(
+          err,
+          "Datos inválidos. Verifique los campos."
+        );
+
+      return;
+    }
+
+    error.value =
+      parseBackendAuthError(
         err,
         "No se pudo iniciar sesión en este momento. Inténtelo nuevamente."
       );
-    }
+
   } finally {
     loadingBD.value = false;
   }
 };
 
-const loginMicrosoft = () => {
-  resetAuthFeedback();
-  loadingMS.value = true;
 
-  const baseUrl = import.meta.env.VITE_API_URL;
+/* ============================================================
+   URL MICROSOFT
+============================================================ */
+
+const getApiBaseUrl = () => {
+  /*
+   * Utilizamos primero el baseURL efectivo de Axios.
+   *
+   * Esto evita inconsistencias entre:
+   *
+   * VITE_API_URL
+   * y
+   * api.defaults.baseURL
+   *
+   * especialmente cuando axios.js agrega /api.
+   */
+  const configuredBaseUrl =
+    api?.defaults?.baseURL
+    || import.meta.env.VITE_API_URL
+    || "";
+
+  return String(
+    configuredBaseUrl
+  )
+    .trim()
+    .replace(/\/+$/, "");
+};
+
+
+/* ============================================================
+   LOGIN MICROSOFT
+============================================================ */
+
+const loginMicrosoft = () => {
+  if (
+    loadingMS.value
+    || loadingBD.value
+  ) {
+    return;
+  }
+
+  resetAuthFeedback();
+
+  const baseUrl =
+    getApiBaseUrl();
 
   if (!baseUrl) {
     msError.value =
       "El acceso institucional no está disponible en este momento.";
 
-    loadingMS.value = false;
     return;
   }
 
-  const normalizedBaseUrl = String(baseUrl).replace(/\/$/, "");
+  loadingMS.value = true;
 
+  /*
+   * El navegador debe navegar directamente hacia Django para
+   * iniciar el flujo OAuth.
+   *
+   * No se utiliza axios porque el backend responde con una
+   * redirección hacia Microsoft.
+   */
   window.location.assign(
-    `${normalizedBaseUrl}/auth/microsoft/login/`
+    `${baseUrl}/auth/microsoft/login/`
   );
 };
 
+
+/* ============================================================
+   PAYLOAD MICROSOFT
+============================================================ */
+
 const extractTokens = (data) => {
   const access =
-    data?.access ||
-    data?.access_token ||
-    data?.tokens?.access ||
-    data?.tokens?.access_token ||
-    null;
+    data?.tokens?.access
+    ?? data?.access
+    ?? data?.access_token
+    ?? null;
 
   const refresh =
-    data?.refresh ||
-    data?.refresh_token ||
-    data?.tokens?.refresh ||
-    data?.tokens?.refresh_token ||
-    null;
+    data?.tokens?.refresh
+    ?? data?.refresh
+    ?? data?.refresh_token
+    ?? null;
 
   const user =
-    data?.user ||
-    data?.usuario ||
-    data?.data?.user ||
-    null;
+    data?.user
+    ?? data?.usuario
+    ?? data?.data?.user
+    ?? null;
 
   return {
     access,
@@ -604,124 +929,216 @@ const extractTokens = (data) => {
   };
 };
 
-const safeDecode = (value) => {
-  try {
-    return decodeURIComponent(String(value));
-  } catch {
-    return String(value);
-  }
-};
 
-const clearMsQuery = () => {
-  const cleanQuery = { ...route.query };
+/* ============================================================
+   LIMPIEZA DE URL MICROSOFT
+============================================================ */
 
+const clearMsQuery = async () => {
+  const cleanQuery = {
+    ...route.query,
+  };
+
+  /*
+   * Flujo actual.
+   */
   delete cleanQuery.ms_code;
   delete cleanQuery.ms_error;
+  delete cleanQuery.ms_error_code;
+
+  /*
+   * Limpieza preventiva de parámetros pertenecientes a flujos
+   * OAuth antiguos.
+   */
   delete cleanQuery.code;
   delete cleanQuery.state;
+  delete cleanQuery.session_state;
+  delete cleanQuery.error;
+  delete cleanQuery.error_description;
 
-  return router.replace({
+  await router.replace({
     path: route.path,
     query: cleanQuery,
   });
 };
 
-const finishMicrosoftLogin = async () => {
-  const msErrorValue = route.query.ms_error;
 
-  if (msErrorValue) {
-    msError.value = safeDecode(msErrorValue);
-    await clearMsQuery();
-    return;
-  }
+/* ============================================================
+   FINALIZAR LOGIN MICROSOFT
+============================================================ */
 
-  const code = route.query.ms_code || route.query.code;
-  const state = route.query.state;
+const finishMicrosoftLogin =
+  async () => {
+    const microsoftError =
+      normalizeRouteQueryValue(
+        route.query.ms_error
+      );
 
-  if (!code) {
-    return;
-  }
-
-  loadingMS.value = true;
-
-  try {
-    const payload = state
-      ? {
-          code: String(code),
-          state: String(state),
-        }
-      : {
-          code: String(code),
-        };
-
-    const response = await api.post(
-      "/auth/microsoft/exchange/",
-      payload
-    );
-
-    const {
-      access,
-      refresh,
-      user,
-    } = extractTokens(response.data);
-
-    if (!access || !refresh) {
+    /*
+     * El callback de Django redirige los errores utilizando
+     * ms_error.
+     */
+    if (microsoftError) {
       msError.value =
-        "No se pudo completar el acceso con Microsoft.";
+        microsoftError;
 
       await clearMsQuery();
+
       return;
     }
 
-    const sessionReady = await ensureAuthenticatedSession({
-      access,
-      refresh,
-      user,
-    });
+    /*
+     * El flujo actual utiliza EXCLUSIVAMENTE ms_code.
+     *
+     * El código OAuth real de Microsoft nunca debe llegar al
+     * frontend.
+     */
+    const code =
+      normalizeRouteQueryValue(
+        route.query.ms_code
+      );
 
-    if (!sessionReady) {
+    if (!code) {
+      return;
+    }
+
+    loadingMS.value = true;
+
+    try {
+      /*
+       * MicrosoftExchangeView espera solamente:
+       *
+       * {
+       *   code: "..."
+       * }
+       */
+      const response =
+        await api.post(
+          "/auth/microsoft/exchange/",
+          {
+            code,
+          }
+        );
+
+      const {
+        access,
+        refresh,
+        user,
+      } = extractTokens(
+        response.data
+      );
+
+      if (
+        !access
+        || !refresh
+      ) {
+        msError.value =
+          "No se pudo completar el acceso con Microsoft.";
+
+        await clearMsQuery();
+
+        return;
+      }
+
+      const sessionReady =
+        await ensureAuthenticatedSession({
+          access,
+          refresh,
+          user,
+        });
+
+      if (!sessionReady) {
+        userStore.clearUser();
+
+        msError.value =
+          "No se pudo completar el acceso con Microsoft.";
+
+        await clearMsQuery();
+
+        return;
+      }
+
+      /*
+       * Eliminamos el código temporal antes de entrar a la
+       * aplicación.
+       */
+      await clearMsQuery();
+
+      await redirectToHome();
+
+    } catch (err) {
       userStore.clearUser();
 
       msError.value =
-        "No se pudo completar el acceso con Microsoft.";
+        parseBackendAuthError(
+          err,
+          "No se pudo completar el acceso con Microsoft."
+        );
 
       await clearMsQuery();
+
+    } finally {
+      loadingMS.value = false;
+    }
+  };
+
+
+/* ============================================================
+   MONTAJE
+============================================================ */
+
+onMounted(
+  async () => {
+    const hasMicrosoftCode =
+      Boolean(
+        normalizeRouteQueryValue(
+          route.query.ms_code
+        )
+      );
+
+    const hasMicrosoftError =
+      Boolean(
+        normalizeRouteQueryValue(
+          route.query.ms_error
+        )
+      );
+
+    /*
+     * Si regresamos del callback de Microsoft, ese proceso debe
+     * resolverse antes de ejecutar bootstrapAuth().
+     */
+    if (
+      hasMicrosoftCode
+      || hasMicrosoftError
+    ) {
+      await finishMicrosoftLogin();
+
       return;
     }
 
-    await clearMsQuery();
-    await redirectToHome();
-  } catch (err) {
-    userStore.clearUser();
+    /*
+     * Sesión existente.
+     */
+    try {
+      await userStore.bootstrapAuth();
 
-    msError.value = parseBackendAuthError(
-      err,
-      "No se pudo completar el acceso con Microsoft."
-    );
+      if (
+        userStore.isAuthenticated
+      ) {
+        await redirectToHome();
+      }
 
-    await clearMsQuery();
-  } finally {
-    loadingMS.value = false;
+    } catch {
+      /*
+       * Si no existe una sesión válida simplemente permanecemos
+       * en /login.
+       *
+       * bootstrapAuth() debe encargarse internamente de limpiar
+       * tokens inválidos.
+       */
+    }
   }
-};
-
-onMounted(async () => {
-  const returningFromMicrosoft =
-    Boolean(route.query.ms_code) ||
-    Boolean(route.query.code) ||
-    Boolean(route.query.ms_error);
-
-  if (returningFromMicrosoft) {
-    await finishMicrosoftLogin();
-    return;
-  }
-
-  await userStore.bootstrapAuth();
-
-  if (userStore.isAuthenticated) {
-    await redirectToHome();
-  }
-});
+);
 </script>
 
 <style src="../auth-base.css"></style>

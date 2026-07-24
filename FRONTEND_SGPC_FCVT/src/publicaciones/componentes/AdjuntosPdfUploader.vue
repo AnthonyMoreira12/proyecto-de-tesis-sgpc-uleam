@@ -56,7 +56,7 @@
         ref="fileInput"
         class="sgpc-upload__native"
         type="file"
-        accept="application/pdf,.pdf"
+        accept=".pdf,application/pdf,application/x-pdf"
         :multiple="multiple"
         :aria-describedby="describedByIds"
         :aria-invalid="Boolean(error || localMessageType === 'error')"
@@ -295,7 +295,7 @@
             class="sgpc-input"
             type="text"
             :value="item.nombre || ''"
-            maxlength="180"
+            :maxlength="MAX_ATTACHMENT_NAME_LENGTH"
             placeholder="Ej. PDF principal / Carta de aceptación / Evidencia editorial / ..."
             @input="updateName(index, $event.target.value)"
           />
@@ -308,6 +308,7 @@
 
             <template v-else>
               Este nombre se enviará junto al archivo para organizarlo mejor.
+              Máximo {{ MAX_ATTACHMENT_NAME_LENGTH }} caracteres.
             </template>
           </p>
         </div>
@@ -324,12 +325,15 @@ import {
 } from "vue";
 
 import {
+  MAX_ATTACHMENT_FILES,
+  MAX_ATTACHMENT_NAME_LENGTH,
   MAX_ATTACHMENT_PDF_FILE_SIZE,
+  MAX_FILES_WITH_PRIMARY,
   MAX_PRIMARY_PDF_FILE_SIZE,
   buildUploadItem,
-  isPdfFile,
   makeUploadKey,
   uploadFingerprint,
+  validatePdfFile,
 } from "../../scripts/utils/adjuntosPdf";
 
 defineOptions({
@@ -434,7 +438,7 @@ const effectiveMaxFiles = computed(() => {
     return 1;
   }
 
-  return Math.max(
+  const requested = Math.max(
     1,
     Math.trunc(
       positiveNumber(
@@ -443,19 +447,34 @@ const effectiveMaxFiles = computed(() => {
       )
     )
   );
+
+  const backendMaximum = props.usesPrimarySlot
+    ? MAX_FILES_WITH_PRIMARY
+    : MAX_ATTACHMENT_FILES;
+
+  return Math.min(
+    requested,
+    backendMaximum
+  );
 });
 
 const primaryMaxBytes = computed(() => (
-  positiveNumber(
-    props.primaryMaxSizeMb,
-    5
+  Math.min(
+    positiveNumber(
+      props.primaryMaxSizeMb,
+      5
+    ),
+    MAX_PRIMARY_PDF_FILE_SIZE / bytesPerMb
   ) * bytesPerMb
 ));
 
 const attachmentMaxBytes = computed(() => (
-  positiveNumber(
-    props.attachmentMaxSizeMb,
-    3
+  Math.min(
+    positiveNumber(
+      props.attachmentMaxSizeMb,
+      3
+    ),
+    MAX_ATTACHMENT_PDF_FILE_SIZE / bytesPerMb
   ) * bytesPerMb
 ));
 
@@ -524,7 +543,7 @@ const normalizeItem = (
 ) => ({
   key: resolveGeneratedKey(item, index),
   file: item?.file || null,
-  nombre: String(item?.nombre || ""),
+  nombre: String(item?.nombre || "").slice(0, MAX_ATTACHMENT_NAME_LENGTH),
   originalName: String(
     item?.originalName ||
     item?.file?.name ||
@@ -567,9 +586,11 @@ watch(
 function setItems(next) {
   emit(
     "update:modelValue",
-    next.map((item, index) => (
-      normalizeItem(item, index)
-    ))
+    next
+      .map((item, index) => (
+        normalizeItem(item, index)
+      ))
+      .slice(0, effectiveMaxFiles.value)
   );
 }
 
@@ -672,7 +693,9 @@ function updateName(
 
   next[index].nombre = String(
     value || ""
-  ).trimStart();
+  )
+    .trimStart()
+    .slice(0, MAX_ATTACHMENT_NAME_LENGTH);
 
   setItems(next);
 }
@@ -700,16 +723,36 @@ function removeItem(index) {
 }
 
 function validateArrangement(candidate) {
+  if (candidate.length > effectiveMaxFiles.value) {
+    setLocalMessage(
+      `Solo se permiten ${effectiveMaxFiles.value} archivo(s) en esta configuración.`,
+      "error"
+    );
+    return false;
+  }
+
   for (
     let index = 0;
     index < candidate.length;
     index += 1
   ) {
+    if (isRecovered(candidate[index])) {
+      continue;
+    }
+
     const fileSize = Number(
       candidate[index]?.file?.size ||
       candidate[index]?.size ||
       0
     );
+
+    if (fileSize <= 0) {
+      setLocalMessage(
+        `El archivo "${displayName(candidate[index])}" está vacío.`,
+        "error"
+      );
+      return false;
+    }
 
     const limit = getLimitBytesForIndex(
       index
@@ -787,7 +830,7 @@ function moveDown(index) {
   );
 }
 
-function onInputChange(event) {
+async function onInputChange(event) {
   const files = Array.from(
     event?.target?.files || []
   );
@@ -796,7 +839,7 @@ function onInputChange(event) {
     event.target.value = "";
   }
 
-  addFiles(files);
+  await addFiles(files);
 }
 
 function onDragOver(event) {
@@ -822,14 +865,14 @@ function onDragLeave(event) {
   isDragOver.value = false;
 }
 
-function onDrop(event) {
+async function onDrop(event) {
   isDragOver.value = false;
 
   const files = Array.from(
     event?.dataTransfer?.files || []
   );
 
-  addFiles(files);
+  await addFiles(files);
 }
 
 function findRecoveredMatchIndex(
@@ -877,7 +920,7 @@ function fingerprintFromItem(item) {
   ].join("::");
 }
 
-function addFiles(files = []) {
+async function addFiles(files = []) {
   clearLocalMessage();
 
   if (!files.length) {
@@ -885,14 +928,11 @@ function addFiles(files = []) {
       "No se seleccionaron archivos.",
       "info"
     );
-
     return;
   }
 
   let base = props.multiple
-    ? items.value.map((item) => ({
-        ...item,
-      }))
+    ? items.value.map((item) => ({ ...item }))
     : [];
 
   const fingerprints = new Set(
@@ -902,15 +942,31 @@ function addFiles(files = []) {
   );
 
   let added = 0;
-  let invalid = 0;
-  let duplicated = 0;
-  let oversize = 0;
   let replacedRecovered = 0;
+  let duplicated = 0;
+  let invalidExtension = 0;
+  let invalidMime = 0;
+  let emptyFiles = 0;
+  let oversize = 0;
   let limitReached = false;
 
+  const countValidationFailure = (reason) => {
+    if (reason === "extension") {
+      invalidExtension += 1;
+    } else if (reason === "mime") {
+      invalidMime += 1;
+    } else if (reason === "empty") {
+      emptyFiles += 1;
+    } else if (reason === "size") {
+      oversize += 1;
+    }
+  };
+
   for (const file of files) {
-    if (!isPdfFile(file)) {
-      invalid += 1;
+    const fingerprint = uploadFingerprint(file);
+
+    if (fingerprints.has(fingerprint)) {
+      duplicated += 1;
       continue;
     }
 
@@ -920,15 +976,18 @@ function addFiles(files = []) {
     );
 
     if (recoveredIndex !== -1) {
-      const recoveredLimit = getLimitBytesForIndex(
-        recoveredIndex
+      const validation = await validatePdfFile(
+        file,
+        {
+          maxBytes: getLimitBytesForIndex(recoveredIndex),
+          // La firma binaria no bloquea en Vue. Django hace
+          // la comprobación definitiva de seguridad.
+          validateSignature: false,
+        }
       );
 
-      if (
-        Number(file.size || 0) >
-        recoveredLimit
-      ) {
-        oversize += 1;
+      if (!validation.valid) {
+        countValidationFailure(validation.reason);
         continue;
       }
 
@@ -940,15 +999,10 @@ function addFiles(files = []) {
           base[recoveredIndex].originalName ||
           "",
         size: Number(file.size || 0),
-        lastModified: Number(
-          file.lastModified || 0
-        ),
+        lastModified: Number(file.lastModified || 0),
       };
 
-      fingerprints.add(
-        uploadFingerprint(file)
-      );
-
+      fingerprints.add(fingerprint);
       replacedRecovered += 1;
 
       if (!props.multiple) {
@@ -958,19 +1012,7 @@ function addFiles(files = []) {
       continue;
     }
 
-    const fingerprint = uploadFingerprint(
-      file
-    );
-
-    if (fingerprints.has(fingerprint)) {
-      duplicated += 1;
-      continue;
-    }
-
-    if (
-      base.length >=
-      effectiveMaxFiles.value
-    ) {
+    if (base.length >= effectiveMaxFiles.value) {
       limitReached = true;
       break;
     }
@@ -979,26 +1021,25 @@ function addFiles(files = []) {
       ? base.length
       : 0;
 
-    const sizeLimit = getLimitBytesForIndex(
-      targetIndex
+    const validation = await validatePdfFile(
+      file,
+      {
+        maxBytes: getLimitBytesForIndex(targetIndex),
+        validateSignature: false,
+      }
     );
 
-    if (
-      Number(file.size || 0) >
-      sizeLimit
-    ) {
-      oversize += 1;
+    if (!validation.valid) {
+      countValidationFailure(validation.reason);
       continue;
     }
 
-    const uploadItem = buildUploadItem(
-      file
-    );
+    const uploadItem = buildUploadItem(file);
 
     if (!props.multiple) {
       base = [uploadItem];
-      added += 1;
       fingerprints.add(fingerprint);
+      added += 1;
       break;
     }
 
@@ -1030,16 +1071,32 @@ function addFiles(files = []) {
   if (duplicated) {
     parts.push(
       duplicated === 1
-        ? "1 duplicado omitido"
-        : `${duplicated} duplicados omitidos`
+        ? "1 archivo duplicado omitido"
+        : `${duplicated} archivos duplicados omitidos`
     );
   }
 
-  if (invalid) {
+  if (invalidExtension) {
     parts.push(
-      invalid === 1
-        ? "1 archivo inválido"
-        : `${invalid} archivos inválidos`
+      invalidExtension === 1
+        ? "1 archivo no tiene extensión PDF"
+        : `${invalidExtension} archivos no tienen extensión PDF`
+    );
+  }
+
+  if (invalidMime) {
+    parts.push(
+      invalidMime === 1
+        ? "1 archivo tiene un tipo de contenido inválido"
+        : `${invalidMime} archivos tienen un tipo de contenido inválido`
+    );
+  }
+
+  if (emptyFiles) {
+    parts.push(
+      emptyFiles === 1
+        ? "1 archivo está vacío"
+        : `${emptyFiles} archivos están vacíos`
     );
   }
 
@@ -1053,12 +1110,14 @@ function addFiles(files = []) {
 
   if (limitReached) {
     parts.push(
-      "se alcanzó el límite permitido"
+      `se alcanzó el límite de ${effectiveMaxFiles.value} archivo(s)`
     );
   }
 
   const hasErrors = Boolean(
-    invalid ||
+    invalidExtension ||
+    invalidMime ||
+    emptyFiles ||
     oversize
   );
 
@@ -1068,8 +1127,7 @@ function addFiles(files = []) {
   );
 
   setLocalMessage(
-    parts.join(" · ") ||
-      "Sin cambios.",
+    parts.join(" · ") || "Sin cambios.",
     hasErrors
       ? "error"
       : hasSuccess

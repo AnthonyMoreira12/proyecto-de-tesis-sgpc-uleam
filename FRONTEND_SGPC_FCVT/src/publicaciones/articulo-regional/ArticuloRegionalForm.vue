@@ -1,12 +1,18 @@
 ﻿<template>
   <div class="sgpc-form-page sgpc-form-page--articulo-regional">
     <div class="sgpc-form-shell">
+      <!-- =====================================================
+           CABECERA
+      ====================================================== -->
+
       <header
         class="sgpc-form-header sgpc-publication-header page-stage page-header"
       >
         <div class="sgpc-form-heading">
           <div class="sgpc-publication-header__topline">
-            <p class="sgpc-form-kicker">{{ pageKicker }}</p>
+            <p class="sgpc-form-kicker">
+              {{ pageKicker }}
+            </p>
 
             <div
               class="sgpc-publication-header__chips"
@@ -15,6 +21,7 @@
               <span class="sgpc-publication-chip">
                 Publicación científica
               </span>
+
               <span
                 class="sgpc-publication-chip sgpc-publication-chip--accent"
               >
@@ -23,7 +30,9 @@
             </div>
           </div>
 
-          <h1 class="sgpc-form-title">{{ pageTitle }}</h1>
+          <h1 class="sgpc-form-title">
+            {{ pageTitle }}
+          </h1>
 
           <p class="sgpc-form-subtitle">
             {{ pageSubtitle }}
@@ -39,9 +48,16 @@
           </p>
         </div>
 
-        <div class="sgpc-publication-header__mark" aria-hidden="true">
+        <div
+          class="sgpc-publication-header__mark"
+          aria-hidden="true"
+        >
           <div class="sgpc-publication-header__mark-icon">
-            <svg viewBox="0 0 24 24" width="30" height="30">
+            <svg
+              viewBox="0 0 24 24"
+              width="30"
+              height="30"
+            >
               <path
                 fill="currentColor"
                 d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h6v2H8v-2Zm0 4h4v2H8v-2Z"
@@ -54,6 +70,10 @@
         </div>
       </header>
 
+      <!-- =====================================================
+           FORMULARIO
+      ====================================================== -->
+
       <form
         class="sgpc-form sgpc-form--with-aside"
         aria-label="Formulario para registrar un artículo regional"
@@ -61,6 +81,10 @@
         @submit.prevent="registrarArticuloRegional"
       >
         <main class="sgpc-form-main page-stage page-main">
+          <!-- =================================================
+               CONTEXTO ADMINISTRATIVO
+          ================================================== -->
+
           <section
             v-if="isAdminDelegado"
             id="sec-contexto-admin"
@@ -69,7 +93,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Contexto del registro</h2>
+                <h2 class="sgpc-card-title">
+                  Contexto del registro
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Este registro se guardará para el usuario seleccionado.
@@ -78,7 +104,10 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="ar-admin-context-anchor" tabindex="-1"></div>
+              <div
+                id="ar-admin-context-anchor"
+                tabindex="-1"
+              ></div>
 
               <div class="sgpc-admin-context">
                 <article class="sgpc-admin-context__item">
@@ -121,6 +150,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               DATOS GENERALES
+          ================================================== -->
+
           <section
             id="sec-datos-generales"
             class="sgpc-card"
@@ -128,7 +161,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Datos generales</h2>
+                <h2 class="sgpc-card-title">
+                  Datos generales
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Información institucional para la clasificación del registro.
@@ -149,6 +184,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               ORIGEN
+          ================================================== -->
+
           <section
             id="sec-origen"
             class="sgpc-card"
@@ -156,7 +195,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Origen de la publicación</h2>
+                <h2 class="sgpc-card-title">
+                  Origen de la publicación
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Indique si el artículo proviene de un trabajo académico o si
@@ -168,30 +209,58 @@
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-origen_tipo">
-                    Origen <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-origen_tipo"
+                  >
+                    Origen
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <select
                     id="ar-origen_tipo"
-                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
-                    :aria-describedby="fieldErrors.origen_tipo ? 'ar-origen_tipo-error' : undefined"
                     v-model="form.origen_tipo"
                     class="sgpc-input"
+                    :aria-invalid="Boolean(fieldErrors.origen_tipo)"
+                    :aria-describedby="
+                      fieldErrors.origen_tipo
+                        ? 'ar-origen-tipo-error'
+                        : undefined
+                    "
                     required
                   >
-                    <option disabled value="">Seleccione...</option>
-                    <option value="ninguno">Ninguno</option>
+                    <option
+                      disabled
+                      value=""
+                    >
+                      Seleccione...
+                    </option>
+
+                    <option value="ninguno">
+                      Ninguno
+                    </option>
+
                     <option value="tic">
                       Trabajo de integración curricular
                     </option>
-                    <option value="maestria">Tesis de maestría</option>
-                    <option value="doctoral">Tesis doctoral</option>
+
+                    <option value="maestria">
+                      Tesis de maestría
+                    </option>
+
+                    <option value="doctoral">
+                      Tesis doctoral
+                    </option>
                   </select>
 
                   <p
                     v-if="fieldErrors.origen_tipo"
-                    id="ar-origen_tipo-error"
+                    id="ar-origen-tipo-error"
                     class="sgpc-hint sgpc-hint-error"
                     role="alert"
                   >
@@ -200,7 +269,10 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-origen_grado">
+                  <label
+                    class="sgpc-label"
+                    for="ar-origen_grado"
+                  >
                     Grado / programa
 
                     <span
@@ -214,14 +286,18 @@
 
                   <input
                     id="ar-origen_grado"
-                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
-                    :aria-describedby="fieldErrors.origen_grado ? 'ar-origen-grado-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.origen_grado"
                     class="sgpc-input"
                     type="text"
+                    maxlength="120"
                     :disabled="form.origen_tipo !== 'tic'"
                     :required="form.origen_tipo === 'tic'"
+                    :aria-invalid="Boolean(fieldErrors.origen_grado)"
+                    :aria-describedby="
+                      fieldErrors.origen_grado
+                        ? 'ar-origen-grado-error'
+                        : undefined
+                    "
                     placeholder="Ej. Ingeniería de Software / ..."
                   />
 
@@ -243,6 +319,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               DATOS PRINCIPALES
+          ================================================== -->
+
           <section
             id="sec-principales"
             class="sgpc-card"
@@ -250,7 +330,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Datos principales</h2>
+                <h2 class="sgpc-card-title">
+                  Datos principales
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Información base del artículo y su indexación regional.
@@ -261,17 +343,30 @@
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-fecha_publicacion">
-                    Fecha de publicación <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-fecha_publicacion"
+                  >
+                    Fecha de publicación
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="ar-fecha_publicacion"
-                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
-                    :aria-describedby="fieldErrors.fecha_publicacion ? 'ar-fecha-publicacion-error' : undefined"
                     v-model="form.fecha_publicacion"
                     class="sgpc-input"
                     type="date"
+                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    :aria-describedby="
+                      fieldErrors.fecha_publicacion
+                        ? 'ar-fecha-publicacion-error'
+                        : undefined
+                    "
                     required
                   />
 
@@ -286,7 +381,10 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-tipo_articulo">
+                  <label
+                    class="sgpc-label"
+                    for="ar-tipo_articulo"
+                  >
                     Clasificación
                   </label>
 
@@ -300,18 +398,31 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-12">
-                  <label class="sgpc-label" for="ar-nombre_articulo">
-                    Título del artículo <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-nombre_articulo"
+                  >
+                    Título del artículo
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="ar-nombre_articulo"
-                    :aria-invalid="Boolean(fieldErrors.nombre_articulo)"
-                    :aria-describedby="fieldErrors.nombre_articulo ? 'ar-nombre-articulo-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.nombre_articulo"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
+                    :aria-invalid="Boolean(fieldErrors.nombre_articulo)"
+                    :aria-describedby="
+                      fieldErrors.nombre_articulo
+                        ? 'ar-nombre-articulo-error'
+                        : undefined
+                    "
                     required
                     placeholder="Ej. Análisis regional de la producción científica"
                   />
@@ -327,25 +438,61 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-base_datos_indexada">
-                    Base de datos / indexación <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-base_datos_indexada"
+                  >
+                    Base de datos / indexación
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <select
                     id="ar-base_datos_indexada"
-                    :aria-invalid="Boolean(fieldErrors.base_datos_indexada)"
-                    :aria-describedby="fieldErrors.base_datos_indexada ? 'ar-base-datos-indexada-error' : undefined"
                     v-model="form.base_datos_indexada"
                     class="sgpc-input"
+                    :aria-invalid="Boolean(fieldErrors.base_datos_indexada)"
+                    :aria-describedby="
+                      fieldErrors.base_datos_indexada
+                        ? 'ar-base-datos-indexada-error'
+                        : undefined
+                    "
                     required
                   >
-                    <option disabled value="">Seleccione una opción</option>
-                    <option value="latindex">Latindex</option>
-                    <option value="scielo">SciELO</option>
-                    <option value="redalyc">Redalyc</option>
-                    <option value="dialnet">Dialnet</option>
-                    <option value="google_scholar">Google Scholar</option>
-                    <option value="otra">Otra</option>
+                    <option
+                      disabled
+                      value=""
+                    >
+                      Seleccione una opción
+                    </option>
+
+                    <option value="latindex">
+                      Latindex
+                    </option>
+
+                    <option value="scielo">
+                      SciELO
+                    </option>
+
+                    <option value="redalyc">
+                      Redalyc
+                    </option>
+
+                    <option value="dialnet">
+                      Dialnet
+                    </option>
+
+                    <option value="google_scholar">
+                      Google Scholar
+                    </option>
+
+                    <option value="otra">
+                      Otra
+                    </option>
                   </select>
 
                   <p
@@ -362,18 +509,31 @@
                   v-if="form.base_datos_indexada === 'otra'"
                   class="sgpc-field sgpc-col-span-6"
                 >
-                  <label class="sgpc-label" for="ar-base_datos_otra">
-                    Especifique la base de datos <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-base_datos_otra"
+                  >
+                    Especifique la base de datos
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="ar-base_datos_otra"
-                    :aria-invalid="Boolean(fieldErrors.base_datos_otra)"
-                    :aria-describedby="fieldErrors.base_datos_otra ? 'ar-base-datos-otra-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.base_datos_otra"
                     class="sgpc-input"
                     type="text"
+                    maxlength="150"
+                    :aria-invalid="Boolean(fieldErrors.base_datos_otra)"
+                    :aria-describedby="
+                      fieldErrors.base_datos_otra
+                        ? 'ar-base-datos-otra-error'
+                        : undefined
+                    "
                     required
                     placeholder="Ej. Repositorio institucional / Revista local / ..."
                   />
@@ -391,6 +551,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               REVISTA
+          ================================================== -->
+
           <section
             id="sec-revista"
             class="sgpc-card"
@@ -398,7 +562,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Revista y enlaces</h2>
+                <h2 class="sgpc-card-title">
+                  Revista y enlaces
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Identificación formal, metadatos y enlaces de acceso. Los
@@ -410,18 +576,31 @@
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-codigo_issn">
-                    Código ISSN <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-codigo_issn"
+                  >
+                    Código ISSN
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="ar-codigo_issn"
-                    :aria-invalid="Boolean(fieldErrors.codigo_issn)"
-                    :aria-describedby="fieldErrors.codigo_issn ? 'ar-codigo-issn-error' : undefined"
-                    maxlength="32"
                     v-model.trim="form.codigo_issn"
                     class="sgpc-input"
                     type="text"
+                    maxlength="100"
+                    :aria-invalid="Boolean(fieldErrors.codigo_issn)"
+                    :aria-describedby="
+                      fieldErrors.codigo_issn
+                        ? 'ar-codigo-issn-error'
+                        : undefined
+                    "
                     required
                     placeholder="Ej. 1234-5678"
                   />
@@ -437,18 +616,25 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-codigo_doi">
+                  <label
+                    class="sgpc-label"
+                    for="ar-codigo_doi"
+                  >
                     Código DOI
                   </label>
 
                   <input
                     id="ar-codigo_doi"
-                    :aria-invalid="Boolean(fieldErrors.codigo_doi)"
-                    :aria-describedby="fieldErrors.codigo_doi ? 'ar-codigo-doi-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.codigo_doi"
                     class="sgpc-input"
                     type="text"
+                    maxlength="150"
+                    :aria-invalid="Boolean(fieldErrors.codigo_doi)"
+                    :aria-describedby="
+                      fieldErrors.codigo_doi
+                        ? 'ar-codigo-doi-error'
+                        : undefined
+                    "
                     placeholder="Ej. 10.1234/abcd.2025"
                   />
 
@@ -463,18 +649,31 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-12">
-                  <label class="sgpc-label" for="ar-nombre_revista">
-                    Nombre de la revista <span class="req" aria-hidden="true">*</span>
+                  <label
+                    class="sgpc-label"
+                    for="ar-nombre_revista"
+                  >
+                    Nombre de la revista
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
                   </label>
 
                   <input
                     id="ar-nombre_revista"
-                    :aria-invalid="Boolean(fieldErrors.nombre_revista)"
-                    :aria-describedby="fieldErrors.nombre_revista ? 'ar-nombre-revista-error' : undefined"
-                    maxlength="255"
                     v-model.trim="form.nombre_revista"
                     class="sgpc-input"
                     type="text"
+                    maxlength="255"
+                    :aria-invalid="Boolean(fieldErrors.nombre_revista)"
+                    :aria-describedby="
+                      fieldErrors.nombre_revista
+                        ? 'ar-nombre-revista-error'
+                        : undefined
+                    "
                     required
                     placeholder="Ej. Revista Científica Regional"
                   />
@@ -490,20 +689,27 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-numero_revista">
+                  <label
+                    class="sgpc-label"
+                    for="ar-numero_revista"
+                  >
                     Número de la revista
                   </label>
 
                   <input
                     id="ar-numero_revista"
-                    :aria-invalid="Boolean(fieldErrors.numero_revista)"
-                    :aria-describedby="fieldErrors.numero_revista ? 'ar-numero-revista-error' : undefined"
                     v-model.number="form.numero_revista"
                     class="sgpc-input"
                     type="number"
                     min="1"
                     step="1"
                     inputmode="numeric"
+                    :aria-invalid="Boolean(fieldErrors.numero_revista)"
+                    :aria-describedby="
+                      fieldErrors.numero_revista
+                        ? 'ar-numero-revista-error'
+                        : undefined
+                    "
                     placeholder="Ej. 12"
                   />
 
@@ -518,18 +724,26 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-link_revista">
+                  <label
+                    class="sgpc-label"
+                    for="ar-link_revista"
+                  >
                     Link de la revista
                   </label>
 
                   <input
                     id="ar-link_revista"
-                    :aria-invalid="Boolean(fieldErrors.link_revista)"
-                    :aria-describedby="fieldErrors.link_revista ? 'ar-link-revista-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.link_revista"
                     class="sgpc-input"
                     type="url"
+                    inputmode="url"
+                    maxlength="500"
+                    :aria-invalid="Boolean(fieldErrors.link_revista)"
+                    :aria-describedby="
+                      fieldErrors.link_revista
+                        ? 'ar-link-revista-error'
+                        : undefined
+                    "
                     placeholder="https://..."
                   />
 
@@ -544,18 +758,26 @@
                 </div>
 
                 <div class="sgpc-field sgpc-col-span-6">
-                  <label class="sgpc-label" for="ar-link_publicacion">
+                  <label
+                    class="sgpc-label"
+                    for="ar-link_publicacion"
+                  >
                     Link de la publicación
                   </label>
 
                   <input
                     id="ar-link_publicacion"
-                    :aria-invalid="Boolean(fieldErrors.link_publicacion)"
-                    :aria-describedby="fieldErrors.link_publicacion ? 'ar-link-publicacion-error' : undefined"
-                    maxlength="500"
                     v-model.trim="form.link_publicacion"
                     class="sgpc-input"
                     type="url"
+                    inputmode="url"
+                    maxlength="500"
+                    :aria-invalid="Boolean(fieldErrors.link_publicacion)"
+                    :aria-describedby="
+                      fieldErrors.link_publicacion
+                        ? 'ar-link-publicacion-error'
+                        : undefined
+                    "
                     placeholder="https://..."
                   />
 
@@ -572,6 +794,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               AUTORES
+          ================================================== -->
+
           <section
             id="sec-autores"
             class="sgpc-card"
@@ -579,7 +805,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Autores</h2>
+                <h2 class="sgpc-card-title">
+                  Autores
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Seleccione autores, participación y orden de firma.
@@ -588,7 +816,10 @@
             </div>
 
             <div class="sgpc-card-body">
-              <div id="ar-autores-anchor" tabindex="-1"></div>
+              <div
+                id="ar-autores-anchor"
+                tabindex="-1"
+              ></div>
 
               <AutoresSelector
                 v-model="form.autores"
@@ -597,6 +828,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               ADJUNTOS
+          ================================================== -->
+
           <section
             id="sec-adjuntos"
             class="sgpc-card"
@@ -604,7 +839,9 @@
           >
             <div class="sgpc-card-head">
               <div>
-                <h2 class="sgpc-card-title">Adjuntos</h2>
+                <h2 class="sgpc-card-title">
+                  Adjuntos
+                </h2>
 
                 <p class="sgpc-card-desc">
                   Suba evidencias del artículo en PDF y asigne un nombre a cada
@@ -629,6 +866,10 @@
             </div>
           </section>
 
+          <!-- =================================================
+               MENSAJES
+          ================================================== -->
+
           <div
             v-if="successMessage"
             class="sgpc-alert is-success"
@@ -648,11 +889,22 @@
           </div>
         </main>
 
+        <!-- ===================================================
+             RESUMEN
+        ==================================================== -->
+
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
             <div class="sgpc-summary-head">
-              <div class="sgpc-summary-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20">
+              <div
+                class="sgpc-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                >
                   <path
                     fill="currentColor"
                     d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h5v2H8v-2Z"
@@ -661,15 +913,25 @@
               </div>
 
               <div>
-                <p class="sgpc-summary-kicker">Seguimiento</p>
-                <h3>Resumen del registro</h3>
+                <p class="sgpc-summary-kicker">
+                  Seguimiento
+                </p>
+
+                <h3>
+                  Resumen del registro
+                </h3>
               </div>
             </div>
 
             <div class="sgpc-progress">
               <div class="sgpc-progress-row">
-                <span>Completitud</span>
-                <strong>{{ progressPercent }}%</strong>
+                <span>
+                  Completitud
+                </span>
+
+                <strong>
+                  {{ progressPercent }}%
+                </strong>
               </div>
 
               <div
@@ -680,11 +942,16 @@
                 aria-valuemax="100"
                 :aria-valuenow="progressPercent"
               >
-                <span :style="{ width: `${progressPercent}%` }"></span>
+                <span
+                  :style="{
+                    width: `${progressPercent}%`,
+                  }"
+                ></span>
               </div>
 
               <p class="sgpc-progress-caption">
-                {{ completedRequiredCount }} de {{ totalRequiredCount }}
+                {{ completedRequiredCount }} de
+                {{ totalRequiredCount }}
                 secciones obligatorias completas
               </p>
             </div>
@@ -697,14 +964,26 @@
                 @click="goTo('sec-datos-generales')"
               >
                 <div>
-                  <strong>Datos generales</strong>
+                  <strong>
+                    Datos generales
+                  </strong>
 
                   <span>
-                    {{ hasRequiredContext ? "Completo" : "Campos pendientes" }}
+                    {{
+                      hasRequiredContext
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
                   </span>
                 </div>
 
-                <em>{{ hasRequiredContext ? "Completo" : "Pendiente" }}</em>
+                <em>
+                  {{
+                    hasRequiredContext
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
@@ -714,14 +993,26 @@
                 @click="goTo('sec-origen')"
               >
                 <div>
-                  <strong>Origen</strong>
+                  <strong>
+                    Origen
+                  </strong>
 
                   <span>
-                    {{ hasRequiredOrigin ? "Completo" : "Campos pendientes" }}
+                    {{
+                      hasRequiredOrigin
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
                   </span>
                 </div>
 
-                <em>{{ hasRequiredOrigin ? "Completo" : "Pendiente" }}</em>
+                <em>
+                  {{
+                    hasRequiredOrigin
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
@@ -731,14 +1022,26 @@
                 @click="goTo('sec-principales')"
               >
                 <div>
-                  <strong>Datos principales</strong>
+                  <strong>
+                    Datos principales
+                  </strong>
 
                   <span>
-                    {{ hasRequiredMain ? "Completo" : "Campos pendientes" }}
+                    {{
+                      hasRequiredMain
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
                   </span>
                 </div>
 
-                <em>{{ hasRequiredMain ? "Completo" : "Pendiente" }}</em>
+                <em>
+                  {{
+                    hasRequiredMain
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
@@ -748,14 +1051,26 @@
                 @click="goTo('sec-revista')"
               >
                 <div>
-                  <strong>Revista y enlaces</strong>
+                  <strong>
+                    Revista y enlaces
+                  </strong>
 
                   <span>
-                    {{ hasRequiredJournal ? "Completo" : "Campos pendientes" }}
+                    {{
+                      hasRequiredJournal
+                        ? "Completo"
+                        : "Campos pendientes"
+                    }}
                   </span>
                 </div>
 
-                <em>{{ hasRequiredJournal ? "Completo" : "Pendiente" }}</em>
+                <em>
+                  {{
+                    hasRequiredJournal
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
@@ -765,7 +1080,9 @@
                 @click="goTo('sec-autores')"
               >
                 <div>
-                  <strong>Autores</strong>
+                  <strong>
+                    Autores
+                  </strong>
 
                   <span>
                     {{
@@ -776,7 +1093,13 @@
                   </span>
                 </div>
 
-                <em>{{ hasRequiredAuthors ? "Completo" : "Pendiente" }}</em>
+                <em>
+                  {{
+                    hasRequiredAuthors
+                      ? "Completo"
+                      : "Pendiente"
+                  }}
+                </em>
               </button>
 
               <button
@@ -786,7 +1109,9 @@
                 @click="goTo('sec-adjuntos')"
               >
                 <div>
-                  <strong>Adjuntos</strong>
+                  <strong>
+                    Adjuntos
+                  </strong>
 
                   <span>
                     {{
@@ -797,9 +1122,19 @@
                   </span>
                 </div>
 
-                <em>{{ hasAdjuntos ? "Completo" : "Opcional" }}</em>
+                <em>
+                  {{
+                    hasAdjuntos
+                      ? "Completo"
+                      : "Opcional"
+                  }}
+                </em>
               </button>
             </div>
+
+            <!-- ===============================================
+                 ACCIONES ALINEADAS CON LOS DEMÁS FORMULARIOS
+            ================================================ -->
 
             <div class="sgpc-summary-actions">
               <button
@@ -827,12 +1162,14 @@
                   />
                 </svg>
 
-                <span>{{ loading ? submitLoadingText : submitText }}</span>
+                <span>
+                  {{ loading ? submitLoadingText : submitText }}
+                </span>
               </button>
 
               <button
-                class="sgpc-btn"
                 type="button"
+                class="sgpc-btn"
                 :disabled="loading"
                 title="Elimina únicamente el borrador guardado en este navegador"
                 @click="limpiarBorrador"
@@ -870,20 +1207,50 @@ import {
   serializeDraftArchivos,
 } from "../../scripts/utils/adjuntosPdf";
 
+
 defineOptions({
   name: "ArticuloRegionalForm",
 });
 
+
 const route = useRoute();
 
+
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
+
 const BASE_DRAFT_KEY =
-  "sgpc:draft:articulo_regional:v22";
+  "sgpc:draft:articulo_regional:v23";
 
 const STANDARD_CREATE_ENDPOINT =
   "/publicaciones/articulos/crear/";
 
 const ADMIN_CREATE_ENDPOINT =
   "/admin/publicaciones/articulos/crear/";
+
+
+const FIELD_LIMITS = Object.freeze({
+  origen_grado: 120,
+  nombre_articulo: 255,
+  base_datos_otra: 150,
+  codigo_issn: 100,
+  codigo_doi: 150,
+  nombre_revista: 255,
+  link_revista: 500,
+  link_publicacion: 500,
+});
+
+
+const REGIONAL_DATABASES = new Set([
+  "latindex",
+  "scielo",
+  "redalyc",
+  "dialnet",
+  "google_scholar",
+  "otra",
+]);
+
 
 const ERROR_KEY_ALIASES = Object.freeze({
   meta: "archivos",
@@ -893,6 +1260,7 @@ const ERROR_KEY_ALIASES = Object.freeze({
   archivo_pdf: "archivos",
   non_field_errors: "admin_context",
 });
+
 
 const FIELD_LABELS = Object.freeze({
   admin_context: "Usuario objetivo",
@@ -918,6 +1286,7 @@ const FIELD_LABELS = Object.freeze({
   archivos: "Adjuntos PDF",
 });
 
+
 const ERROR_FIELD_ORDER = Object.freeze([
   "admin_context",
   "tipo_codigo",
@@ -942,6 +1311,11 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "archivos",
 ]);
 
+
+/* =========================================================
+   ESTADO INICIAL
+========================================================= */
+
 function createDefaultFormDatos() {
   return {
     facultad: null,
@@ -954,24 +1328,33 @@ function createDefaultFormDatos() {
   };
 }
 
+
 function createDefaultForm() {
   return {
     origen_tipo: "",
     origen_grado: "",
+
     nombre_articulo: "",
     base_datos_indexada: "",
     base_datos_otra: "",
     fecha_publicacion: "",
+
     codigo_issn: "",
     codigo_doi: "",
     nombre_revista: "",
     numero_revista: null,
     link_revista: "",
     link_publicacion: "",
+
     autores: [],
     archivos: [],
   };
 }
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function asText(value) {
   if (Array.isArray(value)) {
@@ -1002,15 +1385,21 @@ function asText(value) {
   return String(value).trim();
 }
 
+
 function normalizeErrorKey(key) {
-  return ERROR_KEY_ALIASES[key] || key;
+  return (
+    ERROR_KEY_ALIASES[key] ||
+    key
+  );
 }
+
 
 function normalizeDrfErrors(data) {
   if (!data) {
     return {
       fields: {},
-      message: "No se pudo guardar. Verifique los campos.",
+      message:
+        "No se pudo guardar. Verifique los campos.",
     };
   }
 
@@ -1030,7 +1419,9 @@ function normalizeDrfErrors(data) {
     const fields = {};
     let first = null;
 
-    Object.entries(rawErrors).forEach(
+    Object.entries(
+      rawErrors
+    ).forEach(
       ([key, value]) => {
         if (key === "detail") {
           return;
@@ -1050,26 +1441,37 @@ function normalizeDrfErrors(data) {
           message;
 
         if (!first) {
-          first = normalizedKey;
+          first =
+            normalizedKey;
         }
       }
     );
 
-    if (Object.keys(fields).length) {
+    if (
+      Object.keys(fields).length
+    ) {
       let message =
         "No se pudo registrar. Revise los campos marcados.";
 
-      if (fields.admin_context) {
-        message = fields.admin_context;
-      } else if (fields.autores) {
+      if (
+        fields.admin_context
+      ) {
+        message =
+          fields.admin_context;
+      } else if (
+        fields.autores
+      ) {
         message =
           "Revise la sección de Autores: debe existir al menos un autor y el orden debe ser válido.";
-      } else if (fields.archivos) {
+      } else if (
+        fields.archivos
+      ) {
         message =
           "Revise la sección de Adjuntos PDF.";
       } else if (first) {
         const label =
-          FIELD_LABELS[first] || first;
+          FIELD_LABELS[first] ||
+          first;
 
         message =
           `${label}: ${fields[first]}`;
@@ -1082,7 +1484,10 @@ function normalizeDrfErrors(data) {
     }
   }
 
-  if (typeof data?.detail === "string") {
+  if (
+    typeof data?.detail ===
+    "string"
+  ) {
     return {
       fields: {},
       message: data.detail,
@@ -1091,19 +1496,32 @@ function normalizeDrfErrors(data) {
 
   return {
     fields: {},
-    message: "No se pudo guardar. Verifique los campos.",
+    message:
+      "No se pudo guardar. Verifique los campos.",
   };
 }
 
+
 function firstErrorField(fields) {
-  for (const key of ERROR_FIELD_ORDER) {
-    if (fields?.[key]) {
+  for (
+    const key
+    of ERROR_FIELD_ORDER
+  ) {
+    if (
+      fields?.[key]
+    ) {
       return key;
     }
   }
 
-  return Object.keys(fields || {})[0] || null;
+  return (
+    Object.keys(
+      fields || {}
+    )[0] ||
+    null
+  );
 }
+
 
 function appendFormValue(
   formData,
@@ -1125,15 +1543,29 @@ function appendFormValue(
     return;
   }
 
-  formData.append(key, String(value));
+  formData.append(
+    key,
+    String(value)
+  );
 }
 
-function normalizeComparableText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+
+function exceedsLength(
+  value,
+  maxLength
+) {
+  return (
+    String(value || "")
+      .trim()
+      .length >
+    maxLength
+  );
 }
+
+
+/* =========================================================
+   ESTADO
+========================================================= */
 
 const adminContext = ref({
   usuarioId: null,
@@ -1142,295 +1574,465 @@ const adminContext = ref({
   autorNombre: "",
 });
 
+
 const formDatos = ref(
   createDefaultFormDatos()
 );
+
 
 const form = ref(
   createDefaultForm()
 );
 
+
 const loading = ref(false);
+
 const successMessage = ref("");
 const errorMessage = ref("");
+
 const fieldErrors = ref({});
+
 const draftInfo = ref("");
 
 let draftTimer = null;
 let draftEnabled = true;
 
+
+/* =========================================================
+   CONTEXTO ADMINISTRATIVO
+========================================================= */
+
 const isAdminDelegado = computed(() => {
-  const path = String(route.path || "");
-  const query = route.query || {};
-  const params = route.params || {};
+  const path =
+    String(
+      route.path || ""
+    );
+
+  const query =
+    route.query || {};
+
+  const params =
+    route.params || {};
 
   return Boolean(
     route.meta?.delegatedPublication ||
-      path.startsWith(
-        "/admin/publicaciones/usuario/"
-      ) ||
-      params.usuarioId ||
-      query.modo === "delegado" ||
-      query.delegado === "1" ||
-      query.admin === "1"
+
+    path.startsWith(
+      "/admin/publicaciones/usuario/"
+    ) ||
+
+    params.usuarioId ||
+
+    query.modo ===
+      "delegado" ||
+
+    query.delegado ===
+      "1" ||
+
+    query.admin ===
+      "1"
   );
 });
 
+
 const storageKey = computed(() => {
-  if (!isAdminDelegado.value) {
-    return `${BASE_DRAFT_KEY}:self`;
+  if (
+    !isAdminDelegado.value
+  ) {
+    return (
+      `${BASE_DRAFT_KEY}:self`
+    );
   }
 
   const usuarioId =
-    adminContext.value.usuarioId ||
+    adminContext.value
+      .usuarioId ||
+
     Number(
-      route.params?.usuarioId || 0
+      route.params
+        ?.usuarioId ||
+      0
     ) ||
+
     "sin-usuario";
 
-  return `${BASE_DRAFT_KEY}:admin:${usuarioId}`;
-});
-
-const adminDisplayUsuario = computed(() => {
   return (
-    adminContext.value.usuarioNombre ||
-    `ID ${adminContext.value.usuarioId || "—"}`
+    `${BASE_DRAFT_KEY}:admin:${usuarioId}`
   );
 });
 
-const adminDisplayAutor = computed(() => {
-  if (adminContext.value.autorNombre) {
-    return adminContext.value.autorNombre;
-  }
 
-  if (adminContext.value.autorId) {
-    return `ID ${adminContext.value.autorId}`;
-  }
+const adminDisplayUsuario =
+  computed(() => {
+    return (
+      adminContext.value
+        .usuarioNombre ||
 
-  return "Se resolverá automáticamente";
-});
-
-const showAutorObjetivo = computed(() => {
-  if (!isAdminDelegado.value) {
-    return false;
-  }
-
-  const usuarioNombre =
-    normalizeComparableText(
-      adminContext.value.usuarioNombre
+      `ID ${
+        adminContext.value
+          .usuarioId ||
+        "—"
+      }`
     );
+  });
 
-  const autorNombre =
-    normalizeComparableText(
-      adminContext.value.autorNombre
+
+const adminDisplayAutor =
+  computed(() => {
+    if (
+      adminContext.value
+        .autorNombre
+    ) {
+      return (
+        adminContext.value
+          .autorNombre
+      );
+    }
+
+    if (
+      adminContext.value
+        .autorId
+    ) {
+      return (
+        `ID ${
+          adminContext.value
+            .autorId
+        }`
+      );
+    }
+
+    return (
+      "Se resolverá automáticamente"
     );
+  });
 
-  if (
-    autorNombre &&
-    usuarioNombre &&
-    autorNombre !== usuarioNombre
-  ) {
-    return true;
+
+const showAutorObjetivo =
+  computed(() => {
+    if (
+      !isAdminDelegado.value
+    ) {
+      return false;
+    }
+
+    /*
+     * Usuario.id y Autor.id son identificadores
+     * de entidades diferentes, por lo que no deben
+     * compararse entre sí.
+     */
+    return Boolean(
+      adminContext.value
+        .autorId ||
+
+      String(
+        adminContext.value
+          .autorNombre ||
+        ""
+      ).trim()
+    );
+  });
+
+
+/* =========================================================
+   TEXTOS DEL FORMULARIO
+========================================================= */
+
+const pageKicker = computed(
+  () => {
+    return (
+      isAdminDelegado.value
+        ? "Administración · Artículos"
+        : "Artículos"
+    );
   }
+);
 
-  if (
-    adminContext.value.autorId &&
-    adminContext.value.usuarioId &&
-    adminContext.value.autorId !==
-      adminContext.value.usuarioId
-  ) {
-    return true;
+
+const pageTitle = computed(
+  () => {
+    return (
+      "Registrar Artículo Regional"
+    );
   }
+);
 
-  if (
-    adminContext.value.autorId &&
-    !adminContext.value.usuarioNombre
-  ) {
-    return true;
+
+const pageSubtitle = computed(
+  () => {
+    if (
+      isAdminDelegado.value
+    ) {
+      return (
+        "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios."
+      );
+    }
+
+    return (
+      "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos. Los campos marcados con * son obligatorios."
+    );
   }
+);
 
-  return false;
-});
 
-const pageKicker = computed(() => {
-  return isAdminDelegado.value
-    ? "Administración · Artículos"
-    : "Artículos";
-});
-
-const pageTitle = computed(() => {
-  return "Registrar Artículo Regional";
-});
-
-const pageSubtitle = computed(() => {
-  if (isAdminDelegado.value) {
-    return "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios.";
+const submitText = computed(
+  () => {
+    return (
+      "Registrar artículo regional"
+    );
   }
+);
 
-  return "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos. Los campos marcados con * son obligatorios.";
-});
 
-const submitText = computed(() => {
-  return "Registrar artículo regional";
-});
+const submitLoadingText =
+  computed(() => {
+    return "Guardando...";
+  });
 
-const submitLoadingText = computed(() => {
-  return "Guardando...";
-});
 
-const createEndpoint = computed(() => {
-  return isAdminDelegado.value
-    ? ADMIN_CREATE_ENDPOINT
-    : STANDARD_CREATE_ENDPOINT;
-});
+const createEndpoint = computed(
+  () => {
+    return (
+      isAdminDelegado.value
+        ? ADMIN_CREATE_ENDPOINT
+        : STANDARD_CREATE_ENDPOINT
+    );
+  }
+);
 
-const hasRequiredContext = computed(() => {
-  const general = formDatos.value || {};
 
-  return Boolean(
-    general.facultad &&
+/* =========================================================
+   PROGRESO
+========================================================= */
+
+const hasRequiredContext =
+  computed(() => {
+    const general =
+      formDatos.value || {};
+
+    return Boolean(
+      general.facultad &&
       general.carrera &&
       general.area &&
       general.subarea
-  );
-});
-
-const hasRequiredOrigin = computed(() => {
-  if (!form.value.origen_tipo) {
-    return false;
-  }
-
-  if (
-    form.value.origen_tipo === "tic"
-  ) {
-    return Boolean(
-      String(
-        form.value.origen_grado || ""
-      ).trim()
     );
-  }
+  });
 
-  return true;
-});
 
-const hasRequiredMain = computed(() => {
-  if (!form.value.fecha_publicacion) {
-    return false;
-  }
+const hasRequiredOrigin =
+  computed(() => {
+    if (
+      !form.value
+        .origen_tipo
+    ) {
+      return false;
+    }
 
-  if (
-    !String(
-      form.value.nombre_articulo || ""
-    ).trim()
-  ) {
-    return false;
-  }
+    if (
+      form.value
+        .origen_tipo ===
+      "tic"
+    ) {
+      return Boolean(
+        String(
+          form.value
+            .origen_grado ||
+          ""
+        ).trim()
+      );
+    }
 
-  if (
-    !String(
-      form.value.base_datos_indexada || ""
-    ).trim()
-  ) {
-    return false;
-  }
+    return true;
+  });
 
-  if (
-    form.value.base_datos_indexada === "otra" &&
-    !String(
-      form.value.base_datos_otra || ""
-    ).trim()
-  ) {
-    return false;
-  }
 
-  return true;
-});
+const hasRequiredMain =
+  computed(() => {
+    if (
+      !form.value
+        .fecha_publicacion
+    ) {
+      return false;
+    }
 
-const hasRequiredJournal = computed(() => {
-  if (
-    !String(
-      form.value.codigo_issn || ""
-    ).trim()
-  ) {
-    return false;
-  }
+    if (
+      !String(
+        form.value
+          .nombre_articulo ||
+        ""
+      ).trim()
+    ) {
+      return false;
+    }
 
-  if (
-    !String(
-      form.value.nombre_revista || ""
-    ).trim()
-  ) {
-    return false;
-  }
+    if (
+      !String(
+        form.value
+          .base_datos_indexada ||
+        ""
+      ).trim()
+    ) {
+      return false;
+    }
 
-  return true;
-});
+    if (
+      form.value
+        .base_datos_indexada ===
+        "otra" &&
 
-const hasRequiredAuthors = computed(() => {
-  return (
-    Array.isArray(form.value.autores) &&
-    form.value.autores.length > 0
-  );
-});
+      !String(
+        form.value
+          .base_datos_otra ||
+        ""
+      ).trim()
+    ) {
+      return false;
+    }
 
-const hasAdjuntos = computed(() => {
-  return (
-    Array.isArray(form.value.archivos) &&
-    form.value.archivos.length > 0
-  );
-});
+    return true;
+  });
 
-const requiredSections = computed(() => {
-  return [
-    {
-      key: "datos",
-      done: hasRequiredContext.value,
-    },
-    {
-      key: "origen",
-      done: hasRequiredOrigin.value,
-    },
-    {
-      key: "principal",
-      done: hasRequiredMain.value,
-    },
-    {
-      key: "revista",
-      done: hasRequiredJournal.value,
-    },
-    {
-      key: "autores",
-      done: hasRequiredAuthors.value,
-    },
-  ];
-});
 
-const completedRequiredCount = computed(() => {
-  return requiredSections.value.filter(
-    (section) => section.done
-  ).length;
-});
+const hasRequiredJournal =
+  computed(() => {
+    if (
+      !String(
+        form.value
+          .codigo_issn ||
+        ""
+      ).trim()
+    ) {
+      return false;
+    }
 
-const totalRequiredCount = computed(() => {
-  return requiredSections.value.length;
-});
+    if (
+      !String(
+        form.value
+          .nombre_revista ||
+        ""
+      ).trim()
+    ) {
+      return false;
+    }
 
-const progressPercent = computed(() => {
-  if (!totalRequiredCount.value) {
-    return 0;
-  }
+    return true;
+  });
 
-  return Math.round(
-    (
-      completedRequiredCount.value /
-      totalRequiredCount.value
-    ) * 100
-  );
-});
+
+const hasRequiredAuthors =
+  computed(() => {
+    return (
+      Array.isArray(
+        form.value.autores
+      ) &&
+
+      form.value
+        .autores
+        .length >
+        0
+    );
+  });
+
+
+const hasAdjuntos =
+  computed(() => {
+    return (
+      Array.isArray(
+        form.value.archivos
+      ) &&
+
+      form.value
+        .archivos
+        .length >
+        0
+    );
+  });
+
+
+const requiredSections =
+  computed(() => {
+    return [
+      {
+        key: "datos",
+        done:
+          hasRequiredContext.value,
+      },
+
+      {
+        key: "origen",
+        done:
+          hasRequiredOrigin.value,
+      },
+
+      {
+        key: "principal",
+        done:
+          hasRequiredMain.value,
+      },
+
+      {
+        key: "revista",
+        done:
+          hasRequiredJournal.value,
+      },
+
+      {
+        key: "autores",
+        done:
+          hasRequiredAuthors.value,
+      },
+    ];
+  });
+
+
+const completedRequiredCount =
+  computed(() => {
+    return (
+      requiredSections.value
+        .filter(
+          (section) =>
+            section.done
+        )
+        .length
+    );
+  });
+
+
+const totalRequiredCount =
+  computed(() => {
+    return (
+      requiredSections.value
+        .length
+    );
+  });
+
+
+const progressPercent =
+  computed(() => {
+    if (
+      !totalRequiredCount.value
+    ) {
+      return 0;
+    }
+
+    return Math.round(
+      (
+        completedRequiredCount.value /
+        totalRequiredCount.value
+      ) *
+      100
+    );
+  });
+
+
+/* =========================================================
+   NAVEGACIÓN Y FOCO
+========================================================= */
 
 const goTo = (id) => {
   const element =
-    document.getElementById(id);
+    document.getElementById(
+      id
+    );
 
   element?.scrollIntoView({
     behavior: "smooth",
@@ -1438,30 +2040,60 @@ const goTo = (id) => {
   });
 };
 
+
 function focusField(key) {
   const map = {
-    admin_context: "ar-admin-context-anchor",
-    origen_tipo: "ar-origen_tipo",
-    origen_grado: "ar-origen_grado",
-    fecha_publicacion: "ar-fecha_publicacion",
-    nombre_articulo: "ar-nombre_articulo",
+    admin_context:
+      "ar-admin-context-anchor",
+
+    origen_tipo:
+      "ar-origen_tipo",
+
+    origen_grado:
+      "ar-origen_grado",
+
+    fecha_publicacion:
+      "ar-fecha_publicacion",
+
+    nombre_articulo:
+      "ar-nombre_articulo",
+
     base_datos_indexada:
       "ar-base_datos_indexada",
-    base_datos_otra: "ar-base_datos_otra",
-    codigo_issn: "ar-codigo_issn",
-    codigo_doi: "ar-codigo_doi",
-    nombre_revista: "ar-nombre_revista",
-    numero_revista: "ar-numero_revista",
-    link_revista: "ar-link_revista",
-    link_publicacion: "ar-link_publicacion",
-    autores: "ar-autores-anchor",
-    archivos: "ar-archivo-input",
+
+    base_datos_otra:
+      "ar-base_datos_otra",
+
+    codigo_issn:
+      "ar-codigo_issn",
+
+    codigo_doi:
+      "ar-codigo_doi",
+
+    nombre_revista:
+      "ar-nombre_revista",
+
+    numero_revista:
+      "ar-numero_revista",
+
+    link_revista:
+      "ar-link_revista",
+
+    link_publicacion:
+      "ar-link_publicacion",
+
+    autores:
+      "ar-autores-anchor",
+
+    archivos:
+      "ar-archivo-input",
   };
 
   const element =
     document.getElementById(
       `dg-${key}`
     ) ||
+
     document.getElementById(
       map[key] || ""
     );
@@ -1470,187 +2102,267 @@ function focusField(key) {
     return;
   }
 
-  if (
-    key === "autores" ||
-    key === "archivos" ||
-    key === "admin_context"
-  ) {
-    element.scrollIntoView?.({
-      behavior: "smooth",
-      block: "center",
-    });
-
-    return;
-  }
+  element.scrollIntoView?.({
+    behavior: "smooth",
+    block: "center",
+  });
 
   if (
-    typeof element.focus === "function"
+    ![
+      "autores",
+      "archivos",
+      "admin_context",
+    ].includes(key) &&
+
+    typeof element.focus ===
+      "function"
   ) {
-    element.focus({
-      preventScroll: false,
-    });
-  } else {
-    element.scrollIntoView?.({
-      behavior: "smooth",
-      block: "center",
-    });
+    window.setTimeout(
+      () => {
+        element.focus({
+          preventScroll:
+            true,
+        });
+      },
+      280
+    );
   }
 }
 
+
+/* =========================================================
+   CONTEXTO DE RUTA
+========================================================= */
+
 function hydrateAdminContextFromRoute() {
-  const query = route.query || {};
-  const params = route.params || {};
+  const query =
+    route.query || {};
 
-  const usuarioId = Number(
-    params.usuarioId ||
+  const params =
+    route.params || {};
+
+  const usuarioId =
+    Number(
+      params.usuarioId ||
+
+      query.usuario_objetivo_id ||
+
       query.usuario_id ||
-      query.usuarioId ||
-      query.user_id ||
-      0
-  );
 
-  const autorId = Number(
-    params.autorId ||
-      query.autor_id ||
-      query.autorId ||
+      query.usuarioId ||
+
+      query.user_id ||
+
       0
-  );
+    );
+
+  const autorId =
+    Number(
+      params.autorId ||
+
+      query.autor_objetivo_id ||
+
+      query.autor_id ||
+
+      query.autorId ||
+
+      0
+    );
 
   adminContext.value = {
     usuarioId:
-      Number.isFinite(usuarioId) &&
+      Number.isFinite(
+        usuarioId
+      ) &&
       usuarioId > 0
         ? usuarioId
         : null,
 
     autorId:
-      Number.isFinite(autorId) &&
+      Number.isFinite(
+        autorId
+      ) &&
       autorId > 0
         ? autorId
         : null,
 
-    usuarioNombre: String(
-      query.usuario_nombre ||
-        query.usuarioNombre ||
-        query.user_name ||
-        ""
-    ).trim(),
+    usuarioNombre:
+      String(
+        query.usuario_nombre ||
 
-    autorNombre: String(
-      query.autor_nombre ||
-        query.autorNombre ||
-        query.author_name ||
+        query.usuarioNombre ||
+
+        query.user_name ||
+
         ""
-    ).trim(),
+      ).trim(),
+
+    autorNombre:
+      String(
+        query.autor_nombre ||
+
+        query.autorNombre ||
+
+        query.author_name ||
+
+        ""
+      ).trim(),
   };
 }
 
+
+/* =========================================================
+   BORRADOR
+========================================================= */
+
 function saveDraft() {
-  if (!draftEnabled) {
+  if (
+    !draftEnabled
+  ) {
     return;
   }
 
-  if (successMessage.value) {
-    successMessage.value = "";
-  }
+  clearTimeout(
+    draftTimer
+  );
 
-  clearTimeout(draftTimer);
+  draftTimer =
+    window.setTimeout(
+      () => {
+        try {
+          const payload = {
+            formDatos: {
+              ...formDatos.value,
 
-  draftTimer = setTimeout(() => {
-    try {
-      const payload = {
-        formDatos: {
-          ...formDatos.value,
-          pais: null,
-          ciudad: null,
-        },
+              pais: null,
+              ciudad: null,
+            },
 
-        form: {
-          origen_tipo:
-            form.value.origen_tipo,
+            form: {
+              origen_tipo:
+                form.value
+                  .origen_tipo,
 
-          origen_grado:
-            form.value.origen_grado,
+              origen_grado:
+                form.value
+                  .origen_grado,
 
-          nombre_articulo:
-            form.value.nombre_articulo,
+              nombre_articulo:
+                form.value
+                  .nombre_articulo,
 
-          base_datos_indexada:
-            form.value.base_datos_indexada,
+              base_datos_indexada:
+                form.value
+                  .base_datos_indexada,
 
-          base_datos_otra:
-            form.value.base_datos_otra,
+              base_datos_otra:
+                form.value
+                  .base_datos_otra,
 
-          fecha_publicacion:
-            form.value.fecha_publicacion,
+              fecha_publicacion:
+                form.value
+                  .fecha_publicacion,
 
-          codigo_issn:
-            form.value.codigo_issn,
+              codigo_issn:
+                form.value
+                  .codigo_issn,
 
-          codigo_doi:
-            form.value.codigo_doi,
+              codigo_doi:
+                form.value
+                  .codigo_doi,
 
-          nombre_revista:
-            form.value.nombre_revista,
+              nombre_revista:
+                form.value
+                  .nombre_revista,
 
-          numero_revista:
-            form.value.numero_revista,
+              numero_revista:
+                form.value
+                  .numero_revista,
 
-          link_revista:
-            form.value.link_revista,
+              link_revista:
+                form.value
+                  .link_revista,
 
-          link_publicacion:
-            form.value.link_publicacion,
+              link_publicacion:
+                form.value
+                  .link_publicacion,
 
-          autores:
-            form.value.autores,
+              autores:
+                form.value
+                  .autores,
 
-          archivos:
-            serializeDraftArchivos(
-              form.value.archivos
-            ),
-        },
+              archivos:
+                serializeDraftArchivos(
+                  form.value
+                    .archivos
+                ),
+            },
 
-        updatedAt:
-          new Date().toISOString(),
-      };
+            updatedAt:
+              new Date()
+                .toISOString(),
+          };
 
-      localStorage.setItem(
-        storageKey.value,
-        JSON.stringify(payload)
-      );
-    } catch (error) {
-      console.warn(
-        "No se pudo guardar borrador:",
-        error
-      );
-    }
-  }, 250);
+          localStorage.setItem(
+            storageKey.value,
+            JSON.stringify(
+              payload
+            )
+          );
+        } catch (error) {
+          console.warn(
+            "No se pudo guardar el borrador.",
+            error
+          );
+        }
+      },
+      300
+    );
 }
 
+
 function loadDraft() {
+  let raw = null;
+
   try {
-    const raw =
+    raw =
       localStorage.getItem(
         storageKey.value
       );
+  } catch (error) {
+    console.warn(
+      "No se pudo leer el borrador.",
+      error
+    );
 
-    if (!raw) {
-      return;
-    }
+    return;
+  }
 
-    const parsed = JSON.parse(raw);
+  if (!raw) {
+    return;
+  }
 
-    if (parsed?.formDatos) {
+  try {
+    const parsed =
+      JSON.parse(raw);
+
+    disableDraftTemporarily();
+
+    if (
+      parsed?.formDatos
+    ) {
       formDatos.value = {
         ...createDefaultFormDatos(),
         ...parsed.formDatos,
+
         pais: null,
         ciudad: null,
       };
     }
 
-    if (parsed?.form) {
+    if (
+      parsed?.form
+    ) {
       const incoming =
         parsed.form || {};
 
@@ -1658,43 +2370,57 @@ function loadDraft() {
         ...createDefaultForm(),
 
         origen_tipo:
-          incoming.origen_tipo || "",
+          incoming.origen_tipo ||
+          "",
 
         origen_grado:
-          incoming.origen_grado || "",
+          incoming.origen_grado ||
+          "",
 
         nombre_articulo:
-          incoming.nombre_articulo || "",
+          incoming.nombre_articulo ||
+          "",
 
         base_datos_indexada:
-          incoming.base_datos_indexada || "",
+          incoming.base_datos_indexada ||
+          "",
 
         base_datos_otra:
-          incoming.base_datos_otra || "",
+          incoming.base_datos_otra ||
+          "",
 
         fecha_publicacion:
-          incoming.fecha_publicacion || "",
+          incoming.fecha_publicacion ||
+          "",
 
         codigo_issn:
-          incoming.codigo_issn || "",
+          incoming.codigo_issn ||
+          "",
 
         codigo_doi:
-          incoming.codigo_doi || "",
+          incoming.codigo_doi ||
+          "",
 
         nombre_revista:
-          incoming.nombre_revista || "",
+          incoming.nombre_revista ||
+          "",
 
         numero_revista:
-          incoming.numero_revista ?? null,
+          incoming.numero_revista ??
+          null,
 
         link_revista:
-          incoming.link_revista || "",
+          incoming.link_revista ||
+          "",
 
         link_publicacion:
-          incoming.link_publicacion || "",
+          incoming.link_publicacion ||
+          "",
 
         autores:
-          Array.isArray(incoming.autores)
+          Array.isArray(
+            incoming.autores
+          )
             ? incoming.autores
             : [],
 
@@ -1705,26 +2431,38 @@ function loadDraft() {
       };
     }
 
-    if (parsed?.updatedAt) {
+    if (
+      parsed?.updatedAt
+    ) {
       const date =
-        new Date(parsed.updatedAt);
+        new Date(
+          parsed.updatedAt
+        );
 
       draftInfo.value =
-        `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
+        Number.isNaN(
+          date.getTime()
+        )
+          ? "Se recuperó un borrador guardado."
+          : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
     } else {
       draftInfo.value =
         "Se recuperó un borrador guardado.";
     }
 
-    successMessage.value = "";
-    errorMessage.value = "";
+    successMessage.value =
+      "";
+
+    errorMessage.value =
+      "";
   } catch (error) {
     console.warn(
-      "No se pudo cargar borrador:",
+      "El borrador está dañado y se ignorará.",
       error
     );
   }
 }
+
 
 function clearDraftStorage() {
   try {
@@ -1733,211 +2471,491 @@ function clearDraftStorage() {
     );
   } catch (error) {
     console.warn(
-      "No se pudo limpiar borrador:",
+      "No se pudo limpiar el borrador.",
       error
     );
   }
 }
 
-function disableDraftTemporarily() {
-  draftEnabled = false;
 
-  nextTick(() => {
-    draftEnabled = true;
-  });
+function disableDraftTemporarily() {
+  draftEnabled =
+    false;
+
+  nextTick(
+    () => {
+      draftEnabled =
+        true;
+    }
+  );
 }
+
+
+/* =========================================================
+   AUTORES
+========================================================= */
 
 function buildAutoresPayload() {
   const raw =
-    Array.isArray(form.value.autores)
+    Array.isArray(
+      form.value.autores
+    )
       ? form.value.autores
       : [];
 
   return raw
-    .map((autor, index) => {
-      const id = Number(
-        autor?.autor_id ??
-          autor?.id ??
-          autor?.autor?.id
-      );
+    .map(
+      (
+        autor,
+        index
+      ) => {
+        const id =
+          Number(
+            autor?.autor_id ??
 
-      if (
-        !Number.isFinite(id) ||
-        id <= 0
-      ) {
-        return null;
+            autor?.id ??
+
+            autor
+              ?.autor
+              ?.id
+          );
+
+        if (
+          !Number.isFinite(
+            id
+          ) ||
+          id <= 0
+        ) {
+          return null;
+        }
+
+        const orden =
+          index + 1;
+
+        return {
+          autor_id: id,
+
+          orden,
+
+          rol_autoria:
+            orden === 1
+              ? "principal"
+              : "coautor",
+        };
       }
-
-      const orden = index + 1;
-
-      return {
-        autor_id: id,
-        orden,
-
-        rol_autoria:
-          orden === 1
-            ? "principal"
-            : "coautor",
-      };
-    })
+    )
     .filter(Boolean);
 }
 
+
+/* =========================================================
+   ADJUNTOS RECUPERADOS
+========================================================= */
+
 function hasPendingRecoveredFiles() {
-  return (
-    Array.isArray(form.value.archivos)
+  const archivos =
+    Array.isArray(
+      form.value.archivos
+    )
       ? form.value.archivos
-      : []
-  ).some(
+      : [];
+
+  return archivos.some(
     (item) =>
       !item?.file &&
       item?.originalName
   );
 }
 
+
+/* =========================================================
+   VALIDACIÓN ADMIN
+========================================================= */
+
 function validateAdminContext() {
-  if (!isAdminDelegado.value) {
+  if (
+    !isAdminDelegado.value
+  ) {
     return null;
   }
 
   if (
-    !adminContext.value.usuarioId
+    !adminContext.value
+      .usuarioId
   ) {
-    return "Debe llegar al formulario con un usuario objetivo válido.";
+    return (
+      "Debe llegar al formulario con un usuario objetivo válido."
+    );
   }
 
   return null;
 }
 
+
+/* =========================================================
+   VALIDACIÓN FRONTEND
+========================================================= */
+
 function validateFront() {
   const errors = {};
+
   const general =
     formDatos.value || {};
 
+  // -------------------------------------------------------
+  // Contexto administrativo
+  // -------------------------------------------------------
+
   if (
     isAdminDelegado.value &&
-    !adminContext.value.usuarioId
+    !adminContext.value
+      .usuarioId
   ) {
     errors.admin_context =
       "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
   }
 
-  if (!general.facultad) {
+  // -------------------------------------------------------
+  // Clasificación institucional
+  // -------------------------------------------------------
+
+  if (
+    !general.facultad
+  ) {
     errors.facultad =
       "Seleccione una facultad.";
   }
 
-  if (!general.carrera) {
+  if (
+    !general.carrera
+  ) {
     errors.carrera =
       "Seleccione una carrera.";
   }
 
-  if (!general.area) {
+  if (
+    !general.area
+  ) {
     errors.area =
       "Seleccione un área del conocimiento (UNESCO).";
   }
 
-  if (!general.subarea) {
+  if (
+    !general.subarea
+  ) {
     errors.subarea =
       "Seleccione una subárea del conocimiento (UNESCO).";
   }
 
+  // -------------------------------------------------------
+  // Origen
+  // -------------------------------------------------------
+
   if (
     !String(
-      form.value.origen_tipo || ""
+      form.value
+        .origen_tipo ||
+      ""
     ).trim()
   ) {
     errors.origen_tipo =
-      "Seleccione el origen.";
+      "Seleccione el origen de la publicación.";
   }
 
   if (
-    form.value.origen_tipo === "tic" &&
+    form.value
+      .origen_tipo ===
+      "tic" &&
+
     !String(
-      form.value.origen_grado || ""
+      form.value
+        .origen_grado ||
+      ""
     ).trim()
   ) {
     errors.origen_grado =
       "Campo obligatorio.";
   }
 
-  if (!form.value.fecha_publicacion) {
+  if (
+    exceedsLength(
+      form.value
+        .origen_grado,
+      FIELD_LIMITS
+        .origen_grado
+    )
+  ) {
+    errors.origen_grado =
+      `El grado / programa no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+  }
+
+  // -------------------------------------------------------
+  // Fecha
+  // -------------------------------------------------------
+
+  if (
+    !form.value
+      .fecha_publicacion
+  ) {
     errors.fecha_publicacion =
       "Campo obligatorio.";
   }
 
+  // -------------------------------------------------------
+  // Artículo
+  // -------------------------------------------------------
+
   if (
     !String(
-      form.value.nombre_articulo || ""
+      form.value
+        .nombre_articulo ||
+      ""
     ).trim()
   ) {
     errors.nombre_articulo =
       "Campo obligatorio.";
+  } else if (
+    exceedsLength(
+      form.value
+        .nombre_articulo,
+      FIELD_LIMITS
+        .nombre_articulo
+    )
+  ) {
+    errors.nombre_articulo =
+      `El título no puede superar ${FIELD_LIMITS.nombre_articulo} caracteres.`;
   }
 
-  if (
-    !String(
-      form.value.base_datos_indexada || ""
-    ).trim()
+  // -------------------------------------------------------
+  // Base de indexación
+  // -------------------------------------------------------
+
+  const database =
+    String(
+      form.value
+        .base_datos_indexada ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!database) {
+    errors.base_datos_indexada =
+      "Seleccione una base de datos / indexación.";
+  } else if (
+    !REGIONAL_DATABASES.has(
+      database
+    )
   ) {
     errors.base_datos_indexada =
-      "Campo obligatorio.";
+      "La base de datos / indexación seleccionada no es válida.";
   }
 
   if (
-    form.value.base_datos_indexada === "otra" &&
+    database === "otra" &&
     !String(
-      form.value.base_datos_otra || ""
+      form.value
+        .base_datos_otra ||
+      ""
     ).trim()
   ) {
     errors.base_datos_otra =
-      "Debe especificar la base de datos cuando selecciona “Otra”.";
+      "Debe especificar la base de datos cuando seleccione “Otra”.";
   }
 
   if (
+    database === "otra" &&
+    exceedsLength(
+      form.value
+        .base_datos_otra,
+      FIELD_LIMITS
+        .base_datos_otra
+    )
+  ) {
+    errors.base_datos_otra =
+      `La base de datos no puede superar ${FIELD_LIMITS.base_datos_otra} caracteres.`;
+  }
+
+  // -------------------------------------------------------
+  // ISSN
+  // -------------------------------------------------------
+
+  if (
     !String(
-      form.value.codigo_issn || ""
+      form.value
+        .codigo_issn ||
+      ""
     ).trim()
   ) {
     errors.codigo_issn =
       "Campo obligatorio.";
+  } else if (
+    exceedsLength(
+      form.value
+        .codigo_issn,
+      FIELD_LIMITS
+        .codigo_issn
+    )
+  ) {
+    errors.codigo_issn =
+      `El ISSN no puede superar ${FIELD_LIMITS.codigo_issn} caracteres.`;
   }
+
+  // -------------------------------------------------------
+  // DOI
+  // -------------------------------------------------------
+
+  if (
+    exceedsLength(
+      form.value
+        .codigo_doi,
+      FIELD_LIMITS
+        .codigo_doi
+    )
+  ) {
+    errors.codigo_doi =
+      `El DOI no puede superar ${FIELD_LIMITS.codigo_doi} caracteres.`;
+  }
+
+  // -------------------------------------------------------
+  // Revista
+  // -------------------------------------------------------
 
   if (
     !String(
-      form.value.nombre_revista || ""
+      form.value
+        .nombre_revista ||
+      ""
     ).trim()
   ) {
     errors.nombre_revista =
       "Campo obligatorio.";
+  } else if (
+    exceedsLength(
+      form.value
+        .nombre_revista,
+      FIELD_LIMITS
+        .nombre_revista
+    )
+  ) {
+    errors.nombre_revista =
+      `El nombre de la revista no puede superar ${FIELD_LIMITS.nombre_revista} caracteres.`;
+  }
+
+  // -------------------------------------------------------
+  // Número de revista
+  // -------------------------------------------------------
+
+  if (
+    form.value
+      .numero_revista !==
+      null &&
+
+    form.value
+      .numero_revista !==
+      ""
+  ) {
+    const numero =
+      Number(
+        form.value
+          .numero_revista
+      );
+
+    if (
+      !Number.isInteger(
+        numero
+      ) ||
+      numero < 1
+    ) {
+      errors.numero_revista =
+        "El número de la revista debe ser un entero mayor o igual a 1.";
+    }
+  }
+
+  // -------------------------------------------------------
+  // Enlaces
+  // -------------------------------------------------------
+
+  if (
+    exceedsLength(
+      form.value
+        .link_revista,
+      FIELD_LIMITS
+        .link_revista
+    )
+  ) {
+    errors.link_revista =
+      `El enlace no puede superar ${FIELD_LIMITS.link_revista} caracteres.`;
   }
 
   if (
-    !Array.isArray(form.value.autores) ||
-    form.value.autores.length === 0
+    exceedsLength(
+      form.value
+        .link_publicacion,
+      FIELD_LIMITS
+        .link_publicacion
+    )
+  ) {
+    errors.link_publicacion =
+      `El enlace no puede superar ${FIELD_LIMITS.link_publicacion} caracteres.`;
+  }
+
+  // -------------------------------------------------------
+  // Autores
+  // -------------------------------------------------------
+
+  if (
+    !Array.isArray(
+      form.value.autores
+    ) ||
+
+    form.value
+      .autores
+      .length ===
+      0
   ) {
     errors.autores =
       "Debe registrar al menos un autor.";
   }
 
-  if (hasPendingRecoveredFiles()) {
+  // -------------------------------------------------------
+  // Adjuntos recuperados
+  // -------------------------------------------------------
+
+  if (
+    hasPendingRecoveredFiles()
+  ) {
     errors.archivos =
       "Hay adjuntos recuperados del borrador que deben volver a seleccionarse o eliminarse antes de guardar.";
   }
 
-  fieldErrors.value = errors;
+  fieldErrors.value =
+    errors;
 
-  if (Object.keys(errors).length) {
+  if (
+    Object.keys(
+      errors
+    ).length
+  ) {
     errorMessage.value =
-      "Complete los campos obligatorios antes de guardar.";
+      "Complete o corrija los campos marcados antes de guardar.";
 
-    successMessage.value = "";
+    successMessage.value =
+      "";
 
     const first =
-      firstErrorField(errors);
+      firstErrorField(
+        errors
+      );
 
     if (first) {
-      focusField(first);
+      nextTick(
+        () => {
+          focusField(
+            first
+          );
+        }
+      );
     }
 
     return false;
@@ -1946,11 +2964,17 @@ function validateFront() {
   return true;
 }
 
+
+/* =========================================================
+   RESET
+========================================================= */
+
 function resetForm() {
-  fieldErrors.value = {};
-  draftInfo.value = "";
-  successMessage.value = "";
-  errorMessage.value = "";
+  fieldErrors.value =
+    {};
+
+  draftInfo.value =
+    "";
 
   formDatos.value =
     createDefaultFormDatos();
@@ -1959,66 +2983,112 @@ function resetForm() {
     createDefaultForm();
 }
 
+
 function limpiarBorrador() {
-  clearTimeout(draftTimer);
+  clearTimeout(
+    draftTimer
+  );
+
   disableDraftTemporarily();
+
   clearDraftStorage();
+
   resetForm();
 
   successMessage.value =
     "Borrador eliminado.";
 
-  errorMessage.value = "";
+  errorMessage.value =
+    "";
 }
 
+
 function handleRouteContextChange() {
-  clearTimeout(draftTimer);
+  clearTimeout(
+    draftTimer
+  );
+
   hydrateAdminContextFromRoute();
+
   disableDraftTemporarily();
+
   resetForm();
+
   loadDraft();
 }
 
+
+/* =========================================================
+   REGISTRO
+========================================================= */
+
 async function registrarArticuloRegional() {
-  if (loading.value) {
+  if (
+    loading.value
+  ) {
     return;
   }
 
-  loading.value = true;
-  successMessage.value = "";
-  errorMessage.value = "";
-  fieldErrors.value = {};
+  loading.value =
+    true;
+
+  successMessage.value =
+    "";
+
+  errorMessage.value =
+    "";
+
+  fieldErrors.value =
+    {};
 
   try {
-    if (!validateFront()) {
-      loading.value = false;
+    // -----------------------------------------------------
+    // Validación frontend
+    // -----------------------------------------------------
+
+    if (
+      !validateFront()
+    ) {
       return;
     }
+
+    // -----------------------------------------------------
+    // Autores
+    // -----------------------------------------------------
 
     const autoresPayload =
       buildAutoresPayload();
 
-    if (!autoresPayload.length) {
+    if (
+      !autoresPayload.length
+    ) {
       fieldErrors.value = {
         ...fieldErrors.value,
 
         autores:
-          "Los autores seleccionados no tienen ID válido.",
+          "Los autores seleccionados no tienen un identificador válido.",
       };
 
       errorMessage.value =
         "Revise la sección de autores.";
 
-      focusField("autores");
+      focusField(
+        "autores"
+      );
 
-      loading.value = false;
       return;
     }
+
+    // -----------------------------------------------------
+    // Contexto administrativo
+    // -----------------------------------------------------
 
     const adminValidationError =
       validateAdminContext();
 
-    if (adminValidationError) {
+    if (
+      adminValidationError
+    ) {
       fieldErrors.value = {
         ...fieldErrors.value,
 
@@ -2029,13 +3099,19 @@ async function registrarArticuloRegional() {
       errorMessage.value =
         adminValidationError;
 
-      successMessage.value = "";
+      successMessage.value =
+        "";
 
-      focusField("admin_context");
+      focusField(
+        "admin_context"
+      );
 
-      loading.value = false;
       return;
     }
+
+    // -----------------------------------------------------
+    // FormData
+    // -----------------------------------------------------
 
     const formData =
       new FormData();
@@ -2045,8 +3121,16 @@ async function registrarArticuloRegional() {
       "articulo_regional"
     );
 
+    // -----------------------------------------------------
+    // Datos institucionales
+    // -----------------------------------------------------
+
     const generalPayload = {
       ...formDatos.value,
+
+      /*
+       * País y ciudad no aplican a artículos.
+       */
       pais: null,
       ciudad: null,
     };
@@ -2070,52 +3154,122 @@ async function registrarArticuloRegional() {
       }
     );
 
+    // -----------------------------------------------------
+    // Origen
+    // -----------------------------------------------------
+
     appendFormValue(
       formData,
       "origen_tipo",
-      form.value.origen_tipo ||
+      form.value
+        .origen_tipo ||
         "ninguno"
     );
 
     if (
-      form.value.origen_tipo === "tic"
+      form.value
+        .origen_tipo ===
+      "tic"
     ) {
       appendFormValue(
         formData,
         "origen_grado",
-        form.value.origen_grado
+        String(
+          form.value
+            .origen_grado ||
+          ""
+        ).trim()
       );
     }
 
-    const fields = [
+    // -----------------------------------------------------
+    // Campos del artículo regional
+    // -----------------------------------------------------
+
+    appendFormValue(
+      formData,
       "nombre_articulo",
-      "base_datos_indexada",
-      "base_datos_otra",
+      form.value
+        .nombre_articulo
+    );
+
+    appendFormValue(
+      formData,
       "fecha_publicacion",
-      "codigo_issn",
-      "codigo_doi",
-      "nombre_revista",
-      "numero_revista",
-      "link_revista",
-      "link_publicacion",
-    ];
+      form.value
+        .fecha_publicacion
+    );
 
-    fields.forEach((key) => {
-      if (
-        key === "base_datos_otra" &&
+    appendFormValue(
+      formData,
+      "base_datos_indexada",
+      String(
         form.value
-          .base_datos_indexada !==
-          "otra"
-      ) {
-        return;
-      }
+          .base_datos_indexada ||
+        ""
+      )
+        .trim()
+        .toLowerCase()
+    );
 
+    if (
+      form.value
+        .base_datos_indexada ===
+      "otra"
+    ) {
       appendFormValue(
         formData,
-        key,
-        form.value[key]
+        "base_datos_otra",
+        form.value
+          .base_datos_otra
       );
-    });
+    }
+
+    appendFormValue(
+      formData,
+      "codigo_issn",
+      form.value
+        .codigo_issn
+    );
+
+    appendFormValue(
+      formData,
+      "codigo_doi",
+      form.value
+        .codigo_doi
+    );
+
+    appendFormValue(
+      formData,
+      "nombre_revista",
+      form.value
+        .nombre_revista
+    );
+
+    appendFormValue(
+      formData,
+      "numero_revista",
+      form.value
+        .numero_revista
+    );
+
+    appendFormValue(
+      formData,
+      "link_revista",
+      form.value
+        .link_revista
+    );
+
+    appendFormValue(
+      formData,
+      "link_publicacion",
+      form.value
+        .link_publicacion
+    );
+
+    // -----------------------------------------------------
+    // Autores
+    // -----------------------------------------------------
 
     formData.append(
       "autores",
@@ -2124,82 +3278,144 @@ async function registrarArticuloRegional() {
       )
     );
 
+    // -----------------------------------------------------
+    // Registro delegado
+    // -----------------------------------------------------
+
     if (
       isAdminDelegado.value &&
-      adminContext.value.usuarioId
+      adminContext.value
+        .usuarioId
     ) {
       formData.append(
         "usuario_objetivo_id",
         String(
-          adminContext.value.usuarioId
+          adminContext.value
+            .usuarioId
         )
       );
 
       if (
-        adminContext.value.autorId
+        adminContext.value
+          .autorId
       ) {
         formData.append(
           "autor_objetivo_id",
           String(
-            adminContext.value.autorId
+            adminContext.value
+              .autorId
           )
         );
       }
     }
 
+    // -----------------------------------------------------
+    // Adjuntos
+    // -----------------------------------------------------
+
     appendArchivosToFormData(
       formData,
       form.value.archivos,
       {
-        primaryField: null,
-        filesField: "archivos",
-        metaField: "archivos_meta",
+        primaryField:
+          null,
+
+        filesField:
+          "archivos",
+
+        metaField:
+          "archivos_meta",
       }
     );
+
+    // -----------------------------------------------------
+    // Request
+    // -----------------------------------------------------
 
     await api.post(
       createEndpoint.value,
       formData
     );
 
+    // -----------------------------------------------------
+    // Éxito
+    // -----------------------------------------------------
+
     disableDraftTemporarily();
+
     clearDraftStorage();
+
     resetForm();
 
     successMessage.value =
       isAdminDelegado.value
         ? "Artículo regional registrado correctamente para el usuario seleccionado."
-        : "Artículo registrado correctamente.";
+        : "Artículo regional registrado correctamente.";
 
-    errorMessage.value = "";
+    errorMessage.value =
+      "";
   } catch (error) {
     const status =
-      error?.response?.status;
+      error
+        ?.response
+        ?.status;
 
     const data =
-      error?.response?.data;
+      error
+        ?.response
+        ?.data;
 
-    if (status === 401) {
+    // -----------------------------------------------------
+    // Sesión
+    // -----------------------------------------------------
+
+    if (
+      status === 401
+    ) {
       errorMessage.value =
         "Sesión expirada. Vuelva a iniciar sesión.";
 
-      successMessage.value = "";
-      loading.value = false;
+      successMessage.value =
+        "";
 
       return;
     }
 
+    // -----------------------------------------------------
+    // Permisos
+    // -----------------------------------------------------
+
+    if (
+      status === 403
+    ) {
+      errorMessage.value =
+        "No tiene permisos para realizar este registro.";
+
+      successMessage.value =
+        "";
+
+      return;
+    }
+
+    // -----------------------------------------------------
+    // Errores DRF
+    // -----------------------------------------------------
+
     const normalized =
-      normalizeDrfErrors(data);
+      normalizeDrfErrors(
+        data
+      );
 
     fieldErrors.value =
-      normalized.fields || {};
+      normalized.fields ||
+      {};
 
     errorMessage.value =
       normalized.message ||
       "Error al registrar el artículo. Verifique los campos.";
 
-    successMessage.value = "";
+    successMessage.value =
+      "";
 
     const first =
       firstErrorField(
@@ -2207,29 +3423,53 @@ async function registrarArticuloRegional() {
       );
 
     if (first) {
-      focusField(first);
+      nextTick(
+        () => {
+          focusField(
+            first
+          );
+        }
+      );
     }
 
     console.error(
-      "❌ Error backend:",
+      "Error al registrar el artículo regional:",
       data || error
     );
   } finally {
-    loading.value = false;
+    loading.value =
+      false;
   }
 }
 
+
+/* =========================================================
+   CICLO DE VIDA
+========================================================= */
+
 onMounted(() => {
-  formDatos.value.pais = null;
-  formDatos.value.ciudad = null;
+  formDatos.value.pais =
+    null;
+
+  formDatos.value.ciudad =
+    null;
 
   hydrateAdminContextFromRoute();
+
   loadDraft();
 });
 
+
 onBeforeUnmount(() => {
-  clearTimeout(draftTimer);
+  clearTimeout(
+    draftTimer
+  );
 });
+
+
+/* =========================================================
+   WATCHERS
+========================================================= */
 
 watch(
   formDatos,
@@ -2239,6 +3479,7 @@ watch(
   }
 );
 
+
 watch(
   form,
   saveDraft,
@@ -2247,27 +3488,42 @@ watch(
   }
 );
 
+
 watch(
-  () => route.fullPath,
+  () =>
+    route.fullPath,
+
   () => {
     handleRouteContextChange();
   }
 );
 
+
 watch(
-  () => form.value.origen_tipo,
+  () =>
+    form.value.origen_tipo,
+
   (value) => {
-    if (value !== "tic") {
-      form.value.origen_grado = "";
+    if (
+      value !== "tic"
+    ) {
+      form.value.origen_grado =
+        "";
     }
   }
 );
 
+
 watch(
-  () => form.value.base_datos_indexada,
+  () =>
+    form.value.base_datos_indexada,
+
   (value) => {
-    if (value !== "otra") {
-      form.value.base_datos_otra = "";
+    if (
+      value !== "otra"
+    ) {
+      form.value.base_datos_otra =
+        "";
     }
   }
 );

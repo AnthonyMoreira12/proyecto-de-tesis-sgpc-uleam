@@ -1,111 +1,420 @@
 """
-Servicio para registrar y validar los autores asociados a una publicación.
-Estructura esperada:
-- 1 autor principal con orden = 1
-- coautores con orden = 2, 3, 4...
+Servicio para registrar autores asociados a una publicación.
+
+Reglas:
+- Debe existir al menos un autor.
+- No puede repetirse un autor.
+- No puede repetirse un orden.
+- Los órdenes deben ser consecutivos: 1, 2, 3...
+- Debe existir exactamente un autor principal.
+- El autor principal debe ocupar el orden 1.
+- Todo autor con orden superior a 1 es coautor.
 """
 
+from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
-from core.models import Autor, PublicacionAutor
+from core.models import (
+    Autor,
+    Publicacion,
+    PublicacionAutor,
+)
 
 
-def registrar_autores_publicacion(*, publicacion, autores_data):
-    if not autores_data:
-        return
+def _resolve_autor_id(item):
+    """
+    Acepta payload normalizado de cualquiera de estas formas:
 
-    rels = []
-    autor_ids = []
-    ordenes = []
-    principal_count = 0
+    {
+        "autor": <Autor instance>
+    }
 
-    for item in autores_data:
-        autor_value = item.get("autor", None)
-        autor_id = item.get("autor_id", None)
+    {
+        "autor": 12
+    }
 
-        if autor_id is None and autor_value is not None:
-            autor_id = getattr(autor_value, "id", autor_value)
+    {
+        "autor_id": 12
+    }
+    """
 
-        if autor_id is None:
-            raise ValidationError(
-                {"autores": ["Cada autor debe incluir 'autor_id' o 'autor'."]}
-            )
+    autor_value = item.get(
+        "autor",
+        None,
+    )
 
-        try:
-            autor_id = int(autor_id)
-        except Exception:
-            raise ValidationError({"autores": ["'autor_id' debe ser numérico."]})
+    autor_id = item.get(
+        "autor_id",
+        None,
+    )
 
-        orden = item.get("orden", None)
-        if orden is None:
-            raise ValidationError({"autores": ["Cada autor debe tener un 'orden'."]})
+    if (
+        autor_id is None
+        and autor_value is not None
+    ):
+        autor_id = getattr(
+            autor_value,
+            "id",
+            autor_value,
+        )
 
-        try:
-            orden = int(orden)
-        except Exception:
-            raise ValidationError({"autores": ["El 'orden' debe ser un número entero."]})
-
-        if orden < 1:
-            raise ValidationError({"autores": ["El 'orden' debe ser mayor o igual a 1."]})
-
-        rol = item.get("rol_autoria", None)
-        if rol not in dict(PublicacionAutor.ROL_AUTORIA):
-            raise ValidationError(
-                {"autores": ["Cada autor debe incluir un 'rol_autoria' válido."]}
-            )
-
-        if rol == "principal":
-            principal_count += 1
-            if orden != 1:
-                raise ValidationError(
-                    {"autores": ["El autor principal debe registrarse con orden = 1."]}
-                )
-
-        autor_ids.append(autor_id)
-        ordenes.append(orden)
-
-    if len(autor_ids) != len(set(autor_ids)):
-        raise ValidationError({"autores": ["No se permite repetir el mismo autor."]})
-
-    if len(ordenes) != len(set(ordenes)):
-        raise ValidationError({"autores": ["No se permite repetir el campo 'orden'."]})
-
-    if principal_count != 1:
-        raise ValidationError({"autores": ["Debe existir exactamente un autor principal."]})
-
-    if 1 not in set(ordenes):
-        raise ValidationError({"autores": ["Debe existir un autor con orden = 1."]})
-
-    expected_orders = list(range(1, len(ordenes) + 1))
-    if sorted(ordenes) != expected_orders:
+    if autor_id is None:
         raise ValidationError(
-            {"autores": [f"Los órdenes deben ser consecutivos: {expected_orders}."]}
+            {
+                "autores": [
+                    "Cada autor debe incluir "
+                    "'autor_id' o 'autor'."
+                ]
+            }
         )
 
-    autores_map = {autor.id: autor for autor in Autor.objects.filter(id__in=set(autor_ids))}
-    missing = [aid for aid in set(autor_ids) if aid not in autores_map]
-    if missing:
-        raise ValidationError({"autores": [f"Autor no existe: {missing}"]})
+    try:
+        autor_id = int(
+            autor_id
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "El identificador del autor "
+                    "debe ser numérico."
+                ]
+            }
+        )
 
-    for item in autores_data:
-        autor_value = item.get("autor", None)
-        autor_id = item.get("autor_id", None)
+    if autor_id < 1:
+        raise ValidationError(
+            {
+                "autores": [
+                    "El identificador del autor "
+                    "no es válido."
+                ]
+            }
+        )
 
-        if autor_id is None and autor_value is not None:
-            autor_id = getattr(autor_value, "id", autor_value)
+    return autor_id
 
-        autor_id = int(autor_id)
-        orden = int(item["orden"])
-        rol = item["rol_autoria"]
-        autor_obj = autores_map[autor_id]
 
-        rels.append(
-            PublicacionAutor(
+def _resolve_orden(
+    item,
+    *,
+    index,
+):
+    orden = item.get(
+        "orden",
+        None,
+    )
+
+    if orden in (
+        None,
+        "",
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    f"El autor #{index} debe "
+                    "tener un orden."
+                ]
+            }
+        )
+
+    try:
+        orden = int(
+            orden
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    f"El orden del autor "
+                    f"#{index} debe ser numérico."
+                ]
+            }
+        )
+
+    if orden < 1:
+        raise ValidationError(
+            {
+                "autores": [
+                    "El orden debe ser mayor "
+                    "o igual a 1."
+                ]
+            }
+        )
+
+    return orden
+
+
+def _normalizar_autores(
+    autores_data,
+):
+    if not isinstance(
+        autores_data,
+        (list, tuple),
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "Los autores deben enviarse "
+                    "como una lista."
+                ]
+            }
+        )
+
+    if not autores_data:
+        raise ValidationError(
+            {
+                "autores": [
+                    "Debe registrar al menos "
+                    "un autor."
+                ]
+            }
+        )
+
+    normalized = []
+
+    for index, item in enumerate(
+        autores_data,
+        start=1,
+    ):
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValidationError(
+                {
+                    "autores": [
+                        f"El autor #{index} "
+                        "debe ser un objeto."
+                    ]
+                }
+            )
+
+        autor_id = _resolve_autor_id(
+            item
+        )
+
+        orden = _resolve_orden(
+            item,
+            index=index,
+        )
+
+        normalized.append(
+            {
+                "autor_id": autor_id,
+                "orden": orden,
+            }
+        )
+
+    autor_ids = [
+        item["autor_id"]
+        for item in normalized
+    ]
+
+    ordenes = [
+        item["orden"]
+        for item in normalized
+    ]
+
+    # ---------------------------------------------------------
+    # Duplicados
+    # ---------------------------------------------------------
+
+    if (
+        len(autor_ids)
+        != len(set(autor_ids))
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "No se permite repetir "
+                    "el mismo autor."
+                ]
+            }
+        )
+
+    if (
+        len(ordenes)
+        != len(set(ordenes))
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "No se permite repetir "
+                    "el orden de los autores."
+                ]
+            }
+        )
+
+    # ---------------------------------------------------------
+    # Órdenes consecutivos
+    # ---------------------------------------------------------
+
+    expected_orders = list(
+        range(
+            1,
+            len(normalized) + 1,
+        )
+    )
+
+    if (
+        sorted(ordenes)
+        != expected_orders
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "Los órdenes deben ser "
+                    "consecutivos: "
+                    f"{expected_orders}."
+                ]
+            }
+        )
+
+    normalized.sort(
+        key=lambda item: item["orden"]
+    )
+
+    # ---------------------------------------------------------
+    # Rol derivado del orden
+    # ---------------------------------------------------------
+
+    for item in normalized:
+        item["rol_autoria"] = (
+            "principal"
+            if item["orden"] == 1
+            else "coautor"
+        )
+
+    return normalized
+
+
+@transaction.atomic
+def registrar_autores_publicacion(
+    *,
+    publicacion,
+    autores_data,
+):
+    """
+    Registra las relaciones PublicacionAutor.
+
+    Está pensado para utilizarse durante la creación
+    de una publicación.
+    """
+
+    if not isinstance(
+        publicacion,
+        Publicacion,
+    ):
+        raise ValidationError(
+            {
+                "publicacion": [
+                    "La publicación indicada "
+                    "no es válida."
+                ]
+            }
+        )
+
+    if not publicacion.pk:
+        raise ValidationError(
+            {
+                "publicacion": [
+                    "La publicación debe existir "
+                    "antes de registrar sus autores."
+                ]
+            }
+        )
+
+    normalized = (
+        _normalizar_autores(
+            autores_data
+        )
+    )
+
+    # ---------------------------------------------------------
+    # Comprobar existencia de autores
+    # ---------------------------------------------------------
+
+    autor_ids = [
+        item["autor_id"]
+        for item in normalized
+    ]
+
+    autores_map = Autor.objects.in_bulk(
+        autor_ids
+    )
+
+    missing_ids = sorted(
+        set(autor_ids)
+        - set(autores_map.keys())
+    )
+
+    if missing_ids:
+        raise ValidationError(
+            {
+                "autores": [
+                    "Uno o más autores "
+                    "seleccionados no existen: "
+                    f"{missing_ids}."
+                ]
+            }
+        )
+
+    # ---------------------------------------------------------
+    # Este servicio corresponde a creación.
+    # Evitamos registrar dos veces la misma autoría.
+    # ---------------------------------------------------------
+
+    if (
+        PublicacionAutor.objects
+        .filter(
+            publicacion=publicacion
+        )
+        .exists()
+    ):
+        raise ValidationError(
+            {
+                "autores": [
+                    "La publicación ya tiene "
+                    "autores registrados."
+                ]
+            }
+        )
+
+    created = []
+
+    # ---------------------------------------------------------
+    # Usamos .create() en lugar de bulk_create().
+    #
+    # PublicacionAutor.save() ejecuta full_clean(), por lo
+    # que mantenemos activas las reglas del modelo.
+    # ---------------------------------------------------------
+
+    for item in normalized:
+        relacion = (
+            PublicacionAutor.objects
+            .create(
                 publicacion=publicacion,
-                autor=autor_obj,
-                rol_autoria=rol,
-                orden=orden,
+                autor=autores_map[
+                    item["autor_id"]
+                ],
+                rol_autoria=(
+                    item[
+                        "rol_autoria"
+                    ]
+                ),
+                orden=item["orden"],
             )
         )
 
-    PublicacionAutor.objects.bulk_create(rels)
+        created.append(
+            relacion
+        )
+
+    return created

@@ -1,104 +1,700 @@
 """
-Servicios para reglas de edición del perfil del usuario autenticado.
+Servicios para controlar la edición del perfil del usuario.
+
+Este módulo centraliza:
+
+- Cálculo del plazo disponible.
+- Validación del permiso de edición.
+- Descuento seguro de intentos.
+- Bloqueo por intentos agotados.
+- Finalización del perfil.
+- Restablecimiento de intentos después de una edición válida.
+
+La facultad no se almacena directamente en Usuario. Se deriva
+exclusivamente mediante usuario.carrera.facultad.
 """
 
 from datetime import timedelta
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 
 
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
+
+PROFILE_EDIT_DEFAULT_HOURS = 48
+PROFILE_EDIT_DEFAULT_ATTEMPTS = 3
+
+PROFILE_EDIT_EXHAUSTED_REASON = (
+    "Intentos agotados por datos inválidos."
+)
+
+
+# ============================================================
+# EXCEPCIÓN DEL SERVICIO
+# ============================================================
+
 class ProfileEditServiceError(Exception):
-    def __init__(self, detail, status_code=status.HTTP_400_BAD_REQUEST):
+    """
+    Error controlado producido por las reglas de edición del
+    perfil.
+    """
+
+    def __init__(
+        self,
+        detail,
+        status_code=status.HTTP_400_BAD_REQUEST,
+    ):
         self.detail = detail
         self.status_code = status_code
-        super().__init__(str(detail))
+
+        super().__init__(
+            str(detail)
+        )
 
 
-def ensure_profile_edit_allowed(user):
-    now = timezone.now()
-    profile_edit_until = getattr(user, "profile_edit_until", None)
+# ============================================================
+# UTILIDADES
+# ============================================================
 
-    if profile_edit_until is not None:
-        if profile_edit_until and now > profile_edit_until:
-            raise ProfileEditServiceError(
-                {
-                    "detail": "El periodo de edición de perfil ha finalizado.",
-                    "profile_edit_until": profile_edit_until,
-                },
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
-    else:
-        fecha_registro = getattr(user, "fecha_registro", None)
-        if fecha_registro and now - fecha_registro > timedelta(hours=48):
-            raise ProfileEditServiceError(
-                {"detail": "El periodo de edición de perfil ha finalizado."},
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
+def _normalize_text(value):
+    """
+    Normaliza un texto opcional.
+    """
+    return str(
+        value or ""
+    ).strip()
 
-    if getattr(user, "profile_edit_locked", False):
+
+def _safe_non_negative_int(
+    value,
+    *,
+    default=0,
+):
+    """
+    Convierte un valor en entero no negativo.
+    """
+    if isinstance(value, bool):
+        return int(
+            default
+        )
+
+    try:
+        parsed = int(
+            value
+        )
+
+    except (
+        TypeError,
+        ValueError,
+        OverflowError,
+    ):
+        return int(
+            default
+        )
+
+    return max(
+        0,
+        parsed,
+    )
+
+
+def _sync_user_instance(
+    destination,
+    source,
+    field_names,
+):
+    """
+    Sincroniza en la instancia original los valores modificados
+    sobre la fila bloqueada de la base de datos.
+
+    Esto permite que las views actuales continúen utilizando la
+    misma instancia sin necesitar otra consulta inmediata.
+    """
+    if destination is None:
+        return
+
+    for field_name in field_names:
+        setattr(
+            destination,
+            field_name,
+            getattr(
+                source,
+                field_name,
+                None,
+            ),
+        )
+
+
+def _get_locked_user(user):
+    """
+    Obtiene y bloquea la fila del usuario.
+
+    Debe utilizarse dentro de transaction.atomic().
+    """
+    if user is None:
         raise ProfileEditServiceError(
             {
                 "detail": (
-                    "Edición de perfil bloqueada. "
-                    "Solicita al administrador que habilite nuevamente."
-                ),
-                "profile_edit_locked": True,
-                "attempts_left": getattr(user, "profile_edit_attempts_left", 0),
-                "profile_edit_until": getattr(user, "profile_edit_until", None),
+                    "No fue posible determinar "
+                    "el usuario del perfil."
+                )
             },
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
         )
 
-
-def register_failed_profile_attempt(user):
-    if not hasattr(user, "profile_edit_attempts_left"):
-        return
-
-    user.profile_edit_attempts_left = max(
-        0,
-        int(getattr(user, "profile_edit_attempts_left", 0) or 0) - 1,
+    user_id = getattr(
+        user,
+        "pk",
+        None,
     )
 
-    update_fields = ["profile_edit_attempts_left"]
+    if not user_id:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "El usuario todavía no está "
+                    "registrado en la base de datos."
+                )
+            },
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
+        )
 
-    if user.profile_edit_attempts_left == 0:
-        user.profile_edit_locked = True
-        user.profile_edit_lock_reason = "Intentos agotados por datos inválidos"
-        update_fields.extend(["profile_edit_locked", "profile_edit_lock_reason"])
+    user_model = type(
+        user
+    )
 
-    user.save(update_fields=update_fields)
+    try:
+        return (
+            user_model.objects
+            .select_for_update()
+            .select_related(
+                "carrera",
+                "carrera__facultad",
+            )
+            .get(
+                pk=user_id
+            )
+        )
 
+    except user_model.DoesNotExist as exc:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "El usuario ya no existe."
+                )
+            },
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+        ) from exc
+
+
+# ============================================================
+# PLAZO DE EDICIÓN
+# ============================================================
+
+def get_profile_edit_deadline(user):
+    """
+    Obtiene la fecha límite vigente para editar el perfil.
+
+    Prioridad:
+
+    1. profile_edit_until definido explícitamente.
+    2. fecha_registro + 48 horas.
+    3. None cuando no existe ninguna fecha de referencia.
+    """
+    if user is None:
+        return None
+
+    explicit_deadline = getattr(
+        user,
+        "profile_edit_until",
+        None,
+    )
+
+    if explicit_deadline is not None:
+        return explicit_deadline
+
+    registration_date = getattr(
+        user,
+        "fecha_registro",
+        None,
+    )
+
+    if registration_date is None:
+        return None
+
+    return (
+        registration_date
+        + timedelta(
+            hours=PROFILE_EDIT_DEFAULT_HOURS
+        )
+    )
+
+
+def get_profile_edit_status(user):
+    """
+    Construye el estado actual de edición del perfil.
+    """
+    current_time = timezone.now()
+
+    deadline = get_profile_edit_deadline(
+        user
+    )
+
+    attempts_left = (
+        _safe_non_negative_int(
+            getattr(
+                user,
+                "profile_edit_attempts_left",
+                PROFILE_EDIT_DEFAULT_ATTEMPTS,
+            ),
+            default=(
+                PROFILE_EDIT_DEFAULT_ATTEMPTS
+            ),
+        )
+    )
+
+    locked = bool(
+        getattr(
+            user,
+            "profile_edit_locked",
+            False,
+        )
+    )
+
+    lock_reason = (
+        _normalize_text(
+            getattr(
+                user,
+                "profile_edit_lock_reason",
+                None,
+            )
+        )
+        or None
+    )
+
+    expired = bool(
+        deadline is not None
+        and current_time > deadline
+    )
+
+    return {
+        "profile_edit_until": deadline,
+        "profile_edit_locked": locked,
+        "profile_edit_lock_reason": (
+            lock_reason
+        ),
+        "attempts_left": attempts_left,
+        "expired": expired,
+        "available": bool(
+            not locked
+            and attempts_left > 0
+            and not expired
+        ),
+    }
+
+
+# ============================================================
+# VALIDACIÓN DEL PERMISO
+# ============================================================
+
+def ensure_profile_edit_allowed(user):
+    """
+    Verifica que el usuario pueda modificar su perfil.
+
+    Retorna el estado cuando la edición está disponible.
+    Lanza ProfileEditServiceError cuando está bloqueada,
+    vencida o sin intentos.
+    """
+    if user is None:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "No fue posible determinar "
+                    "el usuario autenticado."
+                )
+            },
+            status_code=(
+                status.HTTP_401_UNAUTHORIZED
+            ),
+        )
+
+    if not bool(
+        getattr(
+            user,
+            "is_active",
+            False,
+        )
+    ):
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "La cuenta del usuario está inactiva."
+                )
+            },
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+        )
+
+    edit_status = get_profile_edit_status(
+        user
+    )
+
+    if edit_status[
+        "profile_edit_locked"
+    ]:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "La edición del perfil está bloqueada. "
+                    "Solicite al administrador que habilite "
+                    "nuevamente el periodo de edición."
+                ),
+                "profile_edit_locked": True,
+                "profile_edit_lock_reason": (
+                    edit_status[
+                        "profile_edit_lock_reason"
+                    ]
+                ),
+                "attempts_left": (
+                    edit_status[
+                        "attempts_left"
+                    ]
+                ),
+                "profile_edit_until": (
+                    edit_status[
+                        "profile_edit_until"
+                    ]
+                ),
+            },
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+        )
+
+    if edit_status[
+        "attempts_left"
+    ] <= 0:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "No quedan intentos disponibles "
+                    "para modificar el perfil."
+                ),
+                "profile_edit_locked": True,
+                "profile_edit_lock_reason": (
+                    PROFILE_EDIT_EXHAUSTED_REASON
+                ),
+                "attempts_left": 0,
+                "profile_edit_until": (
+                    edit_status[
+                        "profile_edit_until"
+                    ]
+                ),
+            },
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+        )
+
+    if edit_status["expired"]:
+        raise ProfileEditServiceError(
+            {
+                "detail": (
+                    "El periodo de edición del perfil "
+                    "ha finalizado."
+                ),
+                "profile_edit_locked": False,
+                "attempts_left": (
+                    edit_status[
+                        "attempts_left"
+                    ]
+                ),
+                "profile_edit_until": (
+                    edit_status[
+                        "profile_edit_until"
+                    ]
+                ),
+            },
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+        )
+
+    return edit_status
+
+
+# ============================================================
+# INTENTOS FALLIDOS
+# ============================================================
+
+def register_failed_profile_attempt(user):
+    """
+    Descuenta un intento de edición de forma transaccional.
+
+    Cuando el contador llega a cero:
+
+    - Se bloquea la edición.
+    - Se registra el motivo.
+    - Se conserva el plazo existente.
+
+    Retorna el estado actualizado.
+    """
+    with transaction.atomic():
+        locked_user = _get_locked_user(
+            user
+        )
+
+        current_attempts = (
+            _safe_non_negative_int(
+                getattr(
+                    locked_user,
+                    "profile_edit_attempts_left",
+                    PROFILE_EDIT_DEFAULT_ATTEMPTS,
+                ),
+                default=(
+                    PROFILE_EDIT_DEFAULT_ATTEMPTS
+                ),
+            )
+        )
+
+        new_attempts = max(
+            0,
+            current_attempts - 1,
+        )
+
+        update_fields = []
+
+        if (
+            locked_user.profile_edit_attempts_left
+            != new_attempts
+        ):
+            locked_user.profile_edit_attempts_left = (
+                new_attempts
+            )
+
+            update_fields.append(
+                "profile_edit_attempts_left"
+            )
+
+        if new_attempts == 0:
+            if not locked_user.profile_edit_locked:
+                locked_user.profile_edit_locked = (
+                    True
+                )
+
+                update_fields.append(
+                    "profile_edit_locked"
+                )
+
+            if (
+                locked_user.profile_edit_lock_reason
+                != PROFILE_EDIT_EXHAUSTED_REASON
+            ):
+                locked_user.profile_edit_lock_reason = (
+                    PROFILE_EDIT_EXHAUSTED_REASON
+                )
+
+                update_fields.append(
+                    "profile_edit_lock_reason"
+                )
+
+        if update_fields:
+            locked_user.save(
+                update_fields=list(
+                    dict.fromkeys(
+                        update_fields
+                    )
+                )
+            )
+
+        synchronized_fields = [
+            "profile_edit_attempts_left",
+            "profile_edit_locked",
+            "profile_edit_lock_reason",
+            "profile_edit_until",
+        ]
+
+        _sync_user_instance(
+            user,
+            locked_user,
+            synchronized_fields,
+        )
+
+        return get_profile_edit_status(
+            locked_user
+        )
+
+
+# ============================================================
+# FINALIZACIÓN DEL PERFIL
+# ============================================================
 
 def finalize_profile_update(user):
-    rol = str(getattr(user, "rol", "")).lower()
-    ident_ok = bool(getattr(user, "identificacion", None))
+    """
+    Recalcula el estado de completitud del perfil.
 
-    if rol == "autor_externo":
-        user.perfil_completo = ident_ok
-    else:
-        user.perfil_completo = (
-            ident_ok
-            and bool(getattr(user, "facultad_id", None))
-            and bool(getattr(user, "carrera_id", None))
+    Autor externo:
+        Requiere identificación.
+
+    Autor institucional:
+        Requiere identificación y carrera.
+
+    La facultad no se valida como campo separado porque se
+    obtiene mediante carrera.facultad.
+    """
+    with transaction.atomic():
+        locked_user = _get_locked_user(
+            user
         )
 
-    update_fields = ["perfil_completo"]
+        role = _normalize_text(
+            getattr(
+                locked_user,
+                "rol",
+                "",
+            )
+        ).lower()
 
-    if hasattr(user, "profile_edit_attempts_left"):
-        user.profile_edit_attempts_left = 3
-        user.profile_edit_locked = False
-        user.profile_edit_lock_reason = None
-        update_fields.extend(
-            [
-                "profile_edit_attempts_left",
-                "profile_edit_locked",
-                "profile_edit_lock_reason",
-            ]
+        auth_source = _normalize_text(
+            getattr(
+                locked_user,
+                "auth_source",
+                "",
+            )
+        ).lower()
+
+        identification_complete = bool(
+            _normalize_text(
+                getattr(
+                    locked_user,
+                    "identificacion",
+                    None,
+                )
+            )
         )
 
-    if hasattr(user, "perfil_banner_snooze_until") and user.perfil_completo:
-        user.perfil_banner_snooze_until = None
-        update_fields.append("perfil_banner_snooze_until")
+        career_complete = bool(
+            getattr(
+                locked_user,
+                "carrera_id",
+                None,
+            )
+        )
 
-    user.save(update_fields=list(dict.fromkeys(update_fields)))
+        is_external = bool(
+            role == "autor_externo"
+            and auth_source == "local"
+        )
+
+        if is_external:
+            profile_complete = (
+                identification_complete
+            )
+
+        else:
+            profile_complete = bool(
+                identification_complete
+                and career_complete
+            )
+
+        update_fields = []
+
+        if (
+            locked_user.perfil_completo
+            != profile_complete
+        ):
+            locked_user.perfil_completo = (
+                profile_complete
+            )
+
+            update_fields.append(
+                "perfil_completo"
+            )
+
+        if (
+            locked_user.profile_edit_attempts_left
+            != PROFILE_EDIT_DEFAULT_ATTEMPTS
+        ):
+            locked_user.profile_edit_attempts_left = (
+                PROFILE_EDIT_DEFAULT_ATTEMPTS
+            )
+
+            update_fields.append(
+                "profile_edit_attempts_left"
+            )
+
+        if locked_user.profile_edit_locked:
+            locked_user.profile_edit_locked = (
+                False
+            )
+
+            update_fields.append(
+                "profile_edit_locked"
+            )
+
+        if (
+            locked_user.profile_edit_lock_reason
+            is not None
+        ):
+            locked_user.profile_edit_lock_reason = (
+                None
+            )
+
+            update_fields.append(
+                "profile_edit_lock_reason"
+            )
+
+        if (
+            profile_complete
+            and getattr(
+                locked_user,
+                "perfil_banner_snooze_until",
+                None,
+            )
+            is not None
+        ):
+            locked_user.perfil_banner_snooze_until = (
+                None
+            )
+
+            update_fields.append(
+                "perfil_banner_snooze_until"
+            )
+
+        if update_fields:
+            locked_user.save(
+                update_fields=list(
+                    dict.fromkeys(
+                        update_fields
+                    )
+                )
+            )
+
+        synchronized_fields = [
+            "perfil_completo",
+            "profile_edit_attempts_left",
+            "profile_edit_locked",
+            "profile_edit_lock_reason",
+            "profile_edit_until",
+            "perfil_banner_snooze_until",
+            "carrera_id",
+        ]
+
+        _sync_user_instance(
+            user,
+            locked_user,
+            synchronized_fields,
+        )
+
+        return locked_user

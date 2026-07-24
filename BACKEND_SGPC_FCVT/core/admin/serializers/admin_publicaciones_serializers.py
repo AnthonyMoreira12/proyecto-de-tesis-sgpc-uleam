@@ -1,6 +1,4 @@
-# Serializers administrativos de publicaciones:
-# extienden los serializers de listado y detalle para incluir datos de auditoría,
-# usuario creador, administrador registrador, adjuntos, disponibilidad de PDF y autor principal.
+"""Serializers administrativos de publicaciones."""
 
 from rest_framework import serializers
 
@@ -12,150 +10,189 @@ from core.publicaciones.serializers.read.publicaciones_listado_serializers impor
 )
 
 
-class _AdminPublicacionFieldsMixin(serializers.Serializer):
-    usuario_creador_id = serializers.SerializerMethodField()
+ADMIN_FIELDS = (
+    "usuario_creador_id",
+    "usuario_creador_nombre",
+    "usuario_creador_email",
+    "registrado_por_admin",
+    "admin_registrador_id",
+    "admin_registrador_nombre",
+    "admin_registrador_email",
+    "created_at",
+    "updated_at",
+    "adjuntos_total",
+    "tiene_pdf_principal",
+    "tiene_adjuntos",
+    "tiene_pdf",
+    "autor_principal_id",
+    "autor_principal",
+    "autor_principal_email",
+    "autores_total",
+)
+
+
+def _merge(base_fields):
+    return tuple(dict.fromkeys([*base_fields, *ADMIN_FIELDS]))
+
+
+def _text(value):
+    return str(value or "").strip()
+
+
+def _name(person):
+    if person is None:
+        return None
+
+    if callable(getattr(person, "get_full_name", None)):
+        name = _text(person.get_full_name())
+        if name:
+            return name
+
+    name = " ".join(
+        part
+        for part in [
+            _text(getattr(person, "nombres", "")),
+            _text(getattr(person, "apellidos", "")),
+        ]
+        if part
+    )
+    return (
+        name
+        or _text(getattr(person, "email", ""))
+        or _text(getattr(person, "correo", ""))
+        or None
+    )
+
+
+class _AdminFieldsMixin(serializers.Serializer):
     usuario_creador_nombre = serializers.SerializerMethodField()
     usuario_creador_email = serializers.SerializerMethodField()
-
-    registrado_por_admin = serializers.BooleanField(read_only=True)
-
-    admin_registrador_id = serializers.SerializerMethodField()
     admin_registrador_nombre = serializers.SerializerMethodField()
     admin_registrador_email = serializers.SerializerMethodField()
-
-    created_at = serializers.DateTimeField(read_only=True)
-    updated_at = serializers.DateTimeField(read_only=True)
-
     adjuntos_total = serializers.SerializerMethodField()
+    tiene_pdf_principal = serializers.SerializerMethodField()
+    tiene_adjuntos = serializers.SerializerMethodField()
     tiene_pdf = serializers.SerializerMethodField()
+    autor_principal_id = serializers.SerializerMethodField()
     autor_principal = serializers.SerializerMethodField()
+    autor_principal_email = serializers.SerializerMethodField()
+    autores_total = serializers.SerializerMethodField()
 
-    def _get_participaciones(self, obj):
-        participaciones = getattr(obj, "participaciones_ordenadas", None)
-        if participaciones is not None:
-            return participaciones
+    def _participations(self, obj):
+        ordered = getattr(obj, "participaciones_ordenadas", None)
+        if ordered is not None:
+            return list(ordered)
 
         cache = getattr(obj, "_prefetched_objects_cache", {})
         if "participaciones" in cache:
-            return cache["participaciones"]
+            return list(cache["participaciones"])
 
-        try:
-            return obj.participaciones.select_related("autor").order_by("orden", "id")
-        except Exception:
-            return []
+        return list(
+            obj.participaciones
+            .select_related("autor", "autor__usuario")
+            .order_by("orden", "id")
+        )
 
-    def get_usuario_creador_id(self, obj):
-        return getattr(getattr(obj, "usuario_creador", None), "id", None)
+    def _principal(self, obj):
+        first = None
+
+        for relation in self._participations(obj):
+            if getattr(relation, "autor", None) is None:
+                continue
+
+            first = first or relation
+
+            if (
+                _text(relation.rol_autoria).lower() == "principal"
+                or relation.orden == 1
+            ):
+                return relation
+
+        return first
 
     def get_usuario_creador_nombre(self, obj):
-        usuario = getattr(obj, "usuario_creador", None)
-        if not usuario:
-            return None
-        return f"{usuario.nombres or ''} {usuario.apellidos or ''}".strip()
+        return _name(getattr(obj, "usuario_creador", None))
 
     def get_usuario_creador_email(self, obj):
-        return getattr(getattr(obj, "usuario_creador", None), "email", None)
-
-    def get_admin_registrador_id(self, obj):
-        return getattr(getattr(obj, "admin_registrador", None), "id", None)
+        user = getattr(obj, "usuario_creador", None)
+        return _text(getattr(user, "email", "")) or None
 
     def get_admin_registrador_nombre(self, obj):
-        usuario = getattr(obj, "admin_registrador", None)
-        if not usuario:
-            return None
-        return f"{usuario.nombres or ''} {usuario.apellidos or ''}".strip()
+        return _name(getattr(obj, "admin_registrador", None))
 
     def get_admin_registrador_email(self, obj):
-        return getattr(getattr(obj, "admin_registrador", None), "email", None)
+        user = getattr(obj, "admin_registrador", None)
+        return _text(getattr(user, "email", "")) or None
 
     def get_adjuntos_total(self, obj):
         annotated = getattr(obj, "adjuntos_total", None)
         if annotated is not None:
-            try:
-                return int(annotated)
-            except Exception:
-                pass
+            return int(annotated)
 
-        cache = getattr(obj, "_prefetched_objects_cache", {})
-        if "archivos" in cache:
-            try:
-                return len(cache["archivos"])
-            except Exception:
-                return 0
+        ordered = getattr(obj, "archivos_ordenados", None)
+        if ordered is not None:
+            return len(ordered)
 
-        try:
-            return obj.archivos.count()
-        except Exception:
-            return 0
+        return obj.archivos.count()
+
+    def get_tiene_pdf_principal(self, obj):
+        annotated = getattr(obj, "tiene_pdf_principal", None)
+        if annotated is not None:
+            return bool(annotated)
+
+        return bool(
+            _text(
+                getattr(
+                    getattr(obj, "archivo_pdf", None),
+                    "name",
+                    "",
+                )
+            )
+        )
+
+    def get_tiene_adjuntos(self, obj):
+        annotated = getattr(obj, "tiene_adjuntos", None)
+        if annotated is not None:
+            return bool(annotated)
+
+        return self.get_adjuntos_total(obj) > 0
 
     def get_tiene_pdf(self, obj):
-        archivo_pdf_name = str(getattr(getattr(obj, "archivo_pdf", None), "name", "") or "").strip()
-        return bool(archivo_pdf_name) or self.get_adjuntos_total(obj) > 0
+        return (
+            self.get_tiene_pdf_principal(obj)
+            or self.get_tiene_adjuntos(obj)
+        )
+
+    def get_autor_principal_id(self, obj):
+        relation = self._principal(obj)
+        return getattr(relation, "autor_id", None)
 
     def get_autor_principal(self, obj):
-        participaciones = self._get_participaciones(obj)
+        relation = self._principal(obj)
+        return _name(getattr(relation, "autor", None)) or "—"
 
-        principal = None
-        fallback = None
+    def get_autor_principal_email(self, obj):
+        relation = self._principal(obj)
+        author = getattr(relation, "autor", None)
+        return _text(getattr(author, "correo", "")) or None
 
-        for rel in participaciones:
-            autor = getattr(rel, "autor", None)
-            if not autor:
-                continue
-
-            nombre = f"{autor.nombres or ''} {autor.apellidos or ''}".strip()
-            if not nombre:
-                nombre = str(getattr(autor, "correo", "") or "").strip() or "Autor"
-
-            if fallback is None:
-                fallback = nombre
-
-            if getattr(rel, "orden", None) == 1 or getattr(rel, "rol_autoria", None) == "principal":
-                principal = nombre
-                break
-
-        return principal or fallback or "—"
+    def get_autores_total(self, obj):
+        return len(self._participations(obj))
 
 
 class AdminPublicacionListadoSerializer(
-    _AdminPublicacionFieldsMixin,
+    _AdminFieldsMixin,
     PublicacionListadoSerializer,
 ):
     class Meta(PublicacionListadoSerializer.Meta):
-        fields = PublicacionListadoSerializer.Meta.fields + [
-            "usuario_creador_id",
-            "usuario_creador_nombre",
-            "usuario_creador_email",
-            "registrado_por_admin",
-            "admin_registrador_id",
-            "admin_registrador_nombre",
-            "admin_registrador_email",
-            "created_at",
-            "updated_at",
-            "adjuntos_total",
-            "tiene_pdf",
-            "autor_principal",
-        ]
+        fields = _merge(PublicacionListadoSerializer.Meta.fields)
         read_only_fields = fields
 
 
 class AdminPublicacionDetalleSerializer(
-    _AdminPublicacionFieldsMixin,
+    _AdminFieldsMixin,
     PublicacionDetalleSerializer,
 ):
     class Meta(PublicacionDetalleSerializer.Meta):
-        fields = PublicacionDetalleSerializer.Meta.fields + [
-            "usuario_creador_id",
-            "usuario_creador_nombre",
-            "usuario_creador_email",
-            "registrado_por_admin",
-            "admin_registrador_id",
-            "admin_registrador_nombre",
-            "admin_registrador_email",
-            "created_at",
-            "updated_at",
-            "adjuntos_total",
-            "tiene_pdf",
-            "autor_principal",
-        ]
+        fields = _merge(PublicacionDetalleSerializer.Meta.fields)
         read_only_fields = fields

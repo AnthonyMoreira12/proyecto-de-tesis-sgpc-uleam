@@ -1,7 +1,16 @@
-from .publicaciones_detalle_serializers import PublicacionDetalleSerializer
-from .publicaciones_listado_serializers import PublicacionListadoSerializer
+"""
+Serializers de lectura de publicaciones.
+"""
 
-__all__ = [
+from .publicaciones_detalle_serializers import (
+    PublicacionDetalleSerializer,
+)
+from .publicaciones_listado_serializers import (
+    PublicacionListadoSerializer,
+)
+
+
+__all__ = (
     "PublicacionDetalleSerializer",
     "PublicacionListadoSerializer",
-]
+)
