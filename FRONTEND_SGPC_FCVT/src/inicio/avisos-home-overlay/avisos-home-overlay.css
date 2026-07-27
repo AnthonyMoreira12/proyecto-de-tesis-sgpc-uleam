@@ -8,7 +8,8 @@
 }
 
 .avn-overlay {
-  --avn-overlay-bg: rgba(15, 23, 42, 0.54);
+  --avn-overlay-bg:
+    rgba(15, 23, 42, 0.54);
 
   --avn-overlay-line:
     color-mix(
@@ -18,22 +19,42 @@
     );
 
   position: fixed;
+
   inset: 0;
+
   z-index: 1700;
 
   display: grid;
-  place-items: center;
+
+  /*
+   * safe evita que el cuadro quede centrado
+   * fuera del viewport cuando su altura aumenta.
+   */
+  place-items:
+    safe center;
 
   min-width: 0;
+
   padding: 22px;
 
   overflow-x: hidden;
   overflow-y: auto;
 
-  color: var(
-    --text-primary,
-    #172033
-  );
+  color:
+    var(
+      --text-primary,
+      #172033
+    );
+
+  /*
+   * Responde al selector global de tamaño
+   * de fuente sin alterar la geometría del overlay.
+   */
+  font-size:
+    var(
+      --font-base,
+      16px
+    );
 
   font-family:
     var(
@@ -49,17 +70,30 @@
       )
     );
 
-  background: var(--avn-overlay-bg);
+  background:
+    var(--avn-overlay-bg);
 
   isolation: isolate;
-  overscroll-behavior: contain;
+
+  overscroll-behavior:
+    contain;
+
+  scrollbar-gutter:
+    stable;
 }
+
+
+/* ============================================================
+   FONDO
+============================================================ */
 
 .avn-overlay::before {
   content: "";
 
   position: fixed;
+
   inset: 0;
+
   z-index: -2;
 
   background:
@@ -67,8 +101,10 @@
       circle at 18% 10%,
       color-mix(
         in srgb,
-        var(--color-primary, #315fcb)
-          16%,
+        var(
+          --color-primary,
+          #315fcb
+        ) 16%,
         transparent
       ),
       transparent 36%
@@ -86,13 +122,16 @@
   pointer-events: none;
 }
 
+
 /* ============================================================
    BACKDROP
 ============================================================ */
 
 .avn-overlay__backdrop {
   position: fixed;
+
   inset: 0;
+
   z-index: -1;
 
   width: 100%;
@@ -103,7 +142,8 @@
 
   border: 0;
 
-  background: transparent;
+  background:
+    transparent;
 
   cursor: default;
 
@@ -116,12 +156,14 @@
     saturate(108%);
 }
 
+
 /* ============================================================
    CONTENEDOR
 ============================================================ */
 
 .avn-shell {
   position: relative;
+
   z-index: 1;
 
   width:
@@ -142,7 +184,9 @@
   content: "";
 
   position: absolute;
+
   inset: -8px;
+
   z-index: -1;
 
   border:
@@ -154,32 +198,45 @@
   pointer-events: none;
 }
 
+
 /* ============================================================
    ACCESIBILIDAD
 ============================================================ */
 
 .avn-sr-only {
-  position: absolute !important;
+  position:
+    absolute !important;
 
-  width: 1px !important;
-  height: 1px !important;
+  width:
+    1px !important;
 
-  padding: 0 !important;
-  margin: -1px !important;
+  height:
+    1px !important;
 
-  overflow: hidden !important;
+  padding:
+    0 !important;
 
-  clip: rect(
-    0,
-    0,
-    0,
-    0
-  ) !important;
+  margin:
+    -1px !important;
 
-  white-space: nowrap !important;
+  overflow:
+    hidden !important;
 
-  border: 0 !important;
+  clip:
+    rect(
+      0,
+      0,
+      0,
+      0
+    ) !important;
+
+  white-space:
+    nowrap !important;
+
+  border:
+    0 !important;
 }
+
 
 /* ============================================================
    TRANSICIÓN
@@ -218,13 +275,17 @@
     scale(0.985);
 }
 
+
 /* ============================================================
    MODO OSCURO
 ============================================================ */
 
-html.dark .avn-overlay,
-body.dark .avn-overlay,
-.dark .avn-overlay,
+html.dark
+  .avn-overlay,
+body.dark
+  .avn-overlay,
+.dark
+  .avn-overlay,
 [data-theme="dark"]
   .avn-overlay {
   --avn-overlay-bg:
@@ -238,13 +299,20 @@ body.dark .avn-overlay,
     );
 }
 
+
 /* ============================================================
    TABLET
 ============================================================ */
 
 @media (max-width: 980px) {
   .avn-overlay {
-    place-items: start center;
+    /*
+     * En dispositivos donde el contenido
+     * puede superar la altura disponible,
+     * comienza desde arriba.
+     */
+    place-items:
+      start center;
 
     padding: 14px;
   }
@@ -264,6 +332,7 @@ body.dark .avn-overlay,
   }
 }
 
+
 /* ============================================================
    MÓVIL
 ============================================================ */
@@ -282,6 +351,7 @@ body.dark .avn-overlay,
   }
 }
 
+
 /* ============================================================
    MOVIMIENTO REDUCIDO
 ============================================================ */
@@ -293,9 +363,11 @@ body.dark .avn-overlay,
   .avn-overlay *,
   .avn-overlay *::before,
   .avn-overlay *::after {
-    animation: none !important;
+    animation:
+      none !important;
 
-    transition: none !important;
+    transition:
+      none !important;
 
     scroll-behavior:
       auto !important;

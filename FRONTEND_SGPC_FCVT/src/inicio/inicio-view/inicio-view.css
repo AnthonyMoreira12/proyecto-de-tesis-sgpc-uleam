@@ -3676,3 +3676,135 @@ button.ivbi-vbars__col {
       none !important;
   }
 }
+
+
+/* =========================================================
+   39. ADAPTACIÓN TIPOGRÁFICA SIN REDISEÑAR LA INTERFAZ
+
+   IMPORTANTE:
+   - No cambia grids, columnas ni breakpoints.
+   - No convierte medidas estructurales de px a rem.
+   - No usa auto-fit para los KPI.
+   - Solo evita cortes cuando el usuario selecciona 18px o 20px.
+========================================================= */
+
+.ivbi-page,
+.ivbi-shell,
+.ivbi-board,
+.ivbi-dashboard,
+.ivbi-view-shell,
+.ivbi-header,
+.ivbi-header__top,
+.ivbi-header__navigation,
+.ivbi-filterbar,
+.ivbi-filterbar--compact,
+.ivbi-filterbar__fields,
+.ivbi-kpi-strip,
+.ivbi-summary-grid,
+.ivbi-trend-grid,
+.ivbi-rankings-grid,
+.ivbi-card,
+.ivbi-card__head,
+.ivbi-card__head-main,
+.ivbi-card__head-tools,
+.ivbi-donut-panel,
+.ivbi-legend,
+.ivbi-legend__item,
+.ivbi-legend__text,
+.ivbi-rank,
+.ivbi-rank__row,
+.ivbi-rank__meta,
+.ivbi-rank__track {
+  min-width: 0;
+}
+
+/* El tamaño estándar conserva exactamente el aspecto original. */
+.ivbi-kpi-card,
+.ivbi-card {
+  height: auto;
+}
+
+/* ---------------------------------------------------------
+   TAMAÑO CÓMODO / GRANDE
+   Solo damos más libertad vertical al contenido.
+--------------------------------------------------------- */
+
+html[data-font-size="18"] .ivbi-page .ivbi-field select,
+html[data-font-size="18"] .ivbi-page .ivbi-field input,
+html[data-font-size="20"] .ivbi-page .ivbi-field select,
+html[data-font-size="20"] .ivbi-page .ivbi-field input {
+  height: auto;
+  min-height: var(--ivbi-control-sm);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+html[data-font-size="18"] .ivbi-page .ivbi-filter-action,
+html[data-font-size="20"] .ivbi-page .ivbi-filter-action {
+  height: auto;
+  min-height: var(--ivbi-control-sm);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+html[data-font-size="18"] .ivbi-page .ivbi-btn,
+html[data-font-size="20"] .ivbi-page .ivbi-btn {
+  height: auto;
+  min-height: var(--ivbi-control-md);
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+html[data-font-size="18"] .ivbi-page .ivbi-segmented__btn,
+html[data-font-size="20"] .ivbi-page .ivbi-segmented__btn {
+  height: auto;
+  min-height: var(--ivbi-control-sm);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* KPI: conservan exactamente el mismo grid; solo puede crecer
+   la altura de la tarjeta si el texto realmente lo necesita. */
+html[data-font-size="18"] .ivbi-page .ivbi-kpi-card__hint,
+html[data-font-size="20"] .ivbi-page .ivbi-kpi-card__hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+html[data-font-size="18"] .ivbi-page .ivbi-kpi-card__copy,
+html[data-font-size="20"] .ivbi-page .ivbi-kpi-card__copy {
+  min-width: 0;
+}
+
+/* Las leyendas pueden usar una segunda línea en tamaños grandes,
+   sin cambiar su número de columnas. */
+html[data-font-size="18"] .ivbi-page .ivbi-legend__label,
+html[data-font-size="20"] .ivbi-page .ivbi-legend__label {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+/* El texto contextual de la cabecera deja de recortarse solo
+   cuando el usuario ha pedido una tipografía mayor. */
+html[data-font-size="18"] .ivbi-page .ivbi-header__view-help,
+html[data-font-size="20"] .ivbi-page .ivbi-header__view-help {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+html[data-font-size="18"] .ivbi-page .ivbi-header__view-help span,
+html[data-font-size="20"] .ivbi-page .ivbi-header__view-help span {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+/* Rankings: nunca deben empujar la barra fuera de la tarjeta. */
+.ivbi-rank__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

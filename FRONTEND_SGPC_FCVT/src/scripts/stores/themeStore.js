@@ -1214,13 +1214,29 @@ export const useThemeStore = defineStore(
 
         if (!root) return;
 
+        /*
+         * La escala tipográfica global se controla únicamente
+         * mediante --font-base. theme.css aplica esa variable
+         * al elemento <html>.
+         *
+         * No dejamos un font-size inline en <html>, porque sería
+         * una segunda fuente de verdad y complica la adaptación
+         * de las vistas.
+         */
         root.style.setProperty(
           "--font-base",
           this.fontSize
         );
 
-        root.style.fontSize =
-          this.fontSize;
+        root.dataset.fontSize =
+          String(this.fontSize)
+            .replace("px", "")
+            .trim();
+
+        /* Limpia el valor inline creado por versiones anteriores. */
+        root.style.removeProperty(
+          "font-size"
+        );
       },
 
       setAnimations(value) {

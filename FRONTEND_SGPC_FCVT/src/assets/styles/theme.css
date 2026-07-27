@@ -922,8 +922,14 @@ html {
   font-family:
     var(--font-body);
 
+  /*
+   * Única fuente de verdad para la escala tipográfica global.
+   * Mantener los tokens estructurales (px) separados de esta
+   * variable evita que una vista tenga que rediseñarse al cambiar
+   * entre 15 / 16 / 18 / 20 px.
+   */
   font-size:
-    var(--font-base);
+    var(--font-base, 16px);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

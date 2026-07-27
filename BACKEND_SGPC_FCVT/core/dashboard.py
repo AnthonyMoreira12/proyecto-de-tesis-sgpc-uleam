@@ -4,6 +4,7 @@
 # ============================================================
 
 from io import BytesIO
+import unicodedata
 
 from django.apps import apps
 from django.db.models import Count, F
@@ -15,6 +16,10 @@ from django.http import HttpResponse
 from django.utils import timezone
 
 from openpyxl import Workbook
+from openpyxl.chart import BarChart, DoughnutChart, Reference
+from openpyxl.chart.label import DataLabelList
+from openpyxl.chart.marker import DataPoint
+from openpyxl.formatting.rule import DataBarRule
 from openpyxl.styles import (
     Alignment,
     Border,
@@ -23,6 +28,7 @@ from openpyxl.styles import (
     Side,
 )
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -2277,317 +2283,290 @@ class DashboardResumenView(
 # REPORTE EXCEL — HELPERS
 # ============================================================
 
+REPORT_COLORS = {
+    "navy": "0F172A",
+    "primary": "2563EB",
+    "primary_dark": "1D4ED8",
+    "primary_soft": "EFF6FF",
+    "green": "15803D",
+    "purple": "7C3AED",
+    "orange": "C2410C",
+    "teal": "0F766E",
+    "text": "172033",
+    "muted": "64748B",
+    "surface": "FFFFFF",
+    "background": "F8FAFC",
+    "border": "D8E1EC",
+    "border_strong": "CBD5E1",
+}
 
-def _safe_excel_value(
-    value,
-):
-    if value is None:
-        return ""
+REPORT_TYPE_COLORS = {
+    "AAI": "3366CC",
+    "AR": "3F7F5A",
+    "PON": "7251B5",
+    "CAP": "B85C2E",
+    "LIB": "1F7A73",
+    "OTRO": "7C8798",
+}
 
-    return value
+REPORT_KPI_COLORS = (
+    "2563EB",
+    "0F766E",
+    "7C3AED",
+    "C2410C",
+    "0F766E",
+    "2563EB",
+)
+
+
+def _safe_excel_value(value):
+    return "" if value is None else value
 
 
 def _report_generated_at():
-    return (
-        timezone.localtime()
-        .strftime(
-            "%Y-%m-%d %H:%M"
-        )
-    )
+    return timezone.localtime().strftime("%d/%m/%Y %H:%M")
 
 
 def _report_filename():
-    stamp = (
-        timezone.localtime()
-        .strftime(
-            "%Y-%m-%d_%H-%M-%S"
-        )
+    stamp = timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S")
+    return f"reporte-dashboard-sgpc-uleam-{stamp}.xlsx"
+
+
+def _solid_fill(color):
+    return PatternFill("solid", fgColor=color)
+
+
+def _thin_border(color=None):
+    side = Side(style="thin", color=color or REPORT_COLORS["border"])
+    return Border(left=side, right=side, top=side, bottom=side)
+
+
+def _safe_table_name(value):
+    normalized = (
+        unicodedata.normalize("NFKD", str(value or "Datos"))
+        .encode("ascii", "ignore")
+        .decode("ascii")
     )
-
-    return (
-        "reporte-dashboard-"
-        f"sgpc-uleam-{stamp}.xlsx"
-    )
-
-
-# ============================================================
-# ESTILO EXCEL
-# ============================================================
+    token = "".join(ch for ch in normalized if ch.isalnum()) or "Datos"
+    if token[0].isdigit():
+        token = f"T{token}"
+    return f"Tbl{token}"[:240]
 
 
-def _style_report_sheet(
+def _set_range_fill(ws, cell_range, color):
+    fill = _solid_fill(color)
+    for row in ws[cell_range]:
+        for cell in row:
+            cell.fill = fill
+
+
+def _set_range_border(ws, cell_range, color=None):
+    border = _thin_border(color)
+    for row in ws[cell_range]:
+        for cell in row:
+            cell.border = border
+
+
+def _merge_block(
     ws,
+    cell_range,
+    value,
+    *,
+    fill=None,
+    font=None,
+    alignment=None,
+    border=None,
 ):
-    max_row = (
-        ws.max_row
-        or 1
-    )
+    if fill:
+        _set_range_fill(ws, cell_range, fill)
+    if border:
+        _set_range_border(ws, cell_range, border)
 
-    max_col = (
-        ws.max_column
-        or 1
-    )
+    ws.merge_cells(cell_range)
+    anchor = ws[cell_range.split(":")[0]]
+    anchor.value = value
 
-    last_col = (
-        get_column_letter(
-            max_col
-        )
-    )
+    if font:
+        anchor.font = font
+    if alignment:
+        anchor.alignment = alignment
 
-    # --------------------------------------------------------
-    # Fuentes
-    # --------------------------------------------------------
+    return anchor
 
-    title_font = Font(
-        name="Calibri",
-        size=15,
-        bold=True,
-        color="111827",
-    )
 
-    subtitle_font = Font(
-        name="Calibri",
-        size=10,
-        color="6B7280",
-    )
+def _format_periodo(filtros):
+    desde = filtros.get("anio_desde")
+    hasta = filtros.get("anio_hasta")
 
-    header_font = Font(
-        name="Calibri",
-        size=10,
-        bold=True,
-        color="FFFFFF",
-    )
+    if desde and hasta:
+        return str(desde) if desde == hasta else f"{desde} – {hasta}"
+    if desde:
+        return f"Desde {desde}"
+    if hasta:
+        return f"Hasta {hasta}"
+    return "Todos los años"
 
-    body_font = Font(
-        name="Calibri",
-        size=10,
-        color="111827",
-    )
 
-    # --------------------------------------------------------
-    # Rellenos
-    # --------------------------------------------------------
+def _set_sheet_print_settings(ws, *, print_area=None):
+    ws.sheet_view.showGridLines = False
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
 
-    header_fill = PatternFill(
-        "solid",
-        fgColor="111827",
-    )
+    ws.page_margins.left = 0.25
+    ws.page_margins.right = 0.25
+    ws.page_margins.top = 0.45
+    ws.page_margins.bottom = 0.45
+    ws.page_margins.header = 0.2
+    ws.page_margins.footer = 0.2
 
-    muted_fill = PatternFill(
-        "solid",
-        fgColor="F3F4F6",
-    )
+    ws.oddHeader.center.text = "SGPC ULEAM"
+    ws.oddHeader.center.size = 9
+    ws.oddHeader.center.font = "Calibri,Bold"
+    ws.oddFooter.left.text = "Producción científica"
+    ws.oddFooter.right.text = "Página &[Page] de &N"
 
-    # --------------------------------------------------------
-    # Bordes
-    # --------------------------------------------------------
+    if print_area:
+        ws.print_area = print_area
 
-    thin_border = Border(
-        left=Side(
-            style="thin",
-            color="D1D5DB",
-        ),
-        right=Side(
-            style="thin",
-            color="D1D5DB",
-        ),
-        top=Side(
-            style="thin",
-            color="D1D5DB",
-        ),
-        bottom=Side(
-            style="thin",
-            color="D1D5DB",
-        ),
-    )
 
-    # --------------------------------------------------------
-    # Combinar título/subtítulo
-    # --------------------------------------------------------
+# ============================================================
+# ESTILO DE HOJAS DE DATOS
+# ============================================================
+
+
+def _style_report_sheet(ws, headers, *, table_name, tab_color=None):
+    max_row = ws.max_row or 1
+    max_col = ws.max_column or 1
+    last_col = get_column_letter(max_col)
+
+    title_fill = _solid_fill(REPORT_COLORS["navy"])
+    subtitle_fill = _solid_fill(REPORT_COLORS["primary"])
+    meta_fill = _solid_fill(REPORT_COLORS["primary_soft"])
+    header_fill = _solid_fill(REPORT_COLORS["primary_dark"])
+    body_border = _thin_border()
 
     if max_col > 1:
-        ws.merge_cells(
-            start_row=1,
-            start_column=1,
-            end_row=1,
-            end_column=max_col,
-        )
+        for row_number in (1, 2, 3):
+            ws.merge_cells(
+                start_row=row_number,
+                start_column=1,
+                end_row=row_number,
+                end_column=max_col,
+            )
 
-        ws.merge_cells(
-            start_row=2,
-            start_column=1,
-            end_row=2,
-            end_column=max_col,
-        )
+    for cell in ws[1]:
+        cell.fill = title_fill
+    for cell in ws[2]:
+        cell.fill = subtitle_fill
+    for cell in ws[3]:
+        cell.fill = meta_fill
 
-    # --------------------------------------------------------
-    # Cuerpo
-    #
-    # IMPORTANTE:
-    # Comenzamos desde fila 4 para NO sobrescribir los estilos
-    # del título y subtítulo.
-    # --------------------------------------------------------
+    ws["A1"].font = Font(name="Calibri", size=16, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    ws["A2"].font = Font(name="Calibri", size=10.5, bold=True, color="FFFFFF")
+    ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
+    ws["A3"].font = Font(
+        name="Calibri", size=9, italic=True, color=REPORT_COLORS["muted"]
+    )
+    ws["A3"].alignment = Alignment(horizontal="left", vertical="center")
 
-    for row in ws.iter_rows(
-        min_row=4,
-        max_row=max_row,
-        min_col=1,
-        max_col=max_col,
-    ):
+    ws.row_dimensions[1].height = 28
+    ws.row_dimensions[2].height = 22
+    ws.row_dimensions[3].height = 19
+    ws.row_dimensions[4].height = 8
+    ws.row_dimensions[5].height = 25
+
+    header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    body_font = Font(name="Calibri", size=10, color=REPORT_COLORS["text"])
+
+    for cell in ws[5]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = body_border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for row in ws.iter_rows(min_row=6, max_row=max_row, min_col=1, max_col=max_col):
         for cell in row:
             cell.font = body_font
+            cell.border = body_border
+            cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
-            cell.alignment = Alignment(
-                vertical="center",
-                wrap_text=True,
+    if max_row >= 6:
+        table = Table(displayName=table_name, ref=f"A5:{last_col}{max_row}")
+        table.tableStyleInfo = TableStyleInfo(
+            name="TableStyleMedium2",
+            showFirstColumn=False,
+            showLastColumn=False,
+            showRowStripes=True,
+            showColumnStripes=False,
+        )
+        ws.add_table(table)
+    else:
+        ws.auto_filter.ref = f"A5:{last_col}5"
+
+    numeric_headers = {"total", "total publicaciones", "total participaciones", "valor"}
+
+    for column_index, header in enumerate(headers, start=1):
+        normalized = str(header or "").strip().lower()
+        letter = get_column_letter(column_index)
+
+        if max_row < 6:
+            continue
+
+        cell_range = f"{letter}6:{letter}{max_row}"
+        cells = [row[0] for row in ws[cell_range]]
+
+        if normalized in numeric_headers:
+            for cell in cells:
+                cell.number_format = "#,##0"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+
+            ws.conditional_formatting.add(
+                cell_range,
+                DataBarRule(
+                    start_type="num",
+                    start_value=0,
+                    end_type="max",
+                    color=REPORT_COLORS["primary"],
+                    showValue=True,
+                ),
             )
 
-            cell.border = (
-                thin_border
-            )
+        elif normalized == "porcentaje":
+            for cell in cells:
+                cell.number_format = '0.0"%"'
+                cell.alignment = Alignment(horizontal="right", vertical="center")
 
-    # --------------------------------------------------------
-    # Headers
-    # --------------------------------------------------------
+        elif normalized in {"año", "código", "categoría"}:
+            for cell in cells:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    if max_row >= 4:
-        for cell in ws[4]:
-            cell.fill = (
-                header_fill
-            )
+    ws.freeze_panes = "A6"
 
-            cell.font = (
-                header_font
-            )
+    for column_index in range(1, max_col + 1):
+        header_value = headers[column_index - 1] if column_index - 1 < len(headers) else ""
+        max_length = len(str(header_value or ""))
 
-            cell.alignment = Alignment(
-                horizontal="center",
-                vertical="center",
-                wrap_text=True,
-            )
+        for row_index in range(6, max_row + 1):
+            value = ws.cell(row=row_index, column=column_index).value
+            max_length = max(max_length, len(str(value or "")))
 
-            cell.border = (
-                thin_border
-            )
-
-    # --------------------------------------------------------
-    # Filas alternadas
-    # --------------------------------------------------------
-
-    for row_index in range(
-        5,
-        max_row + 1,
-    ):
-        if row_index % 2 == 0:
-            for cell in ws[
-                row_index
-            ]:
-                cell.fill = (
-                    muted_fill
-                )
-
-    # --------------------------------------------------------
-    # Título
-    # --------------------------------------------------------
-
-    ws["A1"].font = (
-        title_font
-    )
-
-    ws["A1"].alignment = Alignment(
-        horizontal="left",
-        vertical="center",
-    )
-
-    # --------------------------------------------------------
-    # Subtítulo
-    # --------------------------------------------------------
-
-    ws["A2"].font = (
-        subtitle_font
-    )
-
-    ws["A2"].alignment = Alignment(
-        horizontal="left",
-        vertical="center",
-    )
-
-    # --------------------------------------------------------
-    # Altura
-    # --------------------------------------------------------
-
-    ws.row_dimensions[
-        1
-    ].height = 24
-
-    ws.row_dimensions[
-        2
-    ].height = 20
-
-    ws.row_dimensions[
-        4
-    ].height = 22
-
-    # --------------------------------------------------------
-    # Freeze + filtro
-    # --------------------------------------------------------
-
-    if max_row >= 4:
-        ws.freeze_panes = (
-            "A5"
+        ws.column_dimensions[get_column_letter(column_index)].width = min(
+            max(max_length + 4, 12),
+            42,
         )
 
-        ws.auto_filter.ref = (
-            f"A4:{last_col}{max_row}"
-        )
+    for row_index in range(6, max_row + 1):
+        ws.row_dimensions[row_index].height = 20
 
-    # --------------------------------------------------------
-    # Ancho de columnas
-    #
-    # Se calcula desde la fila 4 para evitar problemas
-    # con las celdas combinadas de título.
-    # --------------------------------------------------------
+    if tab_color:
+        ws.sheet_properties.tabColor = tab_color
 
-    for column_index in range(
-        1,
-        max_col + 1,
-    ):
-        max_length = 0
-
-        for row_index in range(
-            4,
-            max_row + 1,
-        ):
-            cell = ws.cell(
-                row=row_index,
-                column=column_index,
-            )
-
-            value = str(
-                cell.value
-                or ""
-            )
-
-            max_length = max(
-                max_length,
-                len(value),
-            )
-
-        column_letter = (
-            get_column_letter(
-                column_index
-            )
-        )
-
-        ws.column_dimensions[
-            column_letter
-        ].width = min(
-            max(
-                max_length + 4,
-                14,
-            ),
-            55,
-        )
+    ws.print_title_rows = "1:5"
+    _set_sheet_print_settings(ws, print_area=f"A1:{last_col}{max_row}")
 
 
 # ============================================================
@@ -2595,247 +2574,39 @@ def _style_report_sheet(
 # ============================================================
 
 
-def _create_sheet(
-    workbook,
-    title,
-    subtitle,
-    headers,
-    rows,
-):
-    ws = workbook.create_sheet(
-        title=title[:31]
-    )
-
-    ws.append(
-        [title]
-    )
-
-    ws.append(
-        [subtitle]
-    )
-
+def _create_sheet(workbook, title, subtitle, headers, rows, *, tab_color=None):
+    ws = workbook.create_sheet(title=title[:31])
+    ws.append([title])
+    ws.append([subtitle])
+    ws.append([f"SGPC ULEAM · Generado el {_report_generated_at()}"])
     ws.append([])
-
-    ws.append(
-        headers
-    )
+    ws.append(headers)
 
     for row in rows:
-        ws.append(
-            [
-                _safe_excel_value(
-                    value
-                )
-                for value in row
-            ]
-        )
+        ws.append([_safe_excel_value(value) for value in row])
 
     _style_report_sheet(
-        ws
+        ws,
+        headers,
+        table_name=_safe_table_name(title),
+        tab_color=tab_color,
     )
-
     return ws
 
 
-# ============================================================
-# RESUMEN EXCEL
-# ============================================================
-
-
-def _build_resumen_rows(
-    summary,
-    filtros,
-):
-    return [
-        [
-            "Publicaciones",
-            summary.get(
-                "total_publicaciones",
-                0,
-            ),
-        ],
-        [
-            "Autores vinculados",
-            summary.get(
-                "total_autores",
-                0,
-            ),
-        ],
-        [
-            "Facultades",
-            summary.get(
-                "total_facultades",
-                0,
-            ),
-        ],
-        [
-            "Carreras",
-            summary.get(
-                "total_carreras",
-                0,
-            ),
-        ],
-        [
-            "Proyectos asociados",
-            summary.get(
-                "total_proyectos",
-                0,
-            ),
-        ],
-        [
-            "Artículos de alto impacto",
-            summary.get(
-                "articulos_alto_impacto",
-                0,
-            ),
-        ],
-        [
-            "Artículos regionales",
-            summary.get(
-                "articulos_regionales",
-                0,
-            ),
-        ],
-
-        [
-            "",
-            "",
-        ],
-
-        [
-            "Facultad",
-            (
-                filtros.get(
-                    "facultad_nombre"
-                )
-                or "Todas"
-            ),
-        ],
-
-        [
-            "Carrera",
-            (
-                filtros.get(
-                    "carrera_nombre"
-                )
-                or "Todas"
-            ),
-        ],
-
-        [
-            "Tipo de publicación",
-            (
-                filtros.get(
-                    "tipo_nombre"
-                )
-                or "Todos"
-            ),
-        ],
-
-        [
-            "Año desde",
-            (
-                filtros.get(
-                    "anio_desde"
-                )
-                or "Todos"
-            ),
-        ],
-
-        [
-            "Año hasta",
-            (
-                filtros.get(
-                    "anio_hasta"
-                )
-                or "Todos"
-            ),
-        ],
-
-        [
-            "Año mensual",
-            (
-                filtros.get(
-                    "anio"
-                )
-                or filtros.get(
-                    "anio_base_mensual"
-                )
-                or "Automático"
-            ),
-        ],
-
-        [
-            "Top aplicado",
-            (
-                filtros.get(
-                    "top"
-                )
-                or TOP_DEFAULT
-            ),
-        ],
-
-        [
-            "Generado el",
-            _report_generated_at(),
-        ],
-    ]
-
-
-# ============================================================
-# TIPO/AÑO EXCEL
-# ============================================================
-
-
-def _build_tipo_anual_rows(
-    publicaciones_por_tipo_anual,
-):
+def _build_tipo_anual_rows(publicaciones_por_tipo_anual):
     rows = []
+    categorias = publicaciones_por_tipo_anual.get("categorias", []) or []
 
-    categorias = (
-        publicaciones_por_tipo_anual
-        .get(
-            "categorias",
-            [],
-        )
-        or []
-    )
-
-    for serie in (
-        publicaciones_por_tipo_anual
-        .get(
-            "series",
-            [],
-        )
-        or []
-    ):
-        data = (
-            serie.get(
-                "data",
-                [],
-            )
-            or []
-        )
-
-        for index, anio in enumerate(
-            categorias
-        ):
-            total = (
-                data[index]
-                if index < len(data)
-                else 0
-            )
-
+    for serie in publicaciones_por_tipo_anual.get("series", []) or []:
+        data = serie.get("data", []) or []
+        for index, anio in enumerate(categorias):
             rows.append(
                 [
                     anio,
-                    serie.get(
-                        "codigo"
-                    ),
-                    serie.get(
-                        "label"
-                    ),
-                    total,
+                    serie.get("codigo"),
+                    serie.get("label"),
+                    data[index] if index < len(data) else 0,
                 ]
             )
 
@@ -2843,580 +2614,562 @@ def _build_tipo_anual_rows(
 
 
 # ============================================================
+# DATOS OCULTOS PARA GRÁFICOS
+# ============================================================
+
+
+def _build_chart_data_sheet(workbook, dashboards):
+    ws = workbook.create_sheet("_DatosGraficos")
+
+    publicaciones_por_tipo = dashboards.get("publicaciones_por_tipo", {}) or {}
+    publicaciones_por_anio = dashboards.get("publicaciones_por_anio", []) or []
+    top_facultades = dashboards.get("top_facultades", {}) or {}
+    top_autores = (
+        dashboards.get("top_autores_principales")
+        or dashboards.get("top_autores")
+        or {}
+    )
+
+    ws.append(["Tipo", "Total", "Código", "", "Año", "Total", "", "Facultad", "Total", "", "Autor", "Total"])
+
+    for row_index, item in enumerate(publicaciones_por_tipo.get("items", []) or [], start=2):
+        ws.cell(row=row_index, column=1, value=item.get("tipo_nombre"))
+        ws.cell(row=row_index, column=2, value=item.get("total", 0))
+        ws.cell(row=row_index, column=3, value=item.get("tipo_codigo"))
+
+    for row_index, item in enumerate(publicaciones_por_anio, start=2):
+        ws.cell(row=row_index, column=5, value=item.get("label"))
+        ws.cell(row=row_index, column=6, value=item.get("value", 0))
+
+    for row_index, item in enumerate(top_facultades.get("items", []) or [], start=2):
+        ws.cell(row=row_index, column=8, value=item.get("facultad"))
+        ws.cell(row=row_index, column=9, value=item.get("total", 0))
+
+    for row_index, item in enumerate(top_autores.get("items", []) or [], start=2):
+        ws.cell(row=row_index, column=11, value=item.get("autor") or item.get("label"))
+        ws.cell(
+            row=row_index,
+            column=12,
+            value=item.get("total_publicaciones", item.get("total", 0)),
+        )
+
+    ws.sheet_state = "hidden"
+    return ws
+
+
+# ============================================================
+# RESUMEN EJECUTIVO
+# ============================================================
+
+
+def _write_filter_card(ws, label, value, *, label_range, value_range):
+    _merge_block(
+        ws,
+        label_range,
+        label,
+        fill=REPORT_COLORS["primary_soft"],
+        font=Font(name="Calibri", size=8.5, bold=True, color=REPORT_COLORS["primary_dark"]),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=REPORT_COLORS["border"],
+    )
+    _merge_block(
+        ws,
+        value_range,
+        _safe_excel_value(value),
+        fill=REPORT_COLORS["surface"],
+        font=Font(name="Calibri", size=10.5, bold=True, color=REPORT_COLORS["text"]),
+        alignment=Alignment(horizontal="left", vertical="center", wrap_text=True),
+        border=REPORT_COLORS["border"],
+    )
+
+
+def _write_kpi_card(ws, label, value, *, label_range, value_range, accent):
+    _merge_block(
+        ws,
+        label_range,
+        label.upper(),
+        fill=accent,
+        font=Font(name="Calibri", size=8.5, bold=True, color="FFFFFF"),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=accent,
+    )
+    value_cell = _merge_block(
+        ws,
+        value_range,
+        int(value or 0),
+        fill=REPORT_COLORS["surface"],
+        font=Font(name="Calibri", size=21, bold=True, color=accent),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=REPORT_COLORS["border_strong"],
+    )
+    value_cell.number_format = "#,##0"
+
+
+def _build_summary_sheet(workbook, summary, filtros):
+    ws = workbook.create_sheet("Resumen")
+    ws.sheet_properties.tabColor = REPORT_COLORS["primary"]
+    ws.sheet_view.showGridLines = False
+
+    for column in range(1, 13):
+        ws.column_dimensions[get_column_letter(column)].width = 12.5
+
+    _merge_block(
+        ws,
+        "A1:L2",
+        "SGPC ULEAM",
+        fill=REPORT_COLORS["navy"],
+        font=Font(name="Calibri", size=22, bold=True, color="FFFFFF"),
+        alignment=Alignment(horizontal="left", vertical="center"),
+    )
+    _merge_block(
+        ws,
+        "A3:L3",
+        "REPORTE DEL PANEL ANALÍTICO INSTITUCIONAL",
+        fill=REPORT_COLORS["primary"],
+        font=Font(name="Calibri", size=12, bold=True, color="FFFFFF"),
+        alignment=Alignment(horizontal="left", vertical="center"),
+    )
+    _merge_block(
+        ws,
+        "A4:L4",
+        (
+            "Producción científica · Universidad Laica Eloy Alfaro de Manabí · "
+            f"Generado el {_report_generated_at()}"
+        ),
+        fill=REPORT_COLORS["background"],
+        font=Font(name="Calibri", size=9.5, italic=True, color=REPORT_COLORS["muted"]),
+        alignment=Alignment(horizontal="left", vertical="center"),
+    )
+
+    ws.row_dimensions[1].height = 28
+    ws.row_dimensions[2].height = 28
+    ws.row_dimensions[3].height = 24
+    ws.row_dimensions[4].height = 21
+
+    _merge_block(
+        ws,
+        "A6:L6",
+        "FILTROS APLICADOS",
+        fill=REPORT_COLORS["primary_soft"],
+        font=Font(name="Calibri", size=10, bold=True, color=REPORT_COLORS["primary_dark"]),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=REPORT_COLORS["border"],
+    )
+
+    _write_filter_card(
+        ws,
+        "Facultad",
+        filtros.get("facultad_nombre") or "Todas",
+        label_range="A7:C7",
+        value_range="A8:C9",
+    )
+    _write_filter_card(
+        ws,
+        "Carrera",
+        filtros.get("carrera_nombre") or "Todas",
+        label_range="D7:F7",
+        value_range="D8:F9",
+    )
+    _write_filter_card(
+        ws,
+        "Tipo de publicación",
+        filtros.get("tipo_nombre") or "Todos",
+        label_range="G7:I7",
+        value_range="G8:I9",
+    )
+    _write_filter_card(
+        ws,
+        "Periodo",
+        _format_periodo(filtros),
+        label_range="J7:L7",
+        value_range="J8:L9",
+    )
+    _write_filter_card(
+        ws,
+        "Año mensual",
+        filtros.get("anio") or filtros.get("anio_base_mensual") or "Automático",
+        label_range="A10:C10",
+        value_range="A11:C12",
+    )
+    _write_filter_card(
+        ws,
+        "Top aplicado",
+        filtros.get("top") or TOP_DEFAULT,
+        label_range="D10:F10",
+        value_range="D11:F12",
+    )
+    _write_filter_card(
+        ws,
+        "Cobertura",
+        "Datos según filtros activos",
+        label_range="G10:I10",
+        value_range="G11:I12",
+    )
+    _write_filter_card(
+        ws,
+        "Generado",
+        _report_generated_at(),
+        label_range="J10:L10",
+        value_range="J11:L12",
+    )
+
+    _merge_block(
+        ws,
+        "A14:L14",
+        "INDICADORES PRINCIPALES",
+        fill=REPORT_COLORS["primary_soft"],
+        font=Font(name="Calibri", size=10, bold=True, color=REPORT_COLORS["primary_dark"]),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=REPORT_COLORS["border"],
+    )
+
+    kpis = (
+        ("Publicaciones", summary.get("total_publicaciones", 0)),
+        ("Autores", summary.get("total_autores", 0)),
+        ("Facultades", summary.get("total_facultades", 0)),
+        ("Carreras", summary.get("total_carreras", 0)),
+        ("Proyectos", summary.get("total_proyectos", 0)),
+        ("Alto impacto", summary.get("articulos_alto_impacto", 0)),
+    )
+    card_ranges = (
+        ("A15:D15", "A16:D18"),
+        ("E15:H15", "E16:H18"),
+        ("I15:L15", "I16:L18"),
+        ("A20:D20", "A21:D23"),
+        ("E20:H20", "E21:H23"),
+        ("I20:L20", "I21:L23"),
+    )
+
+    for index, (label, value) in enumerate(kpis):
+        _write_kpi_card(
+            ws,
+            label,
+            value,
+            label_range=card_ranges[index][0],
+            value_range=card_ranges[index][1],
+            accent=REPORT_KPI_COLORS[index],
+        )
+
+    _merge_block(
+        ws,
+        "A25:L25",
+        "VISUALIZACIÓN EJECUTIVA",
+        fill=REPORT_COLORS["primary_soft"],
+        font=Font(name="Calibri", size=10, bold=True, color=REPORT_COLORS["primary_dark"]),
+        alignment=Alignment(horizontal="left", vertical="center"),
+        border=REPORT_COLORS["border"],
+    )
+
+    for chart_range in ("A26:F42", "G26:L42", "A44:F60", "G44:L60"):
+        _set_range_fill(ws, chart_range, REPORT_COLORS["surface"])
+        _set_range_border(ws, chart_range, REPORT_COLORS["border"])
+
+    _merge_block(
+        ws,
+        "A62:L63",
+        (
+            "Artículos regionales: "
+            f"{int(summary.get('articulos_regionales', 0) or 0):,} · "
+            "Los gráficos y tablas reflejan los filtros activos del dashboard."
+        ),
+        fill=REPORT_COLORS["background"],
+        font=Font(name="Calibri", size=9, color=REPORT_COLORS["muted"]),
+        alignment=Alignment(horizontal="left", vertical="center", wrap_text=True),
+        border=REPORT_COLORS["border"],
+    )
+
+    ws.freeze_panes = "A6"
+    _set_sheet_print_settings(ws, print_area="A1:L63")
+    return ws
+
+
+def _add_summary_charts(summary_ws, data_ws, dashboards):
+    publicaciones_por_tipo = dashboards.get("publicaciones_por_tipo", {}) or {}
+    publicaciones_por_anio = dashboards.get("publicaciones_por_anio", []) or []
+    top_facultades = dashboards.get("top_facultades", {}) or {}
+    top_autores = (
+        dashboards.get("top_autores_principales")
+        or dashboards.get("top_autores")
+        or {}
+    )
+
+    type_items = publicaciones_por_tipo.get("items", []) or []
+    if type_items:
+        chart = DoughnutChart()
+        chart.add_data(
+            Reference(data_ws, min_col=2, min_row=1, max_row=len(type_items) + 1),
+            titles_from_data=True,
+        )
+        chart.set_categories(
+            Reference(data_ws, min_col=1, min_row=2, max_row=len(type_items) + 1)
+        )
+        chart.title = "Publicaciones por tipo"
+        chart.holeSize = 62
+        chart.height = 7.2
+        chart.width = 10
+        chart.legend.position = "r"
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showPercent = True
+        chart.dataLabels.showLeaderLines = True
+
+        if chart.series:
+            points = []
+            for index, item in enumerate(type_items):
+                point = DataPoint(idx=index)
+                color = REPORT_TYPE_COLORS.get(
+                    item.get("tipo_codigo"),
+                    REPORT_TYPE_COLORS["OTRO"],
+                )
+                point.graphicalProperties.solidFill = color
+                point.graphicalProperties.line.solidFill = color
+                points.append(point)
+            chart.series[0].data_points = points
+
+        summary_ws.add_chart(chart, "A26")
+
+    if publicaciones_por_anio:
+        chart = BarChart()
+        chart.type = "col"
+        chart.grouping = "clustered"
+        chart.add_data(
+            Reference(data_ws, min_col=6, min_row=1, max_row=len(publicaciones_por_anio) + 1),
+            titles_from_data=True,
+        )
+        chart.set_categories(
+            Reference(data_ws, min_col=5, min_row=2, max_row=len(publicaciones_por_anio) + 1)
+        )
+        chart.title = "Producción por año"
+        chart.y_axis.title = "Publicaciones"
+        chart.height = 7.2
+        chart.width = 10
+        chart.legend = None
+        chart.y_axis.majorGridlines = None
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showVal = True
+
+        if chart.series:
+            chart.series[0].graphicalProperties.solidFill = REPORT_COLORS["primary"]
+            chart.series[0].graphicalProperties.line.solidFill = REPORT_COLORS["primary"]
+
+        summary_ws.add_chart(chart, "G26")
+
+    faculty_items = top_facultades.get("items", []) or []
+    if faculty_items:
+        chart = BarChart()
+        chart.type = "bar"
+        chart.grouping = "clustered"
+        chart.add_data(
+            Reference(data_ws, min_col=9, min_row=1, max_row=len(faculty_items) + 1),
+            titles_from_data=True,
+        )
+        chart.set_categories(
+            Reference(data_ws, min_col=8, min_row=2, max_row=len(faculty_items) + 1)
+        )
+        chart.title = "Top facultades"
+        chart.height = 7
+        chart.width = 10
+        chart.legend = None
+        chart.x_axis.majorGridlines = None
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showVal = True
+
+        if chart.series:
+            chart.series[0].graphicalProperties.solidFill = REPORT_COLORS["teal"]
+            chart.series[0].graphicalProperties.line.solidFill = REPORT_COLORS["teal"]
+
+        summary_ws.add_chart(chart, "A44")
+
+    author_items = top_autores.get("items", []) or []
+    if author_items:
+        chart = BarChart()
+        chart.type = "bar"
+        chart.grouping = "clustered"
+        chart.add_data(
+            Reference(data_ws, min_col=12, min_row=1, max_row=len(author_items) + 1),
+            titles_from_data=True,
+        )
+        chart.set_categories(
+            Reference(data_ws, min_col=11, min_row=2, max_row=len(author_items) + 1)
+        )
+        chart.title = "Top autores principales"
+        chart.height = 7
+        chart.width = 10
+        chart.legend = None
+        chart.x_axis.majorGridlines = None
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showVal = True
+
+        if chart.series:
+            chart.series[0].graphicalProperties.solidFill = REPORT_COLORS["purple"]
+            chart.series[0].graphicalProperties.line.solidFill = REPORT_COLORS["purple"]
+
+        summary_ws.add_chart(chart, "G44")
+
+
+# ============================================================
 # WORKBOOK
 # ============================================================
 
 
-def _build_report_workbook(
-    payload,
-):
-    summary = (
-        payload.get(
-            "summary",
-            {},
-        )
-        or {}
-    )
-
-    dashboards = (
-        payload.get(
-            "dashboards",
-            {},
-        )
-        or {}
-    )
-
-    filtros = (
-        payload.get(
-            "filtros_aplicados",
-            {},
-        )
-        or {}
-    )
+def _build_report_workbook(payload):
+    summary = payload.get("summary", {}) or {}
+    dashboards = payload.get("dashboards", {}) or {}
+    filtros = payload.get("filtros_aplicados", {}) or {}
 
     workbook = Workbook()
+    workbook.remove(workbook.active)
 
-    default_ws = (
-        workbook.active
-    )
+    workbook.properties.title = "Reporte dashboard SGPC ULEAM"
+    workbook.properties.subject = "Indicadores institucionales de producción científica"
+    workbook.properties.creator = "SGPC ULEAM"
+    workbook.properties.description = "Reporte analítico institucional generado por el SGPC ULEAM."
+    workbook.properties.keywords = "SGPC ULEAM, producción científica, dashboard, reporte"
 
-    workbook.remove(
-        default_ws
-    )
-
-    # --------------------------------------------------------
-    # Metadata
-    # --------------------------------------------------------
-
-    workbook.properties.title = (
-        "Reporte dashboard SGPC ULEAM"
-    )
-
-    workbook.properties.subject = (
-        "Indicadores institucionales "
-        "de producción científica"
-    )
-
-    workbook.properties.creator = (
-        "SGPC ULEAM"
-    )
-
-    # --------------------------------------------------------
-    # Datos
-    # --------------------------------------------------------
-
-    publicaciones_por_tipo = (
-        dashboards.get(
-            "publicaciones_por_tipo",
-            {},
-        )
-        or {}
-    )
-
-    publicaciones_por_anio = (
-        dashboards.get(
-            "publicaciones_por_anio",
-            [],
-        )
-        or []
-    )
-
-    publicaciones_por_mes = (
-        dashboards.get(
-            "publicaciones_por_mes",
-            {},
-        )
-        or {}
-    )
-
-    publicaciones_por_tipo_anual = (
-        dashboards.get(
-            "publicaciones_por_tipo_anual",
-            {},
-        )
-        or {}
-    )
-
-    top_facultades = (
-        dashboards.get(
-            "top_facultades",
-            {},
-        )
-        or {}
-    )
-
-    top_carreras = (
-        dashboards.get(
-            "top_carreras",
-            {},
-        )
-        or {}
-    )
-
+    publicaciones_por_tipo = dashboards.get("publicaciones_por_tipo", {}) or {}
+    publicaciones_por_anio = dashboards.get("publicaciones_por_anio", []) or []
+    publicaciones_por_mes = dashboards.get("publicaciones_por_mes", {}) or {}
+    publicaciones_por_tipo_anual = dashboards.get("publicaciones_por_tipo_anual", {}) or {}
+    top_facultades = dashboards.get("top_facultades", {}) or {}
+    top_carreras = dashboards.get("top_carreras", {}) or {}
     top_autores_principales = (
-        dashboards.get(
-            "top_autores_principales"
-        )
-        or dashboards.get(
-            "top_autores"
-        )
+        dashboards.get("top_autores_principales")
+        or dashboards.get("top_autores")
         or {}
     )
+    top_coautores = dashboards.get("top_coautores", {}) or {}
+    journals = dashboards.get("journals", {}) or {}
+    projects = dashboards.get("projects", {}) or {}
+    areas = dashboards.get("areas", {}) or {}
 
-    top_coautores = (
-        dashboards.get(
-            "top_coautores",
-            {},
-        )
-        or {}
-    )
-
-    journals = (
-        dashboards.get(
-            "journals",
-            {},
-        )
-        or {}
-    )
-
-    projects = (
-        dashboards.get(
-            "projects",
-            {},
-        )
-        or {}
-    )
-
-    areas = (
-        dashboards.get(
-            "areas",
-            {},
-        )
-        or {}
-    )
-
-    # ========================================================
-    # RESUMEN
-    # ========================================================
-
-    _create_sheet(
-        workbook,
-        "Resumen",
-        (
-            "Indicadores principales "
-            "del panel analítico institucional."
-        ),
-        [
-            "Indicador",
-            "Valor",
-        ],
-        _build_resumen_rows(
-            summary,
-            filtros,
-        ),
-    )
-
-    # ========================================================
-    # PUBLICACIONES POR TIPO
-    # ========================================================
+    resumen_ws = _build_summary_sheet(workbook, summary, filtros)
 
     _create_sheet(
         workbook,
         "Publicaciones por tipo",
-        (
-            "Distribución de publicaciones "
-            "por tipo."
-        ),
-        [
-            "Tipo",
-            "Código",
-            "Categoría",
-            "Total",
-            "Porcentaje",
-        ],
+        "Distribución de publicaciones por tipo.",
+        ["Tipo", "Código", "Categoría", "Total", "Porcentaje"],
         [
             [
-                item.get(
-                    "tipo_nombre"
-                ),
-                item.get(
-                    "tipo_codigo"
-                ),
-                item.get(
-                    "categoria"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-                item.get(
-                    "porcentaje",
-                    0,
-                ),
+                item.get("tipo_nombre"),
+                item.get("tipo_codigo"),
+                item.get("categoria"),
+                item.get("total", 0),
+                item.get("porcentaje", 0),
             ]
-            for item in (
-                publicaciones_por_tipo
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
+            for item in publicaciones_por_tipo.get("items", []) or []
         ],
+        tab_color=REPORT_COLORS["primary"],
     )
-
-    # ========================================================
-    # PUBLICACIONES POR AÑO
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Publicaciones por año",
-        (
-            "Serie histórica de "
-            "publicaciones registradas."
-        ),
-        [
-            "Año",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "label"
-                ),
-                item.get(
-                    "value",
-                    0,
-                ),
-            ]
-            for item in publicaciones_por_anio
-        ],
+        "Serie histórica de publicaciones registradas.",
+        ["Año", "Total"],
+        [[item.get("label"), item.get("value", 0)] for item in publicaciones_por_anio],
+        tab_color=REPORT_COLORS["green"],
     )
-
-    # ========================================================
-    # PUBLICACIONES POR MES
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Publicaciones por mes",
-        (
-            "Detalle mensual del año "
-            f"{publicaciones_por_mes.get('anio_base') or 'sin año base'}."
-        ),
+        f"Detalle mensual del año {publicaciones_por_mes.get('anio_base') or 'sin año base'}.",
+        ["Mes", "Total"],
         [
-            "Mes",
-            "Total",
+            [item.get("label"), item.get("value", 0)]
+            for item in publicaciones_por_mes.get("items", []) or []
         ],
-        [
-            [
-                item.get(
-                    "label"
-                ),
-                item.get(
-                    "value",
-                    0,
-                ),
-            ]
-            for item in (
-                publicaciones_por_mes
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        tab_color=REPORT_COLORS["teal"],
     )
-
-    # ========================================================
-    # TIPO POR AÑO
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Tipo por año",
-        (
-            "Comparativa anual por "
-            "tipo de publicación."
-        ),
-        [
-            "Año",
-            "Código",
-            "Tipo",
-            "Total",
-        ],
-        _build_tipo_anual_rows(
-            publicaciones_por_tipo_anual
-        ),
+        "Comparativa anual por tipo de publicación.",
+        ["Año", "Código", "Tipo", "Total"],
+        _build_tipo_anual_rows(publicaciones_por_tipo_anual),
+        tab_color=REPORT_COLORS["purple"],
     )
-
-    # ========================================================
-    # FACULTADES
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Top facultades",
-        (
-            "Facultades con más "
-            "publicaciones."
-        ),
-        [
-            "Facultad",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "facultad"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-            ]
-            for item in (
-                top_facultades
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        "Facultades con más publicaciones.",
+        ["Facultad", "Total"],
+        [[item.get("facultad"), item.get("total", 0)] for item in top_facultades.get("items", []) or []],
+        tab_color=REPORT_COLORS["teal"],
     )
-
-    # ========================================================
-    # CARRERAS
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Top carreras",
-        (
-            "Carreras con más "
-            "publicaciones."
-        ),
-        [
-            "Carrera",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "carrera"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-            ]
-            for item in (
-                top_carreras
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        "Carreras con más publicaciones.",
+        ["Carrera", "Total"],
+        [[item.get("carrera"), item.get("total", 0)] for item in top_carreras.get("items", []) or []],
+        tab_color=REPORT_COLORS["orange"],
     )
-
-    # ========================================================
-    # AUTORES PRINCIPALES
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Autores principales",
-        (
-            "Autores principales con más "
-            "publicaciones lideradas."
-        ),
-        [
-            "Autor principal",
-            "Total publicaciones",
-        ],
+        "Autores principales con más publicaciones lideradas.",
+        ["Autor principal", "Total publicaciones"],
         [
             [
-                (
-                    item.get(
-                        "autor"
-                    )
-                    or item.get(
-                        "label"
-                    )
-                ),
-                item.get(
-                    "total_publicaciones",
-                    item.get(
-                        "total",
-                        0,
-                    ),
-                ),
+                item.get("autor") or item.get("label"),
+                item.get("total_publicaciones", item.get("total", 0)),
             ]
-            for item in (
-                top_autores_principales
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
+            for item in top_autores_principales.get("items", []) or []
         ],
+        tab_color=REPORT_COLORS["purple"],
     )
-
-    # ========================================================
-    # COAUTORES
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Coautores",
-        (
-            "Coautores con mayor "
-            "participación colaborativa."
-        ),
-        [
-            "Coautor",
-            "Total participaciones",
-        ],
+        "Coautores con mayor participación colaborativa.",
+        ["Coautor", "Total participaciones"],
         [
             [
-                (
-                    item.get(
-                        "autor"
-                    )
-                    or item.get(
-                        "label"
-                    )
-                ),
-                item.get(
-                    "total_publicaciones",
-                    item.get(
-                        "total",
-                        0,
-                    ),
-                ),
+                item.get("autor") or item.get("label"),
+                item.get("total_publicaciones", item.get("total", 0)),
             ]
-            for item in (
-                top_coautores
-                .get(
-                    "items",
-                    [],
-                )
-                or []
-            )
+            for item in top_coautores.get("items", []) or []
         ],
+        tab_color=REPORT_COLORS["purple"],
     )
-
-    # ========================================================
-    # REVISTAS
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Revistas",
-        (
-            "Revistas con más artículos "
-            "registrados."
-        ),
-        [
-            "Revista",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "label"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-            ]
-            for item in (
-                journals.get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        "Revistas con más artículos registrados.",
+        ["Revista", "Total"],
+        [[item.get("label"), item.get("total", 0)] for item in journals.get("items", []) or []],
+        tab_color=REPORT_COLORS["primary"],
     )
-
-    # ========================================================
-    # PROYECTOS
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Proyectos",
-        (
-            "Proyectos con más "
-            "publicaciones asociadas."
-        ),
-        [
-            "Proyecto",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "label"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-            ]
-            for item in (
-                projects.get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        "Proyectos con más publicaciones asociadas.",
+        ["Proyecto", "Total"],
+        [[item.get("label"), item.get("total", 0)] for item in projects.get("items", []) or []],
+        tab_color=REPORT_COLORS["green"],
     )
-
-    # ========================================================
-    # ÁREAS
-    # ========================================================
 
     _create_sheet(
         workbook,
         "Áreas",
-        (
-            "Áreas del conocimiento "
-            "con más publicaciones."
-        ),
-        [
-            "Área",
-            "Total",
-        ],
-        [
-            [
-                item.get(
-                    "label"
-                ),
-                item.get(
-                    "total",
-                    0,
-                ),
-            ]
-            for item in (
-                areas.get(
-                    "items",
-                    [],
-                )
-                or []
-            )
-        ],
+        "Áreas del conocimiento con más publicaciones.",
+        ["Área", "Total"],
+        [[item.get("label"), item.get("total", 0)] for item in areas.get("items", []) or []],
+        tab_color=REPORT_COLORS["orange"],
     )
 
+    chart_data_ws = _build_chart_data_sheet(workbook, dashboards)
+    _add_summary_charts(resumen_ws, chart_data_ws, dashboards)
+
+    workbook.active = 0
     return workbook
 
 
@@ -3425,48 +3178,18 @@ def _build_report_workbook(
 # ============================================================
 
 
-class DashboardReporteExcelView(
-    APIView
-):
-    authentication_classes = [
-        JWTAuthentication
-    ]
+class DashboardReporteExcelView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [
-        IsAuthenticated
-    ]
-
-    def get(
-        self,
-        request,
-        *args,
-        **kwargs,
-    ):
-        payload = (
-            _build_dashboard_payload(
-                request.query_params
-            )
-        )
-
-        workbook = (
-            _build_report_workbook(
-                payload
-            )
-        )
+    def get(self, request, *args, **kwargs):
+        payload = _build_dashboard_payload(request.query_params)
+        workbook = _build_report_workbook(payload)
 
         output = BytesIO()
-
-        workbook.save(
-            output
-        )
-
-        file_bytes = (
-            output.getvalue()
-        )
-
-        filename = (
-            _report_filename()
-        )
+        workbook.save(output)
+        file_bytes = output.getvalue()
+        filename = _report_filename()
 
         response = HttpResponse(
             file_bytes,
@@ -3475,25 +3198,8 @@ class DashboardReporteExcelView(
                 "officedocument.spreadsheetml.sheet"
             ),
         )
-
-        response[
-            "Content-Disposition"
-        ] = (
-            f'attachment; filename="{filename}"'
-        )
-
-        response[
-            "Content-Length"
-        ] = str(
-            len(file_bytes)
-        )
-
-        response[
-            "Cache-Control"
-        ] = "private, no-store"
-
-        response[
-            "X-Content-Type-Options"
-        ] = "nosniff"
-
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["Content-Length"] = str(len(file_bytes))
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
         return response

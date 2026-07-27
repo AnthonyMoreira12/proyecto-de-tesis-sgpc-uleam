@@ -17,7 +17,7 @@
   --avn-muted: var(--text-secondary, #667085);
 
   --avn-primary: var(--color-primary, #315fcb);
-  --avn-primary-contrast: #ffffff;
+  --avn-primary-contrast: var(--accent-contrast, #ffffff);
 
   --avn-line: var(
     --border-color,
@@ -92,6 +92,13 @@
   width: 100%;
   min-width: 0;
 
+  /*
+   * La tipografía responde a Compacto / Estándar /
+   * Cómodo / Grande, sin redimensionar la estructura
+   * principal del modal.
+   */
+  font-size: var(--font-base, 16px);
+
   color: var(--avn-text);
 
   font-family:
@@ -137,6 +144,7 @@ button {
   border: 0 !important;
 }
 
+
 /* ============================================================
    CONTENEDOR PRINCIPAL
 ============================================================ */
@@ -145,6 +153,7 @@ button {
   position: relative;
 
   display: grid;
+
   grid-template-rows:
     minmax(0, 1fr)
     auto;
@@ -176,8 +185,14 @@ button {
 }
 
 .avn-stage-card.is-manage-open {
-  border-color: var(--avn-primary-line);
+  border-color:
+    var(--avn-primary-line);
 }
+
+
+/* ============================================================
+   CERRAR
+============================================================ */
 
 .avn-close {
   position: absolute;
@@ -222,7 +237,8 @@ button {
 }
 
 .avn-close:hover {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 
   background:
     rgba(15, 23, 42, 0.76);
@@ -248,8 +264,10 @@ button {
 .avn-field textarea:focus-visible {
   outline: none;
 
-  box-shadow: var(--avn-ring);
+  box-shadow:
+    var(--avn-ring);
 }
+
 
 /* ============================================================
    VISTA DEL AVISO
@@ -280,6 +298,11 @@ button {
     minmax(0, 1fr);
 }
 
+
+/* ============================================================
+   IMAGEN / PANEL DERECHO
+============================================================ */
+
 .avn-stage__media,
 .avn-stage__aside {
   position: relative;
@@ -304,6 +327,12 @@ button {
   display: flex;
   align-items: stretch;
 
+  /*
+   * Permite que el tamaño del título responda
+   * al ancho REAL del panel de texto.
+   */
+  container-type: inline-size;
+
   border-left:
     1px solid
     var(--avn-line);
@@ -325,6 +354,11 @@ button {
   .avn-stage__aside {
   border-left: 0;
 }
+
+
+/* ============================================================
+   CARRUSEL
+============================================================ */
 
 .avn-slides,
 .avn-slide {
@@ -408,7 +442,7 @@ button {
 
   color: #ffffff;
 
-  font-size: 0.72rem;
+  font-size: 0.72em;
   font-weight: 700;
 
   letter-spacing: 0.08em;
@@ -419,12 +453,18 @@ button {
   -webkit-backdrop-filter: blur(8px);
 }
 
+
+/* ============================================================
+   CONTENIDO DEL AVISO
+============================================================ */
+
 .avn-stage__copy {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
 
   width: 100%;
+  min-width: 0;
   min-height: 100%;
 
   padding:
@@ -434,6 +474,7 @@ button {
       64px
     );
 
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -458,7 +499,7 @@ button {
 
   border-radius: 999px;
 
-  font-size: 0.73rem;
+  font-size: 0.73em;
   font-weight: 700;
 
   letter-spacing: 0.05em;
@@ -484,7 +525,15 @@ button {
     );
 }
 
+
+/* ============================================================
+   TÍTULO
+============================================================ */
+
 .avn-stage__title {
+  width: 100%;
+  max-width: 100%;
+
   margin: 0;
 
   color: var(--avn-text);
@@ -499,11 +548,16 @@ button {
       )
     );
 
+  /*
+   * IMPORTANTE:
+   * cqw usa el ancho del panel de texto,
+   * no el ancho de toda la ventana.
+   */
   font-size:
     clamp(
-      1.65rem,
-      3vw,
-      2.75rem
+      1.65em,
+      12cqw,
+      2.75em
     );
 
   font-weight: 740;
@@ -511,19 +565,37 @@ button {
 
   letter-spacing: -0.035em;
 
-  overflow-wrap: anywhere;
+  /*
+   * Evita resultados como:
+   *
+   * Novedade
+   * s
+   * institucion
+   * ales
+   */
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
+
+/* ============================================================
+   TEXTO
+============================================================ */
+
 .avn-stage__text {
+  width: 100%;
+  max-width: 100%;
+
   margin: 20px 0 0;
 
   color: var(--avn-muted);
 
   font-size:
     clamp(
-      0.95rem,
+      0.95em,
       1.35vw,
-      1.08rem
+      1.08em
     );
 
   font-weight: 450;
@@ -531,8 +603,14 @@ button {
 
   white-space: pre-line;
 
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
+
+
+/* ============================================================
+   META
+============================================================ */
 
 .avn-stage__meta {
   display: flex;
@@ -559,11 +637,12 @@ button {
 
   border-radius: 999px;
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 
   color: var(--avn-muted);
 
-  font-size: 0.75rem;
+  font-size: 0.75em;
   font-weight: 650;
   line-height: 1;
 }
@@ -576,15 +655,18 @@ button {
   background:
     var(--avn-primary-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
+
 /* ============================================================
-   PIE, NAVEGACIÓN Y BOTONES
+   PIE DEL AVISO
 ============================================================ */
 
 .avn-stage-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
 
@@ -620,7 +702,22 @@ button {
 
 .avn-carousel-controls {
   min-width: 0;
+
+  flex-wrap: wrap;
 }
+
+.avn-stage-actions {
+  min-width: 0;
+
+  flex-wrap: wrap;
+
+  justify-content: flex-end;
+}
+
+
+/* ============================================================
+   PAGINADOR
+============================================================ */
 
 .avn-pager-btn {
   display: inline-flex;
@@ -631,9 +728,11 @@ button {
 
   min-height: 38px;
 
-  padding: 0 11px;
+  padding: 6px 11px;
 
-  border: 1px solid transparent;
+  border:
+    1px solid
+    transparent;
 
   border-radius: 11px;
 
@@ -641,8 +740,11 @@ button {
 
   color: var(--avn-muted);
 
-  font-size: 0.82rem;
+  font-size: 0.82em;
   font-weight: 650;
+  line-height: 1.2;
+
+  white-space: normal;
 
   cursor: pointer;
 
@@ -653,11 +755,14 @@ button {
 }
 
 .avn-pager-btn:hover {
-  border-color: var(--avn-line);
+  border-color:
+    var(--avn-line);
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-dots {
@@ -696,21 +801,28 @@ button {
 }
 
 .avn-dot:hover {
-  transform: scale(1.18);
+  transform:
+    scale(1.18);
 }
 
 .avn-dot.is-active {
   width: 22px;
 
-  background: var(--avn-primary);
+  background:
+    var(--avn-primary);
 }
 
 .avn-carousel-counter {
   color: var(--avn-muted);
 
-  font-size: 0.82rem;
+  font-size: 0.82em;
   font-weight: 650;
 }
+
+
+/* ============================================================
+   BOTONES
+============================================================ */
 
 .avn-btn {
   display: inline-flex;
@@ -719,17 +831,23 @@ button {
 
   min-height: 42px;
 
-  padding: 0 16px;
+  padding: 8px 16px;
 
-  border: 1px solid transparent;
+  border:
+    1px solid
+    transparent;
 
   border-radius: 12px;
 
-  font-size: 0.86rem;
+  font-size: 0.86em;
   font-weight: 680;
-  line-height: 1;
+  line-height: 1.2;
 
   text-align: center;
+
+  white-space: normal;
+
+  overflow-wrap: break-word;
 
   cursor: pointer;
 
@@ -742,7 +860,8 @@ button {
 }
 
 .avn-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 }
 
 .avn-btn:disabled {
@@ -751,11 +870,20 @@ button {
   cursor: not-allowed;
 }
 
+
+/* PRIMARIO */
+
 .avn-btn--primary {
-  border-color: var(--avn-primary);
+  border-color:
+    var(--avn-primary);
 
-  background: var(--avn-primary);
+  background:
+    var(--avn-primary);
 
+  /*
+   * Usa el contraste calculado por theme.css.
+   * Evita texto blanco sobre botón blanco.
+   */
   color:
     var(--avn-primary-contrast);
 
@@ -777,13 +905,18 @@ button {
     );
 }
 
+
+/* SECUNDARIO */
+
 .avn-btn--secondary {
   border-color:
     var(--avn-line-strong);
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 }
 
 .avn-btn--secondary:hover:not(:disabled) {
@@ -793,22 +926,32 @@ button {
   background:
     var(--avn-primary-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
+
+
+/* GHOST */
 
 .avn-btn--ghost {
   border-color: transparent;
 
   background: transparent;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 }
 
 .avn-btn--ghost:hover:not(:disabled) {
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 }
+
+
+/* DANGER */
 
 .avn-btn--danger {
   border-color:
@@ -817,7 +960,8 @@ button {
   background:
     var(--avn-danger-soft);
 
-  color: var(--avn-danger);
+  color:
+    var(--avn-danger);
 }
 
 .avn-btn--danger:hover:not(:disabled) {
@@ -828,6 +972,11 @@ button {
       var(--avn-card)
     );
 }
+
+
+/* ============================================================
+   BOTONES ICONO
+============================================================ */
 
 .avn-icon-btn {
   display: grid;
@@ -844,9 +993,11 @@ button {
 
   border-radius: 11px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
   cursor: pointer;
 
@@ -858,7 +1009,8 @@ button {
 }
 
 .avn-icon-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 
   border-color:
     var(--avn-primary-line);
@@ -866,7 +1018,8 @@ button {
   background:
     var(--avn-primary-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-icon-btn--danger:hover:not(:disabled) {
@@ -876,7 +1029,8 @@ button {
   background:
     var(--avn-danger-soft);
 
-  color: var(--avn-danger);
+  color:
+    var(--avn-danger);
 }
 
 .avn-icon-btn:disabled {
@@ -885,8 +1039,9 @@ button {
   cursor: not-allowed;
 }
 
+
 /* ============================================================
-   CARGA Y ESTADO VACÍO
+   CARGA
 ============================================================ */
 
 .avn-stage-card__loading {
@@ -900,7 +1055,8 @@ button {
 
   min-height: 100%;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 }
 
 .avn-skeleton {
@@ -908,7 +1064,8 @@ button {
 
   overflow: hidden;
 
-  background: var(--avn-soft-strong);
+  background:
+    var(--avn-soft-strong);
 }
 
 .avn-skeleton--media {
@@ -923,7 +1080,8 @@ button {
 
   inset: 0;
 
-  transform: translateX(-100%);
+  transform:
+    translateX(-100%);
 
   background:
     linear-gradient(
@@ -954,7 +1112,8 @@ button {
     1px solid
     var(--avn-line);
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 }
 
 .avn-skeleton--content span {
@@ -964,7 +1123,8 @@ button {
 
   border-radius: 999px;
 
-  background: var(--avn-soft-strong);
+  background:
+    var(--avn-soft-strong);
 }
 
 .avn-skeleton--content span:nth-child(1) {
@@ -986,9 +1146,15 @@ button {
 
 @keyframes avn-shimmer {
   to {
-    transform: translateX(100%);
+    transform:
+      translateX(100%);
   }
 }
+
+
+/* ============================================================
+   ESTADO VACÍO
+============================================================ */
 
 .avn-empty {
   grid-row: 1 / -1;
@@ -1035,15 +1201,17 @@ button {
   background:
     var(--avn-primary-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-empty__kicker {
   margin: 0 0 8px;
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 
-  font-size: 0.74rem;
+  font-size: 0.74em;
   font-weight: 700;
 
   letter-spacing: 0.08em;
@@ -1054,18 +1222,20 @@ button {
 .avn-empty__title {
   margin: 0;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
   font-size:
     clamp(
-      1.4rem,
+      1.4em,
       3vw,
-      2rem
+      2em
     );
 
   font-weight: 740;
 
-  letter-spacing: -0.025em;
+  letter-spacing:
+    -0.025em;
 }
 
 .avn-empty__text {
@@ -1073,7 +1243,8 @@ button {
 
   margin: 14px 0 0;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
   line-height: 1.65;
 }
@@ -1087,6 +1258,7 @@ button {
 
   margin-top: 24px;
 }
+
 
 /* ============================================================
    PANEL ADMINISTRATIVO
@@ -1113,9 +1285,11 @@ button {
 
   border-radius: 22px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
-  box-shadow: var(--avn-shadow);
+  box-shadow:
+    var(--avn-shadow);
 }
 
 .avn-admin__header {
@@ -1125,15 +1299,17 @@ button {
 
   gap: 24px;
 
-  padding: 22px 24px 18px;
+  padding:
+    22px 24px 18px;
 }
 
 .avn-admin__eyebrow {
   margin: 0 0 6px;
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 
-  font-size: 0.72rem;
+  font-size: 0.72em;
   font-weight: 700;
 
   letter-spacing: 0.08em;
@@ -1144,12 +1320,14 @@ button {
 .avn-admin__title {
   margin: 0;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 1.2rem;
+  font-size: 1.2em;
   font-weight: 740;
 
-  letter-spacing: -0.02em;
+  letter-spacing:
+    -0.02em;
 }
 
 .avn-admin__subtitle {
@@ -1157,9 +1335,10 @@ button {
 
   margin: 7px 0 0;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.88rem;
+  font-size: 0.88em;
 
   line-height: 1.55;
 }
@@ -1171,6 +1350,11 @@ button {
 
   gap: 8px;
 }
+
+
+/* ============================================================
+   TABS
+============================================================ */
 
 .avn-admin-tabs {
   display: flex;
@@ -1217,9 +1401,10 @@ button {
 
   background: transparent;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.84rem;
+  font-size: 0.84em;
   font-weight: 680;
 
   cursor: pointer;
@@ -1239,19 +1424,23 @@ button {
   border-radius:
     999px 999px 0 0;
 
-  background: transparent;
+  background:
+    transparent;
 }
 
 .avn-admin-tab:hover {
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-admin-tab.is-active {
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-admin-tab.is-active::after {
-  background: var(--avn-primary);
+  background:
+    var(--avn-primary);
 }
 
 .avn-admin-tab__count {
@@ -1270,8 +1459,13 @@ button {
 
   color: inherit;
 
-  font-size: 0.72rem;
+  font-size: 0.72em;
 }
+
+
+/* ============================================================
+   ALERTAS
+============================================================ */
 
 .avn-alert {
   margin:
@@ -1285,7 +1479,7 @@ button {
 
   border-radius: 13px;
 
-  font-size: 0.84rem;
+  font-size: 0.84em;
   font-weight: 620;
 
   line-height: 1.5;
@@ -1306,7 +1500,8 @@ button {
       var(--avn-card)
     );
 
-  color: var(--avn-success);
+  color:
+    var(--avn-success);
 }
 
 .avn-alert--error {
@@ -1316,8 +1511,14 @@ button {
   background:
     var(--avn-danger-soft);
 
-  color: var(--avn-danger);
+  color:
+    var(--avn-danger);
 }
+
+
+/* ============================================================
+   PANELES ADMIN
+============================================================ */
 
 .avn-admin-panel {
   padding: 24px;
@@ -1337,9 +1538,10 @@ button {
 .avn-option-group legend {
   margin: 0;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 1rem;
+  font-size: 1em;
   font-weight: 720;
 }
 
@@ -1347,9 +1549,10 @@ button {
 .avn-option-group > p {
   margin: 6px 0 0;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.84rem;
+  font-size: 0.84em;
 
   line-height: 1.55;
 }
@@ -1363,8 +1566,10 @@ button {
   background:
     var(--avn-primary-soft);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
+
 
 /* ============================================================
    AVISOS PUBLICADOS
@@ -1387,7 +1592,8 @@ button {
 
   border-radius: 14px;
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 }
 
 .avn-check-label {
@@ -1396,9 +1602,10 @@ button {
 
   gap: 9px;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.83rem;
+  font-size: 0.83em;
   font-weight: 650;
 
   cursor: pointer;
@@ -1411,13 +1618,15 @@ button {
 
   margin: 0;
 
-  accent-color: var(--avn-primary);
+  accent-color:
+    var(--avn-primary);
 }
 
 .avn-bulk-bar__actions {
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.8rem;
+  font-size: 0.8em;
   font-weight: 620;
 }
 
@@ -1444,7 +1653,8 @@ button {
 
   border-radius: 17px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
   transition:
     transform 160ms ease,
@@ -1453,7 +1663,8 @@ button {
 }
 
 .avn-published-item:hover {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 
   box-shadow:
     var(--avn-shadow-hover);
@@ -1516,7 +1727,8 @@ button {
 .avn-published-item:hover
   .avn-published-item__preview
   img {
-  transform: scale(1.025);
+  transform:
+    scale(1.025);
 }
 
 .avn-published-item__check {
@@ -1570,7 +1782,7 @@ button {
 
   color: #ffffff;
 
-  font-size: 0.7rem;
+  font-size: 0.7em;
   font-weight: 700;
 
   backdrop-filter: blur(8px);
@@ -1598,9 +1810,10 @@ button {
 }
 
 .avn-published-item__body strong {
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.84rem;
+  font-size: 0.84em;
   font-weight: 700;
 }
 
@@ -1609,9 +1822,10 @@ button {
 
   overflow: hidden;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.76rem;
+  font-size: 0.76em;
   line-height: 1.35;
 
   text-overflow: ellipsis;
@@ -1624,6 +1838,7 @@ button {
 
   gap: 6px;
 }
+
 
 /* ============================================================
    FORMULARIOS
@@ -1657,9 +1872,10 @@ button {
 }
 
 .avn-field > span {
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.8rem;
+  font-size: 0.8em;
   font-weight: 680;
 }
 
@@ -1673,11 +1889,13 @@ button {
 
   border-radius: 12px;
 
-  background: var(--avn-input);
+  background:
+    var(--avn-input);
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.88rem;
+  font-size: 0.88em;
   line-height: 1.5;
 
   transition:
@@ -1715,15 +1933,17 @@ button {
   border-color:
     var(--avn-primary);
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
   outline: none;
 }
 
 .avn-field small {
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.73rem;
+  font-size: 0.73em;
 
   line-height: 1.4;
 }
@@ -1732,10 +1952,12 @@ button {
   grid-column: 1 / -1;
 
   justify-content: flex-end;
+
   flex-wrap: wrap;
 
   margin-top: 4px;
 }
+
 
 /* ============================================================
    DISEÑO PREDETERMINADO
@@ -1760,7 +1982,8 @@ button {
 
   border-radius: 16px;
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 }
 
 .avn-option-group:disabled {
@@ -1798,9 +2021,11 @@ button {
 
   border-radius: 14px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
   text-align: left;
 
@@ -1814,7 +2039,8 @@ button {
 }
 
 .avn-choice-card:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 
   border-color:
     var(--avn-primary-line);
@@ -1846,16 +2072,17 @@ button {
 .avn-choice-card strong {
   color: inherit;
 
-  font-size: 0.85rem;
+  font-size: 0.85em;
   font-weight: 700;
 }
 
 .avn-choice-card span {
   margin-top: 7px;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.75rem;
+  font-size: 0.75em;
 
   line-height: 1.45;
 }
@@ -1873,11 +2100,13 @@ button {
 }
 
 .avn-unsaved-indicator {
-  color: var(--avn-warning);
+  color:
+    var(--avn-warning);
 
-  font-size: 0.8rem;
+  font-size: 0.8em;
   font-weight: 650;
 }
+
 
 /* ============================================================
    PUBLICAR
@@ -1899,9 +2128,11 @@ button {
 
   border-radius: 18px;
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
   text-align: center;
 
@@ -1915,7 +2146,8 @@ button {
 
 .avn-dropzone:hover,
 .avn-dropzone.is-dragging {
-  transform: translateY(-1px);
+  transform:
+    translateY(-1px);
 
   border-color:
     var(--avn-primary);
@@ -1939,28 +2171,31 @@ button {
 
   border-radius: 16px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
-  color: var(--avn-primary);
+  color:
+    var(--avn-primary);
 }
 
 .avn-dropzone strong {
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.95rem;
+  font-size: 0.95em;
   font-weight: 700;
 }
 
 .avn-dropzone span {
   margin-top: 5px;
 
-  font-size: 0.84rem;
+  font-size: 0.84em;
 }
 
 .avn-dropzone small {
   margin-top: 10px;
 
-  font-size: 0.73rem;
+  font-size: 0.73em;
 }
 
 .avn-preview-grid {
@@ -1999,7 +2234,8 @@ button {
 
   border-radius: 14px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 }
 
 .avn-upload-preview img {
@@ -2028,9 +2264,10 @@ button {
 .avn-upload-preview__meta span {
   overflow: hidden;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 0.8rem;
+  font-size: 0.8em;
   font-weight: 650;
 
   text-overflow: ellipsis;
@@ -2041,9 +2278,10 @@ button {
 .avn-upload-preview__meta small {
   margin-top: 4px;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
-  font-size: 0.72rem;
+  font-size: 0.72em;
 }
 
 .avn-panel-empty {
@@ -2062,7 +2300,8 @@ button {
 
   border-radius: 16px;
 
-  background: var(--avn-soft);
+  background:
+    var(--avn-soft);
 
   text-align: center;
 }
@@ -2070,10 +2309,12 @@ button {
 .avn-panel-empty p {
   margin: 0 0 16px;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
   line-height: 1.55;
 }
+
 
 /* ============================================================
    CONFIRMACIÓN
@@ -2116,7 +2357,11 @@ button {
 
   z-index: 1;
 
-  width: min(440px, 100%);
+  width:
+    min(
+      440px,
+      100%
+    );
 
   padding: 24px;
 
@@ -2126,7 +2371,8 @@ button {
 
   border-radius: 20px;
 
-  background: var(--avn-card);
+  background:
+    var(--avn-card);
 
   box-shadow:
     0 26px 70px
@@ -2153,22 +2399,25 @@ button {
   background:
     var(--avn-danger-soft);
 
-  color: var(--avn-danger);
+  color:
+    var(--avn-danger);
 }
 
 .avn-confirm__content h2 {
   margin: 0;
 
-  color: var(--avn-text);
+  color:
+    var(--avn-text);
 
-  font-size: 1.12rem;
+  font-size: 1.12em;
   font-weight: 740;
 }
 
 .avn-confirm__content p {
   margin: 9px 0 0;
 
-  color: var(--avn-muted);
+  color:
+    var(--avn-muted);
 
   line-height: 1.55;
 }
@@ -2178,9 +2427,10 @@ button {
 
   margin-top: 7px;
 
-  color: var(--avn-danger);
+  color:
+    var(--avn-danger);
 
-  font-size: 0.75rem;
+  font-size: 0.75em;
   font-weight: 650;
 }
 
@@ -2206,6 +2456,7 @@ button {
 
   margin-top: 22px;
 }
+
 
 /* ============================================================
    MODO OSCURO
@@ -2272,8 +2523,9 @@ body.dark .avn-stage__aside,
     var(--avn-card);
 }
 
+
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE — TABLET
 ============================================================ */
 
 @media (max-width: 920px) {
@@ -2296,7 +2548,10 @@ body.dark .avn-stage__aside,
 
   .avn-stage-main--banner {
     min-height:
-      min(62vh, 520px);
+      min(
+        62vh,
+        520px
+      );
   }
 
   .avn-stage-main--text {
@@ -2330,13 +2585,19 @@ body.dark .avn-stage__aside,
   }
 
   .avn-choice-grid--three {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .avn-choice-card {
     min-height: 0;
   }
 }
+
+
+/* ============================================================
+   RESPONSIVE — MÓVIL
+============================================================ */
 
 @media (max-width: 680px) {
   .avn-stage-card {
@@ -2368,15 +2629,16 @@ body.dark .avn-stage__aside,
   .avn-stage__copy {
     min-height: 280px;
 
-    padding: 28px 22px;
+    padding:
+      28px 22px;
   }
 
   .avn-stage__title {
     font-size:
       clamp(
-        1.5rem,
-        8vw,
-        2.1rem
+        1.5em,
+        10cqw,
+        2.1em
       );
   }
 
@@ -2388,7 +2650,8 @@ body.dark .avn-stage__aside,
   }
 
   .avn-carousel-controls {
-    justify-content: space-between;
+    justify-content:
+      space-between;
 
     width: 100%;
   }
@@ -2411,7 +2674,8 @@ body.dark .avn-stage__aside,
 
   .avn-stage-actions
     .avn-btn:only-child {
-    grid-column: 1 / -1;
+    grid-column:
+      1 / -1;
   }
 
   .avn-admin {
@@ -2426,11 +2690,13 @@ body.dark .avn-stage__aside,
   }
 
   .avn-admin__header {
-    padding: 20px 18px 16px;
+    padding:
+      20px 18px 16px;
   }
 
   .avn-admin__summary {
-    justify-content: flex-start;
+    justify-content:
+      flex-start;
   }
 
   .avn-admin-tabs {
@@ -2449,28 +2715,34 @@ body.dark .avn-stage__aside,
   .avn-published-grid,
   .avn-form-grid,
   .avn-preview-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .avn-field--half {
-    grid-column: 1 / -1;
+    grid-column:
+      1 / -1;
   }
 
   .avn-bulk-bar__actions {
-    justify-content: space-between;
+    justify-content:
+      space-between;
   }
 
   .avn-form-actions,
   .avn-confirm__actions {
     display: grid;
 
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
 
     width: 100%;
   }
 
-  .avn-form-actions .avn-btn,
-  .avn-confirm__actions .avn-btn {
+  .avn-form-actions
+    .avn-btn,
+  .avn-confirm__actions
+    .avn-btn {
     width: 100%;
   }
 
@@ -2491,9 +2763,15 @@ body.dark .avn-stage__aside,
   }
 }
 
+
+/* ============================================================
+   RESPONSIVE — MÓVIL PEQUEÑO
+============================================================ */
+
 @media (max-width: 440px) {
   .avn-stage-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .avn-admin-tab {
@@ -2509,7 +2787,8 @@ body.dark .avn-stage__aside,
   .avn-dropzone {
     min-height: 190px;
 
-    padding: 22px 16px;
+    padding:
+      22px 16px;
   }
 
   .avn-upload-preview {
@@ -2519,21 +2798,29 @@ body.dark .avn-stage__aside,
   }
 
   .avn-upload-preview img {
-    grid-column: 1 / -1;
+    grid-column:
+      1 / -1;
 
     width: 100%;
     height: 130px;
   }
 }
 
+
+/* ============================================================
+   MOVIMIENTO REDUCIDO
+============================================================ */
+
 @media (prefers-reduced-motion: reduce) {
   .avn-content,
   .avn-content *,
   .avn-content *::before,
   .avn-content *::after {
-    animation: none !important;
+    animation:
+      none !important;
 
-    transition: none !important;
+    transition:
+      none !important;
 
     scroll-behavior:
       auto !important;
