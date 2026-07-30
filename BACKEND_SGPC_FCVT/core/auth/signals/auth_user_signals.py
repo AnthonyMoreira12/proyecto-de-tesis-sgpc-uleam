@@ -1,9 +1,10 @@
 """
 Signal para sincronizar Usuario con Autor.
 
-La sincronización se programa después de confirmar la
-transacción que modificó al usuario. Solo se ejecuta cuando se
-crea un usuario o cuando cambia un campo que afecta directamente
+La sincronización se ejecuta después de confirmar la transacción
+que creó o modificó al usuario.
+
+Solo se programa cuando cambian campos que afectan directamente
 al registro Autor.
 """
 
@@ -33,38 +34,40 @@ User = get_user_model()
 # CAMPOS QUE AFECTAN AL AUTOR
 # ============================================================
 
-AUTHOR_SYNC_FIELDS = {
-    "nombres",
-    "apellidos",
-    "email",
-    "identificacion",
-    "rol",
-    "auth_source",
-}
+AUTHOR_SYNC_FIELDS = frozenset(
+    {
+        "nombres",
+        "apellidos",
+        "email",
+        "identificacion",
+        "rol",
+        "auth_source",
+    }
+)
 
 
 # ============================================================
 # SINCRONIZACIÓN DIFERIDA
 # ============================================================
 
-def _sync_author_after_commit(user_id):
+def _sync_author_after_commit(
+    user_id,
+):
     """
-    Ejecuta la sincronización después de confirmar la
-    transacción que guardó al usuario.
+    Sincroniza el Autor después de confirmar la transacción.
 
-    El callback vuelve a consultar al usuario para trabajar con
-    los datos definitivamente almacenados en la base de datos.
+    Se recupera únicamente la clave primaria porque el servicio
+    asegurar_autor_para_usuario() vuelve a consultar y bloquear
+    la fila completa del Usuario.
     """
+    if not user_id:
+        return
+
     try:
         user = (
             User.objects
-            .select_related(
-                "carrera",
-                "carrera__facultad",
-            )
-            .filter(
-                pk=user_id
-            )
+            .only("pk")
+            .filter(pk=user_id)
             .first()
         )
 
@@ -83,19 +86,23 @@ def _sync_author_after_commit(user_id):
         logger.exception(
             (
                 "No se pudo sincronizar el Autor asociado "
-                "al Usuario %s."
+                "al Usuario %s después de confirmar la "
+                "transacción."
             ),
             user_id,
         )
 
     except Exception:
-        # El signal es un mecanismo auxiliar. Un error inesperado
-        # no debe revertir una operación del usuario que ya fue
-        # confirmada en la base de datos.
+        """
+        El signal es un mecanismo auxiliar.
+
+        Un error inesperado no debe revertir una operación del
+        Usuario que ya fue confirmada en la base de datos.
+        """
         logger.exception(
             (
-                "Se produjo un error inesperado al sincronizar "
-                "el Autor del Usuario %s."
+                "Se produjo un error inesperado al "
+                "sincronizar el Autor del Usuario %s."
             ),
             user_id,
         )
@@ -125,13 +132,16 @@ def sync_autor(
     """
     Programa la sincronización del Autor cuando corresponde.
 
-    Se omite cuando:
+    La operación se omite cuando:
 
     - El registro se carga desde fixtures con raw=True.
-    - El usuario todavía no tiene clave primaria.
-    - La actualización no modificó ningún campo relevante para
-      el Autor.
+    - El Usuario todavía no tiene clave primaria.
+    - update_fields está vacío.
+    - La actualización no afectó ningún campo del Autor.
     """
+    del sender
+    del kwargs
+
     if raw:
         return
 
@@ -151,7 +161,11 @@ def sync_autor(
         updated_field_names = {
             str(field_name)
             for field_name in update_fields
+            if field_name
         }
+
+        if not updated_field_names:
+            return
 
         if not (
             updated_field_names

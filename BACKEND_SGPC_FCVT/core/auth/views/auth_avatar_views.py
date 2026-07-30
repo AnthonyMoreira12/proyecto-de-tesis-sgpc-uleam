@@ -1,19 +1,17 @@
 """
-View para actualizar el avatar del usuario autenticado.
+Vista para gestionar el avatar del usuario autenticado.
 
 Responsabilidades:
 
 - Recibir imágenes mediante multipart/form-data.
 - Validar el archivo con AvatarUpdateSerializer.
-- Bloquear la fila del usuario durante la actualización.
-- Modificar exclusivamente el campo avatar.
-- Evitar sincronizaciones innecesarias del registro Autor.
+- Bloquear la fila del Usuario durante la operación.
+- Actualizar exclusivamente el campo avatar.
+- Eliminar de forma controlada el archivo anterior.
+- Evitar la ejecución innecesaria del signal de Autor.
+- Permitir eliminar el avatar mediante DELETE.
 - Devolver la URL absoluta del avatar actualizado.
-- Impedir que la respuesta con información del perfil se almacene
-  en caché.
-
-La validación del formato, contenido, peso y dimensiones se realiza
-en AvatarUpdateSerializer.
+- Impedir que la respuesta quede almacenada en caché.
 """
 
 import logging
@@ -22,12 +20,20 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import (
     ValidationError as DjangoValidationError,
 )
-from django.db import DatabaseError, transaction
+from django.db import (
+    DatabaseError,
+    transaction,
+)
 
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import (
+    FormParser,
+    MultiPartParser,
+)
+from rest_framework.permissions import (
+    IsAuthenticated,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -49,22 +55,104 @@ User = get_user_model()
 # UTILIDADES
 # ============================================================
 
-def _django_validation_payload(exc):
+def _django_validation_payload(
+    exc,
+):
     """
-    Convierte ValidationError de Django en una respuesta
+    Convierte ValidationError de Django en una estructura
     compatible con Django REST Framework.
     """
-    if hasattr(exc, "message_dict"):
+    if hasattr(
+        exc,
+        "message_dict",
+    ):
         return exc.message_dict
 
-    if hasattr(exc, "messages"):
+    if hasattr(
+        exc,
+        "messages",
+    ):
         return {
-            "detail": list(exc.messages),
+            "detail": list(
+                exc.messages
+            )
         }
 
     return {
         "detail": str(exc),
     }
+
+
+def _avatar_storage():
+    """
+    Obtiene el almacenamiento configurado para el campo avatar.
+    """
+    return User._meta.get_field(
+        "avatar"
+    ).storage
+
+
+def _safe_delete_storage_file(
+    file_name,
+):
+    """
+    Elimina un archivo del almacenamiento sin interrumpir la
+    respuesta al usuario cuando el archivo ya no existe.
+    """
+    normalized_name = str(
+        file_name or ""
+    ).strip()
+
+    if not normalized_name:
+        return
+
+    storage = _avatar_storage()
+
+    try:
+        if storage.exists(
+            normalized_name
+        ):
+            storage.delete(
+                normalized_name
+            )
+
+    except (
+        OSError,
+        ValueError,
+        NotImplementedError,
+    ):
+        logger.exception(
+            (
+                "No se pudo eliminar el archivo de avatar "
+                "%s del almacenamiento."
+            ),
+            normalized_name,
+        )
+
+
+def _schedule_storage_file_deletion(
+    file_name,
+):
+    """
+    Programa la eliminación después de confirmar la transacción.
+
+    Esto evita eliminar el avatar anterior cuando la modificación
+    de la base de datos termina siendo revertida.
+    """
+    normalized_name = str(
+        file_name or ""
+    ).strip()
+
+    if not normalized_name:
+        return
+
+    transaction.on_commit(
+        lambda name=normalized_name: (
+            _safe_delete_storage_file(
+                name
+            )
+        )
+    )
 
 
 def _get_avatar_url(
@@ -74,7 +162,7 @@ def _get_avatar_url(
     """
     Obtiene la URL del avatar almacenado.
 
-    Cuando existe una request, devuelve una URL absoluta.
+    Cuando existe request, devuelve una URL absoluta.
     """
     avatar = getattr(
         user,
@@ -119,7 +207,9 @@ def _get_avatar_url(
         return avatar_url
 
 
-def _get_uploaded_avatar(request):
+def _get_uploaded_avatar(
+    request,
+):
     """
     Obtiene el archivo recibido en el campo avatar.
     """
@@ -135,9 +225,11 @@ def _get_uploaded_avatar(request):
     return uploaded_avatar
 
 
-def _get_user_after_update(user_id):
+def _get_user_after_update(
+    user_id,
+):
     """
-    Recupera el usuario después de confirmar la actualización.
+    Recupera al Usuario después de confirmar la actualización.
     """
     if not user_id:
         return None
@@ -155,16 +247,52 @@ def _get_user_after_update(user_id):
     )
 
 
+def _disable_response_cache(
+    response,
+):
+    """
+    Impide que el navegador o los proxies almacenen la URL
+    anterior del avatar.
+    """
+    response[
+        "Cache-Control"
+    ] = (
+        "no-store, no-cache, "
+        "must-revalidate, max-age=0"
+    )
+
+    response[
+        "Pragma"
+    ] = "no-cache"
+
+    response[
+        "Expires"
+    ] = "0"
+
+    return response
+
+
+def _missing_user_response():
+    return Response(
+        {
+            "detail": (
+                "No se encontró el usuario autenticado."
+            )
+        },
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
 # ============================================================
 # VISTA
 # ============================================================
 
 class UpdateAvatarView(APIView):
     """
-    Actualización del avatar del usuario autenticado.
+    Actualiza o elimina el avatar del Usuario autenticado.
 
-    Se admiten PATCH y POST para mantener compatibilidad con el
-    frontend existente.
+    Se admiten POST y PATCH para conservar compatibilidad con
+    las llamadas existentes del frontend.
     """
 
     authentication_classes = [
@@ -180,20 +308,14 @@ class UpdateAvatarView(APIView):
         FormParser,
     ]
 
-    def patch(self, request):
-        return self._update_avatar(
-            request
-        )
+    # ========================================================
+    # ACTUALIZAR
+    # ========================================================
 
-    def post(self, request):
-        return self._update_avatar(
-            request
-        )
-
-    def _update_avatar(self, request):
-        """
-        Valida y actualiza exclusivamente el campo avatar.
-        """
+    def _update_avatar(
+        self,
+        request,
+    ):
         user_id = getattr(
             request.user,
             "pk",
@@ -208,21 +330,266 @@ class UpdateAvatarView(APIView):
                         "el usuario autenticado."
                     )
                 },
-                status=status.HTTP_401_UNAUTHORIZED,
+                status=(
+                    status.HTTP_401_UNAUTHORIZED
+                ),
             )
 
-        uploaded_avatar = _get_uploaded_avatar(
-            request
+        uploaded_avatar = (
+            _get_uploaded_avatar(
+                request
+            )
         )
 
         if uploaded_avatar is None:
+            raise ValidationError(
+                {
+                    "avatar": (
+                        "Seleccione una imagen para "
+                        "actualizar el avatar."
+                    )
+                }
+            )
+
+        serializer = AvatarUpdateSerializer(
+            data={
+                "avatar": uploaded_avatar,
+            },
+            context={
+                "request": request,
+            },
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        validated_avatar = (
+            serializer.validated_data[
+                "avatar"
+            ]
+        )
+
+        locked_user = None
+        previous_avatar_name = None
+        new_avatar_name = None
+
+        try:
+            with transaction.atomic():
+                locked_user = (
+                    User.objects
+                    .select_for_update()
+                    .get(
+                        pk=user_id
+                    )
+                )
+
+                current_avatar = getattr(
+                    locked_user,
+                    "avatar",
+                    None,
+                )
+
+                previous_avatar_name = (
+                    getattr(
+                        current_avatar,
+                        "name",
+                        None,
+                    )
+                )
+
+                           # FieldFile.save() almacena físicamente el archivo,
+                # pero save=False impide ejecutar el save() completo
+                # del modelo Usuario.
+                locked_user.avatar.save(
+                    getattr(
+                        validated_avatar,
+                        "name",
+                        "avatar",
+                    ),
+                    validated_avatar,
+                    save=False,
+                )
+
+                new_avatar_name = getattr(
+                    locked_user.avatar,
+                    "name",
+                    None,
+                )
+
+                if not new_avatar_name:
+                    raise ValidationError(
+                        {
+                            "avatar": (
+                                "No fue posible almacenar "
+                                "la imagen seleccionada."
+                            )
+                        }
+                    )
+
+                updated_rows = (
+                    User.objects
+                    .filter(
+                        pk=locked_user.pk
+                    )
+                    .update(
+                        avatar=new_avatar_name
+                    )
+                )
+
+                if updated_rows != 1:
+                    raise DatabaseError(
+                        (
+                            "No se pudo actualizar el campo "
+                            "avatar del Usuario."
+                        )
+                    )
+
+                if (
+                    previous_avatar_name
+                    and previous_avatar_name
+                    != new_avatar_name
+                ):
+                    _schedule_storage_file_deletion(
+                        previous_avatar_name
+                    )
+
+        except User.DoesNotExist:
+            if new_avatar_name:
+                _safe_delete_storage_file(
+                    new_avatar_name
+                )
+
+            return _missing_user_response()
+
+        except DjangoValidationError as exc:
+            if (
+                new_avatar_name
+                and new_avatar_name
+                != previous_avatar_name
+            ):
+                _safe_delete_storage_file(
+                    new_avatar_name
+                )
+
+            raise ValidationError(
+                _django_validation_payload(
+                    exc
+                )
+            ) from exc
+
+        except ValidationError:
+            if (
+                new_avatar_name
+                and new_avatar_name
+                != previous_avatar_name
+            ):
+                _safe_delete_storage_file(
+                    new_avatar_name
+                )
+
+            raise
+
+        except (
+            DatabaseError,
+            OSError,
+        ):
+            if (
+                new_avatar_name
+                and new_avatar_name
+                != previous_avatar_name
+            ):
+                _safe_delete_storage_file(
+                    new_avatar_name
+                )
+
+            logger.exception(
+                (
+                    "No se pudo actualizar el avatar "
+                    "del Usuario %s."
+                ),
+                user_id,
+            )
+
             return Response(
                 {
-                    "avatar": [
-                        "Debe adjuntar una imagen."
-                    ]
+                    "detail": (
+                        "No se pudo actualizar el avatar "
+                        "debido a un error interno."
+                    )
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=(
+                    status.HTTP_500_INTERNAL_SERVER_ERROR
+                ),
+            )
+
+        refreshed_user = (
+            _get_user_after_update(
+                user_id
+            )
+        )
+
+        if refreshed_user is None:
+            return _missing_user_response()
+
+        response = Response(
+            {
+                "detail": (
+                    "El avatar se actualizó correctamente."
+                ),
+                "avatar_url": _get_avatar_url(
+                    refreshed_user,
+                    request=request,
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        return _disable_response_cache(
+            response
+        )
+
+    def patch(
+        self,
+        request,
+    ):
+        return self._update_avatar(
+            request
+        )
+
+    def post(
+        self,
+        request,
+    ):
+        return self._update_avatar(
+            request
+        )
+
+    # ========================================================
+    # ELIMINAR
+    # ========================================================
+
+    def delete(
+        self,
+        request,
+    ):
+        user_id = getattr(
+            request.user,
+            "pk",
+            None,
+        )
+
+        if not user_id:
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible determinar "
+                        "el usuario autenticado."
+                    )
+                },
+                status=(
+                    status.HTTP_401_UNAUTHORIZED
+                ),
             )
 
         try:
@@ -235,90 +602,51 @@ class UpdateAvatarView(APIView):
                     )
                 )
 
-                serializer = (
-                    AvatarUpdateSerializer(
-                        locked_user,
-                        data={
-                            "avatar": uploaded_avatar,
-                        },
-                        partial=False,
-                        context={
-                            "request": request,
-                        },
+                current_avatar = getattr(
+                    locked_user,
+                    "avatar",
+                    None,
+                )
+
+                previous_avatar_name = (
+                    getattr(
+                        current_avatar,
+                        "name",
+                        None,
                     )
                 )
 
-                serializer.is_valid(
-                    raise_exception=True
+                updated_rows = (
+                    User.objects
+                    .filter(
+                        pk=locked_user.pk
+                    )
+                    .update(
+                        avatar=None
+                    )
                 )
 
-                # No se utiliza serializer.save() porque el
-                # ModelSerializer ejecutaría instance.save()
-                # sin update_fields.
-                #
-                # Guardar explícitamente solo "avatar" permite
-                # que el signal de Usuario ignore este cambio.
-                locked_user.avatar = (
-                    serializer.validated_data[
-                        "avatar"
-                    ]
-                )
+                if updated_rows != 1:
+                    raise DatabaseError(
+                        (
+                            "No se pudo eliminar el campo "
+                            "avatar del Usuario."
+                        )
+                    )
 
-                locked_user.save(
-                    update_fields=[
-                        "avatar",
-                    ]
-                )
-
-                updated_user_id = (
-                    locked_user.pk
-                )
+                if previous_avatar_name:
+                    _schedule_storage_file_deletion(
+                        previous_avatar_name
+                    )
 
         except User.DoesNotExist:
-            return Response(
-                {
-                    "detail": (
-                        "El usuario autenticado "
-                        "ya no existe."
-                    )
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        except DjangoValidationError as exc:
-            raise ValidationError(
-                _django_validation_payload(
-                    exc
-                )
-            ) from exc
-
-        except OSError:
-            logger.exception(
-                (
-                    "No se pudo almacenar el avatar "
-                    "del usuario %s."
-                ),
-                user_id,
-            )
-
-            return Response(
-                {
-                    "detail": (
-                        "No se pudo almacenar la imagen. "
-                        "Revise la configuración del "
-                        "almacenamiento e inténtelo nuevamente."
-                    )
-                },
-                status=(
-                    status.HTTP_503_SERVICE_UNAVAILABLE
-                ),
-            )
+            return _missing_user_response()
 
         except DatabaseError:
             logger.exception(
                 (
-                    "Error de base de datos al actualizar "
-                    "el avatar del usuario %s."
+                    "No se pudo eliminar el avatar "
+                    "del Usuario %s."
                 ),
                 user_id,
             )
@@ -326,27 +654,8 @@ class UpdateAvatarView(APIView):
             return Response(
                 {
                     "detail": (
-                        "No se pudo actualizar el avatar "
-                        "debido a un error temporal de la "
-                        "base de datos."
-                    )
-                },
-                status=(
-                    status.HTTP_503_SERVICE_UNAVAILABLE
-                ),
-            )
-
-        updated_user = _get_user_after_update(
-            updated_user_id
-        )
-
-        if updated_user is None:
-            return Response(
-                {
-                    "detail": (
-                        "El avatar fue procesado, pero no "
-                        "fue posible recuperar el perfil "
-                        "actualizado."
+                        "No se pudo eliminar el avatar "
+                        "debido a un error interno."
                     )
                 },
                 status=(
@@ -354,26 +663,16 @@ class UpdateAvatarView(APIView):
                 ),
             )
 
-        avatar_url = _get_avatar_url(
-            updated_user,
-            request=request,
-        )
-
         response = Response(
             {
                 "detail": (
-                    "Avatar actualizado correctamente."
+                    "El avatar se eliminó correctamente."
                 ),
-                "avatar_url": avatar_url,
+                "avatar_url": None,
             },
             status=status.HTTP_200_OK,
         )
 
-        response["Cache-Control"] = (
-            "no-store, no-cache, must-revalidate"
+        return _disable_response_cache(
+            response
         )
-
-        response["Pragma"] = "no-cache"
-        response["Expires"] = "0"
-
-        return response

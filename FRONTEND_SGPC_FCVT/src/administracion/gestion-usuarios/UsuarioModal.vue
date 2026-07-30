@@ -14,6 +14,9 @@
       tabindex="-1"
       @keydown="handleDialogKeydown"
     >
+      <!-- =====================================================
+           ENCABEZADO
+      ====================================================== -->
       <header class="modal__header usermodal-header">
         <div class="usermodal-titlewrap">
           <div class="usermodal-titleline">
@@ -32,7 +35,9 @@
               class="usermodal-badges"
               aria-label="Tipo y estado de la cuenta"
             >
-              <span class="usermodal-badge usermodal-badge--neutral">
+              <span
+                class="usermodal-badge usermodal-badge--neutral"
+              >
                 {{ tipoUsuarioLabel }}
               </span>
 
@@ -52,7 +57,7 @@
             {{
               mode === "create"
                 ? "Complete los datos básicos. La cuenta quedará pendiente hasta que sea activada."
-                : "Actualice los datos personales, la asignación académica y los permisos del usuario."
+                : descripcionEdicion
             }}
           </p>
         </div>
@@ -69,8 +74,12 @@
         </button>
       </header>
 
+      <!-- =====================================================
+           FORMULARIO
+      ====================================================== -->
       <form
         class="usermodal-form"
+        novalidate
         @submit.prevent="submit"
       >
         <div class="usermodal-scroll">
@@ -97,12 +106,14 @@
             </div>
 
             <div class="usermodal-grid">
+              <!-- NOMBRES -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label"
                   for="usermodal-nombres"
                 >
                   <span>Nombres</span>
+
                   <span
                     class="usermodal-required"
                     aria-hidden="true"
@@ -118,19 +129,21 @@
                   name="nombres"
                   type="text"
                   required
-                  maxlength="150"
+                  maxlength="100"
                   placeholder="Ej.: Andrea Sofía"
                   autocomplete="given-name"
                   :disabled="formBusy"
                 />
               </div>
 
+              <!-- APELLIDOS -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label"
                   for="usermodal-apellidos"
                 >
                   <span>Apellidos</span>
+
                   <span
                     class="usermodal-required"
                     aria-hidden="true"
@@ -146,19 +159,21 @@
                   name="apellidos"
                   type="text"
                   required
-                  maxlength="150"
+                  maxlength="100"
                   placeholder="Ej.: García López"
                   autocomplete="family-name"
                   :disabled="formBusy"
                 />
               </div>
 
+              <!-- CORREO -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label"
                   for="usermodal-email"
                 >
                   <span>Correo electrónico</span>
+
                   <span
                     class="usermodal-required"
                     aria-hidden="true"
@@ -171,11 +186,13 @@
                   id="usermodal-email"
                   v-model="form.email"
                   class="field-control usermodal-input"
-                  :class="{ 'input-readonly': emailLocked }"
+                  :class="{
+                    'input-readonly': emailLocked,
+                  }"
                   name="email"
                   type="email"
                   required
-                  maxlength="254"
+                  maxlength="150"
                   placeholder="Ej.: usuario@correo.com"
                   autocomplete="email"
                   inputmode="email"
@@ -192,18 +209,19 @@
                   id="usermodal-email-help"
                   class="usermodal-help"
                 >
-                  Cuenta institucional: el correo no se modifica desde
-                  este panel.
+                  El correo de esta cuenta institucional se
+                  administra mediante Microsoft 365.
                 </p>
               </div>
 
+              <!-- CÉDULA -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label usermodal-label--with-help"
                   for="usermodal-identificacion"
                 >
                   <span class="usermodal-label__text">
-                    Identificación
+                    Número de cédula
 
                     <span
                       v-if="mode === 'create'"
@@ -214,9 +232,9 @@
                     </span>
                   </span>
 
-                  <InfoTip title="Identificación">
-                    Dato único para evitar duplicados. Debe tener 10
-                    dígitos numéricos.
+                  <InfoTip title="Número de cédula">
+                    Ingrese exactamente 10 dígitos numéricos,
+                    sin espacios, letras ni guiones.
                   </InfoTip>
                 </label>
 
@@ -227,20 +245,23 @@
                   name="identificacion"
                   type="text"
                   :required="mode === 'create'"
+                  minlength="10"
                   maxlength="10"
                   pattern="[0-9]{10}"
                   placeholder="Ej.: 1312345678"
                   autocomplete="off"
                   inputmode="numeric"
                   aria-describedby="usermodal-identificacion-help"
+                  :aria-invalid="cedulaTieneError"
                   :disabled="formBusy"
+                  @input="sanitizeCedula"
                 />
 
                 <p
                   id="usermodal-identificacion-help"
                   class="usermodal-help"
                 >
-                  Solo números, sin espacios ni guiones.
+                  Debe contener exactamente 10 números.
                 </p>
               </div>
             </div>
@@ -264,19 +285,21 @@
                 </h3>
 
                 <p class="usermodal-sectionsub">
-                  Complete o corrija la facultad y carrera asignadas al
-                  usuario institucional.
+                  Complete o corrija la Facultad y Carrera
+                  asignadas al usuario institucional.
                 </p>
               </div>
             </div>
 
             <div class="usermodal-grid">
+              <!-- FACULTAD -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label"
                   for="usermodal-facultad"
                 >
                   <span>Facultad</span>
+
                   <span
                     class="usermodal-required"
                     aria-hidden="true"
@@ -291,7 +314,10 @@
                   class="field-control usermodal-input"
                   name="facultad"
                   required
-                  :disabled="formBusy || loadingCatalogos"
+                  :disabled="
+                    formBusy ||
+                    loadingCatalogos
+                  "
                   :aria-busy="loadingCatalogos"
                   :aria-describedby="
                     loadingCatalogos
@@ -301,7 +327,7 @@
                   @change="onFacultadChange"
                 >
                   <option value="">
-                    Seleccione una facultad
+                    Seleccione una Facultad
                   </option>
 
                   <option
@@ -324,12 +350,14 @@
                 </p>
               </div>
 
+              <!-- CARRERA -->
               <div class="usermodal-field">
                 <label
                   class="usermodal-label"
                   for="usermodal-carrera"
                 >
                   <span>Carrera</span>
+
                   <span
                     class="usermodal-required"
                     aria-hidden="true"
@@ -358,7 +386,7 @@
                   "
                 >
                   <option value="">
-                    Seleccione una carrera
+                    Seleccione una Carrera
                   </option>
 
                   <option
@@ -371,7 +399,10 @@
                 </select>
 
                 <p
-                  v-if="form.facultad && loadingCarreras"
+                  v-if="
+                    form.facultad &&
+                    loadingCarreras
+                  "
                   id="usermodal-carrera-status"
                   class="usermodal-help"
                   role="status"
@@ -383,11 +414,53 @@
             </div>
 
             <p
-              v-if="isInstitucional"
               class="usermodal-note usermodal-note--info"
             >
-              La autenticación sigue gestionada por Microsoft. Esta
-              asignación solo corrige la relación académica interna.
+              La autenticación continúa administrada por
+              Microsoft 365. Esta sección únicamente corrige
+              la relación académica interna.
+            </p>
+          </section>
+
+          <!-- =================================================
+               INFORMACIÓN PARA CUENTAS NO INSTITUCIONALES
+          ================================================== -->
+          <section
+            v-else-if="mode === 'edit'"
+            class="usermodal-section"
+            aria-labelledby="usermodal-account-info-title"
+          >
+            <div class="usermodal-sectionhead">
+              <div>
+                <h3
+                  id="usermodal-account-info-title"
+                  class="usermodal-sectiontitle"
+                >
+                  Clasificación de la cuenta
+                </h3>
+
+                <p class="usermodal-sectionsub">
+                  Esta cuenta no utiliza una asignación académica
+                  institucional.
+                </p>
+              </div>
+            </div>
+
+            <p
+              v-if="isExterno"
+              class="usermodal-note usermodal-note--info"
+            >
+              Los usuarios externos no registran Facultad ni
+              Carrera dentro del sistema.
+            </p>
+
+            <p
+              v-else
+              class="usermodal-note usermodal-note--warn"
+            >
+              La combinación actual de rol y origen de
+              autenticación no corresponde a una cuenta
+              institucional ni externa.
             </p>
           </section>
 
@@ -409,14 +482,15 @@
                 </h3>
 
                 <p class="usermodal-sectionsub">
-                  Habilite, extienda o bloquee la edición del perfil
-                  del usuario.
+                  Habilite, extienda o bloquee la edición del
+                  perfil del usuario.
                 </p>
               </div>
 
               <InfoTip title="Control de edición">
-                Habilitar desbloquea y reinicia intentos. Extender suma
-                horas al plazo. Bloquear impide editar el perfil.
+                Habilitar desbloquea el perfil y reinicia los
+                intentos. Extender agrega horas al plazo actual.
+                Bloquear impide nuevas modificaciones.
               </InfoTip>
             </div>
 
@@ -471,7 +545,7 @@
                     @click="handleExtenderEdicion"
                   >
                     {{
-                      actionBusy
+                      actionType === "extend"
                         ? "Procesando..."
                         : "Extender"
                     }}
@@ -503,8 +577,8 @@
                   id="usermodal-block-reason-help"
                   class="usermodal-help"
                 >
-                  Este motivo quedará asociado al bloqueo cuando el
-                  servicio lo admita.
+                  El motivo quedará registrado como parte del
+                  bloqueo administrativo.
                 </p>
               </div>
             </div>
@@ -520,7 +594,7 @@
                 @click="handleHabilitarEdicion"
               >
                 {{
-                  actionBusy
+                  actionType === "enable"
                     ? "Procesando..."
                     : "Habilitar edición"
                 }}
@@ -533,7 +607,7 @@
                 @click="handleBloquearEdicion"
               >
                 {{
-                  actionBusy
+                  actionType === "block"
                     ? "Procesando..."
                     : "Bloquear edición"
                 }}
@@ -541,8 +615,8 @@
             </div>
 
             <p class="usermodal-help">
-              Este control no modifica credenciales Microsoft ni el
-              estado activo o inactivo de la cuenta.
+              Este control no modifica las credenciales ni el
+              estado activo de la cuenta.
             </p>
           </section>
 
@@ -563,8 +637,8 @@
                 </h3>
 
                 <p class="usermodal-sectionsub">
-                  Verifique el tipo de cuenta, estado y privilegios
-                  administrativos.
+                  Verifique el tipo de cuenta, su estado y los
+                  privilegios administrativos.
                 </p>
               </div>
             </div>
@@ -614,15 +688,23 @@
                   id="usermodal-is-staff"
                   v-model="form.is_staff"
                   type="checkbox"
-                  :disabled="formBusy"
+                  :disabled="
+                    formBusy ||
+                    Boolean(usuario?.is_superuser)
+                  "
                 />
 
                 <span>
                   <strong>Permisos de administración</strong>
 
                   <small>
-                    Actívelo solo si gestionará usuarios, catálogos o
-                    publicaciones globales.
+                    Actívelo únicamente si esta persona gestionará
+                    usuarios, catálogos o publicaciones globales.
+                  </small>
+
+                  <small v-if="usuario?.is_superuser">
+                    Los permisos de un superusuario no pueden
+                    revocarse desde esta opción.
                   </small>
                 </span>
               </label>
@@ -630,8 +712,8 @@
 
             <template v-else>
               <p class="usermodal-note usermodal-note--info">
-                Los usuarios externos nuevos se crean sin privilegios
-                administrativos.
+                Los usuarios externos nuevos se crean sin
+                privilegios administrativos.
               </p>
 
               <p class="usermodal-note usermodal-note--warn">
@@ -708,26 +790,38 @@ import { useNotice } from "../../scripts/composables/useNotice";
 
 import InfoTip from "../../inicio/ui/InfoTip.vue";
 
+
 const props = defineProps({
   mode: {
     type: String,
     required: true,
-    validator: (value) => ["create", "edit"].includes(value),
+    validator: (value) =>
+      ["create", "edit"].includes(value),
   },
+
   usuario: {
     type: Object,
     default: null,
   },
 });
 
-const emit = defineEmits(["close", "done"]);
+
+const emit = defineEmits([
+  "close",
+  "done",
+]);
+
+
 const { openNotice } = useNotice();
+
 
 const dialogRef = ref(null);
 
 const saving = ref(false);
 const error = ref("");
+
 const actionBusy = ref(false);
+const actionType = ref("");
 
 const loadingCatalogos = ref(false);
 const loadingCarreras = ref(false);
@@ -737,6 +831,7 @@ const carreras = ref([]);
 
 const extendHours = ref(24);
 const blockReason = ref("");
+
 
 const form = reactive({
   id: null,
@@ -749,104 +844,250 @@ const form = reactive({
   carrera: "",
 });
 
+
 const profileLocked = ref(null);
 const attemptsLeft = ref(null);
 const profileUntil = ref(null);
 
+
 let previouslyFocusedElement = null;
 let previousBodyOverflow = "";
 
-const dialogTitleId = "usermodal-dialog-title";
-const dialogDescriptionId = "usermodal-dialog-description";
 
-const formBusy = computed(
-  () => saving.value || actionBusy.value
-);
+const dialogTitleId =
+  "usermodal-dialog-title";
 
-const normalizedAuthSource = computed(() =>
-  String(props.usuario?.auth_source || "")
-    .trim()
-    .toLowerCase()
-);
+const dialogDescriptionId =
+  "usermodal-dialog-description";
 
-const normalizedRole = computed(() =>
-  String(props.usuario?.rol || "")
-    .trim()
-    .toLowerCase()
-);
 
-const isInstitucional = computed(
-  () =>
-    props.mode === "edit" &&
-    normalizedAuthSource.value === "microsoft"
-);
+const ROLE_INSTITUTIONAL = "autor";
+const ROLE_EXTERNAL = "autor_externo";
 
-const isExterno = computed(() => {
-  if (props.mode === "create") return true;
+const AUTH_SOURCE_LOCAL = "local";
+const AUTH_SOURCE_MICROSOFT = "microsoft";
 
-  return (
-    normalizedAuthSource.value === "local" &&
-    normalizedRole.value === "autor_externo"
+
+/* ============================================================
+   NORMALIZACIÓN
+============================================================ */
+
+const normalizeText = (value) => {
+  return String(value ?? "").trim();
+};
+
+
+const normalizeAccountValue = (value) => {
+  return normalizeText(value).toLowerCase();
+};
+
+
+const cleanEmail = (value) => {
+  return normalizeText(value).toLowerCase();
+};
+
+
+const sanitizeCedulaValue = (value) => {
+  return String(value ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 10);
+};
+
+
+const toPositiveId = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (
+    !Number.isInteger(parsed) ||
+    parsed <= 0
+  ) {
+    return null;
+  }
+
+  return parsed;
+};
+
+
+/* ============================================================
+   ESTADO DERIVADO
+============================================================ */
+
+const formBusy = computed(() => {
+  return Boolean(
+    saving.value ||
+    actionBusy.value
   );
 });
 
-const isPendiente = computed(() => {
-  if (props.mode === "create") return true;
 
-  return (
+const normalizedAuthSource = computed(() => {
+  return normalizeAccountValue(
+    props.usuario?.auth_source
+  );
+});
+
+
+const normalizedRole = computed(() => {
+  return normalizeAccountValue(
+    props.usuario?.rol ??
+    props.usuario?.role
+  );
+});
+
+
+const isInstitucional = computed(() => {
+  return Boolean(
+    props.mode === "edit" &&
+    normalizedRole.value ===
+      ROLE_INSTITUTIONAL &&
+    normalizedAuthSource.value ===
+      AUTH_SOURCE_MICROSOFT
+  );
+});
+
+
+const isExterno = computed(() => {
+  if (props.mode === "create") {
+    return true;
+  }
+
+  return Boolean(
+    normalizedRole.value ===
+      ROLE_EXTERNAL &&
+    normalizedAuthSource.value ===
+      AUTH_SOURCE_LOCAL
+  );
+});
+
+
+const isPendiente = computed(() => {
+  if (props.mode === "create") {
+    return true;
+  }
+
+  return Boolean(
     isExterno.value &&
     !props.usuario?.is_active
   );
 });
 
-const emailLocked = computed(
-  () =>
+
+const emailLocked = computed(() => {
+  return Boolean(
     props.mode === "edit" &&
     isInstitucional.value
-);
-
-const tipoUsuarioLabel = computed(() => {
-  if (props.mode === "create") return "Externo";
-  if (isInstitucional.value) return "Institucional";
-  if (isExterno.value) return "Externo";
-
-  return "Usuario";
+  );
 });
 
+
+const showAcademicoSection = computed(() => {
+  return Boolean(
+    props.mode === "edit" &&
+    isInstitucional.value
+  );
+});
+
+
+const tipoUsuarioLabel = computed(() => {
+  if (props.mode === "create") {
+    return "Cuenta externa";
+  }
+
+  if (isInstitucional.value) {
+    return "Cuenta institucional";
+  }
+
+  if (isExterno.value) {
+    return "Cuenta externa";
+  }
+
+  return "Cuenta sin clasificación válida";
+});
+
+
+const descripcionEdicion = computed(() => {
+  if (isInstitucional.value) {
+    return (
+      "Actualice los datos personales, la asignación " +
+      "académica y los permisos del usuario institucional."
+    );
+  }
+
+  if (isExterno.value) {
+    return (
+      "Actualice los datos personales y los permisos " +
+      "del usuario externo."
+    );
+  }
+
+  return (
+    "Actualice los datos permitidos y revise la " +
+    "clasificación actual de la cuenta."
+  );
+});
+
+
 const estadoLabel = computed(() => {
-  if (props.mode === "create") return "Pendiente";
-  if (isPendiente.value) return "Pendiente";
+  if (props.mode === "create") {
+    return "Pendiente";
+  }
+
+  if (isPendiente.value) {
+    return "Pendiente";
+  }
 
   return props.usuario?.is_active
     ? "Activo"
     : "Inactivo";
 });
 
+
 const estadoBadgeClass = computed(() => {
-  const value = String(estadoLabel.value || "")
-    .toLowerCase()
-    .trim();
+  const value = normalizeAccountValue(
+    estadoLabel.value
+  );
 
   if (value.includes("pend")) {
     return "usermodal-badge--warn";
   }
 
-  if (value.includes("inactivo")) {
+  if (value === "inactivo") {
     return "usermodal-badge--off";
   }
 
-  if (value.includes("activo")) {
+  if (value === "activo") {
     return "usermodal-badge--ok";
   }
 
   return "usermodal-badge--neutral";
 });
 
-const showAcademicoSection = computed(() => {
-  if (props.mode !== "edit") return false;
 
-  return !isExterno.value;
+const cedulaActual = computed(() => {
+  return normalizeText(
+    form.identificacion
+  );
 });
+
+
+const cedulaTieneError = computed(() => {
+  if (!cedulaActual.value) {
+    return false;
+  }
+
+  return !/^\d{10}$/.test(
+    cedulaActual.value
+  );
+});
+
 
 const uiProfileLockedLabel = computed(() => {
   if (
@@ -861,6 +1102,7 @@ const uiProfileLockedLabel = computed(() => {
     : "No";
 });
 
+
 const uiAttemptsLeftLabel = computed(() => {
   if (
     attemptsLeft.value === null ||
@@ -869,48 +1111,109 @@ const uiAttemptsLeftLabel = computed(() => {
     return "—";
   }
 
-  return String(attemptsLeft.value);
+  return String(
+    attemptsLeft.value
+  );
 });
 
+
 const uiProfileUntilLabel = computed(() => {
-  if (!profileUntil.value) return "—";
+  if (!profileUntil.value) {
+    return "—";
+  }
 
   try {
-    const date = new Date(profileUntil.value);
+    const date = new Date(
+      profileUntil.value
+    );
 
     if (Number.isNaN(date.getTime())) {
-      return String(profileUntil.value);
+      return String(
+        profileUntil.value
+      );
     }
 
-    return new Intl.DateTimeFormat("es-EC", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(date);
+    return new Intl.DateTimeFormat(
+      "es-EC",
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }
+    ).format(date);
   } catch {
-    return String(profileUntil.value);
+    return String(
+      profileUntil.value
+    );
   }
 });
 
-const toSelectOptions = (items) => {
-  if (!Array.isArray(items)) return [];
 
-  return items.map((item) => ({
-    value: item.id ?? item.value,
-    label:
-      item.nombre ??
-      item.label ??
-      String(item),
-  }));
+/* ============================================================
+   UTILIDADES DE FORMULARIO
+============================================================ */
+
+const sanitizeCedula = () => {
+  form.identificacion =
+    sanitizeCedulaValue(
+      form.identificacion
+    );
 };
 
+
+const toSelectOptions = (items) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      const value =
+        item?.id ??
+        item?.value ??
+        null;
+
+      const label =
+        item?.nombre ??
+        item?.label ??
+        "";
+
+      return {
+        value,
+        label: normalizeText(label),
+      };
+    })
+    .filter((item) => {
+      return (
+        item.value !== null &&
+        item.value !== undefined &&
+        item.value !== "" &&
+        item.label
+      );
+    });
+};
+
+
 const resolveApiError = (data) => {
-  if (!data) return "";
+  if (!data) {
+    return "";
+  }
+
+  if (typeof data === "string") {
+    return data;
+  }
 
   if (
     typeof data?.detail === "string" &&
     data.detail
   ) {
     return data.detail;
+  }
+
+  if (
+    Array.isArray(data?.detail) &&
+    data.detail[0]
+  ) {
+    return String(data.detail[0]);
   }
 
   if (
@@ -923,6 +1226,8 @@ const resolveApiError = (data) => {
   const priorityKeys = [
     "email",
     "identificacion",
+    "nombres",
+    "apellidos",
     "facultad",
     "carrera",
     "rol",
@@ -948,45 +1253,71 @@ const resolveApiError = (data) => {
     ) {
       return value;
     }
+
+    if (
+      value &&
+      typeof value === "object"
+    ) {
+      const nestedMessage =
+        resolveApiError(value);
+
+      if (nestedMessage) {
+        return nestedMessage;
+      }
+    }
   }
 
-  const firstKey = Object.keys(data || {})[0];
+  for (const value of Object.values(data)) {
+    if (
+      Array.isArray(value) &&
+      value[0]
+    ) {
+      return String(value[0]);
+    }
 
-  const firstValue = firstKey
-    ? data[firstKey]
-    : null;
+    if (
+      typeof value === "string" &&
+      value
+    ) {
+      return value;
+    }
 
-  if (
-    Array.isArray(firstValue) &&
-    firstValue[0]
-  ) {
-    return String(firstValue[0]);
-  }
+    if (
+      value &&
+      typeof value === "object"
+    ) {
+      const nestedMessage =
+        resolveApiError(value);
 
-  if (
-    typeof firstValue === "string" &&
-    firstValue
-  ) {
-    return firstValue;
+      if (nestedMessage) {
+        return nestedMessage;
+      }
+    }
   }
 
   return "";
 };
+
 
 /* ============================================================
    ACCESIBILIDAD DEL MODAL
 ============================================================ */
 
 const requestClose = () => {
-  if (formBusy.value) return;
+  if (formBusy.value) {
+    return;
+  }
 
   emit("close");
 };
 
+
 const getFocusableElements = () => {
   const dialog = dialogRef.value;
 
-  if (!dialog) return [];
+  if (!dialog) {
+    return [];
+  }
 
   const selector = [
     "a[href]",
@@ -999,13 +1330,15 @@ const getFocusableElements = () => {
 
   return Array.from(
     dialog.querySelectorAll(selector)
-  ).filter(
-    (element) =>
+  ).filter((element) => {
+    return (
       !element.hasAttribute("hidden") &&
       element.getAttribute("aria-hidden") !== "true" &&
       element.getClientRects().length > 0
-  );
+    );
+  });
 };
+
 
 const focusInitialControl = async () => {
   await nextTick();
@@ -1015,13 +1348,16 @@ const focusInitialControl = async () => {
       "#usermodal-nombres:not([disabled])"
     );
 
-  if (preferredControl instanceof HTMLElement) {
+  if (
+    preferredControl instanceof HTMLElement
+  ) {
     preferredControl.focus();
     return;
   }
 
   dialogRef.value?.focus();
 };
+
 
 const handleDialogKeydown = (event) => {
   if (event.key === "Escape") {
@@ -1030,7 +1366,9 @@ const handleDialogKeydown = (event) => {
     return;
   }
 
-  if (event.key !== "Tab") return;
+  if (event.key !== "Tab") {
+    return;
+  }
 
   const focusableElements =
     getFocusableElements();
@@ -1070,8 +1408,9 @@ const handleDialogKeydown = (event) => {
   }
 };
 
+
 /* ============================================================
-   CATÁLOGOS
+   CATÁLOGOS ACADÉMICOS
 ============================================================ */
 
 const loadFacultades = async () => {
@@ -1083,107 +1422,156 @@ const loadFacultades = async () => {
 
     facultades.value =
       toSelectOptions(data);
-  } catch {
+  } catch (exception) {
     facultades.value = [];
 
     error.value =
+      resolveApiError(
+        exception?.response?.data
+      ) ||
       "No se pudieron cargar las facultades.";
   } finally {
     loadingCatalogos.value = false;
   }
 };
 
+
 const loadCarreras = async (facultadId) => {
   carreras.value = [];
 
-  if (!facultadId) return;
+  const normalizedFacultyId =
+    toPositiveId(facultadId);
+
+  if (!normalizedFacultyId) {
+    return;
+  }
 
   loadingCarreras.value = true;
 
   try {
     const data =
       await adminApi.selectsCarrerasByFacultad(
-        facultadId
+        normalizedFacultyId
       );
 
     carreras.value =
       toSelectOptions(data);
-  } catch {
+  } catch (exception) {
     carreras.value = [];
 
     error.value =
+      resolveApiError(
+        exception?.response?.data
+      ) ||
       "No se pudieron cargar las carreras.";
   } finally {
     loadingCarreras.value = false;
   }
 };
 
+
 const onFacultadChange = async () => {
   form.carrera = "";
 
-  await loadCarreras(form.facultad);
+  await loadCarreras(
+    form.facultad
+  );
 };
+
 
 /* ============================================================
    CARGA DEL USUARIO
 ============================================================ */
 
+const resetForm = () => {
+  form.id = null;
+  form.nombres = "";
+  form.apellidos = "";
+  form.email = "";
+  form.identificacion = "";
+  form.is_staff = false;
+  form.facultad = "";
+  form.carrera = "";
+
+  facultades.value = [];
+  carreras.value = [];
+
+  profileLocked.value = null;
+  attemptsLeft.value = null;
+  profileUntil.value = null;
+
+  extendHours.value = 24;
+  blockReason.value = "";
+
+  actionType.value = "";
+  error.value = "";
+};
+
+
 watch(
-  () => [props.mode, props.usuario],
+  () => [
+    props.mode,
+    props.usuario,
+  ],
   async ([mode, usuario]) => {
-    error.value = "";
+    resetForm();
 
     if (mode === "create") {
-      form.id = null;
-      form.nombres = "";
-      form.apellidos = "";
-      form.email = "";
-      form.identificacion = "";
-      form.is_staff = false;
-      form.facultad = "";
-      form.carrera = "";
-
-      facultades.value = [];
-      carreras.value = [];
-
-      profileLocked.value = null;
-      attemptsLeft.value = null;
-      profileUntil.value = null;
-
-      extendHours.value = 24;
-      blockReason.value = "";
-
       return;
     }
 
-    if (!usuario) return;
+    if (!usuario) {
+      return;
+    }
 
-    form.id = usuario.id;
-    form.nombres = usuario.nombres || "";
-    form.apellidos = usuario.apellidos || "";
-    form.email = usuario.email || "";
+    form.id =
+      usuario.id ?? null;
+
+    form.nombres =
+      usuario.nombres || "";
+
+    form.apellidos =
+      usuario.apellidos || "";
+
+    form.email =
+      usuario.email || "";
+
     form.identificacion =
-      usuario.identificacion || "";
+      sanitizeCedulaValue(
+        usuario.identificacion || ""
+      );
+
     form.is_staff =
       Boolean(usuario.is_staff);
-    form.facultad =
-      usuario.facultad ?? "";
-    form.carrera =
-      usuario.carrera ?? "";
 
     profileLocked.value =
-      usuario.profile_edit_locked ?? null;
+      usuario.profile_edit_locked ??
+      null;
 
     attemptsLeft.value =
-      usuario.profile_edit_attempts_left ?? null;
+      usuario.profile_edit_attempts_left ??
+      null;
 
     profileUntil.value =
-      usuario.profile_edit_until ?? null;
+      usuario.profile_edit_until ??
+      null;
 
-    extendHours.value = 24;
-    blockReason.value = "";
+    /*
+      El serializer administrativo devuelve expresamente:
 
+      facultad_id
+      carrera
+    */
     if (showAcademicoSection.value) {
+      form.facultad =
+        usuario.facultad_id ??
+        "";
+
+      form.carrera =
+        usuario.carrera ??
+        usuario.carrera_id ??
+        "";
+
       await loadFacultades();
 
       if (form.facultad) {
@@ -1192,6 +1580,8 @@ watch(
         );
       }
     } else {
+      form.facultad = "";
+      form.carrera = "";
       facultades.value = [];
       carreras.value = [];
     }
@@ -1201,8 +1591,9 @@ watch(
   }
 );
 
+
 /* ============================================================
-   CONTROL DE EDICIÓN DEL PERFIL
+   CONTROL DE EDICIÓN
 ============================================================ */
 
 const handleHabilitarEdicion = async () => {
@@ -1214,6 +1605,7 @@ const handleHabilitarEdicion = async () => {
   }
 
   actionBusy.value = true;
+  actionType.value = "enable";
 
   try {
     const response =
@@ -1222,13 +1614,16 @@ const handleHabilitarEdicion = async () => {
       );
 
     profileLocked.value =
-      response?.profile_edit_locked ?? false;
+      response?.profile_edit_locked ??
+      false;
 
     attemptsLeft.value =
-      response?.profile_edit_attempts_left ?? 3;
+      response?.profile_edit_attempts_left ??
+      3;
 
     profileUntil.value =
-      response?.profile_edit_until ?? null;
+      response?.profile_edit_until ??
+      null;
 
     openNotice({
       title: "Edición habilitada",
@@ -1243,12 +1638,14 @@ const handleHabilitarEdicion = async () => {
       title: "No se pudo habilitar",
       message:
         resolveApiError(data) ||
-        "No se pudo habilitar la edición del perfil. Intente nuevamente.",
+        "No se pudo habilitar la edición del perfil.",
     });
   } finally {
     actionBusy.value = false;
+    actionType.value = "";
   }
 };
+
 
 const handleExtenderEdicion = async () => {
   if (
@@ -1258,47 +1655,43 @@ const handleExtenderEdicion = async () => {
     return;
   }
 
+  const horas =
+    Number(extendHours.value);
+
+  if (
+    !Number.isInteger(horas) ||
+    horas <= 0
+  ) {
+    openNotice({
+      title: "Horas inválidas",
+      message:
+        "Seleccione un número válido de horas.",
+    });
+
+    return;
+  }
+
   actionBusy.value = true;
+  actionType.value = "extend";
 
   try {
-    const horas = Number(
-      extendHours.value || 24
-    );
-
     const response =
       await adminApi.extenderEdicionPerfil(
         form.id,
         horas
       );
 
-    if (
-      response &&
-      typeof response === "object"
-    ) {
-      if (
-        "profile_edit_until" in response
-      ) {
-        profileUntil.value =
-          response.profile_edit_until;
-      }
+    profileUntil.value =
+      response?.profile_edit_until ??
+      profileUntil.value;
 
-      if (
-        "profile_edit_locked" in response
-      ) {
-        profileLocked.value =
-          Boolean(
-            response.profile_edit_locked
-          );
-      }
+    profileLocked.value =
+      response?.profile_edit_locked ??
+      false;
 
-      if (
-        "profile_edit_attempts_left" in
-        response
-      ) {
-        attemptsLeft.value =
-          response.profile_edit_attempts_left;
-      }
-    }
+    attemptsLeft.value =
+      response?.profile_edit_attempts_left ??
+      attemptsLeft.value;
 
     openNotice({
       title: "Edición extendida",
@@ -1313,12 +1706,14 @@ const handleExtenderEdicion = async () => {
       title: "No se pudo extender",
       message:
         resolveApiError(data) ||
-        "No se pudo extender la edición del perfil. Intente nuevamente.",
+        "No se pudo extender la edición del perfil.",
     });
   } finally {
     actionBusy.value = false;
+    actionType.value = "";
   }
 };
+
 
 const handleBloquearEdicion = async () => {
   if (
@@ -1331,13 +1726,14 @@ const handleBloquearEdicion = async () => {
   openNotice({
     title: "Confirmar bloqueo",
     message:
-      "¿Desea bloquear la edición del perfil para este usuario? Podrá habilitarla nuevamente cuando lo necesite.",
+      "¿Desea bloquear la edición del perfil para este usuario?",
     confirm: true,
     cancelText: "Cancelar",
     confirmText: "Sí, bloquear",
 
     onConfirm: async () => {
       actionBusy.value = true;
+      actionType.value = "block";
 
       try {
         const response =
@@ -1347,13 +1743,16 @@ const handleBloquearEdicion = async () => {
           );
 
         profileLocked.value =
-          response?.profile_edit_locked ?? true;
+          response?.profile_edit_locked ??
+          true;
 
         attemptsLeft.value =
-          response?.profile_edit_attempts_left ?? 0;
+          response?.profile_edit_attempts_left ??
+          0;
 
         profileUntil.value =
-          response?.profile_edit_until ?? null;
+          response?.profile_edit_until ??
+          null;
 
         openNotice({
           title: "Edición bloqueada",
@@ -1368,100 +1767,132 @@ const handleBloquearEdicion = async () => {
           title: "No se pudo bloquear",
           message:
             resolveApiError(data) ||
-            "No se pudo bloquear la edición del perfil. Intente nuevamente.",
+            "No se pudo bloquear la edición del perfil.",
         });
       } finally {
         actionBusy.value = false;
+        actionType.value = "";
       }
     },
   });
 };
 
+
 /* ============================================================
-   GUARDADO
+   VALIDACIÓN Y GUARDADO
 ============================================================ */
 
+const validateForm = () => {
+  const nombres =
+    normalizeText(form.nombres);
+
+  const apellidos =
+    normalizeText(form.apellidos);
+
+  const email =
+    cleanEmail(form.email);
+
+  const identificacion =
+    normalizeText(form.identificacion);
+
+  if (
+    !nombres ||
+    !apellidos ||
+    !email
+  ) {
+    return {
+      valid: false,
+      message:
+        "Complete los campos obligatorios antes de guardar.",
+    };
+  }
+
+  if (
+    props.mode === "create" &&
+    !identificacion
+  ) {
+    return {
+      valid: false,
+      message:
+        "Ingrese el número de cédula del usuario externo.",
+    };
+  }
+
+  if (
+    identificacion &&
+    !/^\d{10}$/.test(identificacion)
+  ) {
+    return {
+      valid: false,
+      message:
+        "La cédula debe contener exactamente 10 dígitos numéricos.",
+    };
+  }
+
+  if (
+    showAcademicoSection.value &&
+    (
+      !toPositiveId(form.facultad) ||
+      !toPositiveId(form.carrera)
+    )
+  ) {
+    return {
+      valid: false,
+      message:
+        "Seleccione la Facultad y la Carrera del usuario institucional.",
+    };
+  }
+
+  return {
+    valid: true,
+    nombres,
+    apellidos,
+    email,
+    identificacion:
+      identificacion || null,
+  };
+};
+
+
 const submit = async () => {
-  if (formBusy.value) return;
+  if (formBusy.value) {
+    return;
+  }
 
   error.value = "";
+
+  const validation =
+    validateForm();
+
+  if (!validation.valid) {
+    error.value =
+      validation.message;
+
+    return;
+  }
+
   saving.value = true;
 
   try {
-    const nombres = String(
-      form.nombres || ""
-    ).trim();
-
-    const apellidos = String(
-      form.apellidos || ""
-    ).trim();
-
-    const email = String(
-      form.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    const identificacionRaw = String(
-      form.identificacion || ""
-    ).trim();
-
-    const identificacion =
-      identificacionRaw || null;
-
-    if (
-      !nombres ||
-      !apellidos ||
-      !email
-    ) {
-      error.value =
-        "Complete los campos obligatorios antes de guardar.";
-
-      return;
-    }
-
-    if (
-      props.mode === "create" &&
-      !identificacion
-    ) {
-      error.value =
-        "Ingrese la identificación del usuario externo.";
-
-      return;
-    }
-
-    if (
-      identificacion &&
-      !/^\d+$/.test(identificacion)
-    ) {
-      error.value =
-        "La identificación debe contener solo números.";
-
-      return;
-    }
-
-    if (
-      identificacion &&
-      identificacion.length !== 10
-    ) {
-      error.value =
-        "La identificación debe tener 10 dígitos numéricos.";
-
-      return;
-    }
-
     if (props.mode === "create") {
       await adminApi.crearUsuario({
-        nombres,
-        apellidos,
-        email,
-        identificacion,
+        nombres:
+          validation.nombres,
+
+        apellidos:
+          validation.apellidos,
+
+        email:
+          validation.email,
+
+        identificacion:
+          validation.identificacion,
       });
 
       emit("done", {
         title: "Usuario registrado",
         message:
-          "Se registró correctamente. Para permitir el acceso, utilice Pendientes → Activar cuenta.",
+          "La cuenta externa se registró como pendiente. Para permitir el acceso, utilice Pendientes → Activar cuenta.",
       });
 
       return;
@@ -1469,40 +1900,52 @@ const submit = async () => {
 
     if (!form.id) {
       throw new Error(
-        "ID faltante en edición."
+        "No se pudo determinar el usuario que se editará."
       );
     }
 
     const payload = {
-      nombres,
-      apellidos,
-      email,
-      identificacion,
-      is_staff_set:
+      nombres:
+        validation.nombres,
+
+      apellidos:
+        validation.apellidos,
+
+      identificacion:
+        validation.identificacion,
+
+      /*
+        El backend espera is_staff.
+
+        No debe utilizarse el nombre anterior is_staff_set.
+      */
+      is_staff:
         Boolean(form.is_staff),
     };
 
+    /*
+      El correo institucional no puede editarse desde este
+      panel porque se administra mediante Microsoft.
+    */
+    if (!emailLocked.value) {
+      payload.email =
+        validation.email;
+    }
+
+    /*
+      Facultad y Carrera solo se envían para una cuenta
+      institucional Microsoft.
+    */
     if (showAcademicoSection.value) {
-      const facultad = form.facultad
-        ? Number(form.facultad)
-        : null;
+      payload.facultad =
+        toPositiveId(
+          form.facultad
+        );
 
-      const carrera = form.carrera
-        ? Number(form.carrera)
-        : null;
-
-      if (
-        !facultad ||
-        !carrera
-      ) {
-        error.value =
-          "Seleccione facultad y carrera para completar la asignación académica.";
-
-        return;
-      }
-
-      payload.facultad = facultad;
-      payload.carrera = carrera;
+      payload.carrera =
+        toPositiveId(
+          form.carrera
+        );
     }
 
     await adminApi.editarUsuario(
@@ -1513,7 +1956,7 @@ const submit = async () => {
     emit("done", {
       title: "Cambios guardados",
       message:
-        "Los datos del usuario se actualizaron correctamente.",
+        "Los datos y permisos del usuario se actualizaron correctamente.",
     });
   } catch (exception) {
     const data =
@@ -1521,16 +1964,19 @@ const submit = async () => {
 
     error.value =
       resolveApiError(data) ||
+      exception?.message ||
       "No se pudo guardar la información.";
 
     openNotice({
       title: "No se pudo guardar",
       message: error.value,
+      details: data || null,
     });
   } finally {
     saving.value = false;
   }
 };
+
 
 /* ============================================================
    CICLO DE VIDA
@@ -1549,6 +1995,7 @@ onMounted(() => {
   focusInitialControl();
 });
 
+
 onBeforeUnmount(() => {
   document.body.style.overflow =
     previousBodyOverflow;
@@ -1563,4 +2010,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style src="../styles/admin-shared.css"></style>
-<style scoped src="./usuario-modal.css"></style>
+<style
+  scoped
+  src="./usuario-modal.css"
+></style>

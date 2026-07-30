@@ -27,15 +27,15 @@
             id="activate-dialog-title"
             class="modal__title activate-title"
           >
-            Activar cuenta
+            Activar cuenta externa
           </h2>
 
           <p
             id="activate-dialog-description"
             class="modal__subtitle activate-subtitle"
           >
-            Defina las credenciales de acceso para habilitar la cuenta
-            del usuario externo.
+            Defina las credenciales de acceso para habilitar la
+            cuenta externa seleccionada.
           </p>
         </div>
 
@@ -56,6 +56,7 @@
       ====================================================== -->
       <form
         class="activate-form"
+        novalidate
         @submit.prevent="activar"
       >
         <div class="activate-body">
@@ -88,14 +89,20 @@
                   </h3>
                 </div>
 
-                <span class="activate-status">
-                  Pendiente
+                <span
+                  class="activate-status"
+                  :class="{
+                    'activate-status--invalid':
+                      Boolean(targetValidationMessage),
+                  }"
+                >
+                  {{ estadoCuentaLabel }}
                 </span>
               </div>
 
               <dl class="activate-meta">
                 <div class="activate-meta__item">
-                  <dt>Identificación</dt>
+                  <dt>Número de cédula</dt>
 
                   <dd>
                     {{
@@ -107,7 +114,8 @@
 
                 <div class="activate-meta__item">
                   <dt>Tipo de cuenta</dt>
-                  <dd>Usuario externo</dd>
+
+                  <dd>{{ tipoCuentaLabel }}</dd>
                 </div>
 
                 <div class="activate-meta__item">
@@ -123,6 +131,33 @@
               </dl>
             </div>
           </section>
+
+          <!-- =================================================
+               INCONSISTENCIA DE LA CUENTA
+          ================================================== -->
+          <div
+            v-if="targetValidationMessage"
+            class="activate-error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <span
+              class="activate-error__icon"
+              aria-hidden="true"
+            >
+              !
+            </span>
+
+            <div>
+              <strong>
+                La cuenta no puede activarse
+              </strong>
+
+              <p>
+                {{ targetValidationMessage }}
+              </p>
+            </div>
+          </div>
 
           <!-- =================================================
                CREDENCIALES
@@ -141,13 +176,15 @@
                 </h3>
 
                 <p class="activate-section__subtitle">
-                  El correo y la contraseña permitirán que el usuario
-                  inicie sesión en el sistema.
+                  El correo y la contraseña permitirán que el
+                  usuario inicie sesión mediante la cuenta local
+                  del SGPC ULEAM.
                 </p>
               </div>
             </div>
 
             <div class="activate-grid">
+              <!-- CORREO -->
               <div class="activate-field">
                 <label
                   for="activate-email"
@@ -171,12 +208,18 @@
                   name="email"
                   type="email"
                   required
-                  maxlength="254"
+                  maxlength="150"
                   placeholder="usuario@correo.com"
                   autocomplete="email"
                   inputmode="email"
-                  :disabled="saving"
-                  :aria-invalid="Boolean(error) && !emailValid"
+                  :disabled="
+                    saving ||
+                    Boolean(targetValidationMessage)
+                  "
+                  :aria-invalid="
+                    Boolean(email) &&
+                    !emailValid
+                  "
                   aria-describedby="activate-email-help"
                 />
 
@@ -184,10 +227,12 @@
                   id="activate-email-help"
                   class="activate-help"
                 >
-                  Se utilizará como identificador para iniciar sesión.
+                  Este correo se utilizará como identificador
+                  para iniciar sesión.
                 </p>
               </div>
 
+              <!-- CONTRASEÑA -->
               <div class="activate-field">
                 <label
                   for="activate-password"
@@ -209,17 +254,23 @@
                     v-model="password"
                     class="field-control activate-input activate-password__input"
                     name="password"
-                    :type="showPassword ? 'text' : 'password'"
+                    :type="
+                      showPassword
+                        ? 'text'
+                        : 'password'
+                    "
                     required
                     minlength="8"
                     maxlength="128"
                     placeholder="Mínimo 8 caracteres"
                     autocomplete="new-password"
-                    :disabled="saving"
+                    :disabled="
+                      saving ||
+                      Boolean(targetValidationMessage)
+                    "
                     :aria-invalid="
-                      Boolean(error) &&
-                      password.length > 0 &&
-                      password.length < 8
+                      Boolean(password) &&
+                      !passwordValid
                     "
                     aria-describedby="activate-password-help"
                   />
@@ -227,7 +278,10 @@
                   <button
                     type="button"
                     class="activate-password__toggle"
-                    :disabled="saving"
+                    :disabled="
+                      saving ||
+                      Boolean(targetValidationMessage)
+                    "
                     :aria-label="
                       showPassword
                         ? 'Ocultar contraseña'
@@ -238,7 +292,9 @@
                         ? 'Ocultar contraseña'
                         : 'Mostrar contraseña'
                     "
-                    @click="showPassword = !showPassword"
+                    @click="
+                      showPassword = !showPassword
+                    "
                   >
                     <svg
                       v-if="!showPassword"
@@ -269,7 +325,8 @@
                   class="activate-password-help"
                 >
                   <p class="activate-help">
-                    Debe contener al menos 8 caracteres.
+                    Debe contener entre 8 y 128 caracteres y
+                    cumplir las reglas de seguridad del sistema.
                   </p>
 
                   <span
@@ -293,15 +350,15 @@
               </span>
 
               <p>
-                La cuenta quedará activa inmediatamente después de
-                guardar. Comparta las credenciales únicamente con el
-                usuario correspondiente.
+                La cuenta quedará activa inmediatamente después
+                de guardar. Comparta las credenciales únicamente
+                con el usuario correspondiente.
               </p>
             </div>
           </section>
 
           <!-- =================================================
-               ERROR
+               ERROR DEL SERVIDOR
           ================================================== -->
           <div
             v-if="error"
@@ -317,7 +374,10 @@
             </span>
 
             <div>
-              <strong>No se pudo activar la cuenta</strong>
+              <strong>
+                No se pudo activar la cuenta
+              </strong>
+
               <p>{{ error }}</p>
             </div>
           </div>
@@ -339,7 +399,10 @@
           <button
             type="submit"
             class="btn-primary activate-submit"
-            :disabled="saving || !canSubmit"
+            :disabled="
+              saving ||
+              !canSubmit
+            "
           >
             <span
               v-if="saving"
@@ -372,6 +435,7 @@ import {
 import { adminApi } from "../../scripts/api/adminApi";
 import { useNotice } from "../../scripts/composables/useNotice";
 
+
 const props = defineProps({
   usuario: {
     type: Object,
@@ -379,9 +443,15 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "done"]);
+
+const emit = defineEmits([
+  "close",
+  "done",
+]);
+
 
 const { openNotice } = useNotice();
+
 
 const dialogRef = ref(null);
 const emailInputRef = ref(null);
@@ -393,22 +463,53 @@ const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
 
+
 let previouslyFocusedElement = null;
 let previousBodyOverflow = "";
 
-const cleanEmail = (value) =>
-  String(value || "")
-    .trim()
-    .toLowerCase();
+
+const ROLE_EXTERNAL = "autor_externo";
+const AUTH_SOURCE_LOCAL = "local";
+
+
+/* ============================================================
+   NORMALIZACIÓN
+============================================================ */
+
+const normalizeText = (value) => {
+  return String(value ?? "").trim();
+};
+
+
+const normalizeAccountValue = (value) => {
+  return normalizeText(value).toLowerCase();
+};
+
+
+const cleanEmail = (value) => {
+  return normalizeText(value).toLowerCase();
+};
+
+
+const hasValidCedula = (value) => {
+  return /^\d{10}$/.test(
+    normalizeText(value)
+  );
+};
+
+
+/* ============================================================
+   INFORMACIÓN DEL USUARIO
+============================================================ */
 
 const nombreCompleto = computed(() => {
-  const nombres = String(
-    props.usuario?.nombres || ""
-  ).trim();
+  const nombres = normalizeText(
+    props.usuario?.nombres
+  );
 
-  const apellidos = String(
-    props.usuario?.apellidos || ""
-  ).trim();
+  const apellidos = normalizeText(
+    props.usuario?.apellidos
+  );
 
   return (
     `${nombres} ${apellidos}`.trim() ||
@@ -416,85 +517,224 @@ const nombreCompleto = computed(() => {
   );
 });
 
+
 const userInitials = computed(() => {
   const initials = nombreCompleto.value
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((part) => {
+      return part
+        .charAt(0)
+        .toUpperCase();
+    })
     .join("");
 
   return initials || "U";
 });
 
-const emailValid = computed(() => {
-  const value = cleanEmail(email.value);
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-});
+const isExternalAccount = computed(() => {
+  const role = normalizeAccountValue(
+    props.usuario?.rol
+  );
 
-const passwordStatusLabel = computed(() => {
-  const length = String(password.value || "").length;
+  const authSource = normalizeAccountValue(
+    props.usuario?.auth_source
+  );
 
-  if (length === 0) return "";
-  if (length < 8) return "Contraseña incompleta";
-  if (length < 12) return "Contraseña válida";
-
-  return "Contraseña reforzada";
-});
-
-const passwordStatusClass = computed(() => {
-  const length = String(password.value || "").length;
-
-  if (length < 8) {
-    return "activate-password-status--invalid";
-  }
-
-  if (length < 12) {
-    return "activate-password-status--valid";
-  }
-
-  return "activate-password-status--strong";
-});
-
-const canSubmit = computed(() => {
-  return (
-    Boolean(props.usuario?.id) &&
-    emailValid.value &&
-    String(password.value || "").length >= 8
+  return Boolean(
+    role === ROLE_EXTERNAL &&
+    authSource === AUTH_SOURCE_LOCAL
   );
 });
 
-const resolveApiError = (data) => {
-  if (!data) return "";
 
-  if (
-    typeof data?.detail === "string" &&
-    data.detail
-  ) {
-    return data.detail;
+const isPendingAccount = computed(() => {
+  return Boolean(
+    isExternalAccount.value &&
+    !props.usuario?.is_active
+  );
+});
+
+
+const tipoCuentaLabel = computed(() => {
+  if (isExternalAccount.value) {
+    return "Cuenta externa";
+  }
+
+  return "Cuenta con clasificación incompatible";
+});
+
+
+const estadoCuentaLabel = computed(() => {
+  if (isPendingAccount.value) {
+    return "Pendiente";
+  }
+
+  if (props.usuario?.is_active) {
+    return "Activa";
+  }
+
+  return "No disponible";
+});
+
+
+const targetValidationMessage = computed(() => {
+  if (!props.usuario?.id) {
+    return (
+      "No se pudo determinar el usuario seleccionado."
+    );
+  }
+
+  if (!isExternalAccount.value) {
+    return (
+      "Esta operación solo está disponible para cuentas " +
+      "externas con autenticación local."
+    );
+  }
+
+  if (props.usuario?.is_active) {
+    return (
+      "La cuenta seleccionada ya se encuentra activa."
+    );
   }
 
   if (
-    typeof data?.error === "string" &&
-    data.error
+    !hasValidCedula(
+      props.usuario?.identificacion
+    )
   ) {
-    return data.error;
+    return (
+      "La cuenta debe tener un número de cédula válido de " +
+      "exactamente 10 dígitos antes de ser activada."
+    );
   }
 
-  for (const key of [
+  return "";
+});
+
+
+/* ============================================================
+   VALIDACIÓN DEL FORMULARIO
+============================================================ */
+
+const emailValid = computed(() => {
+  const value = cleanEmail(
+    email.value
+  );
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    value
+  );
+});
+
+
+const passwordValid = computed(() => {
+  const value = String(
+    password.value ?? ""
+  );
+
+  return Boolean(
+    value.length >= 8 &&
+    value.length <= 128 &&
+    value.trim().length > 0
+  );
+});
+
+
+const passwordStatusLabel = computed(() => {
+  const value = String(
+    password.value ?? ""
+  );
+
+  const length = value.length;
+
+  if (length === 0) {
+    return "";
+  }
+
+  if (
+    length < 8 ||
+    value.trim().length === 0
+  ) {
+    return "Contraseña incompleta";
+  }
+
+  if (length < 12) {
+    return "Longitud válida";
+  }
+
+  return "Longitud reforzada";
+});
+
+
+const passwordStatusClass = computed(() => {
+  if (!passwordValid.value) {
+    return (
+      "activate-password-status--invalid"
+    );
+  }
+
+  if (
+    String(password.value ?? "").length < 12
+  ) {
+    return (
+      "activate-password-status--valid"
+    );
+  }
+
+  return (
+    "activate-password-status--strong"
+  );
+});
+
+
+const canSubmit = computed(() => {
+  return Boolean(
+    !targetValidationMessage.value &&
+    emailValid.value &&
+    passwordValid.value
+  );
+});
+
+
+/* ============================================================
+   ERRORES DEL BACKEND
+============================================================ */
+
+const resolveApiError = (
+  data,
+  visited = new Set()
+) => {
+  if (!data) {
+    return "";
+  }
+
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (
+    typeof data !== "object" ||
+    visited.has(data)
+  ) {
+    return "";
+  }
+
+  visited.add(data);
+
+  const priorityKeys = [
+    "detail",
     "email",
     "password",
+    "identificacion",
     "non_field_errors",
-  ]) {
-    const value = data?.[key];
+    "error",
+  ];
 
-    if (
-      Array.isArray(value) &&
-      value[0]
-    ) {
-      return String(value[0]);
-    }
+  for (const key of priorityKeys) {
+    const value = data?.[key];
 
     if (
       typeof value === "string" &&
@@ -502,45 +742,73 @@ const resolveApiError = (data) => {
     ) {
       return value;
     }
+
+    if (
+      Array.isArray(value) &&
+      value.length
+    ) {
+      for (const item of value) {
+        const message =
+          resolveApiError(
+            item,
+            visited
+          );
+
+        if (message) {
+          return message;
+        }
+      }
+    }
+
+    if (
+      value &&
+      typeof value === "object"
+    ) {
+      const message =
+        resolveApiError(
+          value,
+          visited
+        );
+
+      if (message) {
+        return message;
+      }
+    }
   }
 
-  const firstKey = Object.keys(
-    data || {}
-  )[0];
+  for (const value of Object.values(data)) {
+    const message =
+      resolveApiError(
+        value,
+        visited
+      );
 
-  const firstValue = firstKey
-    ? data[firstKey]
-    : null;
-
-  if (
-    Array.isArray(firstValue) &&
-    firstValue[0]
-  ) {
-    return String(firstValue[0]);
-  }
-
-  if (
-    typeof firstValue === "string" &&
-    firstValue
-  ) {
-    return firstValue;
+    if (message) {
+      return message;
+    }
   }
 
   return "";
 };
+
 
 /* ============================================================
    ACCESIBILIDAD DEL MODAL
 ============================================================ */
 
 const requestClose = () => {
-  if (saving.value) return;
+  if (saving.value) {
+    return;
+  }
 
   emit("close");
 };
 
+
 const getFocusableElements = () => {
-  if (!dialogRef.value) return [];
+  if (!dialogRef.value) {
+    return [];
+  }
 
   const selector = [
     "a[href]",
@@ -552,9 +820,11 @@ const getFocusableElements = () => {
   ].join(",");
 
   return Array.from(
-    dialogRef.value.querySelectorAll(selector)
+    dialogRef.value.querySelectorAll(
+      selector
+    )
   ).filter((element) => {
-    return (
+    return Boolean(
       !element.hasAttribute("hidden") &&
       element.getAttribute("aria-hidden") !== "true" &&
       element.getClientRects().length > 0
@@ -562,28 +832,36 @@ const getFocusableElements = () => {
   });
 };
 
+
 const focusInitialControl = async () => {
   await nextTick();
 
   if (
-    emailInputRef.value instanceof HTMLElement
+    emailInputRef.value instanceof
+    HTMLElement &&
+    !emailInputRef.value.disabled
   ) {
     emailInputRef.value.focus();
     emailInputRef.value.select();
+
     return;
   }
 
   dialogRef.value?.focus();
 };
 
+
 const handleDialogKeydown = (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
     requestClose();
+
     return;
   }
 
-  if (event.key !== "Tab") return;
+  if (event.key !== "Tab") {
+    return;
+  }
 
   const focusableElements =
     getFocusableElements();
@@ -591,6 +869,7 @@ const handleDialogKeydown = (event) => {
   if (!focusableElements.length) {
     event.preventDefault();
     dialogRef.value?.focus();
+
     return;
   }
 
@@ -611,6 +890,7 @@ const handleDialogKeydown = (event) => {
   ) {
     event.preventDefault();
     lastElement.focus();
+
     return;
   }
 
@@ -623,50 +903,59 @@ const handleDialogKeydown = (event) => {
   }
 };
 
+
 /* ============================================================
-   SINCRONIZACIÓN
+   SINCRONIZACIÓN DEL USUARIO
 ============================================================ */
 
 watch(
   () => props.usuario,
-  (usuario) => {
+  async (usuario) => {
     error.value = "";
     password.value = "";
     showPassword.value = false;
-    email.value = cleanEmail(usuario?.email);
+
+    email.value = cleanEmail(
+      usuario?.email
+    );
+
+    await focusInitialControl();
   },
   {
     immediate: true,
   }
 );
 
+
 /* ============================================================
    ACTIVACIÓN
 ============================================================ */
 
 const activar = async () => {
-  if (saving.value) return;
+  if (saving.value) {
+    return;
+  }
 
   error.value = "";
 
-  if (!props.usuario?.id) {
+  if (targetValidationMessage.value) {
     error.value =
-      "No se pudo identificar al usuario seleccionado.";
+      targetValidationMessage.value;
 
     return;
   }
 
-  const mail = cleanEmail(email.value);
-  const pass = String(
-    password.value || ""
-  ).trim();
+  const normalizedEmail = cleanEmail(
+    email.value
+  );
 
-  if (!mail || !pass) {
-    error.value =
-      "Complete el correo electrónico y la contraseña.";
-
-    return;
-  }
+  /*
+    La contraseña no debe normalizarse con trim(), porque eso
+    modificaría el valor que el administrador escribió.
+  */
+  const rawPassword = String(
+    password.value ?? ""
+  );
 
   if (!emailValid.value) {
     error.value =
@@ -678,9 +967,9 @@ const activar = async () => {
     return;
   }
 
-  if (pass.length < 8) {
+  if (!passwordValid.value) {
     error.value =
-      "La contraseña debe tener al menos 8 caracteres.";
+      "La contraseña debe contener entre 8 y 128 caracteres y no puede estar vacía.";
 
     return;
   }
@@ -688,18 +977,20 @@ const activar = async () => {
   saving.value = true;
 
   try {
-    await adminApi.activarUsuario(
-      props.usuario.id,
-      {
-        email: mail,
-        password: pass,
-      }
-    );
+    const updatedUser =
+      await adminApi.activarUsuario(
+        props.usuario.id,
+        {
+          email: normalizedEmail,
+          password: rawPassword,
+        }
+      );
 
     emit("done", {
       title: "Cuenta activada",
       message:
         `La cuenta de ${nombreCompleto.value} fue activada correctamente.`,
+      usuario: updatedUser,
     });
   } catch (exception) {
     const data =
@@ -707,7 +998,11 @@ const activar = async () => {
 
     error.value =
       resolveApiError(data) ||
-      "No se pudo activar la cuenta. Verifique la información e intente nuevamente.";
+      exception?.message ||
+      (
+        "No se pudo activar la cuenta. " +
+        "Revise la información e intente nuevamente."
+      );
 
     openNotice({
       title: "No se pudo activar",
@@ -718,6 +1013,7 @@ const activar = async () => {
     saving.value = false;
   }
 };
+
 
 /* ============================================================
    CICLO DE VIDA
@@ -736,6 +1032,7 @@ onMounted(() => {
   focusInitialControl();
 });
 
+
 onBeforeUnmount(() => {
   document.body.style.overflow =
     previousBodyOverflow;
@@ -750,4 +1047,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style src="../styles/admin-shared.css"></style>
-<style scoped src="./activar-usuario-modal.css"></style>
+
+<style
+  scoped
+  src="./activar-usuario-modal.css"
+></style>

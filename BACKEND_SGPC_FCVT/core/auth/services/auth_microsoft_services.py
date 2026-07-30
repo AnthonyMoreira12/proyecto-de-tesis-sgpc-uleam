@@ -17,6 +17,7 @@ usuario.carrera.facultad.
 """
 
 import logging
+import re
 from urllib.parse import quote
 
 import msal
@@ -110,6 +111,83 @@ def _normalize_text(value):
     return str(
         value or ""
     ).strip()
+
+
+PERSON_NAME_LOWERCASE_PARTICLES = {
+    "da",
+    "das",
+    "de",
+    "del",
+    "do",
+    "dos",
+    "e",
+    "la",
+    "las",
+    "los",
+    "van",
+    "von",
+    "y",
+}
+
+
+def _capitalize_name_fragment(fragment):
+    if not fragment:
+        return fragment
+
+    return (
+        fragment[:1].upper()
+        + fragment[1:].lower()
+    )
+
+
+def _normalize_name_token(token):
+    normalized_token = token.lower()
+
+    if normalized_token in PERSON_NAME_LOWERCASE_PARTICLES:
+        return normalized_token
+
+    fragments = re.split(
+        r"([-’'])",
+        normalized_token,
+    )
+
+    return "".join(
+        fragment
+        if fragment in {
+            "-",
+            "'",
+            "’",
+        }
+        else _capitalize_name_fragment(
+            fragment
+        )
+        for fragment in fragments
+    )
+
+
+def _normalize_person_name(value):
+    """
+    Convierte nombres provenientes de Microsoft a una
+    capitalización uniforme y legible.
+    """
+    normalized = re.sub(
+        r"\s+",
+        " ",
+        _normalize_text(
+            value
+        ),
+    )
+
+    if not normalized:
+        return ""
+
+    return " ".join(
+        _normalize_name_token(
+            token
+        )
+        for token in normalized.split(" ")
+        if token
+    )
 
 
 def _normalize_optional_text(value):
@@ -877,19 +955,28 @@ def resolve_microsoft_identity(
         )
     )
 
-    display_name = _normalize_optional_text(
-        claims.get("name")
-        or graph.get("displayName")
+    display_name = (
+        _normalize_person_name(
+            claims.get("name")
+            or graph.get("displayName")
+        )
+        or None
     )
 
-    given_name = _normalize_optional_text(
-        claims.get("given_name")
-        or graph.get("givenName")
+    given_name = (
+        _normalize_person_name(
+            claims.get("given_name")
+            or graph.get("givenName")
+        )
+        or None
     )
 
-    surname = _normalize_optional_text(
-        claims.get("family_name")
-        or graph.get("surname")
+    surname = (
+        _normalize_person_name(
+            claims.get("family_name")
+            or graph.get("surname")
+        )
+        or None
     )
 
     if (
@@ -1030,21 +1117,24 @@ def _apply_graph_fields(
         ),
 
         "ms_display_name": (
-            _normalize_optional_text(
+            _normalize_person_name(
                 graph.get("displayName")
             )
+            or None
         ),
 
         "ms_given_name": (
-            _normalize_optional_text(
+            _normalize_person_name(
                 graph.get("givenName")
             )
+            or None
         ),
 
         "ms_surname": (
-            _normalize_optional_text(
+            _normalize_person_name(
                 graph.get("surname")
             )
+            or None
         ),
 
         "ms_mail": (
@@ -1410,14 +1500,14 @@ def sync_microsoft_user(
     )
 
     given_name = (
-        _normalize_optional_text(
+        _normalize_person_name(
             identity.get("given")
         )
         or "Usuario"
     )
 
     surname = (
-        _normalize_optional_text(
+        _normalize_person_name(
             identity.get("family")
         )
         or "Institucional"
@@ -1813,8 +1903,8 @@ def build_microsoft_auth_payload(
     )
 
     full_name = (
-        f"{getattr(user, 'nombres', '')} "
-        f"{getattr(user, 'apellidos', '')}"
+        f"{_normalize_person_name(getattr(user, 'nombres', ''))} "
+        f"{_normalize_person_name(getattr(user, 'apellidos', ''))}"
     ).strip()
 
     return {

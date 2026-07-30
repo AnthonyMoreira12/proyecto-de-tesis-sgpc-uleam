@@ -1,33 +1,185 @@
 // src/scripts/api/adminApi.js
+
 import api from "./axios";
 
-const trimText = (value) => String(value ?? "").trim();
 
-const ensureId = (id, label = "id") => {
+/* ============================================================
+   CONSTANTES
+============================================================ */
+
+const ADMIN_USERS_BASE_URL =
+  "admin/usuarios";
+
+const ADMIN_FACULTIES_BASE_URL =
+  "admin/facultades";
+
+const ADMIN_CAREERS_BASE_URL =
+  "admin/carreras";
+
+
+/* ============================================================
+   NORMALIZACIÓN GENERAL
+============================================================ */
+
+const trimText = (value) => {
+  return String(value ?? "").trim();
+};
+
+
+const normalizeEmail = (value) => {
+  return trimText(value).toLowerCase();
+};
+
+
+const normalizeCedula = (value) => {
+  const text = trimText(value);
+
+  return text || null;
+};
+
+
+const normalizeBoolean = (
+  value,
+  fallback = false
+) => {
+  if (value === true || value === 1) {
+    return true;
+  }
+
+  if (value === false || value === 0) {
+    return false;
+  }
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return Boolean(fallback);
+  }
+
+  const normalized =
+    trimText(value).toLowerCase();
+
+  if (
+    normalized === "1" ||
+    normalized === "true" ||
+    normalized === "yes" ||
+    normalized === "y" ||
+    normalized === "on" ||
+    normalized === "si" ||
+    normalized === "sí"
+  ) {
+    return true;
+  }
+
+  if (
+    normalized === "0" ||
+    normalized === "false" ||
+    normalized === "no" ||
+    normalized === "n" ||
+    normalized === "off"
+  ) {
+    return false;
+  }
+
+  return Boolean(fallback);
+};
+
+
+const normalizePositiveInteger = (
+  value,
+  fallback = null
+) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  if (typeof value === "boolean") {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+
+  if (
+    !Number.isInteger(parsed) ||
+    parsed <= 0
+  ) {
+    return fallback;
+  }
+
+  return parsed;
+};
+
+
+/* ============================================================
+   VALIDACIÓN DE IDENTIFICADORES
+============================================================ */
+
+const ensureId = (
+  id,
+  label = "id"
+) => {
   const value = trimText(id);
 
   if (!value) {
-    throw new Error(`El ${label} es obligatorio.`);
+    throw new Error(
+      `El ${label} es obligatorio.`
+    );
   }
 
-  return value;
+  const numericValue = Number(value);
+
+  if (
+    !Number.isInteger(numericValue) ||
+    numericValue <= 0
+  ) {
+    throw new Error(
+      `El ${label} no es válido.`
+    );
+  }
+
+  return String(numericValue);
 };
 
-const buildOptionalParams = (base = {}) => {
-  const params = { ...base };
 
-  Object.keys(params).forEach((key) => {
-    const value = params[key];
+/* ============================================================
+   PARÁMETROS DE CONSULTA
+============================================================ */
 
-    if (value === "" || value == null) {
-      delete params[key];
+const buildOptionalParams = (
+  base = {}
+) => {
+  const params = {
+    ...base,
+  };
+
+  Object.keys(params).forEach(
+    (key) => {
+      const value = params[key];
+
+      if (
+        value === "" ||
+        value === null ||
+        value === undefined
+      ) {
+        delete params[key];
+      }
     }
-  });
+  );
 
   return params;
 };
 
-const withQuery = (q = "", paramsExtra = {}) => {
+
+const withQuery = (
+  q = "",
+  paramsExtra = {}
+) => {
   const query = trimText(q);
 
   return buildOptionalParams({
@@ -36,379 +188,753 @@ const withQuery = (q = "", paramsExtra = {}) => {
   });
 };
 
+
+/* ============================================================
+   RESPUESTAS
+============================================================ */
+
 const getData = async (request) => {
-  const { data } = await request;
-  return data;
+  const response = await request;
+
+  /*
+    DELETE puede responder 204 No Content. En ese caso Axios
+    suele entregar una cadena vacía.
+  */
+  if (
+    response?.status === 204 ||
+    response?.data === ""
+  ) {
+    return null;
+  }
+
+  return response?.data;
 };
 
-const postNoBody = async (url, payload = {}) => {
-  return getData(api.post(url, payload));
+
+/* ============================================================
+   OPERACIONES HTTP GENERALES
+============================================================ */
+
+const postNoBody = async (
+  url,
+  payload = {}
+) => {
+  return getData(
+    api.post(
+      url,
+      payload
+    )
+  );
 };
 
-const patchById = async (baseUrl, id, payload = {}) => {
+
+const patchById = async (
+  baseUrl,
+  id,
+  payload = {}
+) => {
+  const normalizedId = ensureId(
+    id
+  );
+
   return getData(
     api.patch(
-      `${baseUrl}/${ensureId(id)}/`,
+      `${baseUrl}/${normalizedId}/`,
       payload
     )
   );
 };
 
-const deleteById = async (baseUrl, id) => {
+
+const deleteById = async (
+  baseUrl,
+  id
+) => {
+  const normalizedId = ensureId(
+    id
+  );
+
   return getData(
     api.delete(
-      `${baseUrl}/${ensureId(id)}/`
+      `${baseUrl}/${normalizedId}/`
     )
   );
 };
 
+
+/* ============================================================
+   PAYLOAD DE CREACIÓN DE USUARIO
+============================================================ */
+
+const buildCreateUserPayload = (
+  payload = {}
+) => {
+  const nombres = trimText(
+    payload?.nombres
+  );
+
+  const apellidos = trimText(
+    payload?.apellidos
+  );
+
+  const email = normalizeEmail(
+    payload?.email
+  );
+
+  const identificacion =
+    normalizeCedula(
+      payload?.identificacion
+    );
+
+  if (!nombres) {
+    throw new Error(
+      "Los nombres son obligatorios."
+    );
+  }
+
+  if (!apellidos) {
+    throw new Error(
+      "Los apellidos son obligatorios."
+    );
+  }
+
+  if (!email) {
+    throw new Error(
+      "El correo electrónico es obligatorio."
+    );
+  }
+
+  if (
+    !identificacion ||
+    !/^\d{10}$/.test(
+      identificacion
+    )
+  ) {
+    throw new Error(
+      "La cédula debe contener exactamente 10 dígitos numéricos."
+    );
+  }
+
+  /*
+    El backend controla automáticamente:
+
+    - rol
+    - auth_source
+    - carrera
+    - is_active
+    - is_staff
+    - is_superuser
+    - contraseña inicial
+  */
+  return {
+    nombres,
+    apellidos,
+    email,
+    identificacion,
+  };
+};
+
+
+/* ============================================================
+   PAYLOAD DE EDICIÓN DE USUARIO
+============================================================ */
+
+const buildEditUserPayload = (
+  payload = {}
+) => {
+  const output = {};
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "nombres"
+    )
+  ) {
+    output.nombres = trimText(
+      payload.nombres
+    );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "apellidos"
+    )
+  ) {
+    output.apellidos = trimText(
+      payload.apellidos
+    );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "email"
+    )
+  ) {
+    output.email = normalizeEmail(
+      payload.email
+    );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "identificacion"
+    )
+  ) {
+    output.identificacion =
+      normalizeCedula(
+        payload.identificacion
+      );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "is_active"
+    )
+  ) {
+    output.is_active =
+      normalizeBoolean(
+        payload.is_active
+      );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "is_staff"
+    )
+  ) {
+    output.is_staff =
+      normalizeBoolean(
+        payload.is_staff
+      );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "facultad"
+    )
+  ) {
+    output.facultad =
+      normalizePositiveInteger(
+        payload.facultad
+      );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "carrera"
+    )
+  ) {
+    output.carrera =
+      normalizePositiveInteger(
+        payload.carrera
+      );
+  }
+
+  /*
+    No se envían campos sensibles que el backend no permite
+    modificar desde este endpoint:
+
+    - rol
+    - auth_source
+    - is_superuser
+    - perfil_completo
+    - es_admin
+    - is_admin
+    - is_staff_set
+  */
+  return output;
+};
+
+
+/* ============================================================
+   API ADMINISTRATIVA
+============================================================ */
+
 export const adminApi = {
-  /* ============================================================
+  /* ==========================================================
      USUARIOS
-     Base: /admin/usuarios/
-  ============================================================ */
+     Base: /api/admin/usuarios/
+  ========================================================== */
 
   /**
-   * Lista o busca usuarios administrativos.
+   * Lista o busca usuarios.
    *
-   * @param {string} q Texto de búsqueda.
-   * @param {object} paramsExtra Parámetros adicionales.
-   * @returns {Promise<object|Array>}
+   * paramsExtra puede incluir:
+   *
+   * - scope
+   * - incompletos
    */
-  usuarios: async (q = "", paramsExtra = {}) => {
+  usuarios: async (
+    q = "",
+    paramsExtra = {}
+  ) => {
     return getData(
-      api.get("admin/usuarios/", {
-        params: withQuery(q, paramsExtra),
-      })
-    );
-  },
-
-  /**
-   * Recupera un usuario específico por su identificador.
-   *
-   * Esta función es utilizada por
-   * AdminPublicacionesDelegadasView.vue cuando la ruta contiene
-   * el parámetro usuarioId.
-   *
-   * Endpoint:
-   * GET /api/admin/usuarios/:id/
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
-   */
-  obtenerUsuario: async (id) => {
-    const usuarioId = ensureId(id, "usuarioId");
-
-    return getData(
-      api.get(`admin/usuarios/${usuarioId}/`)
-    );
-  },
-
-  /**
-   * Crea un usuario.
-   *
-   * @param {object} payload Datos del usuario.
-   * @returns {Promise<object>}
-   */
-  crearUsuario: async (payload) => {
-    return getData(
-      api.post("admin/usuarios/", payload)
-    );
-  },
-
-  /**
-   * Actualiza parcialmente un usuario.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @param {object} payload Campos que se actualizarán.
-   * @returns {Promise<object>}
-   */
-  editarUsuario: async (id, payload) => {
-    return patchById(
-      "admin/usuarios",
-      id,
-      payload
-    );
-  },
-
-  /**
-   * Elimina un usuario.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
-   */
-  eliminarUsuario: async (id) => {
-    return deleteById(
-      "admin/usuarios",
-      id
-    );
-  },
-
-  /**
-   * Alterna el estado activo del usuario.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
-   */
-  toggleActivo: async (id) => {
-    const usuarioId = ensureId(id, "usuarioId");
-
-    return postNoBody(
-      `admin/usuarios/${usuarioId}/toggle-activo/`
-    );
-  },
-
-  /**
-   * Activa un usuario.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @param {object} payload Información necesaria para activarlo.
-   * @returns {Promise<object>}
-   */
-  activarUsuario: async (id, payload = {}) => {
-    const usuarioId = ensureId(id, "usuarioId");
-
-    return getData(
-      api.post(
-        `admin/usuarios/${usuarioId}/activar/`,
-        payload
-      )
-    );
-  },
-
-  /**
-   * Habilita temporalmente la edición del perfil.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
-   */
-  habilitarEdicionPerfil: async (id) => {
-    const usuarioId = ensureId(id, "usuarioId");
-
-    return postNoBody(
-      `admin/usuarios/${usuarioId}/habilitar-edicion-perfil/`
-    );
-  },
-
-  /**
-   * Extiende el período de edición del perfil.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @param {number} horas Número de horas.
-   * @returns {Promise<object>}
-   */
-  extenderEdicionPerfil: async (id, horas = 24) => {
-    const usuarioId = ensureId(id, "usuarioId");
-
-    return getData(
-      api.post(
-        `admin/usuarios/${usuarioId}/extender-edicion-perfil/`,
+      api.get(
+        `${ADMIN_USERS_BASE_URL}/`,
         {
-          horas,
+          params: withQuery(
+            q,
+            paramsExtra
+          ),
         }
       )
     );
   },
 
+
   /**
-   * Bloquea la edición del perfil.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @param {string} reason Motivo del bloqueo.
-   * @returns {Promise<object>}
+   * Recupera el detalle de un usuario.
    */
-  bloquearEdicionPerfil: async (id, reason = "") => {
-    const usuarioId = ensureId(id, "usuarioId");
-    const motivo = trimText(reason);
-    const payload = motivo
-      ? { reason: motivo }
-      : {};
+  obtenerUsuario: async (id) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
 
     return getData(
-      api.post(
-        `admin/usuarios/${usuarioId}/bloquear-edicion-perfil/`,
-        payload
+      api.get(
+        `${ADMIN_USERS_BASE_URL}/${usuarioId}/`
       )
     );
   },
 
+
   /**
-   * Promueve un usuario al rol administrativo.
+   * Crea una cuenta externa pendiente.
    *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
+   * El backend la crea:
+   *
+   * - inactiva;
+   * - sin contraseña utilizable;
+   * - sin Carrera;
+   * - sin permisos administrativos.
+   */
+  crearUsuario: async (
+    payload = {}
+  ) => {
+    const normalizedPayload =
+      buildCreateUserPayload(
+        payload
+      );
+
+    return getData(
+      api.post(
+        `${ADMIN_USERS_BASE_URL}/`,
+        normalizedPayload
+      )
+    );
+  },
+
+
+  /**
+   * Actualiza parcialmente un usuario.
+   */
+  editarUsuario: async (
+    id,
+    payload = {}
+  ) => {
+    const normalizedPayload =
+      buildEditUserPayload(
+        payload
+      );
+
+    return patchById(
+      ADMIN_USERS_BASE_URL,
+      id,
+      normalizedPayload
+    );
+  },
+
+
+  /**
+   * Elimina un usuario.
+   */
+  eliminarUsuario: async (id) => {
+    return deleteById(
+      ADMIN_USERS_BASE_URL,
+      id
+    );
+  },
+
+
+  /**
+   * Alterna el estado activo.
+   *
+   * Una cuenta externa pendiente sin contraseña debe utilizar
+   * activarUsuario() y no esta operación.
+   */
+  toggleActivo: async (id) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
+
+    return postNoBody(
+      `${ADMIN_USERS_BASE_URL}/${usuarioId}/toggle-activo/`
+    );
+  },
+
+
+  /**
+   * Activa una cuenta externa pendiente.
+   */
+  activarUsuario: async (
+    id,
+    payload = {}
+  ) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
+
+    const email = normalizeEmail(
+      payload?.email
+    );
+
+    /*
+      No se usa trim() sobre la contraseña porque modificaría
+      el valor escrito por el administrador.
+    */
+    const password = String(
+      payload?.password ?? ""
+    );
+
+    if (!email) {
+      throw new Error(
+        "El correo electrónico es obligatorio."
+      );
+    }
+
+    if (
+      password.length < 8 ||
+      password.length > 128 ||
+      password.trim().length === 0
+    ) {
+      throw new Error(
+        "La contraseña debe contener entre 8 y 128 caracteres."
+      );
+    }
+
+    return getData(
+      api.post(
+        `${ADMIN_USERS_BASE_URL}/${usuarioId}/activar/`,
+        {
+          email,
+          password,
+        }
+      )
+    );
+  },
+
+
+  /**
+   * Habilita temporalmente la edición del perfil.
+   */
+  habilitarEdicionPerfil: async (
+    id,
+    {
+      horas = 48,
+      intentos = 3,
+    } = {}
+  ) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
+
+    const normalizedHours =
+      normalizePositiveInteger(
+        horas,
+        48
+      );
+
+    const normalizedAttempts =
+      normalizePositiveInteger(
+        intentos,
+        3
+      );
+
+    return getData(
+      api.post(
+        `${ADMIN_USERS_BASE_URL}/${usuarioId}/habilitar-edicion-perfil/`,
+        {
+          horas: normalizedHours,
+          intentos: normalizedAttempts,
+        }
+      )
+    );
+  },
+
+
+  /**
+   * Extiende el periodo de edición.
+   */
+  extenderEdicionPerfil: async (
+    id,
+    horas = 24
+  ) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
+
+    const normalizedHours =
+      normalizePositiveInteger(
+        horas
+      );
+
+    if (!normalizedHours) {
+      throw new Error(
+        "El número de horas debe ser mayor que cero."
+      );
+    }
+
+    return getData(
+      api.post(
+        `${ADMIN_USERS_BASE_URL}/${usuarioId}/extender-edicion-perfil/`,
+        {
+          horas: normalizedHours,
+        }
+      )
+    );
+  },
+
+
+  /**
+   * Bloquea la edición del perfil.
+   */
+  bloquearEdicionPerfil: async (
+    id,
+    reason = ""
+  ) => {
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
+
+    const motivo = trimText(
+      reason
+    );
+
+    if (motivo.length > 255) {
+      throw new Error(
+        "El motivo no puede superar los 255 caracteres."
+      );
+    }
+
+    return getData(
+      api.post(
+        `${ADMIN_USERS_BASE_URL}/${usuarioId}/bloquear-edicion-perfil/`,
+        motivo
+          ? {
+              reason: motivo,
+            }
+          : {}
+      )
+    );
+  },
+
+
+  /**
+   * Promueve un usuario como administrador.
    */
   promoverAdmin: async (id) => {
-    const usuarioId = ensureId(id, "usuarioId");
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
 
     return postNoBody(
-      `admin/usuarios/${usuarioId}/promover-admin/`
+      `${ADMIN_USERS_BASE_URL}/${usuarioId}/promover-admin/`
     );
   },
 
+
   /**
-   * Revoca el rol administrativo.
-   *
-   * @param {number|string} id Identificador del usuario.
-   * @returns {Promise<object>}
+   * Revoca los permisos administrativos.
    */
   revocarAdmin: async (id) => {
-    const usuarioId = ensureId(id, "usuarioId");
+    const usuarioId = ensureId(
+      id,
+      "usuarioId"
+    );
 
     return postNoBody(
-      `admin/usuarios/${usuarioId}/revocar-admin/`
+      `${ADMIN_USERS_BASE_URL}/${usuarioId}/revocar-admin/`
     );
   },
 
-  /* ============================================================
-     SELECTS
-  ============================================================ */
 
   /**
-   * Obtiene las facultades disponibles para selectores.
-   *
-   * @returns {Promise<object|Array>}
+   * Busca usuarios institucionales Microsoft.
+   */
+  buscarMicrosoft: async (
+    q = ""
+  ) => {
+    const query = trimText(q);
+
+    return getData(
+      api.get(
+        `${ADMIN_USERS_BASE_URL}/buscar-microsoft/`,
+        {
+          params: buildOptionalParams({
+            q: query || undefined,
+          }),
+        }
+      )
+    );
+  },
+
+
+  /* ==========================================================
+     SELECTORES
+  ========================================================== */
+
+  /**
+   * Obtiene las Facultades disponibles.
    */
   selectsFacultades: async () => {
     return getData(
-      api.get("selects/facultades/")
+      api.get(
+        "selects/facultades/"
+      )
     );
   },
 
+
   /**
-   * Obtiene las carreras pertenecientes a una facultad.
-   *
-   * @param {number|string} facultadId Identificador de la facultad.
-   * @returns {Promise<object|Array>}
+   * Obtiene las Carreras de una Facultad.
    */
-  selectsCarrerasByFacultad: async (facultadId) => {
+  selectsCarrerasByFacultad: async (
+    facultadId
+  ) => {
     const id = ensureId(
       facultadId,
       "facultadId"
     );
 
     return getData(
-      api.get(`selects/carreras/${id}/`)
+      api.get(
+        `selects/carreras/${id}/`
+      )
     );
   },
 
-  /* ============================================================
+
+  /* ==========================================================
      FACULTADES
-     Base: /admin/facultades/
-  ============================================================ */
+     Base: /api/admin/facultades/
+  ========================================================== */
 
-  /**
-   * Lista facultades administrativas.
-   *
-   * @param {object} params Parámetros de consulta.
-   * @returns {Promise<object|Array>}
-   */
-  adminFacultades: async (params = {}) => {
+  adminFacultades: async (
+    params = {}
+  ) => {
     return getData(
-      api.get("admin/facultades/", {
-        params: buildOptionalParams(params),
-      })
+      api.get(
+        `${ADMIN_FACULTIES_BASE_URL}/`,
+        {
+          params:
+            buildOptionalParams(
+              params
+            ),
+        }
+      )
     );
   },
 
-  /**
-   * Crea una facultad.
-   *
-   * @param {object} payload Datos de la facultad.
-   * @returns {Promise<object>}
-   */
-  crearFacultad: async (payload) => {
+
+  crearFacultad: async (
+    payload = {}
+  ) => {
     return getData(
-      api.post("admin/facultades/", payload)
+      api.post(
+        `${ADMIN_FACULTIES_BASE_URL}/`,
+        payload
+      )
     );
   },
 
-  /**
-   * Actualiza una facultad.
-   *
-   * @param {number|string} id Identificador de la facultad.
-   * @param {object} payload Campos que se actualizarán.
-   * @returns {Promise<object>}
-   */
-  editarFacultad: async (id, payload) => {
+
+  editarFacultad: async (
+    id,
+    payload = {}
+  ) => {
     return patchById(
-      "admin/facultades",
+      ADMIN_FACULTIES_BASE_URL,
       id,
       payload
     );
   },
 
-  /**
-   * Elimina una facultad.
-   *
-   * @param {number|string} id Identificador de la facultad.
-   * @returns {Promise<object>}
-   */
+
   eliminarFacultad: async (id) => {
     return deleteById(
-      "admin/facultades",
+      ADMIN_FACULTIES_BASE_URL,
       id
     );
   },
 
-  /* ============================================================
+
+  /* ==========================================================
      CARRERAS
-     Base: /admin/carreras/
-  ============================================================ */
+     Base: /api/admin/carreras/
+  ========================================================== */
 
-  /**
-   * Lista carreras administrativas.
-   *
-   * @param {object} params Parámetros de consulta.
-   * @returns {Promise<object|Array>}
-   */
-  adminCarreras: async (params = {}) => {
+  adminCarreras: async (
+    params = {}
+  ) => {
     return getData(
-      api.get("admin/carreras/", {
-        params: buildOptionalParams(params),
-      })
+      api.get(
+        `${ADMIN_CAREERS_BASE_URL}/`,
+        {
+          params:
+            buildOptionalParams(
+              params
+            ),
+        }
+      )
     );
   },
 
-  /**
-   * Crea una carrera.
-   *
-   * @param {object} payload Datos de la carrera.
-   * @returns {Promise<object>}
-   */
-  crearCarrera: async (payload) => {
+
+  crearCarrera: async (
+    payload = {}
+  ) => {
     return getData(
-      api.post("admin/carreras/", payload)
+      api.post(
+        `${ADMIN_CAREERS_BASE_URL}/`,
+        payload
+      )
     );
   },
 
-  /**
-   * Actualiza una carrera.
-   *
-   * @param {number|string} id Identificador de la carrera.
-   * @param {object} payload Campos que se actualizarán.
-   * @returns {Promise<object>}
-   */
-  editarCarrera: async (id, payload) => {
+
+  editarCarrera: async (
+    id,
+    payload = {}
+  ) => {
     return patchById(
-      "admin/carreras",
+      ADMIN_CAREERS_BASE_URL,
       id,
       payload
     );
   },
 
-  /**
-   * Elimina una carrera.
-   *
-   * @param {number|string} id Identificador de la carrera.
-   * @returns {Promise<object>}
-   */
+
   eliminarCarrera: async (id) => {
     return deleteById(
-      "admin/carreras",
+      ADMIN_CAREERS_BASE_URL,
       id
     );
   },
 };
+
 
 export default adminApi;

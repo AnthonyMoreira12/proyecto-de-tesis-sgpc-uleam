@@ -1,4 +1,5 @@
 import os
+import re
 
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -6,59 +7,198 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
 
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
+
 MAX_AVATAR_BYTES = 1 * 1024 * 1024
+
 ALLOWED_AVATAR_EXTENSIONS = {
     ".jpg",
     ".jpeg",
     ".png",
     ".webp",
 }
+
 ALLOWED_AVATAR_CONTENT_TYPES = {
     "image/jpeg",
     "image/png",
     "image/webp",
 }
 
+CEDULA_PATTERN = re.compile(
+    r"^\d{10}$"
+)
+
+CEDULA_VALIDATOR = RegexValidator(
+    regex=r"^\d{10}$",
+    message=(
+        "La cédula debe contener exactamente "
+        "10 dígitos numéricos."
+    ),
+    code="invalid_cedula",
+)
+
+
+# ============================================================
+# UTILIDADES
+# ============================================================
 
 def _norm_text(value):
-    return str(value or "").strip()
+    return str(
+        value or ""
+    ).strip()
+
+
+PERSON_NAME_LOWERCASE_PARTICLES = {
+    "da",
+    "das",
+    "de",
+    "del",
+    "do",
+    "dos",
+    "e",
+    "la",
+    "las",
+    "los",
+    "van",
+    "von",
+    "y",
+}
+
+
+def _capitalize_name_fragment(fragment):
+    """
+    Capitaliza un fragmento de nombre conservando correctamente
+    guiones y apóstrofos.
+    """
+    if not fragment:
+        return fragment
+
+    return (
+        fragment[:1].upper()
+        + fragment[1:].lower()
+    )
+
+
+def _normalize_name_token(token):
+    """
+    Normaliza una palabra individual de un nombre.
+
+    Ejemplos:
+        MARÍA-JOSÉ -> María-José
+        O'NEILL -> O'Neill
+    """
+    normalized_token = token.lower()
+
+    if normalized_token in PERSON_NAME_LOWERCASE_PARTICLES:
+        return normalized_token
+
+    fragments = re.split(
+        r"([-’'])",
+        normalized_token,
+    )
+
+    return "".join(
+        fragment
+        if fragment in {
+            "-",
+            "'",
+            "’",
+        }
+        else _capitalize_name_fragment(
+            fragment
+        )
+        for fragment in fragments
+    )
+
+
+def _norm_person_name(value):
+    """
+    Normaliza nombres y apellidos para su almacenamiento y
+    presentación uniforme.
+
+    No se utiliza para correos, cargos, departamentos u otros
+    textos generales.
+    """
+    normalized = re.sub(
+        r"\s+",
+        " ",
+        _norm_text(
+            value
+        ),
+    )
+
+    if not normalized:
+        return ""
+
+    return " ".join(
+        _normalize_name_token(
+            token
+        )
+        for token in normalized.split(" ")
+        if token
+    )
 
 
 def _norm_optional_text(value):
-    value = _norm_text(value)
-    return value or None
+    normalized = _norm_text(
+        value
+    )
+
+    return normalized or None
 
 
 def _norm_email(value):
-    value = (
+    normalized = (
         BaseUserManager.normalize_email(
-            str(value or "")
+            str(
+                value or ""
+            )
         )
         .strip()
         .lower()
     )
 
-    return value or None
+    return normalized or None
 
 
 def _delete_storage_file(field_file):
     if not field_file:
         return
 
-    name = getattr(field_file, "name", None)
-    storage = getattr(field_file, "storage", None)
+    name = getattr(
+        field_file,
+        "name",
+        None,
+    )
+
+    storage = getattr(
+        field_file,
+        "storage",
+        None,
+    )
 
     if not name or storage is None:
         return
 
     try:
-        if storage.exists(name):
-            storage.delete(name)
-    except (OSError, ValueError):
+        if storage.exists(
+            name
+        ):
+            storage.delete(
+                name
+            )
+
+    except (
+        OSError,
+        ValueError,
+    ):
         return
 
 
@@ -66,14 +206,21 @@ def _validate_avatar(avatar):
     errors = []
 
     file_name = _norm_text(
-        getattr(avatar, "name", "")
+        getattr(
+            avatar,
+            "name",
+            "",
+        )
     ).lower()
 
     extension = os.path.splitext(
         file_name
     )[1]
 
-    if extension not in ALLOWED_AVATAR_EXTENSIONS:
+    if (
+        extension
+        not in ALLOWED_AVATAR_EXTENSIONS
+    ):
         errors.append(
             "Solo se permiten imágenes JPG, PNG o WEBP."
         )
@@ -97,7 +244,9 @@ def _validate_avatar(avatar):
 
     if (
         content_type
-        and str(content_type).lower()
+        and str(
+            content_type
+        ).lower()
         not in ALLOWED_AVATAR_CONTENT_TYPES
     ):
         errors.append(
@@ -107,10 +256,19 @@ def _validate_avatar(avatar):
 
     try:
         file_size = int(
-            getattr(avatar, "size", 0)
+            getattr(
+                avatar,
+                "size",
+                0,
+            )
             or 0
         )
-    except (TypeError, ValueError):
+
+    except (
+        TypeError,
+        ValueError,
+        OSError,
+    ):
         file_size = 0
 
     if file_size <= 0:
@@ -126,7 +284,13 @@ def _validate_avatar(avatar):
     return errors
 
 
-class UsuarioManager(BaseUserManager):
+# ============================================================
+# MANAGER
+# ============================================================
+
+class UsuarioManager(
+    BaseUserManager
+):
     use_in_migrations = True
 
     def create_user(
@@ -137,9 +301,17 @@ class UsuarioManager(BaseUserManager):
         password=None,
         **extra_fields,
     ):
-        email = _norm_email(email)
-        nombres = _norm_text(nombres)
-        apellidos = _norm_text(apellidos)
+        email = _norm_email(
+            email
+        )
+
+        nombres = _norm_person_name(
+            nombres
+        )
+
+        apellidos = _norm_person_name(
+            apellidos
+        )
 
         if not email:
             raise ValueError(
@@ -165,6 +337,24 @@ class UsuarioManager(BaseUserManager):
                 )
             )
 
+        if "rol" in extra_fields:
+            extra_fields["rol"] = (
+                _norm_text(
+                    extra_fields.get(
+                        "rol"
+                    )
+                ).lower()
+            )
+
+        if "auth_source" in extra_fields:
+            extra_fields["auth_source"] = (
+                _norm_text(
+                    extra_fields.get(
+                        "auth_source"
+                    )
+                ).lower()
+            )
+
         extra_fields.setdefault(
             "is_active",
             True,
@@ -178,11 +368,15 @@ class UsuarioManager(BaseUserManager):
         )
 
         if password:
-            user.set_password(password)
+            user.set_password(
+                password
+            )
         else:
             user.set_unusable_password()
 
-        user.save(using=self._db)
+        user.save(
+            using=self._db
+        )
 
         return user
 
@@ -198,32 +392,50 @@ class UsuarioManager(BaseUserManager):
             "is_staff",
             True,
         )
+
         extra_fields.setdefault(
             "is_superuser",
             True,
         )
+
         extra_fields.setdefault(
             "rol",
             "autor",
         )
+
         extra_fields.setdefault(
             "auth_source",
             "local",
         )
+
         extra_fields.setdefault(
             "is_active",
             True,
         )
 
-        if extra_fields.get("is_staff") is not True:
+        extra_fields.setdefault(
+            "carrera",
+            None,
+        )
+
+        if (
+            extra_fields.get(
+                "is_staff"
+            )
+            is not True
+        ):
             raise ValueError(
                 "El superusuario debe tener is_staff=True."
             )
 
-        if extra_fields.get("is_superuser") is not True:
+        if (
+            extra_fields.get(
+                "is_superuser"
+            )
+            is not True
+        ):
             raise ValueError(
-                "El superusuario debe tener "
-                "is_superuser=True."
+                "El superusuario debe tener is_superuser=True."
             )
 
         if not password:
@@ -232,27 +444,43 @@ class UsuarioManager(BaseUserManager):
             )
 
         return self.create_user(
-            email,
-            nombres,
-            apellidos,
-            password,
+            email=email,
+            nombres=nombres,
+            apellidos=apellidos,
+            password=password,
             **extra_fields,
         )
 
+
+# ============================================================
+# MODELO
+# ============================================================
 
 class Usuario(
     AbstractBaseUser,
     PermissionsMixin,
 ):
-    class Rol(models.TextChoices):
-        AUTOR = "autor", "Autor"
+    class Rol(
+        models.TextChoices
+    ):
+        AUTOR = (
+            "autor",
+            "Autor",
+        )
+
         AUTOR_EXTERNO = (
             "autor_externo",
             "Autor externo",
         )
 
-    class AuthSource(models.TextChoices):
-        LOCAL = "local", "Local (BD)"
+    class AuthSource(
+        models.TextChoices
+    ):
+        LOCAL = (
+            "local",
+            "Local (BD)",
+        )
+
         MICROSOFT = (
             "microsoft",
             "Microsoft 365",
@@ -275,10 +503,13 @@ class Usuario(
     )
 
     identificacion = models.CharField(
-        max_length=20,
+        max_length=10,
         unique=True,
         null=True,
         blank=True,
+        validators=[
+            CEDULA_VALIDATOR,
+        ],
     )
 
     carrera = models.ForeignKey(
@@ -444,6 +675,7 @@ class Usuario(
     objects = UsuarioManager()
 
     USERNAME_FIELD = "email"
+
     REQUIRED_FIELDS = [
         "nombres",
         "apellidos",
@@ -451,54 +683,210 @@ class Usuario(
 
     class Meta:
         db_table = "usuarios"
+
         ordering = [
             "apellidos",
             "nombres",
         ]
+
         indexes = [
-            models.Index(fields=["rol"]),
-            models.Index(fields=["auth_source"]),
-            models.Index(fields=["is_active"]),
-            models.Index(fields=["is_staff"]),
-            models.Index(fields=["carrera"]),
             models.Index(
-                fields=["rol", "is_active"],
+                fields=[
+                    "rol",
+                ]
             ),
+
+            models.Index(
+                fields=[
+                    "auth_source",
+                ]
+            ),
+
+            models.Index(
+                fields=[
+                    "is_active",
+                ]
+            ),
+
+            models.Index(
+                fields=[
+                    "is_staff",
+                ]
+            ),
+
+            models.Index(
+                fields=[
+                    "carrera",
+                ]
+            ),
+
+            models.Index(
+                fields=[
+                    "rol",
+                    "is_active",
+                ]
+            ),
+
             models.Index(
                 fields=[
                     "auth_source",
                     "is_active",
-                ],
+                ]
             ),
+
             models.Index(
-                fields=["creado_desde_selector"],
+                fields=[
+                    "creado_desde_selector",
+                ]
             ),
         ]
 
+    # ========================================================
+    # CLASIFICACIÓN
+    # ========================================================
+
+    @property
+    def es_institucional(self):
+        """
+        Una cuenta es institucional únicamente cuando proviene
+        de Microsoft y tiene rol de autor.
+        """
+        return bool(
+            self.rol
+            == self.Rol.AUTOR
+            and self.auth_source
+            == self.AuthSource.MICROSOFT
+        )
+
+    @property
+    def es_externo(self):
+        """
+        Una cuenta es externa únicamente cuando utiliza acceso
+        local y tiene rol de autor externo.
+        """
+        return bool(
+            self.rol
+            == self.Rol.AUTOR_EXTERNO
+            and self.auth_source
+            == self.AuthSource.LOCAL
+        )
+
+    @property
+    def es_admin(self):
+        """
+        Los permisos administrativos son independientes del tipo
+        de cuenta.
+        """
+        return bool(
+            self.is_staff
+            or self.is_superuser
+        )
+
+    @property
+    def es_pendiente_activacion(self):
+        """
+        Una cuenta externa está pendiente cuando se encuentra
+        inactiva y todavía no posee una contraseña utilizable.
+
+        Esto permite diferenciar una cuenta nueva pendiente de
+        una cuenta externa desactivada posteriormente.
+        """
+        return bool(
+            self.es_externo
+            and not self.is_active
+            and not self.has_usable_password()
+        )
+
+    # ========================================================
+    # RELACIÓN ACADÉMICA
+    # ========================================================
+
     @property
     def facultad(self):
-        if not self.carrera_id:
+        if (
+            not self.es_institucional
+            or not self.carrera_id
+        ):
             return None
 
         return self.carrera.facultad
 
     @property
     def facultad_id(self):
-        if not self.carrera_id:
+        if (
+            not self.es_institucional
+            or not self.carrera_id
+        ):
             return None
 
         return self.carrera.facultad_id
+
+    # ========================================================
+    # COMPLETITUD DEL PERFIL
+    # ========================================================
+
+    def tiene_cedula_valida(self):
+        cedula = _norm_text(
+            self.identificacion
+        )
+
+        return bool(
+            CEDULA_PATTERN.fullmatch(
+                cedula
+            )
+        )
+
+    def calcular_perfil_completo(self):
+        """
+        Reglas de completitud:
+
+        Cuenta externa:
+            Cédula válida.
+
+        Cuenta institucional:
+            Cédula válida y Carrera.
+
+        Cuenta local no clasificada:
+            No se considera completa.
+        """
+        if not self.tiene_cedula_valida():
+            return False
+
+        if self.es_externo:
+            return True
+
+        if self.es_institucional:
+            return bool(
+                self.carrera_id
+            )
+
+        return False
+
+    # ========================================================
+    # VALIDACIÓN
+    # ========================================================
 
     def clean(self):
         super().clean()
 
         errors = {}
 
-        self.email = _norm_email(self.email)
-        self.nombres = _norm_text(self.nombres)
-        self.apellidos = _norm_text(self.apellidos)
-        self.identificacion = _norm_optional_text(
-            self.identificacion
+        self.email = _norm_email(
+            self.email
+        )
+
+        self.nombres = _norm_person_name(
+            self.nombres
+        )
+
+        self.apellidos = _norm_person_name(
+            self.apellidos
+        )
+
+        self.identificacion = (
+            _norm_optional_text(
+                self.identificacion
+            )
         )
 
         self.rol = _norm_text(
@@ -509,39 +897,70 @@ class Usuario(
             self.auth_source
         ).lower()
 
-        self.microsoft_id = _norm_optional_text(
-            self.microsoft_id
+        self.microsoft_id = (
+            _norm_optional_text(
+                self.microsoft_id
+            )
         )
-        self.ms_graph_id = _norm_optional_text(
-            self.ms_graph_id
+
+        self.ms_graph_id = (
+            _norm_optional_text(
+                self.ms_graph_id
+            )
         )
-        self.ms_display_name = _norm_optional_text(
-            self.ms_display_name
+
+        self.ms_display_name = (
+            _norm_optional_text(
+                self.ms_display_name
+            )
         )
-        self.ms_given_name = _norm_optional_text(
-            self.ms_given_name
+
+        self.ms_given_name = (
+            _norm_optional_text(
+                self.ms_given_name
+            )
         )
-        self.ms_surname = _norm_optional_text(
-            self.ms_surname
+
+        self.ms_surname = (
+            _norm_optional_text(
+                self.ms_surname
+            )
         )
+
         self.ms_mail = _norm_email(
             self.ms_mail
         )
-        self.ms_user_principal_name = _norm_email(
-            self.ms_user_principal_name
+
+        self.ms_user_principal_name = (
+            _norm_email(
+                self.ms_user_principal_name
+            )
         )
-        self.ms_job_title = _norm_optional_text(
-            self.ms_job_title
+
+        self.ms_job_title = (
+            _norm_optional_text(
+                self.ms_job_title
+            )
         )
-        self.ms_department = _norm_optional_text(
-            self.ms_department
+
+        self.ms_department = (
+            _norm_optional_text(
+                self.ms_department
+            )
         )
-        self.ms_office_location = _norm_optional_text(
-            self.ms_office_location
+
+        self.ms_office_location = (
+            _norm_optional_text(
+                self.ms_office_location
+            )
         )
-        self.ms_mobile_phone = _norm_optional_text(
-            self.ms_mobile_phone
+
+        self.ms_mobile_phone = (
+            _norm_optional_text(
+                self.ms_mobile_phone
+            )
         )
+
         self.profile_edit_lock_reason = (
             _norm_optional_text(
                 self.profile_edit_lock_reason
@@ -563,6 +982,17 @@ class Usuario(
                 "Los apellidos son obligatorios."
             )
 
+        if (
+            self.identificacion
+            and not CEDULA_PATTERN.fullmatch(
+                self.identificacion
+            )
+        ):
+            errors["identificacion"] = (
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
+            )
+
         valid_roles = {
             value
             for value, _label
@@ -582,8 +1012,8 @@ class Usuario(
 
         if self.auth_source not in valid_sources:
             errors["auth_source"] = (
-                "El origen de autenticación "
-                "seleccionado es inválido."
+                "El origen de autenticación seleccionado "
+                "es inválido."
             )
 
         if (
@@ -593,7 +1023,8 @@ class Usuario(
             != self.Rol.AUTOR
         ):
             errors["rol"] = (
-                "Un usuario Microsoft debe ser autor."
+                "Un usuario Microsoft debe tener "
+                "el rol de autor institucional."
             )
 
         if (
@@ -608,13 +1039,21 @@ class Usuario(
             )
 
         if (
-            self.rol
-            == self.Rol.AUTOR_EXTERNO
-            and self.carrera_id is not None
+            self.carrera_id is not None
+            and not self.es_institucional
         ):
             errors["carrera"] = (
-                "Un usuario externo no debe tener "
-                "una carrera institucional asignada."
+                "Solo los usuarios institucionales "
+                "autenticados mediante Microsoft pueden "
+                "tener una carrera asignada."
+            )
+
+        if (
+            self.is_superuser
+            and not self.is_staff
+        ):
+            errors["is_staff"] = (
+                "Un superusuario debe tener is_staff=True."
             )
 
         if (
@@ -622,57 +1061,139 @@ class Usuario(
             is not None
             and self.profile_edit_attempts_left < 0
         ):
-            errors["profile_edit_attempts_left"] = (
+            errors[
+                "profile_edit_attempts_left"
+            ] = (
                 "Los intentos restantes no pueden "
                 "ser negativos."
             )
 
         if self.avatar:
-            avatar_errors = _validate_avatar(
-                self.avatar
+            avatar_errors = (
+                _validate_avatar(
+                    self.avatar
+                )
             )
 
             if avatar_errors:
-                errors["avatar"] = avatar_errors
+                errors["avatar"] = (
+                    avatar_errors
+                )
+
+        self.perfil_completo = (
+            self.calcular_perfil_completo()
+        )
 
         if errors:
-            raise ValidationError(errors)
+            raise ValidationError(
+                errors
+            )
 
-    def save(self, *args, **kwargs):
+    # ========================================================
+    # GUARDADO
+    # ========================================================
+
+    def save(
+        self,
+        *args,
+        **kwargs,
+    ):
         old_avatar = None
+        old_profile_complete = None
 
         if self.pk:
             try:
-                old_avatar = (
+                old_user = (
                     Usuario.objects
-                    .only("avatar")
-                    .get(pk=self.pk)
-                    .avatar
+                    .only(
+                        "avatar",
+                        "perfil_completo",
+                    )
+                    .get(
+                        pk=self.pk
+                    )
                 )
+
+                old_avatar = old_user.avatar
+                old_profile_complete = (
+                    old_user.perfil_completo
+                )
+
             except Usuario.DoesNotExist:
                 old_avatar = None
+                old_profile_complete = None
 
         update_fields = kwargs.get(
             "update_fields"
         )
 
-        exclude = []
+        original_nombres = self.nombres
+        original_apellidos = self.apellidos
+
+        excluded_fields = []
 
         if (
             update_fields is not None
             and "password"
             not in update_fields
         ):
-            exclude.append("password")
+            excluded_fields.append(
+                "password"
+            )
 
         if not self.password:
-            exclude.append("password")
+            excluded_fields.append(
+                "password"
+            )
 
         self.full_clean(
             exclude=list(
-                dict.fromkeys(exclude)
+                dict.fromkeys(
+                    excluded_fields
+                )
             )
         )
+
+        if update_fields is not None:
+            normalized_update_fields = list(
+                dict.fromkeys(
+                    update_fields
+                )
+            )
+
+            if (
+                original_nombres != self.nombres
+                and "nombres"
+                not in normalized_update_fields
+            ):
+                normalized_update_fields.append(
+                    "nombres"
+                )
+
+            if (
+                original_apellidos != self.apellidos
+                and "apellidos"
+                not in normalized_update_fields
+            ):
+                normalized_update_fields.append(
+                    "apellidos"
+                )
+
+            if (
+                old_profile_complete
+                is not None
+                and old_profile_complete
+                != self.perfil_completo
+                and "perfil_completo"
+                not in normalized_update_fields
+            ):
+                normalized_update_fields.append(
+                    "perfil_completo"
+                )
+
+            kwargs["update_fields"] = (
+                normalized_update_fields
+            )
 
         result = super().save(
             *args,
@@ -691,13 +1212,28 @@ class Usuario(
             None,
         )
 
-        if old_name and old_name != new_name:
-            _delete_storage_file(old_avatar)
+        if (
+            old_name
+            and old_name != new_name
+        ):
+            _delete_storage_file(
+                old_avatar
+            )
 
         return result
 
-    def delete(self, *args, **kwargs):
-        avatar_to_delete = self.avatar
+    # ========================================================
+    # ELIMINACIÓN
+    # ========================================================
+
+    def delete(
+        self,
+        *args,
+        **kwargs,
+    ):
+        avatar_to_delete = (
+            self.avatar
+        )
 
         result = super().delete(
             *args,
@@ -710,24 +1246,25 @@ class Usuario(
 
         return result
 
+    # ========================================================
+    # REPRESENTACIÓN
+    # ========================================================
+
     def get_full_name(self):
         return (
-            f"{self.nombres} "
-            f"{self.apellidos}"
+            f"{_norm_person_name(self.nombres)} "
+            f"{_norm_person_name(self.apellidos)}"
         ).strip()
 
     def get_short_name(self):
-        return _norm_text(
+        return _norm_person_name(
             self.nombres
         )
 
     def __str__(self):
         admin_tag = (
             " | admin"
-            if (
-                self.is_superuser
-                or self.is_staff
-            )
+            if self.es_admin
             else ""
         )
 

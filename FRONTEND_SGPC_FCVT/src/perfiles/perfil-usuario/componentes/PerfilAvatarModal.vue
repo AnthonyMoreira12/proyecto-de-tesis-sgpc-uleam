@@ -4,7 +4,7 @@
       <div
         v-if="modelValue"
         class="pav-overlay"
-        @click.self="closeModal"
+        @mousedown.self="closeModal"
       >
         <article
           ref="modalRef"
@@ -13,379 +13,374 @@
           aria-modal="true"
           aria-labelledby="pav-title"
           aria-describedby="pav-description"
+          :aria-busy="busy"
           tabindex="-1"
+          @keydown="handleModalKeydown"
         >
+          <!-- =================================================
+               ENCABEZADO
+          ================================================== -->
           <header class="pav-head">
-            <div class="pav-head__identity">
-              <span class="pav-head__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M4 7a3 3 0 0 1 3-3h2l1.2-1.5h3.6L15 4h2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linejoin="round"
-                  />
-
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="3.7"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  />
-                </svg>
+            <div class="pav-head__copy">
+              <span class="pav-kicker">
+                Foto de perfil
               </span>
 
-              <div class="pav-head__copy">
-                <span class="pav-kicker">
-                  Foto de perfil
-                </span>
+              <h3
+                id="pav-title"
+                class="pav-title"
+              >
+                Administrar fotografía
+              </h3>
 
-                <h2 id="pav-title" class="pav-title">
-                  Actualizar fotografía
-                </h2>
-
-                <p id="pav-description" class="pav-subtitle">
-                  Seleccione una imagen que permita identificar su cuenta dentro
-                  de SGPC ULEAM.
-                </p>
-              </div>
+              <p
+                id="pav-description"
+                class="pav-subtitle"
+              >
+                Seleccione una imagen JPG, PNG o WEBP para
+                identificar su cuenta dentro del sistema.
+              </p>
             </div>
 
             <button
-              class="pav-icon-btn"
+              ref="closeButtonRef"
+              class="pav-icon-btn pav-close"
               type="button"
-              :disabled="uploading"
+              :disabled="busy"
               aria-label="Cerrar ventana"
               title="Cerrar"
               @click="closeModal"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M18 6 6 18" />
                 <path d="M6 6 18 18" />
               </svg>
             </button>
           </header>
 
+          <!-- =================================================
+               CONTENIDO
+          ================================================== -->
           <div class="pav-body">
+            <!-- ===============================================
+                 VISTA PREVIA
+            ================================================ -->
             <section
-              class="pav-preview-panel"
+              class="pav-preview-card"
               aria-labelledby="pav-preview-title"
             >
-              <header class="pav-section-head">
+              <div class="pav-preview-head">
                 <div>
-                  <span class="pav-section-label">
-                    Resultado
-                  </span>
+                  <h4
+                    id="pav-preview-title"
+                    class="pav-section-title"
+                  >
+                    {{
+                      isPreviewMode
+                        ? "Vista previa"
+                        : hasCurrentAvatar
+                          ? "Fotografía actual"
+                          : "Vista del perfil"
+                    }}
+                  </h4>
 
-                  <h3 id="pav-preview-title" class="pav-section-title">
-                    {{ isPreviewMode ? "Vista previa" : "Foto actual" }}
-                  </h3>
+                  <p class="pav-section-text">
+                    La imagen se mostrará en formato circular
+                    dentro de su perfil.
+                  </p>
                 </div>
 
                 <span
                   class="pav-state-pill"
-                  :class="{
-                    'is-new': isPreviewMode,
-                    'is-current': !isPreviewMode,
-                  }"
+                  :class="
+                    isPreviewMode
+                      ? 'pav-state-pill--new'
+                      : 'pav-state-pill--current'
+                  "
                 >
                   {{
                     isPreviewMode
                       ? "Nueva imagen"
-                      : hasAvatar
+                      : hasCurrentAvatar
                         ? "Actual"
                         : "Iniciales"
                   }}
                 </span>
-              </header>
+              </div>
 
               <div class="pav-preview-area">
-                <div class="pav-preview-ring">
+                <div class="pav-preview-frame">
                   <img
                     v-if="modalImage"
                     :src="modalImage"
                     class="pav-preview-img"
-                    alt=""
+                    alt="Vista previa de la fotografía de perfil"
                     draggable="false"
+                    @error="handlePreviewError"
                   />
 
                   <div
                     v-else
                     class="pav-preview-placeholder"
-                    aria-hidden="true"
+                    aria-label="Iniciales del usuario"
                   >
-                    {{ initials }}
-                  </div>
-                </div>
-
-                <div class="pav-preview-mini">
-                  <div class="pav-preview-mini__avatar">
-                    <img
-                      v-if="modalImage"
-                      :src="modalImage"
-                      alt=""
-                      draggable="false"
-                    />
-
-                    <span v-else>
-                      {{ initials }}
-                    </span>
-                  </div>
-
-                  <div class="pav-preview-mini__lines">
-                    <span></span>
-                    <span></span>
+                    {{ displayInitials }}
                   </div>
                 </div>
               </div>
 
-              <dl
+              <div
                 v-if="isPreviewMode"
                 class="pav-filemeta"
               >
-                <div>
-                  <dt>Archivo</dt>
-                  <dd>{{ tempFile?.name || "—" }}</dd>
+                <div class="pav-filemeta-row">
+                  <span>Archivo</span>
+
+                  <strong>
+                    {{ tempFile?.name || "—" }}
+                  </strong>
                 </div>
 
-                <div>
-                  <dt>Tamaño</dt>
-                  <dd>{{ tempFileSizeLabel }}</dd>
+                <div class="pav-filemeta-row">
+                  <span>Tamaño</span>
+
+                  <strong>
+                    {{ selectedFileSizeLabel }}
+                  </strong>
                 </div>
 
-                <div>
-                  <dt>Formato</dt>
-                  <dd>{{ selectedFileFormat }}</dd>
-                </div>
-              </dl>
+                <div class="pav-filemeta-row">
+                  <span>Dimensiones</span>
 
-              <p v-else class="pav-preview-note">
-                {{
-                  hasAvatar
-                    ? "La fotografía actual será reemplazada únicamente después de guardar."
-                    : "Mientras no cargue una fotografía, el sistema mostrará sus iniciales."
-                }}
-              </p>
+                  <strong>
+                    {{
+                      selectedDimensions
+                        ? `${selectedDimensions.width} × ${selectedDimensions.height} px`
+                        : "—"
+                    }}
+                  </strong>
+                </div>
+              </div>
             </section>
 
+            <!-- ===============================================
+                 SELECCIÓN DEL ARCHIVO
+            ================================================ -->
             <section
-              class="pav-upload-panel"
+              class="pav-upload-card"
               aria-labelledby="pav-upload-title"
             >
-              <header class="pav-section-head">
-                <div>
-                  <span class="pav-section-label">
-                    Selección
-                  </span>
+              <div class="pav-upload-copy">
+                <h4
+                  id="pav-upload-title"
+                  class="pav-section-title"
+                >
+                  {{
+                    isPreviewMode
+                      ? "Imagen seleccionada"
+                      : "Seleccionar imagen"
+                  }}
+                </h4>
 
-                  <h3 id="pav-upload-title" class="pav-section-title">
-                    {{
-                      isPreviewMode
-                        ? "Imagen seleccionada"
-                        : "Seleccione una imagen"
-                    }}
-                  </h3>
+                <p class="pav-section-text">
+                  {{ uploadDescription }}
+                </p>
+              </div>
 
-                  <p class="pav-section-text">
-                    {{ uploadDescription }}
-                  </p>
-                </div>
-              </header>
-
-              <input
-                ref="fileInput"
-                class="pav-sr-only"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                @change="handleImageSelected"
-              />
-
-              <button
-                ref="selectActionRef"
+              <div
                 class="pav-dropzone"
                 :class="{
                   'is-dragging': isDragging,
+                  'is-disabled': busy,
                   'has-file': isPreviewMode,
                 }"
-                type="button"
-                :disabled="uploading"
-                :aria-label="
-                  isPreviewMode
-                    ? 'Seleccionar otra imagen'
-                    : 'Seleccionar imagen de perfil'
-                "
-                @dragenter.prevent="onDragEnter"
-                @dragover.prevent="onDragOver"
-                @dragleave.prevent="onDragLeave"
-                @drop.prevent="onDrop"
+                role="button"
+                :tabindex="busy ? -1 : 0"
+                :aria-disabled="busy"
+                aria-describedby="pav-file-rules"
                 @click="openFilePicker"
+                @keydown.enter.prevent="openFilePicker"
+                @keydown.space.prevent="openFilePicker"
+                @dragenter.prevent="handleDragEnter"
+                @dragover.prevent="handleDragOver"
+                @dragleave.prevent="handleDragLeave"
+                @drop.prevent="handleDrop"
               >
-                <span class="pav-dropzone-icon" aria-hidden="true">
+                <span
+                  class="pav-dropzone__icon"
+                  aria-hidden="true"
+                >
                   <svg viewBox="0 0 24 24">
-                    <path d="M12 16V4" />
-                    <path d="m7 9 5-5 5 5" />
                     <path
-                      d="M20 16.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5"
+                      d="M4 7a2 2 0 0 1 2-2h3l1.2-1.5h3.6L15 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3.2"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
                     />
                   </svg>
                 </span>
 
-                <strong class="pav-dropzone-title">
-                  {{
-                    isPreviewMode
-                      ? "Cambiar imagen"
-                      : "Elegir imagen"
-                  }}
-                </strong>
+                <div class="pav-dropzone__copy">
+                  <strong>
+                    {{
+                      isDragging
+                        ? "Suelte la imagen aquí"
+                        : isPreviewMode
+                          ? "Seleccione otra imagen"
+                          : "Arrastre una imagen o selecciónela"
+                    }}
+                  </strong>
 
-                <span class="pav-dropzone-text">
-                  Haga clic o arrastre el archivo hasta esta zona.
-                </span>
-
-                <span class="pav-dropzone-action">
-                  Examinar archivos
-                </span>
-              </button>
-
-              <div
-                class="pav-requirements"
-                aria-label="Requisitos de la fotografía"
-              >
-                <div class="pav-requirement">
-                  <span class="pav-requirement__icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20">
-                      <path
-                        d="m5 10 3 3 7-7"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                  <span>
+                    Pulse aquí para abrir el explorador de
+                    archivos.
                   </span>
-
-                  <span>JPG, PNG o WEBP</span>
-                </div>
-
-                <div class="pav-requirement">
-                  <span class="pav-requirement__icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20">
-                      <path
-                        d="m5 10 3 3 7-7"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-
-                  <span>Máximo {{ avatarMaxSizeLabel }}</span>
-                </div>
-
-                <div class="pav-requirement">
-                  <span class="pav-requirement__icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20">
-                      <path
-                        d="m5 10 3 3 7-7"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-
-                  <span>Imagen cuadrada recomendada</span>
-                </div>
-
-                <div class="pav-requirement">
-                  <span class="pav-requirement__icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20">
-                      <path
-                        d="m5 10 3 3 7-7"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-
-                  <span>Rostro centrado y visible</span>
                 </div>
               </div>
 
-              <p
+              <input
+                ref="fileInputRef"
+                class="pav-file-input"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                :disabled="busy"
+                @change="handleFileInputChange"
+              />
+
+              <div
+                id="pav-file-rules"
+                class="pav-rules"
+              >
+                <span>
+                  Formatos: JPG, PNG o WEBP
+                </span>
+
+                <span>
+                  Peso máximo:
+                  {{ avatarMaxSizeLabel }}
+                </span>
+
+                <span>
+                  No se permiten imágenes animadas
+                </span>
+              </div>
+
+              <div
                 v-if="localError"
                 class="pav-error"
                 role="alert"
-                aria-live="polite"
+                aria-live="assertive"
               >
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="8"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  />
+                <span aria-hidden="true">!</span>
 
-                  <path
-                    d="M10 5.8v5M10 14.3h.01"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-
-                <span>{{ localError }}</span>
-              </p>
+                <p>{{ localError }}</p>
+              </div>
             </section>
           </div>
 
-          <footer class="pav-actions">
+          <!-- =================================================
+               PIE DEL MODAL
+          ================================================== -->
+          <footer class="pav-footer">
             <button
-              class="pav-btn pav-btn--secondary"
+              v-if="hasCurrentAvatar"
+              class="pav-btn pav-btn--danger"
               type="button"
-              :disabled="uploading"
-              @click="closeModal"
+              :disabled="busy"
+              @click="deleteAvatar"
             >
-              Cancelar
+              <span
+                v-if="deleting"
+                class="pav-spinner"
+                aria-hidden="true"
+              ></span>
+
+              <svg
+                v-else
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4.5 6h11M8 6V4.5h4V6m-6 0 .7 10h6.6L14 6M8.5 9v4.5M11.5 9v4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+              <span>
+                {{
+                  deleting
+                    ? "Eliminando..."
+                    : "Eliminar fotografía"
+                }}
+              </span>
             </button>
 
             <button
               v-if="isPreviewMode"
               class="pav-btn pav-btn--ghost"
               type="button"
-              :disabled="uploading"
+              :disabled="busy"
               @click="clearSelectedImage"
             >
               Descartar selección
             </button>
 
             <button
+              v-else
+              ref="selectActionRef"
+              class="pav-btn"
+              type="button"
+              :disabled="busy"
+              @click="openFilePicker"
+            >
+              Seleccionar imagen
+            </button>
+
+            <button
+              class="pav-btn pav-btn--ghost"
+              type="button"
+              :disabled="busy"
+              @click="closeModal"
+            >
+              Cancelar
+            </button>
+
+            <button
               class="pav-btn pav-btn--primary"
               type="button"
-              :disabled="!isPreviewMode || uploading"
+              :disabled="!isPreviewMode || busy"
               :title="
                 !isPreviewMode
                   ? 'Seleccione una imagen antes de guardar.'
-                  : 'Guardar nueva fotografía.'
+                  : 'Guardar la nueva fotografía de perfil.'
               "
               @click="uploadAvatar"
             >
+              <span
+                v-if="uploading"
+                class="pav-spinner"
+                aria-hidden="true"
+              ></span>
+
               <svg
-                v-if="!uploading"
+                v-else
                 viewBox="0 0 20 20"
                 aria-hidden="true"
               >
@@ -399,10 +394,12 @@
                 />
               </svg>
 
-              <span class="pav-spinner" v-else aria-hidden="true"></span>
-
               <span>
-                {{ uploading ? "Guardando..." : "Guardar fotografía" }}
+                {{
+                  uploading
+                    ? "Guardando..."
+                    : "Guardar fotografía"
+                }}
               </span>
             </button>
           </footer>
@@ -417,13 +414,14 @@ import {
   computed,
   nextTick,
   onBeforeUnmount,
-  onMounted,
   ref,
   watch,
 } from "vue";
 
 import api from "../../../scripts/api/axios";
+
 import "./perfil-avatar-modal.css";
+
 
 const props = defineProps({
   modelValue: {
@@ -457,19 +455,29 @@ const props = defineProps({
   },
 });
 
+
 const emit = defineEmits([
   "update:modelValue",
   "updated",
   "toast",
 ]);
 
+
+/* ============================================================
+   REFERENCIAS Y ESTADO
+============================================================ */
+
 const modalRef = ref(null);
-const fileInput = ref(null);
+const closeButtonRef = ref(null);
 const selectActionRef = ref(null);
+const fileInputRef = ref(null);
 
 const previewImage = ref(null);
 const tempFile = ref(null);
+const selectedDimensions = ref(null);
+
 const uploading = ref(false);
+const deleting = ref(false);
 const localError = ref("");
 
 const isDragging = ref(false);
@@ -477,7 +485,9 @@ const dragCounter = ref(0);
 
 let previouslyFocusedElement = null;
 
-const BODY_LOCK_CLASS = "pav-scroll-lock";
+
+const BODY_LOCK_CLASS =
+  "pav-scroll-lock";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -492,352 +502,688 @@ const ALLOWED_EXTENSIONS = [
   ".webp",
 ];
 
-const prettyBytes = (bytes) => {
-  const size = Number(bytes || 0);
+const MAX_IMAGE_WIDTH = 6000;
+const MAX_IMAGE_HEIGHT = 6000;
+const MAX_IMAGE_PIXELS = 20_000_000;
 
-  if (size <= 0) {
+
+/* ============================================================
+   NORMALIZACIÓN
+============================================================ */
+
+const normalizeText = (value) => {
+  return String(
+    value ?? ""
+  ).trim();
+};
+
+
+const normalizeNullableString = (value) => {
+  const text = normalizeText(
+    value
+  );
+
+  if (!text) {
+    return null;
+  }
+
+  const lowered =
+    text.toLowerCase();
+
+  if (
+    lowered === "null" ||
+    lowered === "undefined" ||
+    lowered === "none"
+  ) {
+    return null;
+  }
+
+  return text;
+};
+
+
+const getFileExtension = (fileName) => {
+  const normalizedName =
+    normalizeText(fileName)
+      .toLowerCase();
+
+  const dotIndex =
+    normalizedName.lastIndexOf(".");
+
+  if (dotIndex < 0) {
+    return "";
+  }
+
+  return normalizedName.slice(
+    dotIndex
+  );
+};
+
+
+const prettyBytes = (bytes) => {
+  const size = Number(
+    bytes || 0
+  );
+
+  if (
+    !Number.isFinite(size) ||
+    size <= 0
+  ) {
     return "0 B";
   }
 
-  const units = ["B", "KB", "MB", "GB"];
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+  ];
 
   let value = size;
-  let index = 0;
+  let unitIndex = 0;
 
   while (
     value >= 1024 &&
-    index < units.length - 1
+    unitIndex < units.length - 1
   ) {
     value /= 1024;
-    index += 1;
+    unitIndex += 1;
   }
 
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
-};
-
-const isPreviewMode = computed(() => {
-  return Boolean(tempFile.value);
-});
-
-const modalImage = computed(() => {
-  if (previewImage.value) {
-    return previewImage.value;
-  }
+  const decimals =
+    unitIndex === 0
+      ? 0
+      : 2;
 
   return (
-    props.user?.avatar_url ||
-    props.user?.avatar ||
+    `${value.toFixed(decimals)} ` +
+    units[unitIndex]
+  );
+};
+
+
+/* ============================================================
+   ESTADO DERIVADO
+============================================================ */
+
+const busy = computed(() => {
+  return Boolean(
+    uploading.value ||
+    deleting.value
+  );
+});
+
+
+const currentAvatarUrl = computed(() => {
+  return normalizeNullableString(
+    props.user?.avatar_url ??
+    props.user?.avatarUrl ??
+    props.user?.avatar
+  );
+});
+
+
+const hasCurrentAvatar = computed(() => {
+  return Boolean(
+    currentAvatarUrl.value
+  );
+});
+
+
+const displayInitials = computed(() => {
+  const normalized =
+    normalizeText(
+      props.initials
+    )
+      .replace(/\s+/g, "")
+      .slice(0, 2)
+      .toUpperCase();
+
+  return normalized || "U";
+});
+
+
+const isPreviewMode = computed(() => {
+  return Boolean(
+    tempFile.value &&
+    previewImage.value
+  );
+});
+
+
+const modalImage = computed(() => {
+  return (
+    previewImage.value ||
+    currentAvatarUrl.value ||
     null
   );
 });
 
-const tempFileSizeLabel = computed(() => {
-  if (!tempFile.value) {
-    return "—";
-  }
 
-  return prettyBytes(tempFile.value.size);
+const selectedFileSizeLabel = computed(() => {
+  return prettyBytes(
+    tempFile.value?.size
+  );
 });
 
-const selectedFileFormat = computed(() => {
-  if (!tempFile.value) {
-    return "—";
-  }
-
-  const extension = getFileExtension(
-    tempFile.value
-  )
-    .replace(".", "")
-    .toUpperCase();
-
-  return extension || "Imagen";
-});
 
 const uploadDescription = computed(() => {
   if (isPreviewMode.value) {
-    return "Revise la vista previa y guarde la imagen cuando esté conforme.";
+    return (
+      "Revise la vista previa y guarde la imagen " +
+      "cuando esté conforme con el resultado."
+    );
   }
 
-  if (props.hasAvatar) {
-    return "Puede reemplazar la fotografía actual seleccionando una imagen nueva.";
+  if (hasCurrentAvatar.value) {
+    return (
+      "Seleccione otra imagen para reemplazar la " +
+      "fotografía que utiliza actualmente."
+    );
   }
 
-  return "Agregue una fotografía para facilitar la identificación de su cuenta.";
+  return (
+    "Seleccione una imagen para agregar una " +
+    "fotografía a su perfil."
+  );
 });
 
-const setDocumentScrollLock = (locked) => {
-  if (typeof document === "undefined") {
+
+/* ============================================================
+   URL TEMPORAL
+============================================================ */
+
+const revokePreviewUrl = () => {
+  if (!previewImage.value) {
     return;
   }
 
-  document.documentElement.classList.toggle(
-    BODY_LOCK_CLASS,
-    Boolean(locked)
-  );
-
-  document.body.classList.toggle(
-    BODY_LOCK_CLASS,
-    Boolean(locked)
-  );
-};
-
-const notify = (type, message) => {
-  emit("toast", type, message);
-};
-
-const cleanupPreviewUrl = () => {
-  if (previewImage.value) {
-    URL.revokeObjectURL(previewImage.value);
+  try {
+    URL.revokeObjectURL(
+      previewImage.value
+    );
+  } catch {
+    // La URL ya pudo haber sido liberada.
   }
 
   previewImage.value = null;
 };
 
-const resetState = () => {
-  cleanupPreviewUrl();
+
+const clearSelectedImage = () => {
+  if (busy.value) {
+    return;
+  }
+
+  revokePreviewUrl();
 
   tempFile.value = null;
-  localError.value = "";
-  isDragging.value = false;
-  dragCounter.value = 0;
-
-  if (fileInput.value) {
-    fileInput.value.value = "";
-  }
-};
-
-const closeModal = () => {
-  if (uploading.value) {
-    return;
-  }
-
-  emit("update:modelValue", false);
-};
-
-const openFilePicker = () => {
-  if (uploading.value) {
-    return;
-  }
-
+  selectedDimensions.value = null;
   localError.value = "";
 
-  if (fileInput.value) {
-    fileInput.value.value = "";
-    fileInput.value.click();
+  if (fileInputRef.value) {
+    fileInputRef.value.value = "";
   }
 };
 
-const getFileExtension = (file) => {
-  const name = String(file?.name || "")
-    .trim()
-    .toLowerCase();
 
-  const index = name.lastIndexOf(".");
+/* ============================================================
+   VALIDACIÓN DEL ARCHIVO
+============================================================ */
 
-  return index >= 0
-    ? name.slice(index)
-    : "";
+const loadImageDimensions = (
+  objectUrl
+) => {
+  return new Promise(
+    (resolve, reject) => {
+      const image = new Image();
+
+      image.onload = () => {
+        resolve({
+          width:
+            Number(
+              image.naturalWidth
+            ) || 0,
+
+          height:
+            Number(
+              image.naturalHeight
+            ) || 0,
+        });
+      };
+
+      image.onerror = () => {
+        reject(
+          new Error(
+            "El archivo no contiene una imagen válida."
+          )
+        );
+      };
+
+      image.src = objectUrl;
+    }
+  );
 };
 
-const setValidationError = (message) => {
-  localError.value = message;
-  notify("error", message);
-};
 
-const validateImage = (file) => {
-  localError.value = "";
-
-  if (!file) {
-    return false;
+const validateSelectedFile = async (
+  file
+) => {
+  if (!(file instanceof File)) {
+    throw new Error(
+      "Seleccione un archivo de imagen válido."
+    );
   }
 
-  const extension = getFileExtension(file);
-
-  if (!ALLOWED_EXTENSIONS.includes(extension)) {
-    setValidationError(
-      "Formato no permitido. Utilice una imagen JPG, PNG o WEBP."
+  const fileName =
+    normalizeText(
+      file.name
     );
 
-    return false;
+  if (!fileName) {
+    throw new Error(
+      "No fue posible determinar el nombre del archivo."
+    );
+  }
+
+  const extension =
+    getFileExtension(
+      fileName
+    );
+
+  if (
+    !ALLOWED_EXTENSIONS.includes(
+      extension
+    )
+  ) {
+    throw new Error(
+      "Formato no permitido. Utilice JPG, PNG o WEBP."
+    );
+  }
+
+  const fileType =
+    normalizeText(
+      file.type
+    ).toLowerCase();
+
+  if (
+    fileType &&
+    !ALLOWED_TYPES.includes(
+      fileType
+    )
+  ) {
+    throw new Error(
+      "El tipo de contenido de la imagen no está permitido."
+    );
+  }
+
+  const fileSize =
+    Number(
+      file.size
+    );
+
+  if (
+    !Number.isFinite(fileSize) ||
+    fileSize <= 0
+  ) {
+    throw new Error(
+      "La imagen seleccionada está vacía."
+    );
   }
 
   if (
-    file.type &&
-    !ALLOWED_TYPES.includes(file.type)
+    fileSize >
+    Number(props.maxFileSize)
   ) {
-    setValidationError(
-      "El tipo del archivo seleccionado no corresponde a una imagen permitida."
+    throw new Error(
+      (
+        "La imagen supera el tamaño máximo " +
+        `permitido de ${props.avatarMaxSizeLabel}.`
+      )
     );
-
-    return false;
   }
 
-  if (
-    Number(file.size || 0) >
-    props.maxFileSize
-  ) {
-    setValidationError(
-      `La imagen supera el tamaño máximo permitido de ${props.avatarMaxSizeLabel}.`
-    );
-
-    return false;
-  }
-
-  return true;
-};
-
-const setPreviewFromFile = (file) => {
-  cleanupPreviewUrl();
-
-  tempFile.value = file;
-  previewImage.value = URL.createObjectURL(file);
-  localError.value = "";
-};
-
-const handleImageSelected = (event) => {
-  const file = event.target.files?.[0];
-
-  if (!file) {
-    return;
-  }
-
-  if (!validateImage(file)) {
-    event.target.value = "";
-    return;
-  }
-
-  setPreviewFromFile(file);
-  event.target.value = "";
-};
-
-const clearSelectedImage = async () => {
-  resetState();
-
-  await nextTick();
-
-  selectActionRef.value?.focus?.({
-    preventScroll: true,
-  });
-};
-
-const sendAvatarRequest = async (formData) => {
-  const config = {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  };
+  const objectUrl =
+    URL.createObjectURL(file);
 
   try {
-    return await api.patch(
-      "auth/avatar/",
-      formData,
-      config
-    );
-  } catch (error) {
-    const status = error?.response?.status;
+    const dimensions =
+      await loadImageDimensions(
+        objectUrl
+      );
 
     if (
-      status === 405 ||
-      status === 415
+      dimensions.width <= 0 ||
+      dimensions.height <= 0
     ) {
-      return api.post(
-        "auth/avatar/",
-        formData,
-        config
+      throw new Error(
+        (
+          "No fue posible determinar las " +
+          "dimensiones de la imagen."
+        )
       );
     }
+
+    if (
+      dimensions.width >
+        MAX_IMAGE_WIDTH ||
+      dimensions.height >
+        MAX_IMAGE_HEIGHT
+    ) {
+      throw new Error(
+        (
+          "La imagen supera las dimensiones " +
+          `máximas de ${MAX_IMAGE_WIDTH} × ` +
+          `${MAX_IMAGE_HEIGHT} píxeles.`
+        )
+      );
+    }
+
+    if (
+      dimensions.width *
+        dimensions.height >
+      MAX_IMAGE_PIXELS
+    ) {
+      throw new Error(
+        (
+          "La imagen contiene demasiados píxeles. " +
+          "Seleccione una imagen de menor resolución."
+        )
+      );
+    }
+
+    return {
+      objectUrl,
+      dimensions,
+    };
+  } catch (error) {
+    URL.revokeObjectURL(
+      objectUrl
+    );
 
     throw error;
   }
 };
 
-const resolveUploadError = (data) => {
+
+const selectFile = async (file) => {
+  if (busy.value) {
+    return;
+  }
+
+  localError.value = "";
+
+  try {
+    const result =
+      await validateSelectedFile(
+        file
+      );
+
+    revokePreviewUrl();
+
+    tempFile.value = file;
+
+    previewImage.value =
+      result.objectUrl;
+
+    selectedDimensions.value =
+      result.dimensions;
+  } catch (error) {
+    localError.value =
+      error?.message ||
+      "No se pudo procesar la imagen seleccionada.";
+
+    tempFile.value = null;
+    selectedDimensions.value = null;
+  }
+};
+
+
+/* ============================================================
+   SELECTOR DE ARCHIVOS
+============================================================ */
+
+const openFilePicker = () => {
+  if (busy.value) {
+    return;
+  }
+
+  fileInputRef.value?.click();
+};
+
+
+const handleFileInputChange = async (
+  event
+) => {
+  const file =
+    event?.target?.files?.[0];
+
+  if (file) {
+    await selectFile(file);
+  }
+
+  /*
+    Permite seleccionar nuevamente el mismo archivo después
+    de descartarlo o después de una validación fallida.
+  */
+  if (event?.target) {
+    event.target.value = "";
+  }
+};
+
+
+/* ============================================================
+   ARRASTRAR Y SOLTAR
+============================================================ */
+
+const handleDragEnter = () => {
+  if (busy.value) {
+    return;
+  }
+
+  dragCounter.value += 1;
+  isDragging.value = true;
+};
+
+
+const handleDragOver = (event) => {
+  if (busy.value) {
+    return;
+  }
+
+  if (event?.dataTransfer) {
+    event.dataTransfer.dropEffect =
+      "copy";
+  }
+
+  isDragging.value = true;
+};
+
+
+const handleDragLeave = () => {
+  if (busy.value) {
+    return;
+  }
+
+  dragCounter.value = Math.max(
+    0,
+    dragCounter.value - 1
+  );
+
+  if (dragCounter.value === 0) {
+    isDragging.value = false;
+  }
+};
+
+
+const handleDrop = async (event) => {
+  if (busy.value) {
+    return;
+  }
+
+  dragCounter.value = 0;
+  isDragging.value = false;
+
+  const files =
+    event?.dataTransfer?.files;
+
+  if (!files?.length) {
+    localError.value =
+      "No se encontró una imagen para procesar.";
+
+    return;
+  }
+
+  if (files.length > 1) {
+    localError.value =
+      "Seleccione una sola imagen.";
+
+    return;
+  }
+
+  await selectFile(
+    files[0]
+  );
+};
+
+
+/* ============================================================
+   ERRORES DEL BACKEND
+============================================================ */
+
+const resolveApiError = (
+  data,
+  visited = new Set()
+) => {
   if (!data) {
     return "";
   }
 
-  if (
-    typeof data.detail === "string" &&
-    data.detail
-  ) {
-    return data.detail;
+  if (typeof data === "string") {
+    return data;
   }
 
   if (
-    typeof data.error === "string" &&
-    data.error
+    typeof data !== "object" ||
+    visited.has(data)
   ) {
-    return data.error;
+    return "";
   }
 
-  if (
-    Array.isArray(data.avatar) &&
-    data.avatar[0]
-  ) {
-    return String(data.avatar[0]);
+  visited.add(data);
+
+  const priorityKeys = [
+    "detail",
+    "avatar",
+    "non_field_errors",
+    "error",
+  ];
+
+  for (const key of priorityKeys) {
+    const value = data?.[key];
+
+    if (
+      typeof value === "string" &&
+      value
+    ) {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const message =
+          resolveApiError(
+            item,
+            visited
+          );
+
+        if (message) {
+          return message;
+        }
+      }
+    }
+
+    if (
+      value &&
+      typeof value === "object"
+    ) {
+      const message =
+        resolveApiError(
+          value,
+          visited
+        );
+
+      if (message) {
+        return message;
+      }
+    }
   }
 
-  if (
-    typeof data.avatar === "string" &&
-    data.avatar
-  ) {
-    return data.avatar;
-  }
+  for (const value of Object.values(data)) {
+    const message =
+      resolveApiError(
+        value,
+        visited
+      );
 
-  if (
-    Array.isArray(data.file) &&
-    data.file[0]
-  ) {
-    return String(data.file[0]);
-  }
-
-  if (
-    typeof data.file === "string" &&
-    data.file
-  ) {
-    return data.file;
+    if (message) {
+      return message;
+    }
   }
 
   return "";
 };
 
-const buildUpdatedUser = (responseData) => {
-  const data = responseData || {};
 
-  const nestedUser =
-    data.user ||
-    data.usuario ||
-    null;
+/* ============================================================
+   CACHÉ DEL AVATAR
+============================================================ */
 
-  const avatarUrl =
-    data.avatar_url ||
-    data.avatar ||
-    nestedUser?.avatar_url ||
-    props.user?.avatar_url ||
-    null;
+const withCacheBust = (url) => {
+  const normalizedUrl =
+    normalizeNullableString(
+      url
+    );
 
-  if (
-    nestedUser &&
-    typeof nestedUser === "object"
-  ) {
-    return {
-      ...(props.user || {}),
-      ...nestedUser,
-      avatar_url: avatarUrl,
-    };
+  if (!normalizedUrl) {
+    return null;
   }
 
-  return {
-    ...(props.user || {}),
-    ...data,
-    avatar_url: avatarUrl,
-  };
+  try {
+    const parsedUrl =
+      new URL(
+        normalizedUrl,
+        window.location.origin
+      );
+
+    parsedUrl.searchParams.set(
+      "avatar_v",
+      String(Date.now())
+    );
+
+    return parsedUrl.toString();
+  } catch {
+    const separator =
+      normalizedUrl.includes("?")
+        ? "&"
+        : "?";
+
+    return (
+      `${normalizedUrl}${separator}` +
+      `avatar_v=${Date.now()}`
+    );
+  }
 };
+
+
+/* ============================================================
+   ACTUALIZAR AVATAR
+============================================================ */
 
 const uploadAvatar = async () => {
   if (
-    !tempFile.value ||
-    uploading.value
+    busy.value ||
+    !tempFile.value
   ) {
     return;
   }
@@ -846,211 +1192,361 @@ const uploadAvatar = async () => {
   localError.value = "";
 
   try {
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
     formData.append(
       "avatar",
-      tempFile.value
+      tempFile.value,
+      tempFile.value.name
     );
 
+    /*
+      No se establece manualmente Content-Type. El navegador y
+      Axios deben agregar el boundary correcto de multipart.
+    */
     const response =
-      await sendAvatarRequest(formData);
+      await api.patch(
+        "auth/avatar/",
+        formData
+      );
 
-    const nextUser =
-      buildUpdatedUser(response.data);
+    const avatarUrl =
+      withCacheBust(
+        response?.data?.avatar_url
+      );
 
-    emit("updated", nextUser);
+    const updatedUser = {
+      ...(props.user || {}),
+      avatar_url: avatarUrl,
+    };
 
-    notify(
+    emit(
+      "updated",
+      updatedUser
+    );
+
+    emit(
+      "toast",
       "success",
-      "La fotografía se actualizó correctamente."
+      response?.data?.detail ||
+        "La fotografía se actualizó correctamente.",
+      4200
     );
 
-    emit("update:modelValue", false);
+    clearSelectedImage();
+
+    emit(
+      "update:modelValue",
+      false
+    );
   } catch (error) {
-    console.error(
-      "Error al subir avatar:",
-      error?.response?.data || error
+    const data =
+      error?.response?.data;
+
+    localError.value =
+      resolveApiError(data) ||
+      error?.message ||
+      (
+        "No se pudo actualizar la fotografía. " +
+        "Revise la imagen e intente nuevamente."
+      );
+
+    emit(
+      "toast",
+      "error",
+      localError.value,
+      5200
     );
-
-    const message =
-      resolveUploadError(
-        error?.response?.data
-      ) ||
-      "No se pudo actualizar la fotografía.";
-
-    localError.value = message;
-    notify("error", message);
   } finally {
     uploading.value = false;
   }
 };
 
-const onDragEnter = () => {
-  if (uploading.value) {
+
+/* ============================================================
+   ELIMINAR AVATAR
+============================================================ */
+
+const deleteAvatar = async () => {
+  if (
+    busy.value ||
+    !hasCurrentAvatar.value
+  ) {
     return;
   }
 
-  dragCounter.value += 1;
-  isDragging.value = true;
+  const confirmed =
+    window.confirm(
+      (
+        "¿Desea eliminar la fotografía de perfil? " +
+        "El sistema volverá a mostrar sus iniciales."
+      )
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  deleting.value = true;
+  localError.value = "";
+
+  try {
+    const response =
+      await api.delete(
+        "auth/avatar/"
+      );
+
+    const updatedUser = {
+      ...(props.user || {}),
+      avatar_url: null,
+    };
+
+    emit(
+      "updated",
+      updatedUser
+    );
+
+    emit(
+      "toast",
+      "success",
+      response?.data?.detail ||
+        "La fotografía se eliminó correctamente.",
+      4200
+    );
+
+    clearSelectedImage();
+
+    emit(
+      "update:modelValue",
+      false
+    );
+  } catch (error) {
+    const data =
+      error?.response?.data;
+
+    localError.value =
+      resolveApiError(data) ||
+      error?.message ||
+      (
+        "No se pudo eliminar la fotografía. " +
+        "Intente nuevamente."
+      );
+
+    emit(
+      "toast",
+      "error",
+      localError.value,
+      5200
+    );
+  } finally {
+    deleting.value = false;
+  }
 };
 
-const onDragOver = () => {
-  if (uploading.value) {
-    return;
-  }
 
-  isDragging.value = true;
-};
+/* ============================================================
+   ERROR DE PREVISUALIZACIÓN
+============================================================ */
 
-const onDragLeave = () => {
-  if (uploading.value) {
-    return;
-  }
+const handlePreviewError = () => {
+  if (isPreviewMode.value) {
+    localError.value =
+      (
+        "No fue posible mostrar la imagen seleccionada. " +
+        "Seleccione otro archivo."
+      );
 
-  dragCounter.value -= 1;
-
-  if (dragCounter.value <= 0) {
-    dragCounter.value = 0;
-    isDragging.value = false;
+    clearSelectedImage();
   }
 };
 
-const onDrop = (event) => {
-  if (uploading.value) {
-    return;
-  }
 
-  dragCounter.value = 0;
-  isDragging.value = false;
-
-  const file =
-    event.dataTransfer?.files?.[0];
-
-  if (!file) {
-    return;
-  }
-
-  if (!validateImage(file)) {
-    return;
-  }
-
-  setPreviewFromFile(file);
-};
+/* ============================================================
+   MODAL Y ACCESIBILIDAD
+============================================================ */
 
 const getFocusableElements = () => {
   if (!modalRef.value) {
     return [];
   }
 
+  const selector = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled]):not([type='hidden'])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+  ].join(",");
+
   return Array.from(
     modalRef.value.querySelectorAll(
-      [
-        "button:not([disabled])",
-        "input:not([disabled])",
-        "select:not([disabled])",
-        "textarea:not([disabled])",
-        "[href]",
-        '[tabindex]:not([tabindex="-1"])',
-      ].join(",")
+      selector
     )
-  );
+  ).filter((element) => {
+    return Boolean(
+      !element.hasAttribute("hidden") &&
+      element.getAttribute(
+        "aria-hidden"
+      ) !== "true" &&
+      element.getClientRects().length > 0
+    );
+  });
 };
 
-const trapFocus = (event) => {
-  const elements = getFocusableElements();
 
-  if (!elements.length) {
-    event.preventDefault();
-    modalRef.value?.focus?.();
+const focusInitialControl = async () => {
+  await nextTick();
+
+  if (
+    selectActionRef.value instanceof
+    HTMLElement &&
+    !selectActionRef.value.disabled
+  ) {
+    selectActionRef.value.focus();
     return;
   }
 
-  const first = elements[0];
-  const last = elements[elements.length - 1];
+  if (
+    closeButtonRef.value instanceof
+    HTMLElement
+  ) {
+    closeButtonRef.value.focus();
+    return;
+  }
+
+  modalRef.value?.focus();
+};
+
+
+const closeModal = () => {
+  if (busy.value) {
+    return;
+  }
+
+  emit(
+    "update:modelValue",
+    false
+  );
+};
+
+
+const handleModalKeydown = (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeModal();
+    return;
+  }
+
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const focusableElements =
+    getFocusableElements();
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    modalRef.value?.focus();
+    return;
+  }
+
+  const firstElement =
+    focusableElements[0];
+
+  const lastElement =
+    focusableElements[
+      focusableElements.length - 1
+    ];
+
+  const activeElement =
+    document.activeElement;
 
   if (
     event.shiftKey &&
-    document.activeElement === first
+    activeElement === firstElement
   ) {
     event.preventDefault();
-    last.focus();
+    lastElement.focus();
     return;
   }
 
   if (
     !event.shiftKey &&
-    document.activeElement === last
+    activeElement === lastElement
   ) {
     event.preventDefault();
-    first.focus();
+    firstElement.focus();
   }
 };
 
-const onKeydown = (event) => {
-  if (!props.modelValue) {
-    return;
-  }
 
-  if (event.key === "Escape") {
-    closeModal();
-    return;
-  }
+/* ============================================================
+   REINICIO DEL MODAL
+============================================================ */
 
-  if (event.key === "Tab") {
-    trapFocus(event);
+const resetModalState = () => {
+  revokePreviewUrl();
+
+  tempFile.value = null;
+  selectedDimensions.value = null;
+
+  localError.value = "";
+  isDragging.value = false;
+  dragCounter.value = 0;
+
+  if (fileInputRef.value) {
+    fileInputRef.value.value = "";
   }
 };
+
 
 watch(
   () => props.modelValue,
   async (isOpen) => {
-    setDocumentScrollLock(isOpen);
-
     if (isOpen) {
       previouslyFocusedElement =
         document.activeElement;
 
-      resetState();
+      document.body.classList.add(
+        BODY_LOCK_CLASS
+      );
 
-      await nextTick();
+      resetModalState();
 
-      selectActionRef.value?.focus?.({
-        preventScroll: true,
-      });
-
+      await focusInitialControl();
       return;
     }
 
-    resetState();
+    document.body.classList.remove(
+      BODY_LOCK_CLASS
+    );
 
-    await nextTick();
+    resetModalState();
 
-    previouslyFocusedElement?.focus?.({
-      preventScroll: true,
-    });
-
-    previouslyFocusedElement = null;
+    if (
+      previouslyFocusedElement instanceof
+      HTMLElement
+    ) {
+      window.requestAnimationFrame(
+        () => {
+          previouslyFocusedElement?.focus?.();
+        }
+      );
+    }
   },
   {
     immediate: true,
   }
 );
 
-onMounted(() => {
-  window.addEventListener(
-    "keydown",
-    onKeydown
-  );
-});
 
 onBeforeUnmount(() => {
-  window.removeEventListener(
-    "keydown",
-    onKeydown
+  document.body.classList.remove(
+    BODY_LOCK_CLASS
   );
 
-  setDocumentScrollLock(false);
-  resetState();
+  resetModalState();
 });
 </script>

@@ -3,10 +3,14 @@ Serializer para actualización controlada del perfil.
 
 Permite modificar:
 
-- Identificación.
+- Nombres y apellidos, únicamente para autores externos locales.
+- Cédula de 10 dígitos.
 - Carrera institucional.
 - Facultad utilizada para validar la carrera.
 - Tiempo de aplazamiento del aviso de perfil.
+
+Los nombres de usuarios institucionales no se editan aquí porque
+provienen de Microsoft 365.
 
 La facultad no se almacena directamente en Usuario. Se deriva
 exclusivamente desde usuario.carrera.facultad.
@@ -26,55 +30,77 @@ User = get_user_model()
 
 
 # ============================================================
+# CONFIGURACIÓN
+# ============================================================
+
+ROLE_INSTITUTIONAL = "autor"
+ROLE_EXTERNAL = "autor_externo"
+
+AUTH_SOURCE_LOCAL = "local"
+AUTH_SOURCE_MICROSOFT = "microsoft"
+
+CEDULA_PATTERN = re.compile(r"^\d{10}$")
+MAX_NAME_LENGTH = 100
+
+
+# ============================================================
 # UTILIDADES
 # ============================================================
 
 def _normalize_text(value):
-    """
-    Normaliza un valor textual.
-    """
-    return str(
-        value or ""
-    ).strip()
+    """Normaliza un valor textual y elimina espacios repetidos."""
+    return " ".join(
+        str(value or "").split()
+    )
 
 
 def _normalize_optional_text(value):
-    """
-    Normaliza un texto opcional.
-    """
-    normalized = _normalize_text(
-        value
-    )
-
+    """Normaliza un texto opcional."""
+    normalized = _normalize_text(value)
     return normalized or None
+
+
+def _normalized_role(user):
+    return _normalize_text(
+        getattr(user, "rol", "")
+    ).lower()
+
+
+def _normalized_auth_source(user):
+    return _normalize_text(
+        getattr(user, "auth_source", "")
+    ).lower()
 
 
 def _is_external_user(user):
     """
-    Determina si el usuario es realmente un autor externo.
+    Una cuenta es externa únicamente cuando:
+
+    - rol = autor_externo
+    - auth_source = local
     """
     if user is None:
         return False
 
-    role = _normalize_text(
-        getattr(
-            user,
-            "rol",
-            "",
-        )
-    ).lower()
+    return bool(
+        _normalized_role(user) == ROLE_EXTERNAL
+        and _normalized_auth_source(user) == AUTH_SOURCE_LOCAL
+    )
 
-    auth_source = _normalize_text(
-        getattr(
-            user,
-            "auth_source",
-            "",
-        )
-    ).lower()
+
+def _is_institutional_user(user):
+    """
+    Una cuenta es institucional únicamente cuando:
+
+    - rol = autor
+    - auth_source = microsoft
+    """
+    if user is None:
+        return False
 
     return bool(
-        role == "autor_externo"
-        and auth_source == "local"
+        _normalized_role(user) == ROLE_INSTITUTIONAL
+        and _normalized_auth_source(user) == AUTH_SOURCE_MICROSOFT
     )
 
 
@@ -82,15 +108,70 @@ def _is_external_user(user):
 # SERIALIZER
 # ============================================================
 
-class ProfileUpdateSerializer(
-    serializers.ModelSerializer
-):
+class ProfileUpdateSerializer(serializers.ModelSerializer):
     """
     Actualiza los datos editables del perfil.
+
+    Reglas:
+
+    - El autor externo puede corregir nombres, apellidos y cédula.
+    - El usuario institucional puede completar cédula y carrera.
+    - Los nombres institucionales continúan administrados por
+      Microsoft 365.
+    - El autor externo nunca puede tener Facultad ni Carrera.
 
     Los nombres facultad_set y carrera_set se conservan para no
     romper el contrato actual del frontend.
     """
+
+    nombres = serializers.CharField(
+        required=False,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=MAX_NAME_LENGTH,
+        error_messages={
+            "blank": "Los nombres son obligatorios.",
+            "max_length": (
+                "Los nombres no pueden superar "
+                f"los {MAX_NAME_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    apellidos = serializers.CharField(
+        required=False,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=MAX_NAME_LENGTH,
+        error_messages={
+            "blank": "Los apellidos son obligatorios.",
+            "max_length": (
+                "Los apellidos no pueden superar "
+                f"los {MAX_NAME_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    identificacion = serializers.CharField(
+        required=False,
+        allow_null=False,
+        allow_blank=False,
+        trim_whitespace=True,
+        min_length=10,
+        max_length=10,
+        error_messages={
+            "null": "El número de cédula es obligatorio.",
+            "blank": "El número de cédula es obligatorio.",
+            "min_length": (
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
+            ),
+            "max_length": (
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
+            ),
+        },
+    )
 
     facultad_set = serializers.IntegerField(
         required=False,
@@ -113,15 +194,9 @@ class ProfileUpdateSerializer(
         max_value=24,
         write_only=True,
         error_messages={
-            "invalid": (
-                "Las horas deben ser un número entero."
-            ),
-            "min_value": (
-                "Las horas deben ser mayores a 0."
-            ),
-            "max_value": (
-                "El máximo permitido es 24 horas."
-            ),
+            "invalid": "Las horas deben ser un número entero.",
+            "min_value": "Las horas deben ser mayores a 0.",
+            "max_value": "El máximo permitido es 24 horas.",
         },
     )
 
@@ -129,82 +204,82 @@ class ProfileUpdateSerializer(
         model = User
 
         fields = [
+            "nombres",
+            "apellidos",
             "identificacion",
             "facultad_set",
             "carrera_set",
             "snooze_hours",
         ]
 
-        extra_kwargs = {
-            "identificacion": {
-                "required": False,
-                "allow_null": True,
-                "allow_blank": True,
-                "trim_whitespace": True,
-            },
-        }
-
     # ========================================================
-    # IDENTIFICACIÓN
+    # NOMBRES Y APELLIDOS
     # ========================================================
 
-    def validate_identificacion(
-        self,
-        value,
-    ):
-        """
-        Admite cédula, pasaporte u otra identificación.
+    def validate_nombres(self, value):
+        normalized = _normalize_text(value)
 
-        Se permiten entre 3 y 20 caracteres alfanuméricos,
-        además de punto, guion, barra y guion bajo.
+        if not normalized:
+            raise serializers.ValidationError(
+                "Los nombres son obligatorios."
+            )
+
+        if len(normalized) > MAX_NAME_LENGTH:
+            raise serializers.ValidationError(
+                "Los nombres no pueden superar los 100 caracteres."
+            )
+
+        return normalized
+
+    def validate_apellidos(self, value):
+        normalized = _normalize_text(value)
+
+        if not normalized:
+            raise serializers.ValidationError(
+                "Los apellidos son obligatorios."
+            )
+
+        if len(normalized) > MAX_NAME_LENGTH:
+            raise serializers.ValidationError(
+                "Los apellidos no pueden superar los 100 caracteres."
+            )
+
+        return normalized
+
+    # ========================================================
+    # CÉDULA
+    # ========================================================
+
+    def validate_identificacion(self, value):
         """
-        normalized = _normalize_optional_text(
-            value
-        )
+        Exige exactamente 10 dígitos numéricos.
+
+        No aplica validación matemática del dígito verificador.
+        """
+        normalized = _normalize_optional_text(value)
 
         if normalized is None:
-            return None
-
-        if len(normalized) > 20:
             raise serializers.ValidationError(
-                (
-                    "La identificación no puede superar "
-                    "los 20 caracteres."
-                )
+                "El número de cédula es obligatorio."
             )
 
-        if not re.fullmatch(
-            r"[A-Za-z0-9][A-Za-z0-9._/-]{2,19}",
-            normalized,
-        ):
+        if not CEDULA_PATTERN.fullmatch(normalized):
             raise serializers.ValidationError(
-                (
-                    "La identificación debe contener entre "
-                    "3 y 20 caracteres alfanuméricos. "
-                    "Puede incluir punto, guion, barra "
-                    "o guion bajo."
-                )
+                "La cédula debe contener exactamente 10 dígitos numéricos."
             )
 
-        duplicate_query = (
-            User.objects.filter(
-                identificacion__iexact=normalized
-            )
+        duplicate_query = User.objects.filter(
+            identificacion=normalized
         )
 
         if self.instance is not None:
-            duplicate_query = (
-                duplicate_query.exclude(
-                    pk=self.instance.pk
-                )
+            duplicate_query = duplicate_query.exclude(
+                pk=self.instance.pk
             )
 
         if duplicate_query.exists():
             raise serializers.ValidationError(
-                (
-                    "Esta identificación ya está "
-                    "registrada."
-                )
+                "Esta cédula ya está registrada."
             )
 
         return normalized
@@ -213,15 +288,10 @@ class ProfileUpdateSerializer(
     # VALIDACIÓN GENERAL
     # ========================================================
 
-    def validate(
-        self,
-        attrs,
-    ):
+    def validate(self, attrs):
         """
-        Valida la relación carrera-facultad.
-
-        facultad_set se utiliza únicamente para comprobar que la
-        carrera seleccionada pertenece a la facultad elegida.
+        Aplica las reglas de edición según el tipo de cuenta y
+        valida la relación Carrera-Facultad.
         """
         user = self.instance
 
@@ -235,26 +305,19 @@ class ProfileUpdateSerializer(
                 }
             )
 
-        faculty_was_sent = (
-            "facultad_set"
-            in attrs
+        names_were_sent = (
+            "nombres" in attrs
+            or "apellidos" in attrs
         )
 
-        career_was_sent = (
-            "carrera_set"
-            in attrs
-        )
+        faculty_was_sent = "facultad_set" in attrs
+        career_was_sent = "carrera_set" in attrs
 
-        selected_faculty_id = attrs.get(
-            "facultad_set"
-        )
-
-        selected_career_id = attrs.get(
-            "carrera_set"
-        )
+        selected_faculty_id = attrs.get("facultad_set")
+        selected_career_id = attrs.get("carrera_set")
 
         # ====================================================
-        # AUTOR EXTERNO
+        # AUTOR EXTERNO LOCAL
         # ====================================================
 
         if _is_external_user(user):
@@ -277,7 +340,44 @@ class ProfileUpdateSerializer(
             return attrs
 
         # ====================================================
-        # CARRERA
+        # CUENTA NO EXTERNA
+        # ====================================================
+
+        if names_were_sent:
+            raise serializers.ValidationError(
+                {
+                    "nombres": (
+                        "Los nombres y apellidos solo pueden "
+                        "editarse desde el perfil de una cuenta "
+                        "externa local."
+                    )
+                }
+            )
+
+        # Solo una cuenta institucional Microsoft puede conservar
+        # o modificar una relación académica.
+        if not _is_institutional_user(user):
+            if (
+                selected_faculty_id is not None
+                or selected_career_id is not None
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "carrera_set": (
+                            "Solo los usuarios institucionales "
+                            "autenticados mediante Microsoft "
+                            "pueden tener una carrera asignada."
+                        )
+                    }
+                )
+
+            attrs["facultad_set"] = None
+            attrs["carrera_set"] = None
+
+            return attrs
+
+        # ====================================================
+        # CARRERA INSTITUCIONAL
         # ====================================================
 
         career = None
@@ -286,12 +386,8 @@ class ProfileUpdateSerializer(
             if selected_career_id is not None:
                 career = (
                     Carrera.objects
-                    .select_related(
-                        "facultad"
-                    )
-                    .filter(
-                        pk=selected_career_id
-                    )
+                    .select_related("facultad")
+                    .filter(pk=selected_career_id)
                     .first()
                 )
 
@@ -299,37 +395,23 @@ class ProfileUpdateSerializer(
                     raise serializers.ValidationError(
                         {
                             "carrera_set": (
-                                "La carrera seleccionada "
-                                "no existe."
+                                "La carrera seleccionada no existe."
                             )
                         }
                     )
 
-        elif getattr(
-            user,
-            "carrera_id",
-            None,
-        ):
+        elif getattr(user, "carrera_id", None):
             career = (
                 Carrera.objects
-                .select_related(
-                    "facultad"
-                )
-                .filter(
-                    pk=user.carrera_id
-                )
+                .select_related("facultad")
+                .filter(pk=user.carrera_id)
                 .first()
             )
-
-        # ====================================================
-        # VALIDACIÓN DE FACULTAD
-        # ====================================================
 
         if (
             career is not None
             and selected_faculty_id is not None
-            and career.facultad_id
-            != selected_faculty_id
+            and career.facultad_id != selected_faculty_id
         ):
             raise serializers.ValidationError(
                 {
@@ -340,26 +422,22 @@ class ProfileUpdateSerializer(
                 }
             )
 
-        # Si se cambia solamente la facultad y la carrera actual
-        # pertenece a otra facultad, se elimina la carrera.
+        # Si cambia solamente la Facultad y la Carrera actual
+        # pertenece a otra Facultad, se elimina la Carrera.
         if (
             faculty_was_sent
             and not career_was_sent
             and career is not None
             and (
                 selected_faculty_id is None
-                or career.facultad_id
-                != selected_faculty_id
+                or career.facultad_id != selected_faculty_id
             )
         ):
             attrs["carrera_set"] = None
 
-        # Cuando se selecciona una carrera, la facultad real se
-        # obtiene desde carrera.facultad.
+        # La Facultad real siempre se deriva de la Carrera.
         if career_was_sent and career is not None:
-            attrs["facultad_set"] = (
-                career.facultad_id
-            )
+            attrs["facultad_set"] = career.facultad_id
 
         return attrs
 
@@ -367,50 +445,31 @@ class ProfileUpdateSerializer(
     # ACTUALIZACIÓN
     # ========================================================
 
-    def update(
-        self,
-        instance,
-        validated_data,
-    ):
+    def update(self, instance, validated_data):
         """
         Actualiza exclusivamente campos reales del modelo.
 
-        facultad_set nunca se asigna al usuario porque Usuario no
-        contiene un campo facultad.
+        facultad_set nunca se asigna al Usuario porque Usuario no
+        contiene un campo Facultad.
         """
         update_fields = []
 
-        faculty_was_sent = (
-            "facultad_set"
-            in validated_data
+        faculty_was_sent = "facultad_set" in validated_data
+        selected_faculty_id = validated_data.pop(
+            "facultad_set",
+            None,
         )
 
-        selected_faculty_id = (
-            validated_data.pop(
-                "facultad_set",
-                None,
-            )
-        )
-
-        career_was_sent = (
-            "carrera_set"
-            in validated_data
-        )
-
+        career_was_sent = "carrera_set" in validated_data
         selected_career_id = (
-            validated_data.pop(
-                "carrera_set",
-                None,
-            )
+            validated_data.pop("carrera_set", None)
             if career_was_sent
             else None
         )
 
-        snooze_hours = (
-            validated_data.pop(
-                "snooze_hours",
-                None,
-            )
+        snooze_hours = validated_data.pop(
+            "snooze_hours",
+            None,
         )
 
         # ====================================================
@@ -420,75 +479,58 @@ class ProfileUpdateSerializer(
         if snooze_hours is not None:
             instance.perfil_banner_snooze_until = (
                 timezone.now()
-                + timedelta(
-                    hours=snooze_hours
-                )
+                + timedelta(hours=snooze_hours)
             )
-
-            update_fields.append(
-                "perfil_banner_snooze_until"
-            )
+            update_fields.append("perfil_banner_snooze_until")
 
         # ====================================================
-        # IDENTIFICACIÓN
+        # NOMBRES DEL AUTOR EXTERNO
+        # ====================================================
+
+        if _is_external_user(instance):
+            if "nombres" in validated_data:
+                new_names = validated_data["nombres"]
+
+                if instance.nombres != new_names:
+                    instance.nombres = new_names
+                    update_fields.append("nombres")
+
+            if "apellidos" in validated_data:
+                new_surnames = validated_data["apellidos"]
+
+                if instance.apellidos != new_surnames:
+                    instance.apellidos = new_surnames
+                    update_fields.append("apellidos")
+
+        # ====================================================
+        # CÉDULA
         # ====================================================
 
         if "identificacion" in validated_data:
-            new_identification = (
-                validated_data[
-                    "identificacion"
-                ]
-            )
+            new_identification = validated_data["identificacion"]
 
-            if (
-                instance.identificacion
-                != new_identification
-            ):
-                instance.identificacion = (
-                    new_identification
-                )
-
-                update_fields.append(
-                    "identificacion"
-                )
+            if instance.identificacion != new_identification:
+                instance.identificacion = new_identification
+                update_fields.append("identificacion")
 
         # ====================================================
         # CARRERA
         # ====================================================
 
-        if _is_external_user(instance):
+        if not _is_institutional_user(instance):
             if instance.carrera_id is not None:
                 instance.carrera_id = None
-
-                update_fields.append(
-                    "carrera"
-                )
+                update_fields.append("carrera")
 
         elif career_was_sent:
-            new_career_id = (
-                selected_career_id
-                or None
-            )
+            new_career_id = selected_career_id or None
 
-            if (
-                instance.carrera_id
-                != new_career_id
-            ):
-                instance.carrera_id = (
-                    new_career_id
-                )
-
-                update_fields.append(
-                    "carrera"
-                )
+            if instance.carrera_id != new_career_id:
+                instance.carrera_id = new_career_id
+                update_fields.append("carrera")
 
         elif faculty_was_sent:
-            current_career = getattr(
-                instance,
-                "carrera",
-                None,
-            )
-
+            current_career = getattr(instance, "carrera", None)
             current_faculty_id = getattr(
                 current_career,
                 "facultad_id",
@@ -499,15 +541,11 @@ class ProfileUpdateSerializer(
                 instance.carrera_id
                 and (
                     selected_faculty_id is None
-                    or current_faculty_id
-                    != selected_faculty_id
+                    or current_faculty_id != selected_faculty_id
                 )
             ):
                 instance.carrera_id = None
-
-                update_fields.append(
-                    "carrera"
-                )
+                update_fields.append("carrera")
 
         # ====================================================
         # GUARDADO
@@ -515,11 +553,7 @@ class ProfileUpdateSerializer(
 
         if update_fields:
             instance.save(
-                update_fields=list(
-                    dict.fromkeys(
-                        update_fields
-                    )
-                )
+                update_fields=list(dict.fromkeys(update_fields))
             )
 
         return instance

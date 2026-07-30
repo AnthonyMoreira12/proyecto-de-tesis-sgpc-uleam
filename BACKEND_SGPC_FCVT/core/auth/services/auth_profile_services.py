@@ -12,6 +12,9 @@ Este módulo centraliza:
 
 La facultad no se almacena directamente en Usuario. Se deriva
 exclusivamente mediante usuario.carrera.facultad.
+
+Los autores externos no pueden registrar Facultad ni Carrera y el
+campo identificacion contiene únicamente una cédula de 10 dígitos.
 """
 
 from datetime import timedelta
@@ -102,6 +105,37 @@ def _safe_non_negative_int(
     )
 
 
+
+def _normalized_role(user):
+    return _normalize_text(getattr(user, "rol", "")).lower()
+
+
+def _normalized_auth_source(user):
+    return _normalize_text(getattr(user, "auth_source", "")).lower()
+
+
+def _is_external_user(user):
+    if user is None:
+        return False
+    return bool(
+        _normalized_role(user) == "autor_externo"
+        and _normalized_auth_source(user) == "local"
+    )
+
+
+def _is_institutional_user(user):
+    if user is None:
+        return False
+    return bool(
+        _normalized_role(user) == "autor"
+        and _normalized_auth_source(user) == "microsoft"
+    )
+
+
+def _has_valid_cedula(user):
+    cedula = _normalize_text(getattr(user, "identificacion", None))
+    return bool(len(cedula) == 10 and cedula.isdigit())
+
 def _sync_user_instance(
     destination,
     source,
@@ -127,6 +161,9 @@ def _sync_user_instance(
                 None,
             ),
         )
+
+    if "carrera_id" in field_names and hasattr(destination, "_state"):
+        destination._state.fields_cache.pop("carrera", None)
 
 
 def _get_locked_user(user):
@@ -175,10 +212,6 @@ def _get_locked_user(user):
         return (
             user_model.objects
             .select_for_update()
-            .select_related(
-                "carrera",
-                "carrera__facultad",
-            )
             .get(
                 pk=user_id
             )
@@ -542,85 +575,42 @@ def register_failed_profile_attempt(user):
 
 def finalize_profile_update(user):
     """
-    Recalcula el estado de completitud del perfil.
+    Recalcula la completitud del perfil.
 
-    Autor externo:
-        Requiere identificación.
+    Autor externo local:
+        Requiere una cédula válida de 10 dígitos y no puede tener carrera.
 
-    Autor institucional:
-        Requiere identificación y carrera.
+    Autor institucional Microsoft:
+        Requiere una cédula válida de 10 dígitos y carrera.
 
-    La facultad no se valida como campo separado porque se
-    obtiene mediante carrera.facultad.
+    Una combinación de rol y autenticación inconsistente nunca se
+    considera completa.
     """
     with transaction.atomic():
-        locked_user = _get_locked_user(
-            user
-        )
+        locked_user = _get_locked_user(user)
 
-        role = _normalize_text(
-            getattr(
-                locked_user,
-                "rol",
-                "",
-            )
-        ).lower()
-
-        auth_source = _normalize_text(
-            getattr(
-                locked_user,
-                "auth_source",
-                "",
-            )
-        ).lower()
-
-        identification_complete = bool(
-            _normalize_text(
-                getattr(
-                    locked_user,
-                    "identificacion",
-                    None,
-                )
-            )
-        )
-
-        career_complete = bool(
-            getattr(
-                locked_user,
-                "carrera_id",
-                None,
-            )
-        )
-
-        is_external = bool(
-            role == "autor_externo"
-            and auth_source == "local"
-        )
+        cedula_complete = _has_valid_cedula(locked_user)
+        career_complete = bool(getattr(locked_user, "carrera_id", None))
+        is_external = _is_external_user(locked_user)
+        is_institutional = _is_institutional_user(locked_user)
 
         if is_external:
-            profile_complete = (
-                identification_complete
-            )
-
+            profile_complete = cedula_complete
+        elif is_institutional:
+            profile_complete = bool(cedula_complete and career_complete)
         else:
-            profile_complete = bool(
-                identification_complete
-                and career_complete
-            )
+            profile_complete = False
 
         update_fields = []
 
-        if (
-            locked_user.perfil_completo
-            != profile_complete
-        ):
-            locked_user.perfil_completo = (
-                profile_complete
-            )
+        # Ninguna cuenta no institucional puede conservar una carrera.
+        if not is_institutional and locked_user.carrera_id is not None:
+            locked_user.carrera_id = None
+            update_fields.append("carrera")
 
-            update_fields.append(
-                "perfil_completo"
-            )
+        if locked_user.perfil_completo != profile_complete:
+            locked_user.perfil_completo = profile_complete
+            update_fields.append("perfil_completo")
 
         if (
             locked_user.profile_edit_attempts_left
@@ -629,56 +619,27 @@ def finalize_profile_update(user):
             locked_user.profile_edit_attempts_left = (
                 PROFILE_EDIT_DEFAULT_ATTEMPTS
             )
-
-            update_fields.append(
-                "profile_edit_attempts_left"
-            )
+            update_fields.append("profile_edit_attempts_left")
 
         if locked_user.profile_edit_locked:
-            locked_user.profile_edit_locked = (
-                False
-            )
+            locked_user.profile_edit_locked = False
+            update_fields.append("profile_edit_locked")
 
-            update_fields.append(
-                "profile_edit_locked"
-            )
-
-        if (
-            locked_user.profile_edit_lock_reason
-            is not None
-        ):
-            locked_user.profile_edit_lock_reason = (
-                None
-            )
-
-            update_fields.append(
-                "profile_edit_lock_reason"
-            )
+        if locked_user.profile_edit_lock_reason is not None:
+            locked_user.profile_edit_lock_reason = None
+            update_fields.append("profile_edit_lock_reason")
 
         if (
             profile_complete
-            and getattr(
-                locked_user,
-                "perfil_banner_snooze_until",
-                None,
-            )
+            and getattr(locked_user, "perfil_banner_snooze_until", None)
             is not None
         ):
-            locked_user.perfil_banner_snooze_until = (
-                None
-            )
-
-            update_fields.append(
-                "perfil_banner_snooze_until"
-            )
+            locked_user.perfil_banner_snooze_until = None
+            update_fields.append("perfil_banner_snooze_until")
 
         if update_fields:
             locked_user.save(
-                update_fields=list(
-                    dict.fromkeys(
-                        update_fields
-                    )
-                )
+                update_fields=list(dict.fromkeys(update_fields))
             )
 
         synchronized_fields = [
@@ -690,11 +651,5 @@ def finalize_profile_update(user):
             "perfil_banner_snooze_until",
             "carrera_id",
         ]
-
-        _sync_user_instance(
-            user,
-            locked_user,
-            synchronized_fields,
-        )
-
+        _sync_user_instance(user, locked_user, synchronized_fields)
         return locked_user

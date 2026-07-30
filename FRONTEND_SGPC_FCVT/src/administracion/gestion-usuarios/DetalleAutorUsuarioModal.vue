@@ -106,25 +106,34 @@
               </h3>
 
               <p class="authordetail-sectionsub">
-                Datos de identificación, acceso y asignación institucional.
+                Datos de identificación, acceso y clasificación
+                del usuario.
               </p>
             </div>
           </div>
 
           <dl class="authordetail-summary">
-            <div class="authordetail-item authordetail-item--wide">
+            <div
+              class="authordetail-item authordetail-item--wide"
+            >
               <dt>Correo electrónico</dt>
 
               <dd>
-                {{ usuario?.email || "No registrado" }}
+                {{
+                  usuario?.email ||
+                  "No registrado"
+                }}
               </dd>
             </div>
 
             <div class="authordetail-item">
-              <dt>Identificación</dt>
+              <dt>Número de cédula</dt>
 
               <dd>
-                {{ usuario?.identificacion || "No registrada" }}
+                {{
+                  usuario?.identificacion ||
+                  "No registrada"
+                }}
               </dd>
             </div>
 
@@ -146,22 +155,53 @@
               <dd>{{ authSourceLabel }}</dd>
             </div>
 
-            <div class="authordetail-item authordetail-item--wide">
+            <div class="authordetail-item">
+              <dt>Perfil completo</dt>
+
+              <dd>
+                {{
+                  perfilCompleto
+                    ? "Sí"
+                    : "No"
+                }}
+              </dd>
+            </div>
+
+            <div
+              class="authordetail-item authordetail-item--wide"
+            >
               <dt>Facultad</dt>
 
               <dd>
-                {{ usuario?.facultad_nombre || "Sin asignar" }}
+                {{ facultadLabel }}
               </dd>
             </div>
 
-            <div class="authordetail-item authordetail-item--wide">
+            <div
+              class="authordetail-item authordetail-item--wide"
+            >
               <dt>Carrera</dt>
 
               <dd>
-                {{ usuario?.carrera_nombre || "Sin asignar" }}
+                {{ carreraLabel }}
               </dd>
             </div>
           </dl>
+
+          <p
+            v-if="isExterno"
+            class="authordetail-sectionsub"
+          >
+            Las cuentas externas no registran Facultad ni Carrera.
+          </p>
+
+          <p
+            v-else-if="!isInstitucional"
+            class="authordetail-sectionsub"
+          >
+            La combinación actual de rol y autenticación no
+            corresponde a una cuenta institucional ni externa.
+          </p>
         </section>
 
         <!-- ===================================================
@@ -181,15 +221,16 @@
               </h3>
 
               <p class="authordetail-sectionsub">
-                Relación utilizada para asociar la producción científica
-                con esta cuenta.
+                Relación utilizada para asociar la producción
+                científica con esta cuenta.
               </p>
             </div>
 
             <span
               class="authordetail-count"
               :class="{
-                'authordetail-count--muted': !hasLinkedAuthor,
+                'authordetail-count--muted':
+                  !hasLinkedAuthor,
               }"
             >
               {{
@@ -227,7 +268,9 @@
             <div class="authordetail-author-total">
               <span>Publicaciones</span>
 
-              <strong>{{ totalPublicaciones }}</strong>
+              <strong>
+                {{ totalPublicaciones }}
+              </strong>
             </div>
           </div>
         </section>
@@ -249,8 +292,8 @@
               </h3>
 
               <p class="authordetail-sectionsub">
-                Registros donde el autor participa como autor principal
-                o coautor.
+                Registros donde el autor participa como autor
+                principal o coautor.
               </p>
             </div>
 
@@ -262,6 +305,7 @@
             </span>
           </div>
 
+          <!-- SIN PUBLICACIONES -->
           <div
             v-if="!publicaciones.length"
             class="authordetail-empty"
@@ -279,15 +323,18 @@
             </div>
 
             <div>
-              <strong>Sin publicaciones relacionadas</strong>
+              <strong>
+                Sin publicaciones relacionadas
+              </strong>
 
               <p>
-                El autor vinculado todavía no participa en publicaciones
-                registradas en el sistema.
+                El autor vinculado todavía no participa en
+                publicaciones registradas en el sistema.
               </p>
             </div>
           </div>
 
+          <!-- LISTADO DE PUBLICACIONES -->
           <div
             v-else
             class="authordetail-pubs"
@@ -306,31 +353,19 @@
 
               <div class="authordetail-pubmain">
                 <strong class="authordetail-pubtitle">
-                  {{
-                    publication.label ||
-                    publication.titulo ||
-                    "Publicación sin título"
-                  }}
+                  {{ publicationTitle(publication) }}
                 </strong>
 
                 <div class="authordetail-pubmeta">
                   <span>
-                    {{
-                      publication.tipo ||
-                      publication.tipo_label ||
-                      "Publicación"
-                    }}
+                    {{ publicationType(publication) }}
                   </span>
 
                   <span aria-hidden="true">·</span>
 
                   <span>
                     Año:
-                    {{
-                      publication.anio_publicacion ||
-                      publication.anio ||
-                      "—"
-                    }}
+                    {{ publicationYear(publication) }}
                   </span>
 
                   <template
@@ -342,18 +377,25 @@
                     <span aria-hidden="true">·</span>
 
                     <span>
-                      Orden: {{ publication.orden }}
+                      Orden:
+                      {{ publication.orden }}
+                    </span>
+                  </template>
+
+                  <template
+                    v-if="publication.numero"
+                  >
+                    <span aria-hidden="true">·</span>
+
+                    <span>
+                      N.º {{ publication.numero }}
                     </span>
                   </template>
                 </div>
               </div>
 
               <span class="authordetail-pill">
-                {{
-                  publication.rol_label ||
-                  publication.rol_autoria ||
-                  "Autor"
-                }}
+                {{ publicationRole(publication) }}
               </span>
             </article>
           </div>
@@ -386,6 +428,17 @@ import {
   ref,
 } from "vue";
 
+import {
+  calculateProfileComplete,
+  getAccountTypeLabel,
+  getAuthSourceLabel,
+  isAdminUser,
+  isExternalUser,
+  isInstitutionalUser,
+  isPendingExternalUser,
+} from "../../scripts/utils/auth";
+
+
 const props = defineProps({
   usuario: {
     type: Object,
@@ -393,27 +446,58 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close"]);
+
+const emit = defineEmits([
+  "close",
+]);
+
 
 const dialogRef = ref(null);
 const closeButtonRef = ref(null);
 
+
 let previouslyFocusedElement = null;
 let previousBodyOverflow = "";
 
-const normalizeValue = (value) =>
-  String(value ?? "")
-    .trim()
-    .toLowerCase();
+
+/* ============================================================
+   NORMALIZACIÓN
+============================================================ */
+
+const normalizeText = (value) => {
+  return String(value ?? "").trim();
+};
+
+
+const normalizeNumber = (
+  value,
+  fallback = 0
+) => {
+  const parsed = Number(value);
+
+  if (
+    Number.isFinite(parsed) &&
+    parsed >= 0
+  ) {
+    return parsed;
+  }
+
+  return fallback;
+};
+
+
+/* ============================================================
+   IDENTIDAD DEL USUARIO
+============================================================ */
 
 const fullName = computed(() => {
-  const nombres = String(
-    props.usuario?.nombres || ""
-  ).trim();
+  const nombres = normalizeText(
+    props.usuario?.nombres
+  );
 
-  const apellidos = String(
-    props.usuario?.apellidos || ""
-  ).trim();
+  const apellidos = normalizeText(
+    props.usuario?.apellidos
+  );
 
   return (
     `${nombres} ${apellidos}`.trim() ||
@@ -421,73 +505,118 @@ const fullName = computed(() => {
   );
 });
 
+
 const initials = computed(() => {
   const value = fullName.value
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((part) => {
+      return part
+        .charAt(0)
+        .toUpperCase();
+    })
     .join("");
 
   return value || "U";
 });
 
-const publicaciones = computed(() => {
-  return Array.isArray(
-    props.usuario?.publicaciones_relacionadas
-  )
-    ? props.usuario.publicaciones_relacionadas
-    : [];
-});
 
-const hasLinkedAuthor = computed(() => {
-  return Boolean(
-    props.usuario?.tiene_autor ||
-    props.usuario?.autor_nombre
+/* ============================================================
+   CLASIFICACIÓN
+============================================================ */
+
+const isInstitucional = computed(() => {
+  return isInstitutionalUser(
+    props.usuario
   );
 });
 
-const totalPublicaciones = computed(() => {
-  const declaredTotal = Number(
-    props.usuario?.total_publicaciones
+
+const isExterno = computed(() => {
+  return isExternalUser(
+    props.usuario
   );
-
-  if (
-    Number.isFinite(declaredTotal) &&
-    declaredTotal >= 0
-  ) {
-    return declaredTotal;
-  }
-
-  return publicaciones.value.length;
 });
 
-const publicationCountLabel = computed(() => {
-  const total = publicaciones.value.length;
 
-  return total === 1
-    ? "1 publicación"
-    : `${total} publicaciones`;
+const isAdmin = computed(() => {
+  return isAdminUser(
+    props.usuario
+  );
 });
+
 
 const isPending = computed(() => {
-  return (
-    normalizeValue(props.usuario?.rol) ===
-      "autor_externo" &&
-    normalizeValue(props.usuario?.auth_source) ===
-      "local" &&
-    !props.usuario?.is_active
+  if (
+    typeof props.usuario?.es_pendiente ===
+    "boolean"
+  ) {
+    return props.usuario.es_pendiente;
+  }
+
+  return isPendingExternalUser(
+    props.usuario
   );
 });
 
+
+const tipoLabel = computed(() => {
+  const label = getAccountTypeLabel(
+    props.usuario
+  );
+
+  if (label === "Cuenta institucional") {
+    return "Institucional";
+  }
+
+  if (label === "Cuenta externa") {
+    return "Externo";
+  }
+
+  return "Sin clasificación";
+});
+
+
+const authSourceLabel = computed(() => {
+  return getAuthSourceLabel(
+    props.usuario
+  );
+});
+
+
+const perfilCompleto = computed(() => {
+  if (
+    typeof props.usuario?.perfil_completo ===
+    "boolean"
+  ) {
+    return props.usuario.perfil_completo;
+  }
+
+  return calculateProfileComplete(
+    props.usuario
+  );
+});
+
+
+/* ============================================================
+   ESTADO
+============================================================ */
+
 const estadoLabel = computed(() => {
-  if (!props.usuario) return "—";
-  if (isPending.value) return "Pendiente";
+  if (!props.usuario) {
+    return "—";
+  }
+
+  if (isPending.value) {
+    return "Pendiente";
+  }
 
   return props.usuario?.is_active
     ? "Activo"
     : "Inactivo";
 });
+
 
 const statusBadgeClass = computed(() => {
   if (isPending.value) {
@@ -499,66 +628,193 @@ const statusBadgeClass = computed(() => {
     : "authordetail-badge--inactive";
 });
 
-const tipoLabel = computed(() => {
-  if (!props.usuario) return "—";
 
-  if (
-    normalizeValue(props.usuario?.auth_source) ===
-    "microsoft"
-  ) {
-    return "Institucional";
+/* ============================================================
+   RELACIÓN ACADÉMICA
+============================================================ */
+
+const facultadLabel = computed(() => {
+  if (!isInstitucional.value) {
+    return "No aplica";
   }
 
-  if (
-    normalizeValue(props.usuario?.rol) ===
-    "autor_externo"
-  ) {
-    return "Externo";
-  }
-
-  return "Usuario";
-});
-
-const authSourceLabel = computed(() => {
-  const source = normalizeValue(
-    props.usuario?.auth_source
+  return (
+    props.usuario?.facultad_nombre ||
+    props.usuario?.facultad ||
+    "Sin asignar"
   );
-
-  if (source === "microsoft") {
-    return "Microsoft 365";
-  }
-
-  if (source === "local") {
-    return "Cuenta local";
-  }
-
-  return props.usuario?.auth_source || "No definido";
 });
 
-const isAdmin = computed(() => {
+
+const carreraLabel = computed(() => {
+  if (!isInstitucional.value) {
+    return "No aplica";
+  }
+
+  return (
+    props.usuario?.carrera_nombre ||
+    (
+      typeof props.usuario?.carrera ===
+      "object"
+        ? props.usuario.carrera?.nombre
+        : null
+    ) ||
+    "Sin asignar"
+  );
+});
+
+
+/* ============================================================
+   AUTOR VINCULADO
+============================================================ */
+
+const hasLinkedAuthor = computed(() => {
   return Boolean(
-    props.usuario?.es_admin ||
-    props.usuario?.is_staff ||
-    props.usuario?.is_superuser
+    props.usuario?.tiene_autor ||
+    props.usuario?.autor_id ||
+    props.usuario?.autor_nombre
   );
 });
 
-const publicationKey = (publication, index) => {
+
+/* ============================================================
+   PUBLICACIONES
+============================================================ */
+
+const publicaciones = computed(() => {
+  const value =
+    props.usuario?.publicaciones_relacionadas;
+
+  return Array.isArray(value)
+    ? value
+    : [];
+});
+
+
+const totalPublicaciones = computed(() => {
+  const declaredTotal =
+    normalizeNumber(
+      props.usuario?.total_publicaciones,
+      -1
+    );
+
+  if (declaredTotal >= 0) {
+    return declaredTotal;
+  }
+
+  return publicaciones.value.length;
+});
+
+
+const publicationCountLabel = computed(() => {
+  const total =
+    totalPublicaciones.value;
+
+  return total === 1
+    ? "1 publicación"
+    : `${total} publicaciones`;
+});
+
+
+const publicationTitle = (publication) => {
+  const title = normalizeText(
+    publication?.label ||
+    publication?.titulo
+  );
+
+  if (title) {
+    return title;
+  }
+
+  const type = publicationType(
+    publication
+  );
+
+  const number = publication?.numero;
+
+  if (
+    number !== null &&
+    number !== undefined &&
+    number !== ""
+  ) {
+    return `${type} N.º ${number}`;
+  }
+
+  return "Publicación sin título";
+};
+
+
+const publicationType = (publication) => {
+  return (
+    normalizeText(
+      publication?.tipo ||
+      publication?.tipo_label ||
+      publication?.tipo_codigo
+    ) ||
+    "Publicación"
+  );
+};
+
+
+const publicationYear = (publication) => {
+  return (
+    publication?.anio_publicacion ||
+    publication?.anio ||
+    "—"
+  );
+};
+
+
+const publicationRole = (publication) => {
+  const roleLabel = normalizeText(
+    publication?.rol_label
+  );
+
+  if (roleLabel) {
+    return roleLabel;
+  }
+
+  const role = normalizeText(
+    publication?.rol_autoria
+  ).toLowerCase();
+
+  if (
+    role === "principal" ||
+    publication?.orden === 1
+  ) {
+    return "Principal";
+  }
+
+  if (publication?.orden) {
+    return `Coautor #${publication.orden}`;
+  }
+
+  return "Coautor";
+};
+
+
+const publicationKey = (
+  publication,
+  index
+) => {
   return [
     publication?.publicacion_id,
     publication?.id,
+    publication?.numero,
     publication?.orden,
     publication?.rol_autoria,
     index,
   ]
-    .filter(
-      (value) =>
+    .filter((value) => {
+      return (
         value !== null &&
         value !== undefined &&
         value !== ""
-    )
+      );
+    })
     .join("-");
 };
+
 
 /* ============================================================
    ACCESIBILIDAD DEL MODAL
@@ -568,8 +824,11 @@ const requestClose = () => {
   emit("close");
 };
 
+
 const getFocusableElements = () => {
-  if (!dialogRef.value) return [];
+  if (!dialogRef.value) {
+    return [];
+  }
 
   const selector = [
     "a[href]",
@@ -581,21 +840,26 @@ const getFocusableElements = () => {
   ].join(",");
 
   return Array.from(
-    dialogRef.value.querySelectorAll(selector)
+    dialogRef.value.querySelectorAll(
+      selector
+    )
   ).filter((element) => {
-    return (
+    return Boolean(
       !element.hasAttribute("hidden") &&
-      element.getAttribute("aria-hidden") !== "true" &&
+      element.getAttribute("aria-hidden") !==
+        "true" &&
       element.getClientRects().length > 0
     );
   });
 };
 
+
 const focusInitialControl = async () => {
   await nextTick();
 
   if (
-    closeButtonRef.value instanceof HTMLElement
+    closeButtonRef.value instanceof
+    HTMLElement
   ) {
     closeButtonRef.value.focus();
     return;
@@ -604,14 +868,18 @@ const focusInitialControl = async () => {
   dialogRef.value?.focus();
 };
 
+
 const handleDialogKeydown = (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
     requestClose();
+
     return;
   }
 
-  if (event.key !== "Tab") return;
+  if (event.key !== "Tab") {
+    return;
+  }
 
   const focusableElements =
     getFocusableElements();
@@ -619,6 +887,7 @@ const handleDialogKeydown = (event) => {
   if (!focusableElements.length) {
     event.preventDefault();
     dialogRef.value?.focus();
+
     return;
   }
 
@@ -639,6 +908,7 @@ const handleDialogKeydown = (event) => {
   ) {
     event.preventDefault();
     lastElement.focus();
+
     return;
   }
 
@@ -650,6 +920,11 @@ const handleDialogKeydown = (event) => {
     firstElement.focus();
   }
 };
+
+
+/* ============================================================
+   CICLO DE VIDA
+============================================================ */
 
 onMounted(() => {
   previouslyFocusedElement =
@@ -663,6 +938,7 @@ onMounted(() => {
 
   focusInitialControl();
 });
+
 
 onBeforeUnmount(() => {
   document.body.style.overflow =
@@ -678,4 +954,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style src="../styles/admin-shared.css"></style>
-<style scoped src="./detalle-autor-usuario-modal.css"></style>
+
+<style
+  scoped
+  src="./detalle-autor-usuario-modal.css"
+></style>

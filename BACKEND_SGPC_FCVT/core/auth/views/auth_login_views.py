@@ -10,21 +10,26 @@ Responsabilidades:
 - Garantizar la existencia del registro Autor asociado.
 - Generar tokens JWT.
 - Construir una respuesta compatible con el frontend.
+- No exponer información académica de cuentas externas.
 """
 
 import logging
+import re
 
 from django.contrib.auth import (
     authenticate,
     get_user_model,
 )
 from django.core.exceptions import (
+    ObjectDoesNotExist,
     ValidationError as DjangoValidationError,
 )
 from django.db import (
     DatabaseError,
     IntegrityError,
+    transaction,
 )
+from django.utils import timezone
 
 from rest_framework import (
     permissions,
@@ -57,12 +62,17 @@ User = get_user_model()
 # CONSTANTES
 # ============================================================
 
+ROLE_INSTITUTIONAL = "autor"
+ROLE_EXTERNAL = "autor_externo"
+
 AUTH_SOURCE_LOCAL = "local"
 AUTH_SOURCE_MICROSOFT = "microsoft"
 
+CEDULA_PATTERN = re.compile(r"^\d{10}$")
+
 SYNCABLE_AUTHOR_ROLES = {
-    "autor",
-    "autor_externo",
+    ROLE_INSTITUTIONAL,
+    ROLE_EXTERNAL,
 }
 
 
@@ -72,26 +82,174 @@ SYNCABLE_AUTHOR_ROLES = {
 
 def _normalize_text(value):
     """
-    Normaliza valores textuales opcionales.
+    Normaliza un valor textual.
     """
     return str(
         value or ""
     ).strip()
 
 
+def _normalize_email(value):
+    """
+    Normaliza un correo electrónico utilizando el manager del
+    modelo de usuario.
+    """
+    return (
+        User.objects.normalize_email(
+            str(
+                value or ""
+            )
+        )
+        .strip()
+        .lower()
+    )
+
+
+def _normalized_role(user):
+    """
+    Obtiene el rol normalizado del usuario.
+    """
+    return _normalize_text(
+        getattr(
+            user,
+            "rol",
+            "",
+        )
+    ).lower()
+
+
+def _normalized_auth_source(user):
+    """
+    Obtiene el origen de autenticación normalizado.
+    """
+    return _normalize_text(
+        getattr(
+            user,
+            "auth_source",
+            "",
+        )
+    ).lower()
+
+
+def _is_external_user(user):
+    """
+    Una cuenta es externa únicamente cuando:
+
+    - rol = autor_externo
+    - auth_source = local
+    """
+    if user is None:
+        return False
+
+    return bool(
+        _normalized_role(user)
+        == ROLE_EXTERNAL
+        and _normalized_auth_source(user)
+        == AUTH_SOURCE_LOCAL
+    )
+
+
+def _is_institutional_user(user):
+    """
+    Una cuenta es institucional únicamente cuando:
+
+    - rol = autor
+    - auth_source = microsoft
+    """
+    if user is None:
+        return False
+
+    return bool(
+        _normalized_role(user)
+        == ROLE_INSTITUTIONAL
+        and _normalized_auth_source(user)
+        == AUTH_SOURCE_MICROSOFT
+    )
+
+
+def _has_valid_cedula(user):
+    """
+    Comprueba que la cédula contenga exactamente 10 dígitos.
+    """
+    cedula = _normalize_text(
+        getattr(
+            user,
+            "identificacion",
+            "",
+        )
+    )
+
+    return bool(
+        CEDULA_PATTERN.fullmatch(
+            cedula
+        )
+    )
+
+
+def _calculate_profile_complete(user):
+    """
+    Calcula la completitud efectiva del perfil.
+
+    Cuenta externa:
+        Cédula válida.
+
+    Cuenta institucional:
+        Cédula válida y Carrera.
+
+    Combinación inconsistente:
+        Perfil incompleto.
+    """
+    if user is None:
+        return False
+
+    if not _has_valid_cedula(
+        user
+    ):
+        return False
+
+    if _is_external_user(
+        user
+    ):
+        return True
+
+    if _is_institutional_user(
+        user
+    ):
+        return bool(
+            getattr(
+                user,
+                "carrera_id",
+                None,
+            )
+        )
+
+    return False
+
+
+def _get_user_queryset():
+    """
+    Queryset utilizado durante el inicio de sesión.
+
+    Precarga únicamente relaciones de lectura. No se utiliza con
+    select_for_update().
+    """
+    return User.objects.select_related(
+        "carrera",
+        "carrera__facultad",
+        "autor",
+    )
+
+
 def _get_user_with_relations(user_id):
     """
-    Recupera al usuario con su relación académica precargada.
+    Recupera al usuario por su identificador con las relaciones
+    necesarias para construir la respuesta.
     """
     if not user_id:
         return None
 
     return (
-        User.objects
-        .select_related(
-            "carrera",
-            "carrera__facultad",
-        )
+        _get_user_queryset()
         .filter(
             pk=user_id
         )
@@ -99,11 +257,40 @@ def _get_user_with_relations(user_id):
     )
 
 
+def _get_user_by_email(email):
+    """
+    Recupera al usuario por correo antes de autenticar.
+
+    Esto permite informar correctamente cuando una cuenta está
+    inactiva o debe utilizar Microsoft 365.
+    """
+    normalized_email = _normalize_email(
+        email
+    )
+
+    if not normalized_email:
+        return None
+
+    return (
+        _get_user_queryset()
+        .filter(
+            email__iexact=normalized_email
+        )
+        .first()
+    )
+
+
 def _get_career(user):
     """
-    Obtiene de forma segura la carrera del usuario.
+    Obtiene la Carrera únicamente cuando el usuario es
+    institucional.
+
+    De esta forma no se exponen relaciones académicas residuales
+    de usuarios externos o cuentas inconsistentes.
     """
-    if user is None:
+    if not _is_institutional_user(
+        user
+    ):
         return None
 
     if not getattr(
@@ -122,7 +309,7 @@ def _get_career(user):
 
 def _get_faculty(user):
     """
-    Obtiene la facultad derivada desde carrera.facultad.
+    Obtiene la Facultad derivada desde Carrera.
     """
     career = _get_career(
         user
@@ -134,6 +321,29 @@ def _get_faculty(user):
     return getattr(
         career,
         "facultad",
+        None,
+    )
+
+
+def _get_author_id(user):
+    """
+    Obtiene el identificador del Autor relacionado.
+    """
+    if user is None:
+        return None
+
+    try:
+        author = user.autor
+
+    except (
+        ObjectDoesNotExist,
+        AttributeError,
+    ):
+        return None
+
+    return getattr(
+        author,
+        "pk",
         None,
     )
 
@@ -207,6 +417,46 @@ def _generate_tokens(user):
     }
 
 
+def _profile_seconds_remaining(
+    edit_status,
+):
+    """
+    Calcula los segundos restantes del periodo de edición.
+    """
+    deadline = edit_status.get(
+        "profile_edit_until"
+    )
+
+    if (
+        deadline is None
+        or edit_status.get(
+            "expired",
+            False,
+        )
+    ):
+        return 0
+
+    try:
+        remaining = (
+            deadline
+            - timezone.now()
+        ).total_seconds()
+
+    except (
+        TypeError,
+        ValueError,
+        OverflowError,
+    ):
+        return 0
+
+    return max(
+        0,
+        int(
+            remaining
+        ),
+    )
+
+
 # ============================================================
 # PAYLOAD DEL USUARIO
 # ============================================================
@@ -216,11 +466,32 @@ def build_local_auth_user_payload(
     request=None,
 ):
     """
-    Construye la información básica del usuario autenticado.
+    Construye la información del usuario autenticado.
 
-    Se conserva el formato utilizado actualmente por el
-    frontend y se agregan datos derivados seguros.
+    El payload utiliza las mismas reglas de clasificación que el
+    serializer de lectura del perfil.
     """
+    role = _normalized_role(
+        user
+    )
+
+    auth_source = (
+        _normalized_auth_source(
+            user
+        )
+        or AUTH_SOURCE_LOCAL
+    )
+
+    is_external = _is_external_user(
+        user
+    )
+
+    is_institutional = (
+        _is_institutional_user(
+            user
+        )
+    )
+
     career = _get_career(
         user
     )
@@ -229,17 +500,26 @@ def build_local_auth_user_payload(
         user
     )
 
-    edit_status = get_profile_edit_status(
-        user
+    edit_status = (
+        get_profile_edit_status(
+            user
+        )
     )
 
-    full_name = _normalize_text(
-        getattr(
-            user,
-            "get_full_name",
-            lambda: "",
-        )()
+    full_name = ""
+
+    get_full_name = getattr(
+        user,
+        "get_full_name",
+        None,
     )
+
+    if callable(
+        get_full_name
+    ):
+        full_name = _normalize_text(
+            get_full_name()
+        )
 
     if not full_name:
         full_name = " ".join(
@@ -263,32 +543,161 @@ def build_local_auth_user_payload(
             if part
         )
 
+    if is_external:
+        type_label = "Cuenta externa"
+        role_label = "Autor externo"
+        auth_source_label = "Cuenta local"
+
+    elif is_institutional:
+        type_label = "Cuenta institucional"
+        role_label = "Autor institucional"
+        auth_source_label = "Microsoft 365"
+
+    else:
+        type_label = (
+            "Cuenta sin clasificación válida"
+        )
+
+        role_label = (
+            _normalize_text(
+                getattr(
+                    user,
+                    "get_rol_display",
+                    lambda: role,
+                )()
+            )
+            or role
+            or "Usuario"
+        )
+
+        auth_source_label = (
+            _normalize_text(
+                getattr(
+                    user,
+                    "get_auth_source_display",
+                    lambda: auth_source,
+                )()
+            )
+            or auth_source
+        )
+
+    is_staff = bool(
+        getattr(
+            user,
+            "is_staff",
+            False,
+        )
+    )
+
+    is_superuser = bool(
+        getattr(
+            user,
+            "is_superuser",
+            False,
+        )
+    )
+
+    is_admin = bool(
+        is_staff
+        or is_superuser
+    )
+
+    snooze_until = getattr(
+        user,
+        "perfil_banner_snooze_until",
+        None,
+    )
+
+    perfil_banner_snoozed = bool(
+        snooze_until is not None
+        and snooze_until
+        > timezone.now()
+    )
+
     return {
+        # ====================================================
+        # IDENTIDAD
+        # ====================================================
+
         "id": user.pk,
 
-        "email": user.email,
+        "email": getattr(
+            user,
+            "email",
+            None,
+        ),
 
-        "nombres": user.nombres,
+        "nombres": getattr(
+            user,
+            "nombres",
+            "",
+        ),
 
-        "apellidos": user.apellidos,
+        "apellidos": getattr(
+            user,
+            "apellidos",
+            "",
+        ),
 
         "full_name": full_name,
 
-        "rol": user.rol,
-
-        "auth_source": getattr(
+        "identificacion": getattr(
             user,
-            "auth_source",
-            AUTH_SOURCE_LOCAL,
+            "identificacion",
+            None,
         ),
 
-        "perfil_completo": bool(
-            getattr(
-                user,
-                "perfil_completo",
-                False,
+        # ====================================================
+        # CLASIFICACIÓN
+        # ====================================================
+
+        "rol": role,
+
+        "rol_label": role_label,
+
+        "auth_source": auth_source,
+
+        "auth_source_label": (
+            auth_source_label
+        ),
+
+        "es_externo": is_external,
+
+        "es_institucional": (
+            is_institutional
+        ),
+
+        "tipo_cuenta_label": (
+            type_label
+        ),
+
+        # ====================================================
+        # PERFIL
+        # ====================================================
+
+        "perfil_completo": (
+            _calculate_profile_complete(
+                user
             )
         ),
+
+        "perfil_banner_snooze_until": (
+            snooze_until
+        ),
+
+        "perfil_banner_snoozed": (
+            perfil_banner_snoozed
+        ),
+
+        "fecha_registro": getattr(
+            user,
+            "fecha_registro",
+            None,
+        ),
+
+        # ====================================================
+        # ESTADO Y PERMISOS
+        # ====================================================
 
         "is_active": bool(
             getattr(
@@ -298,36 +707,20 @@ def build_local_auth_user_payload(
             )
         ),
 
-        "is_staff": bool(
-            getattr(
-                user,
-                "is_staff",
-                False,
-            )
+        "is_staff": is_staff,
+
+        "is_superuser": (
+            is_superuser
         ),
 
-        "is_superuser": bool(
-            getattr(
-                user,
-                "is_superuser",
-                False,
-            )
-        ),
+        "es_admin": is_admin,
 
-        "es_admin": bool(
-            getattr(
-                user,
-                "is_staff",
-                False,
-            )
-            or getattr(
-                user,
-                "is_superuser",
-                False,
-            )
-        ),
+        "is_admin": is_admin,
 
-        # Facultad derivada desde la carrera.
+        # ====================================================
+        # RELACIÓN ACADÉMICA
+        # ====================================================
+
         "facultad_id": getattr(
             career,
             "facultad_id",
@@ -341,8 +734,8 @@ def build_local_auth_user_payload(
         ),
 
         "carrera_id": getattr(
-            user,
-            "carrera_id",
+            career,
+            "pk",
             None,
         ),
 
@@ -352,10 +745,38 @@ def build_local_auth_user_payload(
             None,
         ),
 
+        # ====================================================
+        # AUTOR Y AVATAR
+        # ====================================================
+
+        "autor_id": _get_author_id(
+            user
+        ),
+
         "avatar_url": _avatar_url(
             user,
             request=request,
         ),
+
+        # ====================================================
+        # MICROSOFT
+        # ====================================================
+
+        "ms_display_name": getattr(
+            user,
+            "ms_display_name",
+            None,
+        ),
+
+        "ms_last_sync": getattr(
+            user,
+            "ms_last_sync",
+            None,
+        ),
+
+        # ====================================================
+        # CONTROL DE EDICIÓN
+        # ====================================================
 
         "profile_edit_locked": bool(
             edit_status.get(
@@ -397,6 +818,12 @@ def build_local_auth_user_payload(
                 False,
             )
         ),
+
+        "profile_edit_seconds_remaining": (
+            _profile_seconds_remaining(
+                edit_status
+            )
+        ),
     }
 
 
@@ -406,7 +833,7 @@ def build_local_auth_user_payload(
 
 def _invalid_credentials_response():
     """
-    Respuesta genérica para no revelar si el correo existe.
+    Respuesta genérica para credenciales inválidas.
     """
     return Response(
         {
@@ -416,6 +843,53 @@ def _invalid_credentials_response():
             )
         },
         status=status.HTTP_401_UNAUTHORIZED,
+    )
+
+
+def _inactive_account_response():
+    """
+    Respuesta para una cuenta inactiva.
+    """
+    return Response(
+        {
+            "detail": (
+                "La cuenta se encuentra inactiva. "
+                "Comuníquese con el administrador."
+            )
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _microsoft_account_response():
+    """
+    Respuesta para cuentas que deben utilizar Microsoft.
+    """
+    return Response(
+        {
+            "detail": (
+                "Esta cuenta debe iniciar sesión "
+                "mediante Microsoft 365."
+            )
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _invalid_account_classification_response():
+    """
+    Respuesta para combinaciones inconsistentes de rol y origen
+    de autenticación.
+    """
+    return Response(
+        {
+            "detail": (
+                "La cuenta presenta una clasificación "
+                "inconsistente. Solicite una revisión "
+                "al administrador."
+            )
+        },
+        status=status.HTTP_409_CONFLICT,
     )
 
 
@@ -444,8 +918,8 @@ class LoginView(APIView):
     """
     Inicio de sesión mediante correo y contraseña.
 
-    Este endpoint es público y no debe intentar autenticar un
-    token enviado previamente por el navegador.
+    Este endpoint es público y no intenta autenticar un token
+    previamente guardado por el navegador.
     """
 
     authentication_classes = []
@@ -454,7 +928,10 @@ class LoginView(APIView):
         permissions.AllowAny,
     ]
 
-    def post(self, request):
+    def post(
+        self,
+        request,
+    ):
         serializer = LoginSerializer(
             data=request.data,
             context={
@@ -474,24 +951,100 @@ class LoginView(APIView):
             "password"
         ]
 
+        # ====================================================
+        # COMPROBACIÓN PREVIA DE LA CUENTA
+        # ====================================================
+
+        candidate_user = (
+            _get_user_by_email(
+                email
+            )
+        )
+
+        if candidate_user is None:
+            return _invalid_credentials_response()
+
+        candidate_auth_source = (
+            _normalized_auth_source(
+                candidate_user
+            )
+        )
+
+        if (
+            candidate_auth_source
+            == AUTH_SOURCE_MICROSOFT
+        ):
+            return _microsoft_account_response()
+
+        if (
+            candidate_auth_source
+            != AUTH_SOURCE_LOCAL
+        ):
+            logger.warning(
+                (
+                    "Intento de inicio local para el Usuario "
+                    "%s con auth_source desconocido: %s"
+                ),
+                candidate_user.pk,
+                candidate_auth_source,
+            )
+
+            return (
+                _invalid_account_classification_response()
+            )
+
+        if not bool(
+            getattr(
+                candidate_user,
+                "is_active",
+                False,
+            )
+        ):
+            return _inactive_account_response()
+
+        candidate_role = _normalized_role(
+            candidate_user
+        )
+
+        if (
+            candidate_role
+            not in SYNCABLE_AUTHOR_ROLES
+        ):
+            logger.error(
+                (
+                    "El Usuario %s tiene una combinación "
+                    "de rol y autenticación no reconocida: "
+                    "rol=%s, auth_source=%s."
+                ),
+                candidate_user.pk,
+                candidate_role,
+                candidate_auth_source,
+            )
+
+            return (
+                _invalid_account_classification_response()
+            )
+
+        # ====================================================
+        # AUTENTICACIÓN
+        # ====================================================
+
         credentials = {
             User.USERNAME_FIELD: email,
             "password": password,
         }
 
-        user = authenticate(
+        authenticated = authenticate(
             request=request,
             **credentials,
         )
 
-        if user is None:
+        if authenticated is None:
             return _invalid_credentials_response()
 
-        # Se consulta nuevamente para obtener las relaciones
-        # académicas y el estado definitivo de la cuenta.
         authenticated_user = (
             _get_user_with_relations(
-                user.pk
+                authenticated.pk
             )
         )
 
@@ -505,63 +1058,56 @@ class LoginView(APIView):
                 False,
             )
         ):
-            return Response(
-                {
-                    "detail": (
-                        "La cuenta se encuentra inactiva. "
-                        "Comuníquese con el administrador."
-                    )
-                },
-                status=status.HTTP_403_FORBIDDEN,
+            return _inactive_account_response()
+
+        auth_source = (
+            _normalized_auth_source(
+                authenticated_user
+            )
+        )
+
+        if (
+            auth_source
+            == AUTH_SOURCE_MICROSOFT
+        ):
+            return _microsoft_account_response()
+
+        if (
+            auth_source
+            != AUTH_SOURCE_LOCAL
+        ):
+            return (
+                _invalid_account_classification_response()
             )
 
-        auth_source = _normalize_text(
-            getattr(
-                authenticated_user,
-                "auth_source",
-                AUTH_SOURCE_LOCAL,
-            )
-        ).lower()
+        role = _normalized_role(
+            authenticated_user
+        )
 
-        if auth_source == AUTH_SOURCE_MICROSOFT:
-            return Response(
-                {
-                    "detail": (
-                        "Esta cuenta debe iniciar sesión "
-                        "mediante Microsoft 365."
-                    )
-                },
-                status=status.HTTP_403_FORBIDDEN,
+        if role not in SYNCABLE_AUTHOR_ROLES:
+            return (
+                _invalid_account_classification_response()
             )
-
-        if auth_source != AUTH_SOURCE_LOCAL:
-            logger.warning(
-                (
-                    "Intento de inicio local para el usuario "
-                    "%s con auth_source desconocido: %s"
-                ),
-                authenticated_user.pk,
-                auth_source,
-            )
-
-            return _invalid_credentials_response()
-
-        role = _normalize_text(
-            getattr(
-                authenticated_user,
-                "rol",
-                "",
-            )
-        ).lower()
 
         # ====================================================
         # SINCRONIZACIÓN DEL AUTOR
         # ====================================================
 
         try:
-            author = asegurar_autor_para_usuario(
-                authenticated_user
-            )
+            with transaction.atomic():
+                author = (
+                    asegurar_autor_para_usuario(
+                        authenticated_user
+                    )
+                )
+
+                if author is None:
+                    raise DjangoValidationError(
+                        (
+                            "No fue posible obtener el "
+                            "Autor relacionado."
+                        )
+                    )
 
         except (
             DjangoValidationError,
@@ -578,22 +1124,8 @@ class LoginView(APIView):
 
             return _author_sync_error_response()
 
-        if (
-            role in SYNCABLE_AUTHOR_ROLES
-            and author is None
-        ):
-            logger.error(
-                (
-                    "El Usuario %s inició autenticación, pero "
-                    "no fue posible obtener su Autor."
-                ),
-                authenticated_user.pk,
-            )
-
-            return _author_sync_error_response()
-
-        # Se vuelve a consultar por si la sincronización actualizó
-        # datos relacionados con el usuario.
+        # Se consulta nuevamente para obtener posibles cambios
+        # realizados durante la sincronización.
         authenticated_user = (
             _get_user_with_relations(
                 authenticated_user.pk
@@ -602,6 +1134,10 @@ class LoginView(APIView):
 
         if authenticated_user is None:
             return _invalid_credentials_response()
+
+        # ====================================================
+        # TOKENS Y RESPUESTA
+        # ====================================================
 
         tokens = _generate_tokens(
             authenticated_user
@@ -625,7 +1161,7 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
-        # Impide que navegadores o proxies almacenen tokens.
+        # Evita que navegadores o proxies almacenen los tokens.
         response[
             "Cache-Control"
         ] = "no-store"

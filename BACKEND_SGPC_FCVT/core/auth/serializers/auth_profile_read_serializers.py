@@ -1,17 +1,9 @@
 """
 Serializer de lectura del perfil del usuario autenticado.
 
-Expone:
-
-- Información personal.
-- Relación académica.
-- Avatar.
-- Clasificación y permisos.
-- Información sincronizada con Microsoft.
-- Estado efectivo de edición del perfil.
-- Estado del aviso de perfil incompleto.
-
-La facultad se deriva exclusivamente desde carrera.facultad.
+Expone la clasificación efectiva de la cuenta y oculta Facultad y
+Carrera para cuentas externas o inconsistentes. La facultad se deriva
+exclusivamente desde carrera.facultad.
 """
 
 from django.contrib.auth import get_user_model
@@ -19,270 +11,113 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework import serializers
 
-from core.auth.services.auth_profile_services import (
-    get_profile_edit_status,
-)
+from core.auth.services.auth_profile_services import get_profile_edit_status
 
 
 User = get_user_model()
 
 
-# ============================================================
-# UTILIDADES
-# ============================================================
-
 def _normalize_text(value):
-    """
-    Normaliza valores textuales.
-    """
-    return str(
-        value or ""
-    ).strip()
+    return str(value or "").strip()
 
 
 def _normalize_optional_text(value):
-    """
-    Normaliza textos opcionales.
-    """
-    normalized = _normalize_text(
-        value
-    )
-
+    normalized = _normalize_text(value)
     return normalized or None
 
 
-def _safe_non_negative_int(
-    value,
-    *,
-    default=0,
-):
-    """
-    Convierte un valor en entero no negativo.
-    """
+def _safe_non_negative_int(value, *, default=0):
     if isinstance(value, bool):
         return int(default)
-
     try:
         parsed = int(value)
-
-    except (
-        TypeError,
-        ValueError,
-        OverflowError,
-    ):
+    except (TypeError, ValueError, OverflowError):
         return int(default)
+    return max(0, parsed)
 
-    return max(
-        0,
-        parsed,
+
+def _normalized_role(user):
+    return _normalize_text(getattr(user, "rol", "")).lower()
+
+
+def _normalized_auth_source(user):
+    return _normalize_text(getattr(user, "auth_source", "")).lower()
+
+
+def _is_external_user(user):
+    return bool(
+        user is not None
+        and _normalized_role(user) == "autor_externo"
+        and _normalized_auth_source(user) == "local"
     )
 
 
-# ============================================================
-# SERIALIZER
-# ============================================================
-
-class ProfileSerializer(
-    serializers.ModelSerializer
-):
-    """
-    Serializer completo y de solo lectura para el perfil.
-
-    No permite actualizar información. Las modificaciones deben
-    realizarse mediante ProfileUpdateSerializer.
-    """
-
-    # ========================================================
-    # IDENTIDAD
-    # ========================================================
-
-    full_name = serializers.SerializerMethodField(
-        read_only=True,
+def _is_institutional_user(user):
+    return bool(
+        user is not None
+        and _normalized_role(user) == "autor"
+        and _normalized_auth_source(user) == "microsoft"
     )
 
-    rol_label = serializers.SerializerMethodField(
-        read_only=True,
-    )
 
-    auth_source_label = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
+def _has_valid_cedula(user):
+    cedula = _normalize_text(getattr(user, "identificacion", None))
+    return bool(len(cedula) == 10 and cedula.isdigit())
 
-    # ========================================================
-    # RELACIÓN ACADÉMICA
-    # ========================================================
 
-    facultad = serializers.SerializerMethodField(
-        read_only=True,
-    )
+class ProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField(read_only=True)
+    rol_label = serializers.SerializerMethodField(read_only=True)
+    auth_source_label = serializers.SerializerMethodField(read_only=True)
+    es_externo = serializers.SerializerMethodField(read_only=True)
+    es_institucional = serializers.SerializerMethodField(read_only=True)
+    tipo_cuenta_label = serializers.SerializerMethodField(read_only=True)
+    perfil_completo = serializers.SerializerMethodField(read_only=True)
 
-    facultad_id = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    facultad = serializers.SerializerMethodField(read_only=True)
+    facultad_id = serializers.SerializerMethodField(read_only=True)
+    carrera = serializers.SerializerMethodField(read_only=True)
+    carrera_id = serializers.SerializerMethodField(read_only=True)
+    avatar_url = serializers.SerializerMethodField(read_only=True)
+    es_admin = serializers.SerializerMethodField(read_only=True)
 
-    carrera = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    carrera_id = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    # ========================================================
-    # AVATAR
-    # ========================================================
-
-    avatar_url = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    # ========================================================
-    # PERMISOS
-    # ========================================================
-
-    es_admin = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    # ========================================================
-    # MICROSOFT
-    # ========================================================
-
-    microsoft_id = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_graph_id = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_display_name = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_given_name = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_surname = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_mail = serializers.EmailField(
-        read_only=True,
-        allow_null=True,
-    )
-
+    microsoft_id = serializers.CharField(read_only=True, allow_null=True)
+    ms_graph_id = serializers.CharField(read_only=True, allow_null=True)
+    ms_display_name = serializers.CharField(read_only=True, allow_null=True)
+    ms_given_name = serializers.CharField(read_only=True, allow_null=True)
+    ms_surname = serializers.CharField(read_only=True, allow_null=True)
+    ms_mail = serializers.EmailField(read_only=True, allow_null=True)
     ms_user_principal_name = serializers.EmailField(
-        read_only=True,
-        allow_null=True,
+        read_only=True, allow_null=True
+    )
+    ms_job_title = serializers.CharField(read_only=True, allow_null=True)
+    ms_department = serializers.CharField(read_only=True, allow_null=True)
+    ms_office_location = serializers.CharField(read_only=True, allow_null=True)
+    ms_business_phones = serializers.SerializerMethodField(read_only=True)
+    ms_mobile_phone = serializers.CharField(read_only=True, allow_null=True)
+
+    profile_edit_attempts_left = serializers.SerializerMethodField(
+        read_only=True
+    )
+    profile_edit_locked = serializers.SerializerMethodField(read_only=True)
+    profile_edit_lock_reason = serializers.SerializerMethodField(
+        read_only=True
+    )
+    profile_edit_until = serializers.SerializerMethodField(read_only=True)
+    profile_edit_available = serializers.SerializerMethodField(read_only=True)
+    profile_edit_expired = serializers.SerializerMethodField(read_only=True)
+    profile_edit_seconds_remaining = serializers.SerializerMethodField(
+        read_only=True
     )
 
-    ms_job_title = serializers.CharField(
-        read_only=True,
-        allow_null=True,
+    perfil_banner_snooze_until = serializers.DateTimeField(
+        read_only=True, allow_null=True
     )
-
-    ms_department = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_office_location = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    ms_business_phones = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    ms_mobile_phone = serializers.CharField(
-        read_only=True,
-        allow_null=True,
-    )
-
-    # ========================================================
-    # ESTADO DE EDICIÓN
-    # ========================================================
-
-    profile_edit_attempts_left = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_locked = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_lock_reason = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_until = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_available = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_expired = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    profile_edit_seconds_remaining = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    # ========================================================
-    # AVISO DE PERFIL
-    # ========================================================
-
-    perfil_banner_snooze_until = (
-        serializers.DateTimeField(
-            read_only=True,
-            allow_null=True,
-        )
-    )
-
-    perfil_banner_snoozed = (
-        serializers.SerializerMethodField(
-            read_only=True,
-        )
-    )
-
-    # ========================================================
-    # META
-    # ========================================================
+    perfil_banner_snoozed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-
         fields = [
-            # Identidad
             "id",
             "email",
             "nombres",
@@ -291,31 +126,24 @@ class ProfileSerializer(
             "rol",
             "rol_label",
             "identificacion",
-
-            # Relación académica
+            "es_externo",
+            "es_institucional",
+            "tipo_cuenta_label",
             "facultad",
             "facultad_id",
             "carrera",
             "carrera_id",
-
-            # Registro y avatar
             "fecha_registro",
             "avatar_url",
-
-            # Autenticación y perfil
             "auth_source",
             "auth_source_label",
             "perfil_completo",
             "perfil_banner_snooze_until",
             "perfil_banner_snoozed",
-
-            # Permisos
             "is_active",
             "is_staff",
             "is_superuser",
             "es_admin",
-
-            # Microsoft
             "microsoft_id",
             "ms_graph_id",
             "ms_display_name",
@@ -329,8 +157,6 @@ class ProfileSerializer(
             "ms_business_phones",
             "ms_mobile_phone",
             "ms_last_sync",
-
-            # Estado de edición
             "profile_edit_attempts_left",
             "profile_edit_locked",
             "profile_edit_lock_reason",
@@ -339,488 +165,188 @@ class ProfileSerializer(
             "profile_edit_expired",
             "profile_edit_seconds_remaining",
         ]
-
         read_only_fields = fields
 
-    # ========================================================
-    # RELACIONES
-    # ========================================================
-
     def _get_career(self, obj):
-        """
-        Obtiene la carrera del usuario de manera segura.
-        """
-        if getattr(
-            obj,
-            "carrera_id",
-            None,
-        ) is None:
+        # Solo las cuentas institucionales exponen información académica.
+        if not _is_institutional_user(obj):
             return None
-
+        if getattr(obj, "carrera_id", None) is None:
+            return None
         try:
             return obj.carrera
-
-        except (
-            ObjectDoesNotExist,
-            AttributeError,
-        ):
+        except (ObjectDoesNotExist, AttributeError):
             return None
 
     def _get_faculty(self, obj):
-        """
-        Obtiene la facultad derivada desde la carrera.
-        """
-        career = self._get_career(
-            obj
-        )
-
+        career = self._get_career(obj)
         if career is None:
             return None
-
         try:
             return career.facultad
-
-        except (
-            ObjectDoesNotExist,
-            AttributeError,
-        ):
+        except (ObjectDoesNotExist, AttributeError):
             return None
 
-    # ========================================================
-    # ESTADO DE EDICIÓN
-    # ========================================================
-
     def _get_edit_status(self, obj):
-        """
-        Reutiliza el estado calculado dentro de una misma
-        serialización para evitar repetir operaciones.
-        """
-        cache_attribute = (
-            "_profile_serializer_edit_status"
-        )
-
-        cached_status = getattr(
-            obj,
-            cache_attribute,
-            None,
-        )
-
+        cache_attribute = "_profile_serializer_edit_status"
+        cached_status = getattr(obj, cache_attribute, None)
         if cached_status is not None:
             return cached_status
-
-        status_payload = (
-            get_profile_edit_status(
-                obj
-            )
-        )
-
-        setattr(
-            obj,
-            cache_attribute,
-            status_payload,
-        )
-
+        status_payload = get_profile_edit_status(obj)
+        setattr(obj, cache_attribute, status_payload)
         return status_payload
 
-    # ========================================================
-    # IDENTIDAD
-    # ========================================================
-
     def get_full_name(self, obj):
-        """
-        Retorna el nombre completo utilizando el método del
-        modelo cuando está disponible.
-        """
-        get_full_name = getattr(
-            obj,
-            "get_full_name",
-            None,
-        )
-
+        get_full_name = getattr(obj, "get_full_name", None)
         if callable(get_full_name):
-            full_name = _normalize_text(
-                get_full_name()
-            )
-
+            full_name = _normalize_text(get_full_name())
             if full_name:
                 return full_name
-
         full_name = " ".join(
             part
             for part in [
-                _normalize_text(
-                    getattr(
-                        obj,
-                        "nombres",
-                        "",
-                    )
-                ),
-                _normalize_text(
-                    getattr(
-                        obj,
-                        "apellidos",
-                        "",
-                    )
-                ),
+                _normalize_text(getattr(obj, "nombres", "")),
+                _normalize_text(getattr(obj, "apellidos", "")),
             ]
             if part
         )
-
-        return (
-            full_name
-            or _normalize_text(
-                getattr(
-                    obj,
-                    "email",
-                    "",
-                )
-            )
-        )
+        return full_name or _normalize_text(getattr(obj, "email", ""))
 
     def get_rol_label(self, obj):
-        get_display = getattr(
-            obj,
-            "get_rol_display",
-            None,
-        )
-
-        if callable(get_display):
-            return _normalize_optional_text(
-                get_display()
-            )
-
-        return _normalize_optional_text(
-            getattr(
-                obj,
-                "rol",
-                None,
-            )
+        if _is_external_user(obj):
+            return "Autor externo"
+        if _is_institutional_user(obj):
+            return "Autor institucional"
+        get_display = getattr(obj, "get_rol_display", None)
+        return (
+            _normalize_optional_text(get_display())
+            if callable(get_display)
+            else _normalize_optional_text(getattr(obj, "rol", None))
         )
 
     def get_auth_source_label(self, obj):
-        get_display = getattr(
-            obj,
-            "get_auth_source_display",
-            None,
+        if _is_external_user(obj):
+            return "Cuenta local"
+        if _is_institutional_user(obj):
+            return "Microsoft 365"
+        get_display = getattr(obj, "get_auth_source_display", None)
+        return (
+            _normalize_optional_text(get_display())
+            if callable(get_display)
+            else _normalize_optional_text(getattr(obj, "auth_source", None))
         )
 
-        if callable(get_display):
-            return _normalize_optional_text(
-                get_display()
-            )
+    def get_es_externo(self, obj):
+        return _is_external_user(obj)
 
-        return _normalize_optional_text(
-            getattr(
-                obj,
-                "auth_source",
-                None,
-            )
-        )
+    def get_es_institucional(self, obj):
+        return _is_institutional_user(obj)
 
-    # ========================================================
-    # RELACIÓN ACADÉMICA
-    # ========================================================
+    def get_tipo_cuenta_label(self, obj):
+        if _is_external_user(obj):
+            return "Cuenta externa"
+        if _is_institutional_user(obj):
+            return "Cuenta institucional"
+        return "Cuenta sin clasificación válida"
+
+    def get_perfil_completo(self, obj):
+        if _is_external_user(obj):
+            return _has_valid_cedula(obj)
+        if _is_institutional_user(obj):
+            return bool(_has_valid_cedula(obj) and obj.carrera_id)
+        return False
 
     def get_facultad(self, obj):
-        faculty = self._get_faculty(
-            obj
-        )
-
-        if faculty is None:
-            return None
-
-        return _normalize_optional_text(
-            getattr(
-                faculty,
-                "nombre",
-                None,
-            )
+        faculty = self._get_faculty(obj)
+        return (
+            _normalize_optional_text(getattr(faculty, "nombre", None))
+            if faculty is not None
+            else None
         )
 
     def get_facultad_id(self, obj):
-        career = self._get_career(
-            obj
-        )
-
-        if career is None:
-            return None
-
-        return getattr(
-            career,
-            "facultad_id",
-            None,
-        )
+        career = self._get_career(obj)
+        return getattr(career, "facultad_id", None) if career else None
 
     def get_carrera(self, obj):
-        career = self._get_career(
-            obj
-        )
-
-        if career is None:
-            return None
-
-        return _normalize_optional_text(
-            getattr(
-                career,
-                "nombre",
-                None,
-            )
+        career = self._get_career(obj)
+        return (
+            _normalize_optional_text(getattr(career, "nombre", None))
+            if career is not None
+            else None
         )
 
     def get_carrera_id(self, obj):
-        return getattr(
-            obj,
-            "carrera_id",
-            None,
-        )
-
-    # ========================================================
-    # AVATAR
-    # ========================================================
+        career = self._get_career(obj)
+        return getattr(career, "pk", None) if career else None
 
     def get_avatar_url(self, obj):
-        """
-        Retorna una URL absoluta cuando existe request.
-        """
-        avatar = getattr(
-            obj,
-            "avatar",
-            None,
-        )
-
-        if not avatar:
+        avatar = getattr(obj, "avatar", None)
+        if not avatar or not getattr(avatar, "name", None):
             return None
-
-        avatar_name = getattr(
-            avatar,
-            "name",
-            None,
-        )
-
-        if not avatar_name:
-            return None
-
         try:
             avatar_url = avatar.url
-
-        except (
-            ValueError,
-            OSError,
-        ):
+        except (ValueError, OSError):
             return None
-
-        request = self.context.get(
-            "request"
-        )
-
+        request = self.context.get("request")
         if request is None:
             return avatar_url
-
         try:
-            return request.build_absolute_uri(
-                avatar_url
-            )
-
-        except (
-            ValueError,
-            TypeError,
-        ):
+            return request.build_absolute_uri(avatar_url)
+        except (ValueError, TypeError):
             return avatar_url
-
-    # ========================================================
-    # PERMISOS
-    # ========================================================
 
     def get_es_admin(self, obj):
         return bool(
-            getattr(
-                obj,
-                "is_staff",
-                False,
-            )
-            or getattr(
-                obj,
-                "is_superuser",
-                False,
-            )
+            getattr(obj, "is_staff", False)
+            or getattr(obj, "is_superuser", False)
         )
-
-    # ========================================================
-    # MICROSOFT
-    # ========================================================
 
     def get_ms_business_phones(self, obj):
-        """
-        Garantiza que los teléfonos se entreguen como lista.
-        """
-        phones = getattr(
-            obj,
-            "ms_business_phones",
-            None,
-        )
-
+        phones = getattr(obj, "ms_business_phones", None)
         if phones is None:
             return []
-
-        if isinstance(
-            phones,
-            (list, tuple),
-        ):
+        if isinstance(phones, (list, tuple)):
             return [
                 _normalize_text(phone)
                 for phone in phones
                 if _normalize_text(phone)
             ]
+        normalized_phone = _normalize_text(phones)
+        return [normalized_phone] if normalized_phone else []
 
-        normalized_phone = _normalize_text(
-            phones
-        )
-
-        return (
-            [normalized_phone]
-            if normalized_phone
-            else []
-        )
-
-    # ========================================================
-    # EDICIÓN DEL PERFIL
-    # ========================================================
-
-    def get_profile_edit_attempts_left(
-        self,
-        obj,
-    ):
-        status_payload = (
-            self._get_edit_status(
-                obj
-            )
-        )
-
+    def get_profile_edit_attempts_left(self, obj):
         return _safe_non_negative_int(
-            status_payload.get(
-                "attempts_left"
-            )
+            self._get_edit_status(obj).get("attempts_left")
         )
 
-    def get_profile_edit_locked(
-        self,
-        obj,
-    ):
+    def get_profile_edit_locked(self, obj):
         return bool(
-            self._get_edit_status(
-                obj
-            ).get(
-                "profile_edit_locked",
-                False,
-            )
+            self._get_edit_status(obj).get("profile_edit_locked", False)
         )
 
-    def get_profile_edit_lock_reason(
-        self,
-        obj,
-    ):
+    def get_profile_edit_lock_reason(self, obj):
         return _normalize_optional_text(
-            self._get_edit_status(
-                obj
-            ).get(
-                "profile_edit_lock_reason"
-            )
+            self._get_edit_status(obj).get("profile_edit_lock_reason")
         )
 
-    def get_profile_edit_until(
-        self,
-        obj,
-    ):
-        """
-        Retorna la fecha límite efectiva.
+    def get_profile_edit_until(self, obj):
+        return self._get_edit_status(obj).get("profile_edit_until")
 
-        Incluye tanto una ampliación explícita como el plazo
-        inicial calculado desde fecha_registro.
-        """
-        return self._get_edit_status(
-            obj
-        ).get(
-            "profile_edit_until"
-        )
+    def get_profile_edit_available(self, obj):
+        return bool(self._get_edit_status(obj).get("available", False))
 
-    def get_profile_edit_available(
-        self,
-        obj,
-    ):
-        return bool(
-            self._get_edit_status(
-                obj
-            ).get(
-                "available",
-                False,
-            )
-        )
+    def get_profile_edit_expired(self, obj):
+        return bool(self._get_edit_status(obj).get("expired", False))
 
-    def get_profile_edit_expired(
-        self,
-        obj,
-    ):
-        return bool(
-            self._get_edit_status(
-                obj
-            ).get(
-                "expired",
-                False,
-            )
-        )
-
-    def get_profile_edit_seconds_remaining(
-        self,
-        obj,
-    ):
-        """
-        Retorna los segundos restantes hasta el vencimiento.
-        """
-        status_payload = (
-            self._get_edit_status(
-                obj
-            )
-        )
-
-        deadline = status_payload.get(
-            "profile_edit_until"
-        )
-
-        if (
-            deadline is None
-            or status_payload.get(
-                "expired",
-                False,
-            )
-        ):
+    def get_profile_edit_seconds_remaining(self, obj):
+        status_payload = self._get_edit_status(obj)
+        deadline = status_payload.get("profile_edit_until")
+        if deadline is None or status_payload.get("expired", False):
             return 0
+        remaining = (deadline - timezone.now()).total_seconds()
+        return max(0, int(remaining))
 
-        remaining = (
-            deadline
-            - timezone.now()
-        ).total_seconds()
-
-        return max(
-            0,
-            int(remaining),
-        )
-
-    # ========================================================
-    # AVISO DE PERFIL
-    # ========================================================
-
-    def get_perfil_banner_snoozed(
-        self,
-        obj,
-    ):
-        snooze_until = getattr(
-            obj,
-            "perfil_banner_snooze_until",
-            None,
-        )
-
-        return bool(
-            snooze_until is not None
-            and snooze_until
-            > timezone.now()
-        )
+    def get_perfil_banner_snoozed(self, obj):
+        snooze_until = getattr(obj, "perfil_banner_snooze_until", None)
+        return bool(snooze_until is not None and snooze_until > timezone.now())

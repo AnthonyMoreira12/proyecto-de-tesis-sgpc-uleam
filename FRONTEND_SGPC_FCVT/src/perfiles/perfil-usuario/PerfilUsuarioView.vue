@@ -44,7 +44,7 @@
       >
         <div class="perfil-hero__copy">
           <span class="perfil-kicker">
-            Cuenta institucional
+            {{ accountTypeLabel }}
           </span>
 
           <h1 id="perfil-title" class="perfil-title">
@@ -261,7 +261,7 @@
                 {{
                   perfilCompletoCalculado
                     ? "La información requerida está registrada."
-                    : "Existen datos institucionales pendientes."
+                    : profilePendingMessage
                 }}
               </p>
             </div>
@@ -369,8 +369,7 @@
               <h2>Información pendiente</h2>
 
               <p>
-                Complete los datos requeridos para mantener actualizado su
-                perfil institucional.
+                {{ incompleteProfileMessage }}
               </p>
 
               <div class="perfil-notice__details">
@@ -488,13 +487,7 @@
 
                   <strong>{{ roleLabel }}</strong>
 
-                  <p>
-                    {{
-                      isExternalAuthor
-                        ? "Cuenta registrada como autor externo."
-                        : "Cuenta vinculada a la institución."
-                    }}
-                  </p>
+                  <p>{{ accountTypeDescription }}</p>
                 </div>
               </article>
 
@@ -731,7 +724,7 @@
 
           <section
             class="perfil-card"
-            aria-labelledby="institutional-data-title"
+            aria-labelledby="account-data-title"
           >
             <header class="perfil-card__head">
               <div>
@@ -739,8 +732,8 @@
                   Información
                 </span>
 
-                <h2 id="institutional-data-title">
-                  Datos institucionales
+                <h2 id="account-data-title">
+                  {{ profileDataTitle }}
                 </h2>
 
                 <p>
@@ -804,7 +797,7 @@
               </div>
 
               <div class="perfil-field">
-                <dt>Identificación</dt>
+                <dt>Número de cédula</dt>
 
                 <dd>
                   <span
@@ -820,8 +813,8 @@
                     v-if="user.identificacion"
                     class="perfil-copy-button"
                     type="button"
-                    aria-label="Copiar identificación"
-                    title="Copiar identificación"
+                    aria-label="Copiar número de cédula"
+                    title="Copiar número de cédula"
                     @click="copyText(String(user.identificacion))"
                   >
                     <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -848,7 +841,7 @@
               </div>
 
               <div
-                v-if="!isExternalAuthor"
+                v-if="isInstitutionalUser"
                 class="perfil-field"
               >
                 <dt>Facultad</dt>
@@ -866,7 +859,7 @@
               </div>
 
               <div
-                v-if="!isExternalAuthor"
+                v-if="isInstitutionalUser"
                 class="perfil-field"
               >
                 <dt>Carrera</dt>
@@ -1106,9 +1099,53 @@
                 class="perfil-edit-form"
                 @submit.prevent="saveProfile"
               >
+                <div
+                  v-if="isExternalAuthor"
+                  class="perfil-edit-form__grid"
+                >
+                  <label class="perfil-form-field">
+                    <span class="perfil-form-field__label">
+                      Nombres
+                    </span>
+
+                    <input
+                      ref="firstNameInputRef"
+                      v-model="form.nombres"
+                      type="text"
+                      maxlength="100"
+                      autocomplete="given-name"
+                      placeholder="Ingrese sus nombres"
+                      :disabled="!canEditProfile || savingProfile"
+                    />
+
+                    <small>
+                      Puede corregir espacios, tildes, guiones y apóstrofes.
+                    </small>
+                  </label>
+
+                  <label class="perfil-form-field">
+                    <span class="perfil-form-field__label">
+                      Apellidos
+                    </span>
+
+                    <input
+                      v-model="form.apellidos"
+                      type="text"
+                      maxlength="100"
+                      autocomplete="family-name"
+                      placeholder="Ingrese sus apellidos"
+                      :disabled="!canEditProfile || savingProfile"
+                    />
+
+                    <small>
+                      Los cambios también se sincronizarán con su registro de autor.
+                    </small>
+                  </label>
+                </div>
+
                 <label class="perfil-form-field">
                   <span class="perfil-form-field__label">
-                    Identificación
+                    Número de cédula
                   </span>
 
                   <input
@@ -1118,8 +1155,9 @@
                     maxlength="10"
                     inputmode="numeric"
                     autocomplete="off"
-                    placeholder="Ingrese 10 dígitos"
+                    placeholder="Ingrese los 10 dígitos de la cédula"
                     :disabled="!canEditProfile || savingProfile"
+                    @input="onCedulaInput"
                   />
 
                   <small>
@@ -1127,7 +1165,7 @@
                   </small>
                 </label>
 
-                <template v-if="!isExternalAuthor">
+                <template v-if="isInstitutionalUser">
                   <div class="perfil-edit-form__grid">
                     <label class="perfil-form-field">
                       <span class="perfil-form-field__label">
@@ -1313,6 +1351,7 @@ const extensionRequestReason = ref("");
 const extensionRequestHours = ref(48);
 
 const editModalRef = ref(null);
+const firstNameInputRef = ref(null);
 const identificationInputRef = ref(null);
 const extensionRequestSectionRef = ref(null);
 const extensionReasonInputRef = ref(null);
@@ -1333,6 +1372,8 @@ const toast = ref({
 });
 
 const form = ref({
+  nombres: "",
+  apellidos: "",
   identificacion: "",
   facultad_id: "",
   carrera_id: "",
@@ -1434,7 +1475,7 @@ const carreraLabel = computed(() => {
 });
 
 const correoLabel = computed(() => {
-  return user.value?.auth_source === "microsoft"
+  return isInstitutionalUser.value
     ? "Correo institucional"
     : "Correo electrónico";
 });
@@ -1481,11 +1522,55 @@ const avatarButtonLabel = computed(() => {
     : "Agregar foto de perfil";
 });
 
+const normalizeAccountValue = (value) => {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+};
+
+const hasValidCedula = (value) => {
+  return /^\d{10}$/.test(
+    String(value || "").trim()
+  );
+};
+
 const isExternalAuthor = computed(() => {
-  return (
-    String(
-      user.value?.rol || ""
-    ).toLowerCase() === "autor_externo"
+  const currentUser = user.value;
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return Boolean(
+    currentUser.es_externo === true ||
+    (
+      normalizeAccountValue(
+        currentUser.rol
+      ) === "autor_externo" &&
+      normalizeAccountValue(
+        currentUser.auth_source
+      ) === "local"
+    )
+  );
+});
+
+const isInstitutionalUser = computed(() => {
+  const currentUser = user.value;
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return Boolean(
+    currentUser.es_institucional === true ||
+    (
+      normalizeAccountValue(
+        currentUser.rol
+      ) === "autor" &&
+      normalizeAccountValue(
+        currentUser.auth_source
+      ) === "microsoft"
+    )
   );
 });
 
@@ -1500,20 +1585,95 @@ const isAdmin = computed(() => {
   );
 });
 
+const accountTypeLabel = computed(() => {
+  if (
+    String(
+      user.value?.tipo_cuenta_label || ""
+    ).trim()
+  ) {
+    return user.value.tipo_cuenta_label;
+  }
+
+  if (isExternalAuthor.value) {
+    return "Cuenta externa";
+  }
+
+  if (isInstitutionalUser.value) {
+    return "Cuenta institucional";
+  }
+
+  return "Cuenta sin clasificación válida";
+});
+
+const accountTypeDescription = computed(() => {
+  if (isExternalAuthor.value) {
+    return "Cuenta registrada como autor externo.";
+  }
+
+  if (isInstitutionalUser.value) {
+    return "Cuenta vinculada a la institución mediante Microsoft 365.";
+  }
+
+  return "La clasificación de esta cuenta requiere revisión administrativa.";
+});
+
+const profileDataTitle = computed(() => {
+  return isInstitutionalUser.value
+    ? "Datos institucionales"
+    : "Datos de la cuenta";
+});
+
+const profilePendingMessage = computed(() => {
+  if (isInstitutionalUser.value) {
+    return "Existen datos institucionales pendientes.";
+  }
+
+  if (isExternalAuthor.value) {
+    return "Existen datos de la cuenta pendientes.";
+  }
+
+  return "La clasificación de la cuenta requiere revisión administrativa.";
+});
+
+const incompleteProfileMessage = computed(() => {
+  if (isInstitutionalUser.value) {
+    return (
+      "Complete los datos requeridos para mantener " +
+      "actualizado su perfil institucional."
+    );
+  }
+
+  if (isExternalAuthor.value) {
+    return (
+      "Complete el número de cédula requerido para " +
+      "mantener actualizada su cuenta."
+    );
+  }
+
+  return (
+    "La clasificación de esta cuenta debe ser revisada " +
+    "por un administrador."
+  );
+});
+
 const roleLabel = computed(() => {
-  const role = String(
-    user.value?.rol || ""
-  ).toLowerCase();
+  const backendLabel = String(
+    user.value?.rol_label || ""
+  ).trim();
+
+  if (backendLabel) {
+    return backendLabel;
+  }
 
   if (isExternalAuthor.value) {
     return "Autor externo";
   }
 
-  if (role === "autor") {
-    return "Autor";
+  if (isInstitutionalUser.value) {
+    return "Autor institucional";
   }
 
-  return "Usuario institucional";
+  return "Usuario sin clasificación válida";
 });
 
 const perfilCompletoCalculado = computed(() => {
@@ -1523,11 +1683,16 @@ const perfilCompletoCalculado = computed(() => {
     return false;
   }
 
-  const identificacionCompleta =
-    Boolean(currentUser.identificacion);
+  const cedulaCompleta = hasValidCedula(
+    currentUser.identificacion
+  );
 
   if (isExternalAuthor.value) {
-    return identificacionCompleta;
+    return cedulaCompleta;
+  }
+
+  if (!isInstitutionalUser.value) {
+    return false;
   }
 
   const facultadCompleta =
@@ -1543,7 +1708,7 @@ const perfilCompletoCalculado = computed(() => {
     );
 
   return (
-    identificacionCompleta &&
+    cedulaCompleta &&
     facultadCompleta &&
     carreraCompleta
   );
@@ -1553,6 +1718,12 @@ const canEditProfile = computed(() => {
   const currentUser = user.value;
 
   if (!currentUser) {
+    return false;
+  }
+
+  if (
+    currentUser.profile_edit_available === false
+  ) {
     return false;
   }
 
@@ -1709,11 +1880,15 @@ const missingFields = computed(() => {
 
   const missing = [];
 
-  if (!currentUser.identificacion) {
-    missing.push("Identificación");
+  if (
+    !hasValidCedula(
+      currentUser.identificacion
+    )
+  ) {
+    missing.push("Número de cédula");
   }
 
-  if (!isExternalAuthor.value) {
+  if (isInstitutionalUser.value) {
     if (
       !getUserFacultadId(currentUser) &&
       !getUserFacultadLabel(currentUser)
@@ -1727,6 +1902,8 @@ const missingFields = computed(() => {
     ) {
       missing.push("Carrera");
     }
+  } else if (!isExternalAuthor.value) {
+    missing.push("Clasificación de cuenta");
   }
 
   return missing;
@@ -1739,15 +1916,23 @@ const profileCompletion = computed(() => {
     return 0;
   }
 
+  const cedulaCompleta = hasValidCedula(
+    currentUser.identificacion
+  );
+
   if (isExternalAuthor.value) {
-    return currentUser.identificacion
+    return cedulaCompleta
       ? 100
       : 0;
   }
 
+  if (!isInstitutionalUser.value) {
+    return 0;
+  }
+
   let completed = 0;
 
-  if (currentUser.identificacion) {
+  if (cedulaCompleta) {
     completed += 1;
   }
 
@@ -1819,15 +2004,46 @@ const syncUserState = (data) => {
 
 const resetEditForm = () => {
   form.value = {
+    nombres:
+      isExternalAuthor.value
+        ? String(user.value?.nombres || "")
+        : "",
+
+    apellidos:
+      isExternalAuthor.value
+        ? String(user.value?.apellidos || "")
+        : "",
+
     identificacion:
       user.value?.identificacion || "",
 
     facultad_id:
-      getUserFacultadId(user.value),
+      isInstitutionalUser.value
+        ? getUserFacultadId(user.value)
+        : "",
 
     carrera_id:
-      getUserCarreraId(user.value),
+      isInstitutionalUser.value
+        ? getUserCarreraId(user.value)
+        : "",
   };
+};
+
+const onCedulaInput = (event) => {
+  const digits = String(
+    event?.target?.value || ""
+  )
+    .replace(/\D/g, "")
+    .slice(0, 10);
+
+  form.value.identificacion = digits;
+
+  if (
+    event?.target &&
+    event.target.value !== digits
+  ) {
+    event.target.value = digits;
+  }
 };
 
 const showToast = (
@@ -2109,6 +2325,11 @@ const handleEditAction = async () => {
 };
 
 const loadFacultades = async () => {
+  if (!isInstitutionalUser.value) {
+    facultades.value = [];
+    return;
+  }
+
   const response =
     await api.get(
       "selects/facultades/"
@@ -2157,14 +2378,21 @@ const openEditProfileModal = async () => {
 
   await nextTick();
 
-  identificationInputRef.value?.focus?.({
+  const initialField =
+    isExternalAuthor.value
+      ? firstNameInputRef.value
+      : identificationInputRef.value;
+
+  initialField?.focus?.({
     preventScroll: true,
   });
 
   if (
     !canEditProfile.value ||
-    isExternalAuthor.value
+    !isInstitutionalUser.value
   ) {
+    facultades.value = [];
+    carreras.value = [];
     return;
   }
 
@@ -2221,6 +2449,8 @@ const resolveProfileError = (
   }
 
   const keys = [
+    "nombres",
+    "apellidos",
     "identificacion",
     "facultad_set",
     "carrera_set",
@@ -2285,65 +2515,104 @@ const saveProfile = async () => {
     return;
   }
 
-  const identificacion =
+  const normalizePersonName = (value) => {
+    return String(value || "")
+      .trim()
+      .replace(/\s+/g, " ");
+  };
+
+  const nombres = normalizePersonName(
+    form.value.nombres
+  );
+
+  const apellidos = normalizePersonName(
+    form.value.apellidos
+  );
+
+  if (isExternalAuthor.value) {
+    if (!nombres) {
+      editError.value =
+        "Los nombres son obligatorios.";
+
+      firstNameInputRef.value?.focus?.();
+      return;
+    }
+
+    if (!apellidos) {
+      editError.value =
+        "Los apellidos son obligatorios.";
+      return;
+    }
+
+    if (
+      nombres.length > 100 ||
+      apellidos.length > 100
+    ) {
+      editError.value =
+        "Los nombres y apellidos no pueden superar los 100 caracteres.";
+      return;
+    }
+  }
+
+  const cedula =
     String(
       form.value.identificacion || ""
     ).trim();
 
   if (
-    identificacion &&
-    !/^\d{10}$/.test(identificacion)
+    !hasValidCedula(cedula)
   ) {
     editError.value =
-      "La identificación debe contener exactamente 10 dígitos.";
+      "La cédula debe contener exactamente 10 dígitos numéricos.";
 
     return;
   }
 
-  const facultadId =
-    normalizeNullableId(
-      form.value.facultad_id
-    );
+  let facultadId = null;
+  let carreraId = null;
 
-  const carreraId =
-    normalizeNullableId(
-      form.value.carrera_id
-    );
+  if (isInstitutionalUser.value) {
+    facultadId =
+      normalizeNullableId(
+        form.value.facultad_id
+      );
 
-  if (
-    !isExternalAuthor.value &&
-    Boolean(facultadId) !==
-      Boolean(carreraId)
-  ) {
-    editError.value =
-      "Seleccione la facultad y la carrera correspondientes.";
+    carreraId =
+      normalizeNullableId(
+        form.value.carrera_id
+      );
 
-    return;
+    if (
+      Boolean(facultadId) !==
+        Boolean(carreraId)
+    ) {
+      editError.value =
+        "Seleccione la facultad y la carrera correspondientes.";
+
+      return;
+    }
   }
 
   savingProfile.value = true;
   editError.value = "";
 
   try {
-    const payload =
-      isExternalAuthor.value
-        ? {
-            identificacion:
-              identificacion || null,
+    const payload = {
+      identificacion: cedula,
+    };
 
-            facultad_set: null,
-            carrera_set: null,
-          }
-        : {
-            identificacion:
-              identificacion || null,
+    if (isExternalAuthor.value) {
+      payload.nombres = nombres;
+      payload.apellidos = apellidos;
+    }
 
-            facultad_set:
-              facultadId,
+    if (isInstitutionalUser.value) {
+      payload.facultad_set =
+        facultadId;
 
-            carrera_set:
-              carreraId,
-          };
+      payload.carrera_set =
+        carreraId;
+    }
 
     const response =
       await api.patch(
@@ -2355,7 +2624,9 @@ const saveProfile = async () => {
 
     showToast(
       "success",
-      "El perfil se actualizó correctamente."
+      isExternalAuthor.value
+        ? "Sus datos personales se actualizaron correctamente."
+        : "El perfil se actualizó correctamente."
     );
 
     showEditModal.value = false;
@@ -2381,7 +2652,9 @@ const saveProfile = async () => {
       editError.value =
         resolveProfileError(
           data,
-          "Revise la identificación, facultad y carrera."
+          isInstitutionalUser.value
+            ? "Revise la cédula, facultad y carrera."
+            : "Revise el número de cédula."
         );
     } else {
       editError.value =

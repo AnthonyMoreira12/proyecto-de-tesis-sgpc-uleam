@@ -3,11 +3,16 @@ Serializer para el registro público de usuarios externos.
 
 Responsabilidades:
 
-- Normalizar correo, nombres, apellidos e identificación.
-- Validar la contraseña mediante las reglas de Django.
-- Evitar correos e identificaciones duplicadas.
-- Crear únicamente usuarios externos con autenticación local.
-- Impedir que el cliente asigne privilegios administrativos.
+- Normalizar el correo, los nombres y los apellidos.
+- Exigir una cédula de exactamente 10 dígitos numéricos.
+- Validar la contraseña mediante las reglas configuradas
+  en Django.
+- Evitar correos y cédulas duplicados.
+- Impedir que los correos institucionales se registren como
+  cuentas externas locales.
+- Crear exclusivamente usuarios externos locales.
+- Impedir que el cliente asigne Carrera o privilegios
+  administrativos.
 - Ejecutar la creación dentro de una transacción.
 """
 
@@ -21,7 +26,12 @@ from django.core.exceptions import (
     ValidationError as DjangoValidationError,
 )
 from django.db import IntegrityError, transaction
+
 from rest_framework import serializers
+
+from core.auth.services.auth_microsoft_services import (
+    is_allowed_institutional_email,
+)
 
 
 User = get_user_model()
@@ -31,9 +41,18 @@ User = get_user_model()
 # CONFIGURACIÓN
 # ============================================================
 
-IDENTIFICATION_PATTERN = re.compile(
-    r"^[A-Za-z0-9][A-Za-z0-9._/-]{2,19}$"
+ROLE_EXTERNAL = "autor_externo"
+AUTH_SOURCE_LOCAL = "local"
+
+CEDULA_PATTERN = re.compile(
+    r"^\d{10}$"
 )
+
+MAX_EMAIL_LENGTH = 150
+MAX_NAME_LENGTH = 100
+
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_LENGTH = 128
 
 
 # ============================================================
@@ -42,36 +61,42 @@ IDENTIFICATION_PATTERN = re.compile(
 
 def _normalize_text(value):
     """
-    Normaliza espacios externos e internos.
+    Normaliza los espacios de nombres y apellidos.
 
-    También evita que saltos de línea o tabulaciones queden
-    almacenados dentro de nombres y apellidos.
+    Convierte espacios repetidos, tabulaciones y saltos de línea
+    en un solo espacio.
     """
     return " ".join(
-        str(value or "").split()
+        str(
+            value or ""
+        ).split()
     )
-
-
-def _normalize_optional_text(value):
-    """
-    Normaliza un texto opcional.
-    """
-    normalized = str(
-        value or ""
-    ).strip()
-
-    return normalized or None
 
 
 def _normalize_email(value):
     """
-    Normaliza el correo utilizando el manager del modelo.
+    Normaliza un correo mediante el manager del modelo.
     """
-    normalized = User.objects.normalize_email(
-        str(value or "")
+    normalized = (
+        User.objects.normalize_email(
+            str(
+                value or ""
+            )
+        )
+        .strip()
+        .lower()
     )
 
-    return normalized.strip().lower()
+    return normalized
+
+
+def _normalize_cedula(value):
+    """
+    Normaliza la cédula sin alterar sus dígitos.
+    """
+    return str(
+        value or ""
+    ).strip()
 
 
 def _django_validation_payload(exc):
@@ -96,8 +121,52 @@ def _django_validation_payload(exc):
         }
 
     return {
-        "detail": str(exc),
+        "detail": str(
+            exc
+        )
     }
+
+
+def _role_external_value():
+    """
+    Obtiene el valor del rol externo conservando compatibilidad
+    con el modelo que utiliza TextChoices.
+    """
+    role_choices = getattr(
+        User,
+        "Rol",
+        None,
+    )
+
+    if role_choices is not None:
+        return getattr(
+            role_choices,
+            "AUTOR_EXTERNO",
+            ROLE_EXTERNAL,
+        )
+
+    return ROLE_EXTERNAL
+
+
+def _local_auth_source_value():
+    """
+    Obtiene el valor del origen local conservando compatibilidad
+    con el modelo que utiliza TextChoices.
+    """
+    auth_choices = getattr(
+        User,
+        "AuthSource",
+        None,
+    )
+
+    if auth_choices is not None:
+        return getattr(
+            auth_choices,
+            "LOCAL",
+            AUTH_SOURCE_LOCAL,
+        )
+
+    return AUTH_SOURCE_LOCAL
 
 
 # ============================================================
@@ -110,23 +179,132 @@ class RegisterSerializer(
     """
     Registra exclusivamente autores externos locales.
 
-    El cliente no puede definir:
+    El cliente únicamente puede enviar:
+
+    - email
+    - nombres
+    - apellidos
+    - identificacion
+    - password
+
+    Los siguientes valores son controlados por el backend:
 
     - rol
     - auth_source
     - carrera
+    - is_active
     - is_staff
     - is_superuser
     - perfil_completo
-
-    Estos valores se determinan de forma segura en create().
+    - creado_desde_selector
     """
 
+    email = serializers.EmailField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=MAX_EMAIL_LENGTH,
+
+        # Se desactiva el UniqueValidator automático para
+        # controlar el mensaje y comprobar sin distinguir
+        # mayúsculas y minúsculas.
+        validators=[],
+
+        error_messages={
+            "required": (
+                "El correo electrónico es obligatorio."
+            ),
+            "blank": (
+                "El correo electrónico es obligatorio."
+            ),
+            "invalid": (
+                "Ingrese un correo electrónico válido."
+            ),
+            "max_length": (
+                "El correo electrónico no puede superar "
+                f"los {MAX_EMAIL_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    nombres = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=MAX_NAME_LENGTH,
+        error_messages={
+            "required": (
+                "Los nombres son obligatorios."
+            ),
+            "blank": (
+                "Los nombres son obligatorios."
+            ),
+            "max_length": (
+                "Los nombres no pueden superar "
+                f"los {MAX_NAME_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    apellidos = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=MAX_NAME_LENGTH,
+        error_messages={
+            "required": (
+                "Los apellidos son obligatorios."
+            ),
+            "blank": (
+                "Los apellidos son obligatorios."
+            ),
+            "max_length": (
+                "Los apellidos no pueden superar "
+                f"los {MAX_NAME_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    identificacion = serializers.CharField(
+        required=True,
+        allow_null=False,
+        allow_blank=False,
+        trim_whitespace=True,
+        min_length=10,
+        max_length=10,
+
+        # La unicidad se comprueba manualmente para controlar
+        # el mensaje y proteger el flujo ante datos antiguos.
+        validators=[],
+
+        error_messages={
+            "required": (
+                "El número de cédula es obligatorio."
+            ),
+            "null": (
+                "El número de cédula es obligatorio."
+            ),
+            "blank": (
+                "El número de cédula es obligatorio."
+            ),
+            "min_length": (
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
+            ),
+            "max_length": (
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
+            ),
+        },
+    )
+
     password = serializers.CharField(
+        required=True,
+        allow_blank=False,
         write_only=True,
         trim_whitespace=False,
-        min_length=8,
-        max_length=128,
+        min_length=MIN_PASSWORD_LENGTH,
+        max_length=MAX_PASSWORD_LENGTH,
         style={
             "input_type": "password",
         },
@@ -138,12 +316,12 @@ class RegisterSerializer(
                 "La contraseña es obligatoria."
             ),
             "min_length": (
-                "La contraseña debe contener "
-                "al menos 8 caracteres."
+                "La contraseña debe contener al menos "
+                f"{MIN_PASSWORD_LENGTH} caracteres."
             ),
             "max_length": (
                 "La contraseña no puede superar "
-                "los 128 caracteres."
+                f"los {MAX_PASSWORD_LENGTH} caracteres."
             ),
         },
     )
@@ -159,33 +337,6 @@ class RegisterSerializer(
             "password",
         ]
 
-        extra_kwargs = {
-            "email": {
-                "required": True,
-                "allow_blank": False,
-                "trim_whitespace": True,
-            },
-
-            "nombres": {
-                "required": True,
-                "allow_blank": False,
-                "trim_whitespace": True,
-            },
-
-            "apellidos": {
-                "required": True,
-                "allow_blank": False,
-                "trim_whitespace": True,
-            },
-
-            "identificacion": {
-                "required": False,
-                "allow_null": True,
-                "allow_blank": True,
-                "trim_whitespace": True,
-            },
-        }
-
     # ========================================================
     # CORREO
     # ========================================================
@@ -195,8 +346,11 @@ class RegisterSerializer(
         value,
     ):
         """
-        Normaliza el correo y comprueba duplicados ignorando
-        mayúsculas y minúsculas.
+        Normaliza el correo y comprueba:
+
+        - Formato válido.
+        - Que no corresponda al acceso Microsoft.
+        - Que no exista otro usuario con el mismo correo.
         """
         normalized_email = _normalize_email(
             value
@@ -204,9 +358,27 @@ class RegisterSerializer(
 
         if not normalized_email:
             raise serializers.ValidationError(
+                "El correo electrónico es obligatorio."
+            )
+
+        if len(
+            normalized_email
+        ) > MAX_EMAIL_LENGTH:
+            raise serializers.ValidationError(
                 (
-                    "El correo electrónico "
-                    "es obligatorio."
+                    "El correo electrónico no puede superar "
+                    f"los {MAX_EMAIL_LENGTH} caracteres."
+                )
+            )
+
+        if is_allowed_institutional_email(
+            normalized_email
+        ):
+            raise serializers.ValidationError(
+                (
+                    "Las cuentas institucionales deben iniciar "
+                    "sesión mediante Microsoft 365 y no pueden "
+                    "registrarse como cuentas externas."
                 )
             )
 
@@ -215,15 +387,15 @@ class RegisterSerializer(
         ).exists():
             raise serializers.ValidationError(
                 (
-                    "Ya existe un usuario registrado "
-                    "con este correo electrónico."
+                    "Ya existe un usuario registrado con "
+                    "este correo electrónico."
                 )
             )
 
         return normalized_email
 
     # ========================================================
-    # NOMBRES
+    # NOMBRES Y APELLIDOS
     # ========================================================
 
     def validate_nombres(
@@ -239,11 +411,13 @@ class RegisterSerializer(
                 "Los nombres son obligatorios."
             )
 
-        if len(normalized_names) > 100:
+        if len(
+            normalized_names
+        ) > MAX_NAME_LENGTH:
             raise serializers.ValidationError(
                 (
                     "Los nombres no pueden superar "
-                    "los 100 caracteres."
+                    f"los {MAX_NAME_LENGTH} caracteres."
                 )
             )
 
@@ -262,18 +436,20 @@ class RegisterSerializer(
                 "Los apellidos son obligatorios."
             )
 
-        if len(normalized_surnames) > 100:
+        if len(
+            normalized_surnames
+        ) > MAX_NAME_LENGTH:
             raise serializers.ValidationError(
                 (
                     "Los apellidos no pueden superar "
-                    "los 100 caracteres."
+                    f"los {MAX_NAME_LENGTH} caracteres."
                 )
             )
 
         return normalized_surnames
 
     # ========================================================
-    # IDENTIFICACIÓN
+    # CÉDULA
     # ========================================================
 
     def validate_identificacion(
@@ -281,61 +457,41 @@ class RegisterSerializer(
         value,
     ):
         """
-        Admite cédulas, pasaportes y otros documentos.
+        Valida únicamente el formato acordado:
 
-        Formato permitido:
+        - Obligatoria.
+        - Exactamente 10 caracteres.
+        - Únicamente números.
 
-        - Entre 3 y 20 caracteres.
-        - Letras y números.
-        - Punto.
-        - Guion.
-        - Barra.
-        - Guion bajo.
+        No aplica validación matemática del dígito verificador.
         """
-        normalized_identification = (
-            _normalize_optional_text(
-                value
-            )
+        normalized_cedula = _normalize_cedula(
+            value
         )
 
-        if normalized_identification is None:
-            return None
-
-        if len(
-            normalized_identification
-        ) > 20:
+        if not normalized_cedula:
             raise serializers.ValidationError(
-                (
-                    "La identificación no puede superar "
-                    "los 20 caracteres."
-                )
+                "El número de cédula es obligatorio."
             )
 
-        if not IDENTIFICATION_PATTERN.fullmatch(
-            normalized_identification
+        if not CEDULA_PATTERN.fullmatch(
+            normalized_cedula
         ):
             raise serializers.ValidationError(
                 (
-                    "La identificación debe contener entre "
-                    "3 y 20 caracteres alfanuméricos. "
-                    "También puede incluir punto, guion, "
-                    "barra o guion bajo."
+                    "La cédula debe contener exactamente "
+                    "10 dígitos numéricos."
                 )
             )
 
         if User.objects.filter(
-            identificacion__iexact=(
-                normalized_identification
-            )
+            identificacion=normalized_cedula
         ).exists():
             raise serializers.ValidationError(
-                (
-                    "Esta identificación ya está "
-                    "registrada."
-                )
+                "Esta cédula ya está registrada."
             )
 
-        return normalized_identification
+        return normalized_cedula
 
     # ========================================================
     # VALIDACIÓN GENERAL
@@ -346,9 +502,35 @@ class RegisterSerializer(
         attrs,
     ):
         """
-        Valida la contraseña considerando los datos del usuario
-        que se registrará.
+        Valida la contraseña considerando los datos reales del
+        usuario externo que se creará.
         """
+        password = attrs.get(
+            "password"
+        )
+
+        if password is None:
+            raise serializers.ValidationError(
+                {
+                    "password": (
+                        "La contraseña es obligatoria."
+                    )
+                }
+            )
+
+        password = str(
+            password
+        )
+
+        if not password:
+            raise serializers.ValidationError(
+                {
+                    "password": (
+                        "La contraseña es obligatoria."
+                    )
+                }
+            )
+
         provisional_user = User(
             email=attrs.get(
                 "email"
@@ -368,10 +550,10 @@ class RegisterSerializer(
                 "identificacion"
             ),
 
-            rol=User.Rol.AUTOR_EXTERNO,
+            rol=_role_external_value(),
 
             auth_source=(
-                User.AuthSource.LOCAL
+                _local_auth_source_value()
             ),
 
             carrera=None,
@@ -385,7 +567,7 @@ class RegisterSerializer(
 
         try:
             validate_password(
-                attrs["password"],
+                password,
                 user=provisional_user,
             )
 
@@ -409,56 +591,70 @@ class RegisterSerializer(
         validated_data,
     ):
         """
-        Crea el usuario externo dentro de una transacción.
+        Crea el usuario externo activo.
 
-        Los valores sensibles se fuerzan desde el backend y no
-        pueden ser definidos por el cliente.
+        Este serializer pertenece al registro público, donde el
+        propio usuario establece su contraseña y el RegisterView
+        genera inmediatamente su sesión JWT.
+
+        La creación administrativa utiliza otro flujo y conserva
+        la cuenta inactiva hasta su activación.
         """
         password = validated_data.pop(
             "password"
         )
 
-        identification = (
-            validated_data.get(
-                "identificacion"
-            )
-        )
-
         user_data = {
-            **validated_data,
+            "email": validated_data[
+                "email"
+            ],
+
+            "nombres": validated_data[
+                "nombres"
+            ],
+
+            "apellidos": validated_data[
+                "apellidos"
+            ],
+
+            "identificacion": (
+                validated_data[
+                    "identificacion"
+                ]
+            ),
 
             "rol": (
-                User.Rol.AUTOR_EXTERNO
+                _role_external_value()
             ),
 
             "auth_source": (
-                User.AuthSource.LOCAL
+                _local_auth_source_value()
             ),
 
+            # Los usuarios externos nunca reciben una Carrera.
             "carrera": None,
 
+            # El registro público incluye contraseña y devuelve
+            # una sesión, por lo que la cuenta queda activa.
             "is_active": True,
 
+            # Nunca se aceptan privilegios enviados por el
+            # cliente.
             "is_staff": False,
 
             "is_superuser": False,
 
             "creado_desde_selector": False,
 
-            # Para un autor externo, el perfil se considera
-            # completo cuando posee identificación.
-            "perfil_completo": bool(
-                identification
-            ),
+            # La cédula es obligatoria y válida en este punto.
+            "perfil_completo": True,
         }
 
         try:
             with transaction.atomic():
-                user = (
-                    User.objects.create_user(
-                        password=password,
-                        **user_data,
-                    )
+                user = User.objects.create_user(
+                    password=password,
+                    **user_data,
                 )
 
                 return user
@@ -484,10 +680,13 @@ class RegisterSerializer(
                 "email"
             )
 
-            identification = user_data.get(
+            cedula = user_data.get(
                 "identificacion"
             )
 
+            # La comprobación se realiza después de salir del
+            # bloque atomic(), cuando la transacción ya puede
+            # consultarse nuevamente.
             if (
                 email
                 and User.objects.filter(
@@ -504,18 +703,15 @@ class RegisterSerializer(
                 ) from exc
 
             if (
-                identification
+                cedula
                 and User.objects.filter(
-                    identificacion__iexact=(
-                        identification
-                    )
+                    identificacion=cedula
                 ).exists()
             ):
                 raise serializers.ValidationError(
                     {
                         "identificacion": (
-                            "Esta identificación ya está "
-                            "registrada."
+                            "Esta cédula ya está registrada."
                         )
                     }
                 ) from exc

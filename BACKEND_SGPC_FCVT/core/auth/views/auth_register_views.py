@@ -4,11 +4,16 @@ View para el registro público de usuarios externos.
 La operación garantiza que:
 
 - El usuario se cree como autor externo local.
+- La cédula tenga exactamente 10 dígitos.
+- La cuenta no reciba Carrera.
+- La cuenta no reciba permisos administrativos.
 - El registro Autor asociado se cree o sincronice.
 - Usuario y Autor se guarden dentro de una misma transacción.
-- Los tokens JWT solo se generen después de confirmar el registro.
+- Los tokens JWT se generen después de confirmar el registro.
 - No se devuelvan tokens cuando el proceso quede incompleto.
 """
+
+import re
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import (
@@ -38,8 +43,55 @@ User = get_user_model()
 
 
 # ============================================================
+# CONFIGURACIÓN
+# ============================================================
+
+ROLE_EXTERNAL = "autor_externo"
+AUTH_SOURCE_LOCAL = "local"
+
+CEDULA_PATTERN = re.compile(
+    r"^\d{10}$"
+)
+
+
+# ============================================================
 # UTILIDADES
 # ============================================================
+
+def _normalize_text(value):
+    """
+    Normaliza un valor textual.
+    """
+    return str(
+        value or ""
+    ).strip()
+
+
+def _normalized_role(user):
+    """
+    Obtiene el rol normalizado del usuario.
+    """
+    return _normalize_text(
+        getattr(
+            user,
+            "rol",
+            "",
+        )
+    ).lower()
+
+
+def _normalized_auth_source(user):
+    """
+    Obtiene el origen de autenticación normalizado.
+    """
+    return _normalize_text(
+        getattr(
+            user,
+            "auth_source",
+            "",
+        )
+    ).lower()
+
 
 def _django_validation_payload(exc):
     """
@@ -63,20 +115,26 @@ def _django_validation_payload(exc):
         }
 
     return {
-        "detail": str(exc),
+        "detail": str(
+            exc
+        ),
     }
 
 
 def _get_registered_user(user_id):
     """
-    Recupera al usuario recién registrado con su relación
-    académica precargada.
+    Recupera al usuario registrado con las relaciones necesarias
+    para construir la respuesta completa.
     """
+    if not user_id:
+        return None
+
     return (
         User.objects
         .select_related(
             "carrera",
             "carrera__facultad",
+            "autor",
         )
         .filter(
             pk=user_id
@@ -87,7 +145,7 @@ def _get_registered_user(user_id):
 
 def _build_tokens(user):
     """
-    Genera los tokens JWT para el usuario registrado.
+    Genera los tokens JWT del usuario registrado.
     """
     refresh = RefreshToken.for_user(
         user
@@ -103,6 +161,183 @@ def _build_tokens(user):
     }
 
 
+def _validate_registered_user(user):
+    """
+    Comprueba las condiciones de seguridad del usuario creado.
+
+    Esta validación se ejecuta antes de confirmar la transacción.
+    Cualquier inconsistencia provoca la reversión completa del
+    registro.
+    """
+    if user is None or not getattr(
+        user,
+        "pk",
+        None,
+    ):
+        raise ValidationError(
+            {
+                "detail": (
+                    "No fue posible crear la cuenta "
+                    "del usuario externo."
+                )
+            }
+        )
+
+    if (
+        _normalized_role(user)
+        != ROLE_EXTERNAL
+    ):
+        raise ValidationError(
+            {
+                "rol": (
+                    "El registro público solo puede crear "
+                    "autores externos."
+                )
+            }
+        )
+
+    if (
+        _normalized_auth_source(user)
+        != AUTH_SOURCE_LOCAL
+    ):
+        raise ValidationError(
+            {
+                "auth_source": (
+                    "El registro público solo puede crear "
+                    "cuentas con autenticación local."
+                )
+            }
+        )
+
+    if getattr(
+        user,
+        "carrera_id",
+        None,
+    ) is not None:
+        raise ValidationError(
+            {
+                "carrera": (
+                    "Los usuarios externos no pueden tener "
+                    "una Carrera asignada."
+                )
+            }
+        )
+
+    if bool(
+        getattr(
+            user,
+            "is_staff",
+            False,
+        )
+    ):
+        raise ValidationError(
+            {
+                "is_staff": (
+                    "El registro público no puede conceder "
+                    "permisos administrativos."
+                )
+            }
+        )
+
+    if bool(
+        getattr(
+            user,
+            "is_superuser",
+            False,
+        )
+    ):
+        raise ValidationError(
+            {
+                "is_superuser": (
+                    "El registro público no puede crear "
+                    "superusuarios."
+                )
+            }
+        )
+
+    if not bool(
+        getattr(
+            user,
+            "is_active",
+            False,
+        )
+    ):
+        raise ValidationError(
+            {
+                "is_active": (
+                    "La cuenta creada mediante el registro "
+                    "público debe quedar activa."
+                )
+            }
+        )
+
+    identificacion = _normalize_text(
+        getattr(
+            user,
+            "identificacion",
+            "",
+        )
+    )
+
+    if not CEDULA_PATTERN.fullmatch(
+        identificacion
+    ):
+        raise ValidationError(
+            {
+                "identificacion": (
+                    "La cédula debe contener exactamente "
+                    "10 dígitos numéricos."
+                )
+            }
+        )
+
+    if not user.has_usable_password():
+        raise ValidationError(
+            {
+                "password": (
+                    "La cuenta registrada debe tener "
+                    "una contraseña utilizable."
+                )
+            }
+        )
+
+
+def _validate_linked_author(
+    user,
+    author,
+):
+    """
+    Comprueba que el registro Autor exista y esté vinculado con
+    el Usuario recién creado.
+    """
+    if author is None:
+        raise ValidationError(
+            {
+                "detail": (
+                    "No fue posible crear el registro "
+                    "académico del autor."
+                )
+            }
+        )
+
+    author_user_id = getattr(
+        author,
+        "usuario_id",
+        None,
+    )
+
+    if author_user_id != user.pk:
+        raise ValidationError(
+            {
+                "detail": (
+                    "El registro Autor fue creado, pero no "
+                    "quedó correctamente vinculado con "
+                    "la cuenta del usuario."
+                )
+            }
+        )
+
+
 # ============================================================
 # REGISTRO
 # ============================================================
@@ -111,7 +346,7 @@ class RegisterView(APIView):
     """
     Registra un autor externo y devuelve una sesión JWT.
 
-    El endpoint es público y no utiliza una autenticación
+    Este endpoint es público y no utiliza una autenticación
     previamente establecida.
     """
 
@@ -121,7 +356,10 @@ class RegisterView(APIView):
         permissions.AllowAny,
     ]
 
-    def post(self, request):
+    def post(
+        self,
+        request,
+    ):
         serializer = RegisterSerializer(
             data=request.data,
             context={
@@ -141,23 +379,24 @@ class RegisterView(APIView):
 
                 user = serializer.save()
 
+                _validate_registered_user(
+                    user
+                )
+
                 # ============================================
                 # SINCRONIZACIÓN OBLIGATORIA DEL AUTOR
                 # ============================================
 
-                author = asegurar_autor_para_usuario(
-                    user
+                author = (
+                    asegurar_autor_para_usuario(
+                        user
+                    )
                 )
 
-                if author is None:
-                    raise ValidationError(
-                        {
-                            "detail": (
-                                "No fue posible crear el "
-                                "registro académico del autor."
-                            )
-                        }
-                    )
+                _validate_linked_author(
+                    user,
+                    author,
+                )
 
                 user_id = user.pk
 
@@ -173,31 +412,71 @@ class RegisterView(APIView):
                 {
                     "detail": (
                         "No se pudo completar el registro "
-                        "debido a un conflicto con información "
-                        "existente."
+                        "porque el correo o la cédula ya "
+                        "pertenecen a otra cuenta."
                     )
                 }
             ) from exc
 
-        # La consulta se realiza después de confirmar la
-        # transacción para trabajar únicamente con datos
-        # persistidos correctamente.
-        registered_user = _get_registered_user(
-            user_id
+        # ====================================================
+        # CONSULTA POSTERIOR A LA TRANSACCIÓN
+        # ====================================================
+
+        registered_user = (
+            _get_registered_user(
+                user_id
+            )
         )
 
         if registered_user is None:
             return Response(
                 {
                     "detail": (
-                        "El usuario fue procesado, pero no "
-                        "pudo recuperarse después del registro."
+                        "El usuario fue registrado, pero no "
+                        "pudo recuperarse después de guardar "
+                        "la información."
                     )
                 },
                 status=(
                     status.HTTP_500_INTERNAL_SERVER_ERROR
                 ),
             )
+
+        # Se comprueba nuevamente el estado persistido antes de
+        # generar credenciales de acceso.
+        try:
+            _validate_registered_user(
+                registered_user
+            )
+
+            registered_author = getattr(
+                registered_user,
+                "autor",
+                None,
+            )
+
+            _validate_linked_author(
+                registered_user,
+                registered_author,
+            )
+
+        except ValidationError:
+            return Response(
+                {
+                    "detail": (
+                        "La cuenta se registró, pero presenta "
+                        "una inconsistencia interna. Solicite "
+                        "una revisión al administrador."
+                    )
+                },
+                status=(
+                    status.HTTP_500_INTERNAL_SERVER_ERROR
+                ),
+            )
+
+        # ====================================================
+        # TOKENS
+        # ====================================================
 
         tokens = _build_tokens(
             registered_user
@@ -221,14 +500,21 @@ class RegisterView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-        # Evita que navegadores o proxies almacenen tokens
-        # sensibles dentro de caché.
+        # Impide que el navegador o un proxy almacenen los
+        # tokens y los datos de la sesión.
         response[
             "Cache-Control"
-        ] = "no-store"
+        ] = (
+            "no-store, no-cache, "
+            "must-revalidate, max-age=0"
+        )
 
         response[
             "Pragma"
         ] = "no-cache"
+
+        response[
+            "Expires"
+        ] = "0"
 
         return response

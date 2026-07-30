@@ -347,8 +347,11 @@ class ProfileView(APIView):
 
         try:
             with transaction.atomic():
+                # Se bloquea únicamente la fila de Usuario.
+                # _profile_queryset() contiene relaciones opcionales y no
+                # debe combinarse con select_for_update() en PostgreSQL.
                 locked_user = (
-                    _profile_queryset()
+                    User.objects
                     .select_for_update()
                     .get(
                         pk=user_id
