@@ -478,13 +478,21 @@ def _get_graph_timeout():
 
 def is_allowed_institutional_email(email_norm):
     """
-    Comprueba que el correo pertenezca a la institución o esté
-    incluido expresamente en MICROSOFT_ALLOWED_EMAILS.
+    Comprueba que el correo esté autorizado para iniciar sesión
+    mediante Microsoft.
 
-    Los subdominios también son admitidos. Por ejemplo:
+    Se permite únicamente:
 
-    live.uleam.edu.ec
-    estudiantes.uleam.edu.ec
+    - El dominio institucional exacto configurado en
+      MICROSOFT_ALLOWED_DOMAINS, por ejemplo @uleam.edu.ec.
+    - Los correos individuales incluidos expresamente en
+      MICROSOFT_ALLOWED_EMAILS.
+
+    No se admiten subdominios como:
+
+    - @live.uleam.edu.ec
+    - @estudiantes.uleam.edu.ec
+    - @alumnos.uleam.edu.ec
     """
     normalized_email = _normalize_email(
         email_norm
@@ -493,6 +501,7 @@ def is_allowed_institutional_email(email_norm):
     if normalized_email is None:
         return False
 
+    # Excepciones individuales autorizadas explícitamente.
     if normalized_email in _get_allowed_emails():
         return True
 
@@ -507,16 +516,8 @@ def is_allowed_institutional_email(email_norm):
     if not local_part or not domain:
         return False
 
-    for allowed_domain in _get_allowed_domains():
-        if (
-            domain == allowed_domain
-            or domain.endswith(
-                f".{allowed_domain}"
-            )
-        ):
-            return True
-
-    return False
+    # Comparación exacta: no admitir subdominios.
+    return domain in _get_allowed_domains()
 
 
 def _is_admin_email(email):
@@ -1529,8 +1530,10 @@ def sync_microsoft_user(
         raise MicrosoftAuthServiceError(
             {
                 "detail": (
-                    "El correo Microsoft no pertenece a "
-                    "un dominio institucional autorizado."
+                    "Acceso no autorizado. Solo pueden iniciar "
+                    "sesión los correos con dominio exacto "
+                    "@uleam.edu.ec o las cuentas incluidas "
+                    "expresamente en la lista de excepciones."
                 )
             },
             status_code=status.HTTP_403_FORBIDDEN,
