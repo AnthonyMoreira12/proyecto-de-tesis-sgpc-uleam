@@ -718,18 +718,18 @@ body.dark.dark-institutional-blue {
 }
 
 /* ============================================================
-   8. NEGRO Y ROJO INTENSO
+   8. NEGRO Y ROJO OSCURO
 ============================================================ */
 
 :root.dark.dark-crimson-black,
 html.dark.dark-crimson-black,
 body.dark.dark-crimson-black {
-  --color-primary-default: #ff1744;
+  --color-primary-default: #7a0b14;
 
   --color-primary:
     var(
       --accent-user,
-      #ff1744
+      #7a0b14
     );
 
   --color-primary-effective:
@@ -759,9 +759,9 @@ body.dark.dark-crimson-black {
   --text-inverse: #ffffff;
   --text-disabled: #777777;
 
-  --border-color: #7a0018;
-  --border-strong: #c4002f;
-  --line-soft: #2b0009;
+  --border-color: #4d080d;
+  --border-strong: #7a0b14;
+  --line-soft: #260407;
 
   --shadow-soft: none;
 
@@ -776,19 +776,19 @@ body.dark.dark-crimson-black {
 
   --shadow-hover: none;
 
-  --hover: #190006;
+  --hover: #160204;
 
   /* Rojo intenso */
-  --active: #ff1744;
+  --active: #7a0b14;
 
-  --focus-outline: #ff3159;
+  --focus-outline: #e53935;
 
   --focus-ring:
     rgba(
-      255,
-      23,
-      68,
-      0.34
+      122,
+      11,
+      20,
+      0.40
     );
 
   --ring-primary:
@@ -799,9 +799,9 @@ body.dark.dark-crimson-black {
   --surface-3: #0b0b0b;
   --surface-4: #111111;
 
-  --primary-soft: #210008;
-  --primary-soft-strong: #7a0018;
-  --primary-ink-soft: #ff8aa1;
+  --primary-soft: #1d0306;
+  --primary-soft-strong: #4d080d;
+  --primary-ink-soft: #ef4444;
 
   --footer-bg: #000000;
   --footer-text: #ffffff;
@@ -809,32 +809,32 @@ body.dark.dark-crimson-black {
 
   --card-hover-bg: #101010;
 
-  --selection-bg: #ff1744;
+  --selection-bg: #7a0b14;
   --selection-text: #ffffff;
 
-  --danger: #ff6682;
-  --info: #ff1744;
+  --danger: #d32f2f;
+  --info: #7a0b14;
 
-  --danger-soft: #210008;
-  --info-soft: #190006;
+  --danger-soft: #1d0306;
+  --info-soft: #160204;
 
-  --danger-line: #c4002f;
-  --info-line: #c4002f;
+  --danger-line: #7a0b14;
+  --info-line: #7a0b14;
 
-  --link: #ff4568;
-  --link-hover: #ff8ca0;
+  --link: #d32f2f;
+  --link-hover: #ef4444;
 
-  --button-bg: #ff1744;
+  --button-bg: #7a0b14;
   --button-text: #ffffff;
-  --button-border: #ff1744;
-  --button-hover-bg: #ff3159;
+  --button-border: #7a0b14;
+  --button-hover-bg: #94111c;
 
   --button-secondary-bg: #111111;
   --button-secondary-text: #ffffff;
-  --button-secondary-border: #7a0018;
-  --button-secondary-hover-bg: #190006;
+  --button-secondary-border: #4d080d;
+  --button-secondary-hover-bg: #160204;
 
-  --pub-aai: #ff1744;
+  --pub-aai: #7a0b14;
   --pub-ar: #7fb58d;
   --pub-pon: #c19ef0;
   --pub-cap: #ef9e74;
@@ -1746,7 +1746,7 @@ body {
 }
 
 /* ============================================================
-   20. REFUERZO NEGRO Y ROJO INTENSO
+   20. REFUERZO NEGRO Y ROJO OSCURO
 ============================================================ */
 
 /* Fondo negro absoluto */
@@ -1795,7 +1795,7 @@ html.dark.dark-crimson-black
     none !important;
 
   border-color:
-    #7a0018 !important;
+    #4d080d !important;
 
   box-shadow:
     none !important;
@@ -1831,7 +1831,7 @@ html.dark.dark-crimson-black
     none !important;
 
   border-color:
-    #7a0018 !important;
+    #4d080d !important;
 
   box-shadow:
     none !important;
@@ -1857,7 +1857,7 @@ html.dark.dark-crimson-black
     none !important;
 
   border-color:
-    #7a0018 !important;
+    #4d080d !important;
 
   color:
     #ffffff !important;
@@ -1877,16 +1877,16 @@ html.dark.dark-crimson-black
   .ivbi-segmented__btn.is-active
 ) {
   background:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-color:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-image:
     none !important;
 
   border-color:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   color:
     #ffffff !important;
@@ -1905,16 +1905,16 @@ html.dark.dark-crimson-black
   .action-primary
 ) {
   background:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-color:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-image:
     none !important;
 
   border-color:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   color:
     #ffffff !important;
@@ -1932,13 +1932,13 @@ html.dark.dark-crimson-black
   .action-primary
 ):hover:not(:disabled) {
   background:
-    #ff3159 !important;
+    #94111c !important;
 
   background-color:
-    #ff3159 !important;
+    #94111c !important;
 
   border-color:
-    #ff3159 !important;
+    #94111c !important;
 
   color:
     #ffffff !important;
@@ -1963,7 +1963,7 @@ html.dark.dark-crimson-black
   .section-kicker
 ) {
   color:
-    #ff3159 !important;
+    #e53935 !important;
 }
 
 /* Chips y estados */
@@ -1976,19 +1976,19 @@ html.dark.dark-crimson-black
   .chip-primary
 ) {
   background:
-    #210008 !important;
+    #1d0306 !important;
 
   background-color:
-    #210008 !important;
+    #1d0306 !important;
 
   background-image:
     none !important;
 
   border-color:
-    #c4002f !important;
+    #7a0b14 !important;
 
   color:
-    #ff6682 !important;
+    #d32f2f !important;
 }
 
 /* Barras rojas */
@@ -2001,10 +2001,10 @@ html.dark.dark-crimson-black
   .bar-fill
 ) {
   background:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-color:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   background-image:
     none !important;
@@ -2033,7 +2033,7 @@ html.dark.dark-crimson-black
     none !important;
 
   border-color:
-    #2b0009 !important;
+    #260407 !important;
 
   box-shadow:
     none !important;
@@ -2047,19 +2047,19 @@ html.dark.dark-crimson-black
   .ivbi-info-tip
 ) {
   background:
-    #210008 !important;
+    #1d0306 !important;
 
   background-color:
-    #210008 !important;
+    #1d0306 !important;
 
   background-image:
     none !important;
 
   border-color:
-    #c4002f !important;
+    #7a0b14 !important;
 
   color:
-    #ff3159 !important;
+    #e53935 !important;
 
   box-shadow:
     none !important;
@@ -2068,16 +2068,16 @@ html.dark.dark-crimson-black
 html.dark.dark-crimson-black
 .ivbi-kpi-card::before {
   background:
-    #210008 !important;
+    #1d0306 !important;
 
   background-color:
-    #210008 !important;
+    #1d0306 !important;
 
   background-image:
     none !important;
 
   border-color:
-    #c4002f !important;
+    #7a0b14 !important;
 
   box-shadow:
     none !important;
@@ -2086,7 +2086,7 @@ html.dark.dark-crimson-black
 html.dark.dark-crimson-black
 .ivbi-kpi-card::after {
   background:
-    #ff1744 !important;
+    #7a0b14 !important;
 
   box-shadow:
     none !important;
@@ -2110,7 +2110,7 @@ html.dark.dark-crimson-black
     none !important;
 
   border-color:
-    #7a0018 !important;
+    #4d080d !important;
 
   color:
     #ffffff !important;

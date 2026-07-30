@@ -934,4 +934,3 @@ onBeforeUnmount(() => {
   scoped
   src="./preferencias-interfaz.css"
 ></style>
-

@@ -1771,7 +1771,7 @@ body.dark .preferences-page,
 }
 
 /* =========================================================
-   MODO NEGRO Y ROJO INTENSO
+   MODO NEGRO Y ROJO OSCURO
 ========================================================= */
 
 html.dark.dark-crimson-black
@@ -1781,7 +1781,7 @@ html.dark.dark-crimson-black
 
 html.dark.dark-crimson-black
 .confirm-dialog {
-  border-color: #7a0018;
+  border-color: #4d080d;
 
   background: #080808;
   color: #ffffff;
@@ -1795,7 +1795,7 @@ html.dark.dark-crimson-black
 .confirm-dialog__header,
 html.dark.dark-crimson-black
 .confirm-dialog__actions {
-  border-color: #7a0018;
+  border-color: #4d080d;
 }
 
 html.dark.dark-crimson-black
@@ -1805,52 +1805,52 @@ html.dark.dark-crimson-black
 
 html.dark.dark-crimson-black
 .confirm-dialog__icon {
-  border-color: #c4002f;
-  background: #210008;
-  color: #ff3159;
+  border-color: #7a0b14;
+  background: #1d0306;
+  color: #e53935;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__eyebrow {
-  color: #ff3159;
+  color: #e53935;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__changes li {
-  border-color: #2b0009;
+  border-color: #260407;
   background: #111111;
   color: #ffffff;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__changes li::before {
-  border-color: #ff1744;
+  border-color: #7a0b14;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__button--secondary {
-  border-color: #7a0018;
+  border-color: #4d080d;
   background: #111111;
   color: #ffffff;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__button--secondary:hover {
-  border-color: #c4002f;
-  background: #190006;
+  border-color: #7a0b14;
+  background: #160204;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__button--danger {
-  border-color: #ff1744;
-  background: #ff1744;
+  border-color: #7a0b14;
+  background: #7a0b14;
   color: #ffffff;
 }
 
 html.dark.dark-crimson-black
 .confirm-dialog__button--danger:hover {
-  border-color: #ff3159;
-  background: #ff3159;
+  border-color: #94111c;
+  background: #94111c;
   filter: none;
 }
 

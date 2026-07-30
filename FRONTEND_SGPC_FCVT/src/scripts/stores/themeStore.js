@@ -472,21 +472,21 @@ const DARK_PRESETS = Object.freeze([
 
   createPreset({
     value: "crimson-black",
-    label: "Negro y rojo intenso",
-    desc: "Negro absoluto con rojo sólido e intenso",
+    label: "Negro y rojo oscuro",
+    desc: "Negro absoluto con rojo vino profundo, sin tonos rosados",
     mode: "dark",
     variant: "crimson-black",
 
-    accent: "#ff1744",
+    accent: "#7a0b14",
     accentContrast: "#ffffff",
 
     preview: {
       bg: "#000000",
       card: "#080808",
-      line: "#7a0018",
+      line: "#4d080d",
       text: "#ffffff",
       muted: "#c8c8c8",
-      accent: "#ff1744",
+      accent: "#7a0b14",
     },
 
     palette: {
@@ -504,9 +504,9 @@ const DARK_PRESETS = Object.freeze([
       textInverse: "#ffffff",
       textDisabled: "#777777",
 
-      borderColor: "#7a0018",
-      borderStrong: "#c4002f",
-      lineSoft: "#2b0009",
+      borderColor: "#4d080d",
+      borderStrong: "#7a0b14",
+      lineSoft: "#260407",
 
       shadowSoft: "none",
 
@@ -515,11 +515,11 @@ const DARK_PRESETS = Object.freeze([
 
       shadowHover: "none",
 
-      hover: "#190006",
-      active: "#ff1744",
+      hover: "#160204",
+      active: "#7a0b14",
 
-      focusOutline: "#ff3159",
-      focusRing: "rgba(255, 23, 68, 0.34)",
+      focusOutline: "#e53935",
+      focusRing: "rgba(122, 11, 20, 0.40)",
 
       footerBg: "#000000",
       footerText: "#ffffff",
