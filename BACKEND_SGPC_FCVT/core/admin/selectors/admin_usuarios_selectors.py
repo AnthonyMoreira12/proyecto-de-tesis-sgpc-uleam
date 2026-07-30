@@ -484,7 +484,19 @@ def filter_admin_users_queryset(
 
             # Publicaciones
             | Q(
-                autor__participaciones__publicacion__titulo__icontains=query
+                autor__participaciones__publicacion__articulo__nombre_articulo__icontains=query
+            )
+            | Q(
+                autor__participaciones__publicacion__ponencia__nombre_ponencia__icontains=query
+            )
+            | Q(
+                autor__participaciones__publicacion__libro__nombre_libro__icontains=query
+            )
+            | Q(
+                autor__participaciones__publicacion__capitulo_libro__nombre_capitulo__icontains=query
+            )
+            | Q(
+                autor__participaciones__publicacion__proyecto__nombre__icontains=query
             )
             | Q(
                 autor__participaciones__publicacion__tipo__nombre__icontains=query
