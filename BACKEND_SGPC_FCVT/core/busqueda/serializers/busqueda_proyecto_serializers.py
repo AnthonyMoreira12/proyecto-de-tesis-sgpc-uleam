@@ -1,15 +1,18 @@
 """
-Serializer para resultados rápidos de búsqueda de proyectos.
+Serializer público para resultados rápidos de búsqueda de proyectos.
 
-Expone:
+Expone únicamente información académica necesaria para mostrar proyectos en
+resultados generales y autocompletados:
 
-- Información básica del proyecto.
-- Carrera y facultad relacionadas.
+- Nombre y descripción resumida.
 - Estado y periodo de ejecución.
-- Disponibilidad del documento PDF.
-- URL absoluta del archivo cuando está disponible.
+- Carrera y facultad derivada.
+- Fechas principales del proyecto.
+- Disponibilidad y URL absoluta del PDF.
+- Alias estables utilizados por el frontend.
 
-La facultad siempre se deriva desde proyecto.carrera.facultad.
+No se expone el Usuario que registró el proyecto, porque ese dato representa
+la gestión interna y no necesariamente al investigador responsable.
 """
 
 from rest_framework import serializers
@@ -22,351 +25,256 @@ from core.models import Proyecto
 # ============================================================
 
 def _normalize_text(value):
-    """
-    Normaliza un valor textual eliminando espacios repetidos.
-    """
-    return " ".join(
-        str(value or "").split()
-    )
+    """Normaliza un texto eliminando espacios repetidos."""
+    return " ".join(str(value or "").split())
 
 
-def _safe_file_url(
-    file_field,
-    *,
-    request=None,
-):
-    """
-    Obtiene de forma segura la URL de un archivo.
+def _optional_text(value):
+    """Devuelve texto normalizado o ``None``."""
+    normalized = _normalize_text(value)
+    return normalized or None
 
-    Cuando existe una petición HTTP, devuelve la URL absoluta.
-    """
-    if not file_field:
-        return None
 
-    file_name = getattr(
-        file_field,
-        "name",
-        None,
-    )
-
-    if not file_name:
+def _safe_file_url(file_field, *, request=None):
+    """Obtiene una URL segura y, cuando es posible, absoluta."""
+    if not file_field or not getattr(file_field, "name", None):
         return None
 
     try:
         file_url = file_field.url
-
-    except (
-        ValueError,
-        OSError,
-        NotImplementedError,
-    ):
+    except (ValueError, OSError, NotImplementedError):
         return None
 
     if request is None:
         return file_url
 
     try:
-        return request.build_absolute_uri(
-            file_url
-        )
-
-    except (
-        ValueError,
-        TypeError,
-    ):
+        return request.build_absolute_uri(file_url)
+    except (ValueError, TypeError):
         return file_url
+
+
+def _career(project):
+    """Obtiene la carrera relacionada con el proyecto."""
+    return getattr(project, "carrera", None) if project is not None else None
+
+
+def _faculty(project):
+    """Obtiene la facultad mediante ``proyecto.carrera.facultad``."""
+    career = _career(project)
+    return getattr(career, "facultad", None) if career is not None else None
+
+
+def _resolved_end_date(project):
+    """
+    Resuelve la fecha final más representativa del proyecto.
+
+    Prioridad:
+
+    1. Fecha de cierre.
+    2. Fecha de fin prorrogada.
+    3. Fecha de fin planificada.
+    """
+    if project is None:
+        return None
+
+    return (
+        getattr(project, "fecha_cierre", None)
+        or getattr(project, "fecha_fin_prorrogada", None)
+        or getattr(project, "fecha_fin_planificada", None)
+    )
+
+
+def _resolved_period(project):
+    """Construye una representación pública y legible del periodo."""
+    if project is None:
+        return None
+
+    start_year = getattr(project, "anio_inicio", None)
+    end_year = getattr(project, "anio_fin", None)
+
+    if start_year is None:
+        start_date = getattr(project, "fecha_inicio", None)
+        start_year = getattr(start_date, "year", None)
+
+    if end_year is None:
+        end_date = _resolved_end_date(project)
+        end_year = getattr(end_date, "year", None)
+
+    if start_year is not None and end_year is not None:
+        if int(start_year) == int(end_year):
+            return str(start_year)
+
+        return f"{start_year}–{end_year}"
+
+    if start_year is not None:
+        return f"Desde {start_year}"
+
+    if end_year is not None:
+        return f"Hasta {end_year}"
+
+    return None
 
 
 # ============================================================
 # SERIALIZER
 # ============================================================
 
-class ProyectoBusquedaSerializer(
-    serializers.ModelSerializer
-):
+class ProyectoBusquedaSerializer(serializers.ModelSerializer):
     """
-    Representación resumida de un proyecto para búsquedas y
-    autocompletados.
+    Representación pública y estable de un proyecto.
+
+    Se conservan los nombres originales en español y se añaden aliases para
+    que el frontend no tenga que reconstruir el contrato.
     """
 
-    carrera_id = serializers.IntegerField(
-        read_only=True,
-    )
+    # Alias de identificación y tipo de resultado.
+    proyecto_id = serializers.IntegerField(source="pk", read_only=True)
+    kind = serializers.SerializerMethodField(read_only=True)
 
-    carrera = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    # Nombre y descripción.
+    name = serializers.SerializerMethodField(read_only=True)
+    title = serializers.SerializerMethodField(read_only=True)
+    snippet = serializers.SerializerMethodField(read_only=True)
 
-    facultad_id = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    # Carrera y facultad.
+    carrera_id = serializers.SerializerMethodField(read_only=True)
+    carrera = serializers.SerializerMethodField(read_only=True)
+    facultad_id = serializers.SerializerMethodField(read_only=True)
+    facultad = serializers.SerializerMethodField(read_only=True)
 
-    facultad = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    # Estado y periodo.
+    estado_label = serializers.SerializerMethodField(read_only=True)
+    periodo = serializers.SerializerMethodField(read_only=True)
+    fecha_fin_resuelta = serializers.SerializerMethodField(read_only=True)
 
-    estado_label = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    periodo = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    tiene_pdf = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    archivo_pdf_url = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    # Archivo PDF.
+    tiene_pdf = serializers.SerializerMethodField(read_only=True)
+    has_pdf = serializers.SerializerMethodField(read_only=True)
+    hasPdf = serializers.SerializerMethodField(read_only=True)
+    archivo_pdf_url = serializers.SerializerMethodField(read_only=True)
+    pdf_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proyecto
 
         fields = [
             "id",
+            "proyecto_id",
+            "kind",
+
+            # Nombre y descripción
             "nombre",
+            "name",
+            "title",
             "descripcion",
+            "snippet",
+
+            # Estado
             "estado",
             "estado_label",
+
+            # Fechas y periodo
+            "fecha_inicio",
+            "fecha_fin_planificada",
+            "fecha_fin_prorrogada",
+            "fecha_cierre",
+            "fecha_fin_resuelta",
             "anio_inicio",
             "anio_fin",
             "periodo",
+
+            # Carrera y facultad
             "carrera_id",
             "carrera",
             "facultad_id",
             "facultad",
+
+            # PDF
             "tiene_pdf",
+            "has_pdf",
+            "hasPdf",
             "archivo_pdf_url",
+            "pdf_url",
         ]
 
         read_only_fields = fields
 
     # ========================================================
-    # CARRERA
+    # IDENTIDAD Y TEXTO
     # ========================================================
 
-    def get_carrera(
-        self,
-        obj,
-    ):
-        """
-        Devuelve el nombre de la carrera relacionada.
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
-        )
+    def get_kind(self, obj):
+        return "project"
 
-        if career is None:
-            return None
+    def get_name(self, obj):
+        return _optional_text(getattr(obj, "nombre", None)) or "Proyecto"
 
-        career_name = _normalize_text(
-            getattr(
-                career,
-                "nombre",
-                None,
-            )
-        )
+    def get_title(self, obj):
+        return self.get_name(obj)
 
-        return career_name or None
+    def get_snippet(self, obj):
+        return _optional_text(getattr(obj, "descripcion", None)) or ""
 
     # ========================================================
-    # FACULTAD
+    # CARRERA Y FACULTAD
     # ========================================================
 
-    def get_facultad_id(
-        self,
-        obj,
-    ):
-        """
-        Obtiene el identificador de la facultad desde la carrera.
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
-        )
+    def get_carrera_id(self, obj):
+        career = _career(obj)
+        return getattr(career, "pk", None) if career is not None else None
 
-        if career is None:
-            return None
+    def get_carrera(self, obj):
+        career = _career(obj)
+        return _optional_text(getattr(career, "nombre", None))
 
-        faculty_id = getattr(
-            career,
-            "facultad_id",
-            None,
-        )
+    def get_facultad_id(self, obj):
+        faculty = _faculty(obj)
+        return getattr(faculty, "pk", None) if faculty is not None else None
 
-        return faculty_id
-
-    def get_facultad(
-        self,
-        obj,
-    ):
-        """
-        Obtiene el nombre de la facultad desde:
-
-            proyecto.carrera.facultad
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
-        )
-
-        if career is None:
-            return None
-
-        faculty = getattr(
-            career,
-            "facultad",
-            None,
-        )
-
-        if faculty is None:
-            return None
-
-        faculty_name = _normalize_text(
-            getattr(
-                faculty,
-                "nombre",
-                None,
-            )
-        )
-
-        return faculty_name or None
+    def get_facultad(self, obj):
+        faculty = _faculty(obj)
+        return _optional_text(getattr(faculty, "nombre", None))
 
     # ========================================================
-    # ESTADO
+    # ESTADO Y PERIODO
     # ========================================================
 
-    def get_estado_label(
-        self,
-        obj,
-    ):
-        """
-        Devuelve la etiqueta legible del estado.
-
-        Ejemplos:
-
-        - Nuevo
-        - Arrastre
-        - Cierre
-        """
-        get_display = getattr(
-            obj,
-            "get_estado_display",
-            None,
-        )
+    def get_estado_label(self, obj):
+        get_display = getattr(obj, "get_estado_display", None)
 
         if callable(get_display):
-            display_value = _normalize_text(
-                get_display()
-            )
-
+            display_value = _optional_text(get_display())
             if display_value:
                 return display_value
 
-        raw_status = _normalize_text(
-            getattr(
-                obj,
-                "estado",
-                None,
-            )
-        )
+        return _optional_text(getattr(obj, "estado", None))
 
-        return raw_status or None
+    def get_periodo(self, obj):
+        return _resolved_period(obj)
 
-    # ========================================================
-    # PERIODO
-    # ========================================================
-
-    def get_periodo(
-        self,
-        obj,
-    ):
-        """
-        Construye una representación legible del periodo.
-        """
-        start_year = getattr(
-            obj,
-            "anio_inicio",
-            None,
-        )
-
-        end_year = getattr(
-            obj,
-            "anio_fin",
-            None,
-        )
-
-        if (
-            start_year is not None
-            and end_year is not None
-        ):
-            if start_year == end_year:
-                return str(
-                    start_year
-                )
-
-            return (
-                f"{start_year}–{end_year}"
-            )
-
-        if start_year is not None:
-            return (
-                f"Desde {start_year}"
-            )
-
-        if end_year is not None:
-            return (
-                f"Hasta {end_year}"
-            )
-
-        return None
+    def get_fecha_fin_resuelta(self, obj):
+        return _resolved_end_date(obj)
 
     # ========================================================
     # PDF
     # ========================================================
 
-    def get_tiene_pdf(
-        self,
-        obj,
-    ):
-        """
-        Indica si el proyecto tiene un PDF principal.
-        """
-        project_file = getattr(
-            obj,
-            "archivo_pdf",
-            None,
-        )
+    def get_tiene_pdf(self, obj):
+        project_file = getattr(obj, "archivo_pdf", None)
+        return bool(project_file and getattr(project_file, "name", None))
 
-        return bool(
-            project_file
-            and getattr(
-                project_file,
-                "name",
-                None,
-            )
-        )
+    def get_has_pdf(self, obj):
+        return self.get_tiene_pdf(obj)
 
-    def get_archivo_pdf_url(
-        self,
-        obj,
-    ):
-        """
-        Devuelve la URL absoluta del archivo cuando existe.
-        """
+    def get_hasPdf(self, obj):
+        return self.get_tiene_pdf(obj)
+
+    def get_archivo_pdf_url(self, obj):
         return _safe_file_url(
-            getattr(
-                obj,
-                "archivo_pdf",
-                None,
-            ),
-            request=self.context.get(
-                "request"
-            ),
+            getattr(obj, "archivo_pdf", None),
+            request=self.context.get("request"),
         )
+
+    def get_pdf_url(self, obj):
+        return self.get_archivo_pdf_url(obj)

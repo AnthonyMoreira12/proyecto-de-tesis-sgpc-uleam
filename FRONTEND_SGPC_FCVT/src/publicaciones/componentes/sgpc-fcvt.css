@@ -41,6 +41,16 @@
 
   --sgpc-primary: var(--color-primary, #315fcb);
 
+  /*
+   * Contraste dinámico del color de acento.
+   * Evita texto blanco sobre botones blancos en variantes
+   * oscuras monocromáticas.
+   */
+  --sgpc-primary-contrast: var(
+    --accent-contrast,
+    var(--text-inverse, #ffffff)
+  );
+
   --sgpc-primary-soft: color-mix(
     in srgb,
     var(--sgpc-primary) 8%,
@@ -1680,7 +1690,7 @@
 
   background: var(--sgpc-primary);
 
-  color: #ffffff;
+  color: var(--sgpc-primary-contrast);
 
   box-shadow:
     0 7px 16px
@@ -1698,6 +1708,8 @@
       var(--sgpc-primary) 88%,
       #000000 12%
     );
+
+  color: var(--sgpc-primary-contrast);
 
   transform: translateY(-1px);
 }

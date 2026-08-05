@@ -1,8 +1,17 @@
 """
-Servicios de reportes de publicaciones.
+Servicios HTTP para reportes de publicaciones.
 
-Construye la respuesta HTTP para descargar el archivo
-Excel generado por publicaciones_excel_services.
+Responsabilidades:
+
+- generar la respuesta de descarga del archivo Excel;
+- construir el nombre seguro del archivo;
+- devolver la cantidad exacta de registros que contendría
+  una exportación;
+- mantener encabezados HTTP seguros para archivos privados.
+
+La construcción del queryset y del libro Excel pertenece a:
+
+    core.publicaciones.services.publicaciones_excel_services
 """
 
 from django.http import HttpResponse
@@ -10,9 +19,14 @@ from django.utils import timezone
 
 from core.publicaciones.services.publicaciones_excel_services import (
     build_publicaciones_excel,
+    count_publicaciones_excel,
     workbook_to_bytes,
 )
 
+
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
 
 EXCEL_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument."
@@ -20,9 +34,43 @@ EXCEL_CONTENT_TYPE = (
 )
 
 
+# ============================================================
+# UTILIDADES
+# ============================================================
+
+def _normalize_filters(
+    filters=None,
+):
+    """
+    Devuelve una copia segura del diccionario de filtros.
+
+    La validación y normalización definitiva se realiza dentro
+    de publicaciones_excel_services mediante el servicio
+    centralizado de listados.
+    """
+
+    if filters is None:
+        return {}
+
+    try:
+        return dict(
+            filters
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return {}
+
+
 def _build_filename():
     """
     Genera un nombre único y seguro para el archivo Excel.
+
+    Ejemplo:
+
+        reporte_publicaciones_20260804_224500.xlsx
     """
 
     stamp = timezone.localtime().strftime(
@@ -34,18 +82,92 @@ def _build_filename():
     )
 
 
-def build_export_publicaciones_response(
+def _build_content_disposition(
+    filename,
+):
+    """
+    Construye el encabezado de descarga.
+
+    El nombre generado utiliza únicamente caracteres ASCII,
+    por lo que no requiere codificación adicional.
+    """
+
+    safe_filename = str(
+        filename or "reporte_publicaciones.xlsx"
+    ).replace(
+        '"',
+        "",
+    )
+
+    return (
+        f'attachment; filename="{safe_filename}"'
+    )
+
+
+# ============================================================
+# VISTA PREVIA
+# ============================================================
+
+def build_export_publicaciones_preview(
     filters=None,
 ):
     """
-    Genera el reporte de publicaciones y devuelve
-    una respuesta HTTP lista para descarga.
+    Devuelve la cantidad exacta de publicaciones que serían
+    incluidas en el archivo Excel.
+
+    Esta función usa el mismo queryset que la exportación real,
+    evitando diferencias entre el conteo mostrado en Vue y las
+    filas finalmente generadas.
 
     Parameters
     ----------
     filters:
-        Diccionario opcional con los filtros que serán
-        enviados al servicio de generación Excel.
+        Diccionario opcional con los filtros enviados desde
+        la interfaz.
+
+    Returns
+    -------
+    dict
+        Respuesta lista para ser entregada por una APIView.
+
+    Ejemplo
+    -------
+    {
+        "total": 18
+    }
+    """
+
+    normalized_filters = _normalize_filters(
+        filters
+    )
+
+    total = count_publicaciones_excel(
+        normalized_filters
+    )
+
+    return {
+        "total": int(
+            total
+        ),
+    }
+
+
+# ============================================================
+# DESCARGA EXCEL
+# ============================================================
+
+def build_export_publicaciones_response(
+    filters=None,
+):
+    """
+    Genera el reporte de publicaciones y devuelve una respuesta
+    HTTP lista para descargar.
+
+    Parameters
+    ----------
+    filters:
+        Diccionario opcional con los filtros que serán enviados
+        al servicio generador del archivo Excel.
 
     Returns
     -------
@@ -53,21 +175,21 @@ def build_export_publicaciones_response(
         Archivo .xlsx listo para descargar.
     """
 
-    filters = dict(
-        filters or {}
-    )
-
-    # ---------------------------------------------------------
-    # Generar libro Excel
-    # ---------------------------------------------------------
-
-    workbook = build_publicaciones_excel(
+    normalized_filters = _normalize_filters(
         filters
     )
 
-    # ---------------------------------------------------------
-    # Convertir a bytes
-    # ---------------------------------------------------------
+    # ========================================================
+    # 1. GENERAR LIBRO EXCEL
+    # ========================================================
+
+    workbook = build_publicaciones_excel(
+        normalized_filters
+    )
+
+    # ========================================================
+    # 2. CONVERTIR EL LIBRO EN BYTES
+    # ========================================================
 
     file_bytes = workbook_to_bytes(
         workbook
@@ -75,9 +197,9 @@ def build_export_publicaciones_response(
 
     filename = _build_filename()
 
-    # ---------------------------------------------------------
-    # Respuesta
-    # ---------------------------------------------------------
+    # ========================================================
+    # 3. CONSTRUIR RESPUESTA HTTP
+    # ========================================================
 
     response = HttpResponse(
         file_bytes,
@@ -86,8 +208,8 @@ def build_export_publicaciones_response(
 
     response[
         "Content-Disposition"
-    ] = (
-        f'attachment; filename="{filename}"'
+    ] = _build_content_disposition(
+        filename
     )
 
     response[
@@ -96,10 +218,25 @@ def build_export_publicaciones_response(
         len(file_bytes)
     )
 
+    # El reporte contiene información institucional y no debe
+    # almacenarse en cachés compartidas.
     response[
         "Cache-Control"
-    ] = "private, no-store"
+    ] = (
+        "private, no-store, "
+        "no-cache, must-revalidate"
+    )
 
+    response[
+        "Pragma"
+    ] = "no-cache"
+
+    response[
+        "Expires"
+    ] = "0"
+
+    # Evita que el navegador intente interpretar el archivo
+    # utilizando un tipo de contenido diferente.
     response[
         "X-Content-Type-Options"
     ] = "nosniff"

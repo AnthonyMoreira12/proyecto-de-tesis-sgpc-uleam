@@ -890,13 +890,23 @@ const goHomeFromLogo = () => {
 };
 
 const goAvisos = () => {
-  navigateTo({
-    path: "/home",
-    query: {
-      modal: "avisos",
-      ts: Date.now().toString(),
-    },
-  });
+  /*
+   * Los avisos se controlan desde AvisosGlobalHost.
+   * No se modifica la ruta ni se agrega ?modal=avisos,
+   * porque eso puede activar nuevamente observadores de Home
+   * y abrir una segunda instancia del overlay.
+   */
+  closeAllPanels();
+
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent("sgpc:open-avisos", {
+      detail: {
+        mode: "viewer",
+      },
+    })
+  );
 };
 
 const goMyScholarProfile = () => {

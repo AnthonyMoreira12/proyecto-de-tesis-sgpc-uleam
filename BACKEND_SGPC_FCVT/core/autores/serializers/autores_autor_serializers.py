@@ -4,13 +4,13 @@ Serializer del modelo Autor.
 Responsabilidades:
 
 - Validar y normalizar la información básica del autor.
-- Permitir identificaciones nacionales y alfanuméricas.
+- Admitir únicamente números de cédula de 10 dígitos.
 - Detectar coincidencias por identificación o correo.
-- Exponer información calculada del usuario relacionado.
+- Exponer el estado de acceso del Usuario relacionado.
 - Proteger los campos usuario y es_externo.
 - Crear los autores manuales como autores externos.
 - Mantener compatibilidad con los formularios y selectores
-  actuales del frontend.
+  actuales del frontend y del panel administrativo.
 """
 
 import re
@@ -37,11 +37,11 @@ User = get_user_model()
 # CONFIGURACIÓN
 # ============================================================
 
-IDENTIFICATION_PATTERN = re.compile(
-    r"^[A-Z0-9][A-Z0-9-]*$"
-)
+CEDULA_LENGTH = 10
 
-MIN_IDENTIFICATION_LENGTH = 5
+CEDULA_PATTERN = re.compile(
+    r"^\d{10}$"
+)
 
 
 def _model_field_max_length(
@@ -83,12 +83,7 @@ MAX_SURNAMES_LENGTH = _model_field_max_length(
     150,
 )
 
-MAX_IDENTIFICATION_LENGTH = (
-    _model_field_max_length(
-        "identificacion",
-        30,
-    )
-)
+MAX_IDENTIFICATION_LENGTH = CEDULA_LENGTH
 
 MAX_EMAIL_LENGTH = _model_field_max_length(
     "correo",
@@ -226,6 +221,66 @@ def _author_full_name(author):
 
 
 # ============================================================
+# ESTADO DEL USUARIO VINCULADO
+# ============================================================
+
+def _normalize_account_value(value):
+    return str(value or "").strip().lower()
+
+
+def _has_usable_password(user):
+    if user is None:
+        return False
+
+    try:
+        return bool(user.has_usable_password())
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _is_external_local_user(user):
+    if user is None:
+        return False
+
+    role = _normalize_account_value(
+        getattr(user, "rol", "")
+    )
+    auth_source = _normalize_account_value(
+        getattr(user, "auth_source", "")
+    )
+
+    return bool(
+        role == "autor_externo"
+        and auth_source == "local"
+    )
+
+
+def _is_pending_external_user(user):
+    """
+    Una cuenta externa está pendiente únicamente si todavía no
+    posee acceso: está inactiva y no tiene contraseña utilizable.
+    """
+    return bool(
+        _is_external_local_user(user)
+        and not getattr(user, "is_active", False)
+        and not _has_usable_password(user)
+    )
+
+
+def _resolve_user_state(user):
+    if user is None:
+        return "sin_usuario"
+
+    if _is_pending_external_user(user):
+        return "pendiente"
+
+    if bool(getattr(user, "is_active", False)):
+        return "activo"
+
+    return "inactivo"
+
+
+# ============================================================
 # SERIALIZER
 # ============================================================
 
@@ -289,26 +344,25 @@ class AutorSerializer(serializers.ModelSerializer):
         allow_blank=False,
         allow_null=False,
         trim_whitespace=True,
-        min_length=MIN_IDENTIFICATION_LENGTH,
-        max_length=MAX_IDENTIFICATION_LENGTH,
+        min_length=CEDULA_LENGTH,
+        max_length=CEDULA_LENGTH,
         error_messages={
             "required": (
-                "La identificación es obligatoria."
+                "El número de cédula es obligatorio."
             ),
             "blank": (
-                "La identificación es obligatoria."
+                "El número de cédula es obligatorio."
             ),
             "null": (
-                "La identificación es obligatoria."
+                "El número de cédula es obligatorio."
             ),
             "min_length": (
-                "La identificación debe contener al menos "
-                f"{MIN_IDENTIFICATION_LENGTH} caracteres."
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
             ),
             "max_length": (
-                "La identificación no puede superar "
-                f"los {MAX_IDENTIFICATION_LENGTH} "
-                "caracteres."
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
             ),
         },
     )
@@ -365,6 +419,26 @@ class AutorSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    usuario_activo = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    usuario_pendiente = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    usuario_estado = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    usuario_creado_desde_selector = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    usuario_tiene_password_utilizable = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
     nombre_completo = serializers.SerializerMethodField(
         read_only=True,
     )
@@ -391,6 +465,11 @@ class AutorSerializer(serializers.ModelSerializer):
             "es_externo",
             "usuario",
             "usuario_id",
+            "usuario_activo",
+            "usuario_pendiente",
+            "usuario_estado",
+            "usuario_creado_desde_selector",
+            "usuario_tiene_password_utilizable",
             "nombre_completo",
             "es_admin",
         ]
@@ -400,6 +479,11 @@ class AutorSerializer(serializers.ModelSerializer):
             "es_externo",
             "usuario",
             "usuario_id",
+            "usuario_activo",
+            "usuario_pendiente",
+            "usuario_estado",
+            "usuario_creado_desde_selector",
+            "usuario_tiene_password_utilizable",
             "nombre_completo",
             "correo_resuelto",
             "es_admin",
@@ -476,6 +560,52 @@ class AutorSerializer(serializers.ModelSerializer):
         )
 
         return author_email or None
+
+    def get_usuario_activo(
+        self,
+        obj,
+    ):
+        user = getattr(obj, "usuario", None)
+        return bool(
+            getattr(user, "is_active", False)
+            if user is not None
+            else False
+        )
+
+    def get_usuario_pendiente(
+        self,
+        obj,
+    ):
+        return _is_pending_external_user(
+            getattr(obj, "usuario", None)
+        )
+
+    def get_usuario_estado(
+        self,
+        obj,
+    ):
+        return _resolve_user_state(
+            getattr(obj, "usuario", None)
+        )
+
+    def get_usuario_creado_desde_selector(
+        self,
+        obj,
+    ):
+        user = getattr(obj, "usuario", None)
+        return bool(
+            getattr(user, "creado_desde_selector", False)
+            if user is not None
+            else False
+        )
+
+    def get_usuario_tiene_password_utilizable(
+        self,
+        obj,
+    ):
+        return _has_usable_password(
+            getattr(obj, "usuario", None)
+        )
 
     def get_es_admin(
         self,
@@ -567,63 +697,18 @@ class AutorSerializer(serializers.ModelSerializer):
         value,
     ):
         """
-        Admite identificaciones nacionales y alfanuméricas.
-
-        Ejemplos válidos:
-
-        - 1312345678
-        - AB123456
-        - PAS-123456
+        Admite exclusivamente números de cédula de 10 dígitos.
         """
-        normalized_identification = (
-            _normalize_single_line(
-                value
-            )
-        )
+        normalized_identification = str(
+            value or ""
+        ).strip()
 
-        normalized_identification = (
-            normalized_identification
-            .replace(" ", "")
-            .upper()
-        )
-
-        if not normalized_identification:
-            raise serializers.ValidationError(
-                "La identificación es obligatoria."
-            )
-
-        if (
-            len(normalized_identification)
-            < MIN_IDENTIFICATION_LENGTH
-        ):
-            raise serializers.ValidationError(
-                (
-                    "La identificación debe contener "
-                    f"al menos {MIN_IDENTIFICATION_LENGTH} "
-                    "caracteres."
-                )
-            )
-
-        if (
-            len(normalized_identification)
-            > MAX_IDENTIFICATION_LENGTH
-        ):
-            raise serializers.ValidationError(
-                (
-                    "La identificación no puede superar "
-                    f"los {MAX_IDENTIFICATION_LENGTH} "
-                    "caracteres."
-                )
-            )
-
-        if not IDENTIFICATION_PATTERN.fullmatch(
+        if not CEDULA_PATTERN.fullmatch(
             normalized_identification
         ):
             raise serializers.ValidationError(
-                (
-                    "La identificación solo puede contener "
-                    "letras, números y guiones."
-                )
+                "La cédula debe contener exactamente "
+                "10 dígitos numéricos."
             )
 
         return normalized_identification
@@ -768,7 +853,7 @@ class AutorSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "detail": (
-                        "La identificación y el correo "
+                        "La cédula y el correo "
                         "pertenecen a autores diferentes. "
                         "Revise los datos ingresados."
                     )
@@ -780,7 +865,7 @@ class AutorSerializer(serializers.ModelSerializer):
                 {
                     "identificacion": (
                         "Ya existe un autor registrado "
-                        "con esta identificación."
+                        "con este número de cédula."
                     )
                 }
             )
@@ -843,7 +928,7 @@ class AutorSerializer(serializers.ModelSerializer):
                     "detail": (
                         "No fue posible crear el autor "
                         "porque existe un conflicto con "
-                        "la identificación, el correo o "
+                        "la cédula, el correo o "
                         "el usuario relacionado."
                     )
                 }
@@ -893,7 +978,7 @@ class AutorSerializer(serializers.ModelSerializer):
                     "detail": (
                         "No fue posible actualizar el autor "
                         "porque existe un conflicto con "
-                        "la identificación, el correo o "
+                        "la cédula, el correo o "
                         "el usuario relacionado."
                     )
                 }

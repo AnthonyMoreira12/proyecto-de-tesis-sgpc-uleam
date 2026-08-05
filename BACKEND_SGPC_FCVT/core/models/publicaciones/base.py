@@ -47,7 +47,10 @@ def _delete_storage_file(field_file):
         return
 
 
-def _read_header(field_file, max_bytes=PDF_SIGNATURE_SCAN_BYTES):
+def _read_header(
+    field_file,
+    max_bytes=PDF_SIGNATURE_SCAN_BYTES,
+):
     file_obj = getattr(
         field_file,
         "file",
@@ -151,7 +154,9 @@ class TipoPublicacion(models.Model):
         db_table = "tipos_publicacion"
         ordering = ["orden", "nombre"]
         indexes = [
-            models.Index(fields=["categoria"]),
+            models.Index(
+                fields=["categoria"],
+            ),
         ]
 
     def clean(self):
@@ -159,8 +164,14 @@ class TipoPublicacion(models.Model):
 
         errors = {}
 
-        self.nombre = _norm_text(self.nombre)
-        self.codigo = _norm_lower(self.codigo)
+        self.nombre = _norm_text(
+            self.nombre
+        )
+
+        self.codigo = _norm_lower(
+            self.codigo
+        )
+
         self.categoria = _norm_lower(
             self.categoria
         )
@@ -196,7 +207,11 @@ class TipoPublicacion(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        return super().save(*args, **kwargs)
+
+        return super().save(
+            *args,
+            **kwargs,
+        )
 
     def __str__(self):
         return self.nombre
@@ -204,13 +219,26 @@ class TipoPublicacion(models.Model):
 
 class Publicacion(models.Model):
     ORIGEN_TIPO = [
-        ("ninguno", "Ninguno"),
+        (
+            "ninguno",
+            "Ninguno",
+        ),
         (
             "tic",
             "Trabajo de integración curricular",
         ),
-        ("maestria", "Tesis de maestría"),
-        ("doctoral", "Tesis doctoral"),
+        (
+            "maestria",
+            "Tesis de maestría",
+        ),
+        (
+            "doctoral",
+            "Tesis doctoral",
+        ),
+        (
+            "otro",
+            "Otro",
+        ),
     ]
 
     proyecto = models.ForeignKey(
@@ -308,8 +336,9 @@ class Publicacion(models.Model):
         null=True,
         blank=True,
         help_text=(
-            "Especificar el grado cuando el origen "
-            "lo requiera."
+            "Especificar el grado o programa cuando "
+            "el origen sea TIC, o escribir el origen "
+            "cuando se seleccione Otro."
         ),
     )
 
@@ -346,16 +375,26 @@ class Publicacion(models.Model):
 
     class Meta:
         db_table = "publicaciones"
-        ordering = ["tipo", "numero"]
+        ordering = [
+            "tipo",
+            "numero",
+        ]
+
         constraints = [
             models.UniqueConstraint(
-                fields=["tipo", "numero"],
+                fields=[
+                    "tipo",
+                    "numero",
+                ],
                 name="unique_numero_por_tipo",
             ),
         ]
+
         indexes = [
             models.Index(
-                fields=["anio_publicacion"],
+                fields=[
+                    "anio_publicacion",
+                ],
             ),
             models.Index(
                 fields=[
@@ -376,13 +415,19 @@ class Publicacion(models.Model):
                 ],
             ),
             models.Index(
-                fields=["usuario_creador"],
+                fields=[
+                    "usuario_creador",
+                ],
             ),
             models.Index(
-                fields=["registrado_por_admin"],
+                fields=[
+                    "registrado_por_admin",
+                ],
             ),
             models.Index(
-                fields=["admin_registrador"],
+                fields=[
+                    "admin_registrador",
+                ],
             ),
             models.Index(
                 fields=[
@@ -412,7 +457,9 @@ class Publicacion(models.Model):
         errors = {}
 
         self.origen_tipo = (
-            _norm_lower(self.origen_tipo)
+            _norm_lower(
+                self.origen_tipo
+            )
             or "ninguno"
         )
 
@@ -433,16 +480,35 @@ class Publicacion(models.Model):
                 "El origen de la publicación es inválido."
             )
 
+        # =====================================================
+        # TIC U OTRO REQUIEREN EL CAMPO COMPLEMENTARIO
+        # =====================================================
+
         if (
-            self.origen_tipo == "tic"
+            self.origen_tipo in {
+                "tic",
+                "otro",
+            }
             and not self.origen_grado
         ):
-            errors["origen_grado"] = (
-                "Debe especificar el grado cuando "
-                "el origen es TIC."
-            )
+            if self.origen_tipo == "tic":
+                errors["origen_grado"] = (
+                    "Debe especificar el grado o programa "
+                    "cuando el origen es un Trabajo de "
+                    "Integración Curricular."
+                )
+            else:
+                errors["origen_grado"] = (
+                    "Debe especificar el origen "
+                    "de la publicación."
+                )
 
-        if self.origen_tipo != "tic":
+        # Para Ninguno, Maestría y Doctoral no se guarda
+        # contenido adicional en origen_grado.
+        if self.origen_tipo not in {
+            "tic",
+            "otro",
+        }:
             self.origen_grado = None
 
         if not self.tipo_id:
@@ -460,7 +526,10 @@ class Publicacion(models.Model):
                 "La carrera es obligatoria."
             )
 
-        if self.numero is not None and self.numero < 1:
+        if (
+            self.numero is not None
+            and self.numero < 1
+        ):
             errors["numero"] = (
                 "El número debe ser mayor o igual a 1."
             )
@@ -643,8 +712,12 @@ class Publicacion(models.Model):
             raise ValidationError(errors)
 
     def _assign_next_number(self):
-        TipoPublicacion.objects.select_for_update().get(
-            pk=self.tipo_id
+        (
+            TipoPublicacion.objects
+            .select_for_update()
+            .get(
+                pk=self.tipo_id
+            )
         )
 
         last_number = (
@@ -663,7 +736,8 @@ class Publicacion(models.Model):
         )
 
         self.numero = (
-            int(last_number or 0) + 1
+            int(last_number or 0)
+            + 1
         )
 
     def save(self, *args, **kwargs):
@@ -688,7 +762,10 @@ class Publicacion(models.Model):
                 self.fecha_publicacion.year
             )
 
-        if self.numero is None and self.tipo_id:
+        if (
+            self.numero is None
+            and self.tipo_id
+        ):
             with transaction.atomic():
                 self._assign_next_number()
                 self.full_clean()
@@ -718,7 +795,9 @@ class Publicacion(models.Model):
         )
 
         if old_name and old_name != new_name:
-            _delete_storage_file(old_pdf)
+            _delete_storage_file(
+                old_pdf
+            )
 
         return result
 
@@ -730,7 +809,9 @@ class Publicacion(models.Model):
             **kwargs,
         )
 
-        _delete_storage_file(pdf_to_delete)
+        _delete_storage_file(
+            pdf_to_delete
+        )
 
         return result
 

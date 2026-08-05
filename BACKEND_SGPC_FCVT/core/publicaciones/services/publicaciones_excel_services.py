@@ -13,16 +13,14 @@ Regla institucional:
 
     Publicacion -> Carrera -> Facultad
 
-Nunca se consulta Publicacion.facultad como campo de BD.
+Los filtros, la búsqueda y el ordenamiento se delegan al
+servicio centralizado de listados. De esta manera, la interfaz
+y el archivo Excel utilizan exactamente el mismo queryset.
 """
 
 from collections import OrderedDict
 from io import BytesIO
 
-from django.db.models import (
-    Prefetch,
-    Q,
-)
 from openpyxl import Workbook
 from openpyxl.styles import (
     Alignment,
@@ -35,9 +33,9 @@ from openpyxl.utils import (
     get_column_letter,
 )
 
-from core.models import (
-    Publicacion,
-    PublicacionAutor,
+from core.publicaciones.services.publicaciones_listado_services import (
+    build_publicaciones_queryset,
+    extract_publicaciones_filters,
 )
 
 
@@ -122,41 +120,6 @@ def _normalize_lower(value):
     )
 
 
-def _parse_year(value):
-    raw = _normalize_text(
-        value
-    )
-
-    if (
-        raw.isdigit()
-        and len(raw) == 4
-    ):
-        return int(raw)
-
-    return None
-
-
-def _parse_bool(value):
-    if isinstance(
-        value,
-        bool,
-    ):
-        return value
-
-    value = _normalize_lower(
-        value
-    )
-
-    return value in {
-        "1",
-        "true",
-        "yes",
-        "si",
-        "sí",
-        "on",
-    }
-
-
 def _safe_related(
     instance,
     attr_name,
@@ -232,343 +195,44 @@ def _tipo_bucket(
     return None
 
 
-def _resolve_tipo_filter(
-    raw_tipo,
+def _build_queryset(
+    filters=None,
 ):
-    value = _normalize_lower(
-        raw_tipo
+    """
+    Construye el queryset utilizado por el reporte Excel.
+
+    La exportación reutiliza la misma normalización, búsqueda,
+    clasificación, filtros relacionales y ordenamiento de los
+    listados institucionales.
+    """
+
+    normalized_filters = (
+        extract_publicaciones_filters(
+            filters or {}
+        )
     )
 
-    alias_map = {
-        "alto_impacto": "alto_impacto",
-        "articulo_alto_impacto": "alto_impacto",
-        "aai": "alto_impacto",
-        "alto-impacto": "alto_impacto",
-
-        "regional": "regional",
-        "articulo_regional": "regional",
-        "ar": "regional",
-
-        "ponencia": "ponencia",
-        "ponencias": "ponencia",
-        "pon": "ponencia",
-
-        "libro": "libro",
-        "libros": "libro",
-        "lib": "libro",
-
-        "capitulo": "capitulo",
-        "capítulos": "capitulo",
-        "capitulos": "capitulo",
-        "capitulo_libro": "capitulo",
-        "cap": "capitulo",
-    }
-
-    return alias_map.get(
-        value
+    return build_publicaciones_queryset(
+        filters=normalized_filters,
+        user=None,
+        solo_mias=False,
     )
 
 
-def _filter_id(
-    filters,
-    *keys,
+def count_publicaciones_excel(
+    filters=None,
 ):
-    for key in keys:
-        value = _normalize_text(
-            filters.get(key)
-        )
+    """
+    Devuelve la cantidad exacta de publicaciones que serían
+    incluidas en el reporte con los filtros recibidos.
 
-        if value:
-            return value
+    La función usa el mismo queryset que genera el archivo, por
+    lo que puede emplearse en la vista previa del frontend.
+    """
 
-    return ""
-
-
-def _build_queryset(filters):
-    filters = filters or {}
-
-    tipo = _resolve_tipo_filter(
-        filters.get("tipo")
-        or filters.get(
-            "tipo_publicacion_final"
-        )
-    )
-
-    anio = _parse_year(
-        filters.get("anio")
-    )
-
-    anio_desde = _parse_year(
-        filters.get("anio_desde")
-    )
-
-    anio_hasta = _parse_year(
-        filters.get("anio_hasta")
-    )
-
-    texto = _normalize_text(
-        filters.get("texto")
-        or filters.get("q")
-    )
-
-    facultad_id = _filter_id(
-        filters,
-        "facultad",
-        "facultad_id",
-    )
-
-    carrera_id = _filter_id(
-        filters,
-        "carrera",
-        "carrera_id",
-    )
-
-    proyecto_id = _filter_id(
-        filters,
-        "proyecto",
-        "proyecto_id",
-    )
-
-    solo_con_pdf = _parse_bool(
-        filters.get(
-            "solo_con_pdf"
-        )
-    )
-
-    if (
-        anio_desde
-        and anio_hasta
-        and anio_desde > anio_hasta
-    ):
-        (
-            anio_desde,
-            anio_hasta,
-        ) = (
-            anio_hasta,
-            anio_desde,
-        )
-
-    autores_prefetch = Prefetch(
-        "participaciones",
-        queryset=(
-            PublicacionAutor.objects
-            .select_related(
-                "autor"
-            )
-            .order_by(
-                "orden",
-                "id",
-            )
-        ),
-        to_attr=(
-            "participaciones_ordenadas"
-        ),
-    )
-
-    queryset = (
-        Publicacion.objects
-        .select_related(
-            "tipo",
-            "proyecto",
-
-            "carrera",
-            "carrera__facultad",
-
-            "area",
-            "subarea",
-
-            "pais",
-            "ciudad",
-
-            "usuario_creador",
-            "admin_registrador",
-
-            "articulo",
-            "ponencia",
-            "libro",
-            "capitulo_libro",
-        )
-        .prefetch_related(
-            autores_prefetch,
-            "archivos",
-        )
-        .all()
-    )
-
-    # ---------------------------------------------------------
-    # Año
-    # ---------------------------------------------------------
-
-    if anio:
-        queryset = (
-            queryset.filter(
-                anio_publicacion=anio
-            )
-        )
-
-    else:
-        if anio_desde:
-            queryset = queryset.filter(
-                anio_publicacion__gte=(
-                    anio_desde
-                )
-            )
-
-        if anio_hasta:
-            queryset = queryset.filter(
-                anio_publicacion__lte=(
-                    anio_hasta
-                )
-            )
-
-    # ---------------------------------------------------------
-    # Relaciones
-    # ---------------------------------------------------------
-
-    if facultad_id.isdigit():
-        queryset = queryset.filter(
-            carrera__facultad_id=(
-                int(facultad_id)
-            )
-        )
-
-    if carrera_id.isdigit():
-        queryset = queryset.filter(
-            carrera_id=int(
-                carrera_id
-            )
-        )
-
-    if proyecto_id.isdigit():
-        queryset = queryset.filter(
-            proyecto_id=int(
-                proyecto_id
-            )
-        )
-
-    # ---------------------------------------------------------
-    # PDF
-    # ---------------------------------------------------------
-
-    if solo_con_pdf:
-        queryset = (
-            queryset
-            .filter(
-                Q(
-                    archivo_pdf__isnull=False
-                )
-                & ~Q(
-                    archivo_pdf=""
-                )
-                | Q(
-                    archivos__archivo__isnull=False
-                )
-                & ~Q(
-                    archivos__archivo=""
-                )
-            )
-            .distinct()
-        )
-
-    # ---------------------------------------------------------
-    # Texto
-    # ---------------------------------------------------------
-
-    if texto:
-        queryset = (
-            queryset
-            .filter(
-                Q(
-                    carrera__facultad__nombre__icontains=texto
-                )
-                | Q(
-                    carrera__nombre__icontains=texto
-                )
-                | Q(
-                    proyecto__nombre__icontains=texto
-                )
-                | Q(
-                    area__nombre__icontains=texto
-                )
-                | Q(
-                    subarea__nombre__icontains=texto
-                )
-
-                | Q(
-                    articulo__nombre_articulo__icontains=texto
-                )
-                | Q(
-                    articulo__nombre_revista__icontains=texto
-                )
-                | Q(
-                    articulo__codigo_doi__icontains=texto
-                )
-                | Q(
-                    articulo__codigo_issn__icontains=texto
-                )
-
-                | Q(
-                    ponencia__nombre_evento__icontains=texto
-                )
-                | Q(
-                    ponencia__nombre_ponencia__icontains=texto
-                )
-
-                | Q(
-                    libro__nombre_libro__icontains=texto
-                )
-                | Q(
-                    libro__editorial_compilador__icontains=texto
-                )
-
-                | Q(
-                    capitulo_libro__nombre_capitulo__icontains=texto
-                )
-                | Q(
-                    capitulo_libro__nombre_libro__icontains=texto
-                )
-
-                | Q(
-                    participaciones__autor__nombres__icontains=texto
-                )
-                | Q(
-                    participaciones__autor__apellidos__icontains=texto
-                )
-                | Q(
-                    participaciones__autor__identificacion__icontains=texto
-                )
-                | Q(
-                    participaciones__autor__correo__icontains=texto
-                )
-            )
-            .distinct()
-        )
-
-    publicaciones = list(
-        queryset.order_by(
-            "-fecha_publicacion",
-            "-id",
-        )
-    )
-
-    # ---------------------------------------------------------
-    # Tipo específico
-    # ---------------------------------------------------------
-
-    if tipo:
-        publicaciones = [
-            publicacion
-            for publicacion
-            in publicaciones
-            if (
-                _tipo_bucket(
-                    publicacion
-                )
-                == tipo
-            )
-        ]
-
-    return publicaciones
+    return _build_queryset(
+        filters or {}
+    ).count()
 
 
 def _get_participaciones(
@@ -870,6 +534,59 @@ def _display_base_indexada(
     )
 
 
+def _origen_publicacion_data(
+    publicacion,
+):
+    """
+    Devuelve la etiqueta del origen y su detalle.
+
+    Reglas:
+    - TIC: el detalle corresponde al grado o programa.
+    - Otro: el detalle corresponde al origen escrito
+      manualmente por el usuario.
+    - Demás opciones: el detalle no aplica.
+    """
+
+    origen_tipo = _normalize_lower(
+        getattr(
+            publicacion,
+            "origen_tipo",
+            "",
+        )
+    )
+
+    origen_display = _display_choice(
+        publicacion,
+        "get_origen_tipo_display",
+        fallback=(
+            origen_tipo
+            or "—"
+        ),
+    )
+
+    origen_detalle = "—"
+
+    if origen_tipo in {
+        "tic",
+        "otro",
+    }:
+        origen_detalle = (
+            _normalize_text(
+                getattr(
+                    publicacion,
+                    "origen_grado",
+                    None,
+                )
+            )
+            or "—"
+        )
+
+    return (
+        origen_display,
+        origen_detalle,
+    )
+
+
 def _base_common(
     publicacion,
 ):
@@ -897,6 +614,13 @@ def _base_common(
     subarea = _safe_related(
         publicacion,
         "subarea",
+    )
+
+    (
+        origen_publicacion,
+        detalle_origen,
+    ) = _origen_publicacion_data(
+        publicacion
     )
 
     return OrderedDict(
@@ -955,6 +679,12 @@ def _base_common(
                 )
                 or "—"
             ),
+            "Origen de la publicación": (
+                origen_publicacion
+            ),
+            "Detalle del origen": (
+                detalle_origen
+            ),
         }
     )
 
@@ -986,18 +716,6 @@ def _row_alto_impacto(
 
     row.update(
         {
-            "Origen publicación": (
-                publicacion
-                .get_origen_tipo_display()
-                if publicacion.origen_tipo
-                else "—"
-            ),
-            "Grado / programa": (
-                _normalize_text(
-                    publicacion.origen_grado
-                )
-                or "—"
-            ),
             "Título del artículo": (
                 articulo.nombre_articulo
             ),
@@ -1082,18 +800,6 @@ def _row_regional(
 
     row.update(
         {
-            "Origen publicación": (
-                publicacion
-                .get_origen_tipo_display()
-                if publicacion.origen_tipo
-                else "—"
-            ),
-            "Grado / programa": (
-                _normalize_text(
-                    publicacion.origen_grado
-                )
-                or "—"
-            ),
             "Título del artículo": (
                 articulo.nombre_articulo
             ),

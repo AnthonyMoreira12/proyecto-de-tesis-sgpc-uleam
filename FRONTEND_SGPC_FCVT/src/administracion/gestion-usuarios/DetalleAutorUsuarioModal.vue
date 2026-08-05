@@ -435,7 +435,6 @@ import {
   isAdminUser,
   isExternalUser,
   isInstitutionalUser,
-  isPendingExternalUser,
 } from "../../scripts/utils/auth";
 
 
@@ -548,16 +547,7 @@ const isAdmin = computed(() => {
 
 
 const isPending = computed(() => {
-  if (
-    typeof props.usuario?.es_pendiente ===
-    "boolean"
-  ) {
-    return props.usuario.es_pendiente;
-  }
-
-  return isPendingExternalUser(
-    props.usuario
-  );
+  return props.usuario?.es_pendiente === true;
 });
 
 

@@ -18,75 +18,179 @@ export const DEFAULT_AVISOS_LAYOUT = Object.freeze({
   displayMode: "mixed",
 });
 
-const STAGE_WIDTH_MIN = 900;
-const STAGE_WIDTH_MAX = 1500;
-const STAGE_HEIGHT_MIN = 440;
-const STAGE_HEIGHT_MAX = 900;
-const MEDIA_PANE_WIDTH_MIN = 420;
-const ASIDE_WIDTH_MIN = 320;
-const SPLITTER_WIDTH = 14;
+export const AVISOS_TEXT_MAX_LENGTH = 700;
+
+export const AVISOS_LAYOUT_LIMITS = Object.freeze({
+  stageWidthMin: 900,
+  stageWidthMax: 1500,
+  stageHeightMin: 440,
+  stageHeightMax: 900,
+  mediaPaneWidthMin: 420,
+  asideWidthMin: 320,
+  splitterWidth: 14,
+});
+
+export const AVISOS_DISPLAY_MODES = Object.freeze([
+  "mixed",
+  "banner",
+  "text",
+]);
+
+const STAGE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.stageWidthMin;
+const STAGE_WIDTH_MAX = AVISOS_LAYOUT_LIMITS.stageWidthMax;
+const STAGE_HEIGHT_MIN = AVISOS_LAYOUT_LIMITS.stageHeightMin;
+const STAGE_HEIGHT_MAX = AVISOS_LAYOUT_LIMITS.stageHeightMax;
+const MEDIA_PANE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.mediaPaneWidthMin;
+const ASIDE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.asideWidthMin;
+const SPLITTER_WIDTH = AVISOS_LAYOUT_LIMITS.splitterWidth;
 
 const DISPLAY_MODE_DEFAULT = "mixed";
-const DISPLAY_MODE_ALLOWED = new Set(["mixed", "banner", "text"]);
+const DISPLAY_MODE_ALLOWED = new Set(AVISOS_DISPLAY_MODES);
 
 let avisosConfigCache = {
   ...DEFAULT_AVISOS_CONTENT,
   ...DEFAULT_AVISOS_LAYOUT,
 };
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const clamp = (value, min, max) => {
+  return Math.min(
+    max,
+    Math.max(min, value)
+  );
+};
 
-const safeInt = (value, fallback) => {
+const safeInt = (
+  value,
+  fallback
+) => {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.round(parsed) : Math.round(fallback);
+
+  return Number.isFinite(parsed)
+    ? Math.round(parsed)
+    : Math.round(fallback);
 };
 
 const pickFirst = (...values) => {
   for (const value of values) {
-    if (value !== undefined && value !== null) return value;
+    if (
+      value !== undefined &&
+      value !== null
+    ) {
+      return value;
+    }
   }
+
   return undefined;
 };
 
-const getMediaPaneWidthMax = (stageWidth) => {
+const getMediaPaneWidthMax = (
+  stageWidth
+) => {
   return Math.max(
     MEDIA_PANE_WIDTH_MIN,
-    safeInt(stageWidth, DEFAULT_AVISOS_LAYOUT.stageWidth) -
+    safeInt(
+      stageWidth,
+      DEFAULT_AVISOS_LAYOUT.stageWidth
+    ) -
       ASIDE_WIDTH_MIN -
       SPLITTER_WIDTH
   );
 };
 
-const normalizeSingleLine = (value, fallback) => {
-  const normalized = String(value ?? "")
+const normalizeSingleLine = (
+  value,
+  fallback
+) => {
+  const normalized = String(
+    value ?? ""
+  )
     .replace(/\s+/g, " ")
     .trim();
 
   return normalized || fallback;
 };
 
-const normalizeMultiLine = (value, fallback) => {
-  const normalized = String(value ?? "")
+const normalizeMultiLine = (
+  value,
+  fallback
+) => {
+  const normalized = String(
+    value ?? ""
+  )
     .replace(/\r\n/g, "\n")
     .trim();
 
   return normalized || fallback;
 };
 
-const normalizeDisplayMode = (value) => {
-  const normalized = String(value ?? "")
+const normalizeSingleLineForPayload = (
+  value,
+  maxLength
+) => {
+  const normalized = String(
+    value ?? ""
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (
+    normalized.length > maxLength
+  ) {
+    throw new RangeError(
+      `El valor no puede superar los ${maxLength} caracteres.`
+    );
+  }
+
+  return normalized;
+};
+
+const normalizeMultiLineForPayload = (
+  value,
+  maxLength
+) => {
+  const normalized = String(
+    value ?? ""
+  )
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  if (
+    normalized.length > maxLength
+  ) {
+    throw new RangeError(
+      `El mensaje no puede superar los ${maxLength} caracteres.`
+    );
+  }
+
+  return normalized;
+};
+
+const normalizeDisplayMode = (
+  value
+) => {
+  const normalized = String(
+    value ?? ""
+  )
     .trim()
     .toLowerCase();
 
-  return DISPLAY_MODE_ALLOWED.has(normalized)
+  return DISPLAY_MODE_ALLOWED.has(
+    normalized
+  )
     ? normalized
     : DISPLAY_MODE_DEFAULT;
 };
 
-const normalizeAvisosConfig = (value = {}) => {
+const normalizeAvisosConfig = (
+  value = {}
+) => {
   const stageWidth = clamp(
     safeInt(
-      pickFirst(value?.stageWidth, value?.stage_width),
+      pickFirst(
+        value?.stageWidth,
+        value?.stage_width
+      ),
       DEFAULT_AVISOS_LAYOUT.stageWidth
     ),
     STAGE_WIDTH_MIN,
@@ -95,7 +199,10 @@ const normalizeAvisosConfig = (value = {}) => {
 
   const stageHeight = clamp(
     safeInt(
-      pickFirst(value?.stageHeight, value?.stage_height),
+      pickFirst(
+        value?.stageHeight,
+        value?.stage_height
+      ),
       DEFAULT_AVISOS_LAYOUT.stageHeight
     ),
     STAGE_HEIGHT_MIN,
@@ -104,28 +211,48 @@ const normalizeAvisosConfig = (value = {}) => {
 
   const mediaPaneWidth = clamp(
     safeInt(
-      pickFirst(value?.mediaPaneWidth, value?.media_pane_width),
+      pickFirst(
+        value?.mediaPaneWidth,
+        value?.media_pane_width
+      ),
       DEFAULT_AVISOS_LAYOUT.mediaPaneWidth
     ),
     MEDIA_PANE_WIDTH_MIN,
     getMediaPaneWidthMax(stageWidth)
   );
 
-  const displayMode = normalizeDisplayMode(
-    pickFirst(value?.displayMode, value?.display_mode)
-  );
+  const displayMode =
+    normalizeDisplayMode(
+      pickFirst(
+        value?.displayMode,
+        value?.display_mode
+      )
+    );
 
   return {
     eyebrow: normalizeSingleLine(
       value?.eyebrow,
       DEFAULT_AVISOS_CONTENT.eyebrow
     ),
-    title: normalizeSingleLine(value?.title, DEFAULT_AVISOS_CONTENT.title),
-    text: normalizeMultiLine(value?.text, DEFAULT_AVISOS_CONTENT.text),
+
+    title: normalizeSingleLine(
+      value?.title,
+      DEFAULT_AVISOS_CONTENT.title
+    ),
+
+    text: normalizeMultiLine(
+      value?.text,
+      DEFAULT_AVISOS_CONTENT.text
+    ),
+
     recentLabel: normalizeSingleLine(
-      pickFirst(value?.recentLabel, value?.recent_label),
+      pickFirst(
+        value?.recentLabel,
+        value?.recent_label
+      ),
       DEFAULT_AVISOS_CONTENT.recentLabel
     ),
+
     stageWidth,
     stageHeight,
     mediaPaneWidth,
@@ -133,102 +260,265 @@ const normalizeAvisosConfig = (value = {}) => {
   };
 };
 
-const setAvisosConfigCache = (value = {}) => {
-  avisosConfigCache = normalizeAvisosConfig(value);
-  return { ...avisosConfigCache };
+const setAvisosConfigCache = (
+  value = {}
+) => {
+  avisosConfigCache =
+    normalizeAvisosConfig(value);
+
+  return {
+    ...avisosConfigCache,
+  };
 };
 
-const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
+const hasOwn = (
+  object,
+  key
+) => {
+  return Object.prototype.hasOwnProperty.call(
+    object || {},
+    key
+  );
+};
 
-const buildConfigPatchPayload = (value = {}) => {
-  const input = value && typeof value === "object" ? value : {};
+const buildConfigPatchPayload = (
+  value = {}
+) => {
+  const input =
+    value &&
+    typeof value === "object"
+      ? value
+      : {};
 
-  const normalized = normalizeAvisosConfig({
-    ...avisosConfigCache,
-    ...input,
-  });
+  const normalized =
+    normalizeAvisosConfig({
+      ...avisosConfigCache,
+      ...input,
+    });
 
   const payload = {};
 
-  if (hasOwn(input, "eyebrow")) payload.eyebrow = normalized.eyebrow;
-  if (hasOwn(input, "title")) payload.title = normalized.title;
-  if (hasOwn(input, "text")) payload.text = normalized.text;
-
-  if (hasOwn(input, "recentLabel") || hasOwn(input, "recent_label")) {
-    payload.recentLabel = normalized.recentLabel;
+  if (
+    hasOwn(input, "eyebrow")
+  ) {
+    payload.eyebrow =
+      normalizeSingleLineForPayload(
+        input.eyebrow,
+        60
+      );
   }
 
-  if (hasOwn(input, "stageWidth") || hasOwn(input, "stage_width")) {
-    payload.stageWidth = normalized.stageWidth;
+  if (
+    hasOwn(input, "title")
+  ) {
+    payload.title =
+      normalizeSingleLineForPayload(
+        input.title,
+        220
+      );
   }
 
-  if (hasOwn(input, "stageHeight") || hasOwn(input, "stage_height")) {
-    payload.stageHeight = normalized.stageHeight;
+  if (
+    hasOwn(input, "text")
+  ) {
+    payload.text =
+      normalizeMultiLineForPayload(
+        input.text,
+        AVISOS_TEXT_MAX_LENGTH
+      );
   }
 
-  if (hasOwn(input, "mediaPaneWidth") || hasOwn(input, "media_pane_width")) {
-    payload.mediaPaneWidth = normalized.mediaPaneWidth;
+  if (
+    hasOwn(input, "recentLabel") ||
+    hasOwn(input, "recent_label")
+  ) {
+    payload.recentLabel =
+      normalizeSingleLineForPayload(
+        pickFirst(
+          input.recentLabel,
+          input.recent_label
+        ),
+        60
+      );
   }
 
-  if (hasOwn(input, "displayMode") || hasOwn(input, "display_mode")) {
-    payload.displayMode = normalized.displayMode;
+  if (
+    hasOwn(input, "stageWidth") ||
+    hasOwn(input, "stage_width")
+  ) {
+    payload.stageWidth =
+      normalized.stageWidth;
   }
 
-  if (!Object.keys(payload).length) {
-    payload.eyebrow = normalized.eyebrow;
-    payload.title = normalized.title;
-    payload.text = normalized.text;
-    payload.recentLabel = normalized.recentLabel;
-    payload.stageWidth = normalized.stageWidth;
-    payload.stageHeight = normalized.stageHeight;
-    payload.mediaPaneWidth = normalized.mediaPaneWidth;
-    payload.displayMode = normalized.displayMode;
+  if (
+    hasOwn(input, "stageHeight") ||
+    hasOwn(input, "stage_height")
+  ) {
+    payload.stageHeight =
+      normalized.stageHeight;
+  }
+
+  if (
+    hasOwn(input, "mediaPaneWidth") ||
+    hasOwn(input, "media_pane_width")
+  ) {
+    payload.mediaPaneWidth =
+      normalized.mediaPaneWidth;
+  }
+
+  if (
+    hasOwn(input, "displayMode") ||
+    hasOwn(input, "display_mode")
+  ) {
+    payload.displayMode =
+      normalized.displayMode;
+  }
+
+  if (
+    !Object.keys(payload).length
+  ) {
+    payload.eyebrow =
+      avisosConfigCache.eyebrow;
+
+    payload.title =
+      avisosConfigCache.title;
+
+    payload.text =
+      avisosConfigCache.text;
+
+    payload.recentLabel =
+      avisosConfigCache.recentLabel;
+
+    payload.stageWidth =
+      normalized.stageWidth;
+
+    payload.stageHeight =
+      normalized.stageHeight;
+
+    payload.mediaPaneWidth =
+      normalized.mediaPaneWidth;
+
+    payload.displayMode =
+      normalized.displayMode;
   }
 
   return payload;
 };
 
-const buildContentPatchPayload = (value = {}) => {
-  const normalized = normalizeAvisosConfig({
-    ...avisosConfigCache,
-    ...value,
-  });
+const buildContentPatchPayload = (
+  value = {}
+) => {
+  const input =
+    value &&
+    typeof value === "object"
+      ? value
+      : {};
 
   return {
-    eyebrow: normalized.eyebrow,
-    title: normalized.title,
-    text: normalized.text,
-    recentLabel: normalized.recentLabel,
+    eyebrow:
+      normalizeSingleLineForPayload(
+        pickFirst(
+          input.eyebrow,
+          avisosConfigCache.eyebrow
+        ),
+        60
+      ),
+
+    title:
+      normalizeSingleLineForPayload(
+        pickFirst(
+          input.title,
+          avisosConfigCache.title
+        ),
+        220
+      ),
+
+    text:
+      normalizeMultiLineForPayload(
+        pickFirst(
+          input.text,
+          avisosConfigCache.text
+        ),
+        AVISOS_TEXT_MAX_LENGTH
+      ),
+
+    recentLabel:
+      normalizeSingleLineForPayload(
+        pickFirst(
+          input.recentLabel,
+          input.recent_label,
+          avisosConfigCache.recentLabel
+        ),
+        60
+      ),
   };
 };
 
-const buildLayoutPatchPayload = (value = {}) => {
-  const normalized = normalizeAvisosConfig({
-    ...avisosConfigCache,
-    ...value,
-  });
+const buildLayoutPatchPayload = (
+  value = {}
+) => {
+  const normalized =
+    normalizeAvisosConfig({
+      ...avisosConfigCache,
+      ...value,
+    });
 
   return {
-    stageWidth: normalized.stageWidth,
-    stageHeight: normalized.stageHeight,
-    mediaPaneWidth: normalized.mediaPaneWidth,
-    displayMode: normalized.displayMode,
+    stageWidth:
+      normalized.stageWidth,
+
+    stageHeight:
+      normalized.stageHeight,
+
+    mediaPaneWidth:
+      normalized.mediaPaneWidth,
+
+    displayMode:
+      normalized.displayMode,
   };
 };
 
-const resolveUserKey = (user) => {
-  if (user?.id) return String(user.id);
-  if (user?.email) return String(user.email).toLowerCase();
+const resolveUserKey = (
+  user
+) => {
+  if (user?.id) {
+    return String(user.id);
+  }
+
+  if (user?.email) {
+    return String(
+      user.email
+    ).toLowerCase();
+  }
+
   return "anonymous";
 };
 
-const getSeenOnceKey = (user) => `${SEEN_ONCE_PREFIX}:${resolveUserKey(user)}`;
-const getSeenVersionKey = (user) =>
-  `${SEEN_VERSION_PREFIX}:${resolveUserKey(user)}`;
+const getSeenOnceKey = (
+  user
+) => {
+  return `${SEEN_ONCE_PREFIX}:${resolveUserKey(
+    user
+  )}`;
+};
 
-const normalizeStatus = (data) => {
+const getSeenVersionKey = (
+  user
+) => {
+  return `${SEEN_VERSION_PREFIX}:${resolveUserKey(
+    user
+  )}`;
+};
+
+const normalizeStatus = (
+  data
+) => {
   const generalVersion = String(
-    pickFirst(data?.version, data?.general_version, "") || ""
+    pickFirst(
+      data?.version,
+      data?.general_version,
+      ""
+    ) || ""
   );
 
   const notifyVersion = String(
@@ -243,18 +533,38 @@ const normalizeStatus = (data) => {
   );
 
   return {
-    hasItems: Boolean(pickFirst(data?.has_items, data?.hasItems, false)),
-    total: Number(pickFirst(data?.total, 0) || 0),
+    hasItems: Boolean(
+      pickFirst(
+        data?.has_items,
+        data?.hasItems,
+        false
+      )
+    ),
 
-    // Versión general. Puede cambiar por layout/diseño.
+    total: Number(
+      pickFirst(
+        data?.total,
+        0
+      ) || 0
+    ),
+
+    // Puede cambiar por contenido, imágenes o diseño.
     version: generalVersion,
 
-    // Versión notificable. Solo debe cambiar por imagen o texto de aviso.
+    // Solo debe cambiar cuando hay novedades notificables.
     notifyVersion,
   };
 };
 
-const is503 = (error) => Number(error?.response?.status) === 503;
+const is503 = (
+  error
+) => {
+  return (
+    Number(
+      error?.response?.status
+    ) === 503
+  );
+};
 
 const getNoCacheConfig = () => {
   return {
@@ -264,117 +574,266 @@ const getNoCacheConfig = () => {
   };
 };
 
-export const getAvisosCombinedVersion = (baseVersion = "") => {
-  return String(baseVersion || "");
+export const getAvisosCombinedVersion = (
+  value = ""
+) => {
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    return String(
+      value.notifyVersion ||
+      value.version ||
+      ""
+    );
+  }
+
+  return String(
+    value || ""
+  );
 };
 
-export const isAdminUser = (user) => sharedIsAdminUser(user);
+export const isAdminUser = (
+  user
+) => {
+  return sharedIsAdminUser(user);
+};
 
 export const getAvisosContent = () => {
   return {
-    eyebrow: avisosConfigCache.eyebrow,
-    title: avisosConfigCache.title,
-    text: avisosConfigCache.text,
-    recentLabel: avisosConfigCache.recentLabel,
+    eyebrow:
+      avisosConfigCache.eyebrow,
+
+    title:
+      avisosConfigCache.title,
+
+    text:
+      avisosConfigCache.text,
+
+    recentLabel:
+      avisosConfigCache.recentLabel,
   };
 };
 
 export const getAvisosLayout = () => {
   return {
-    stageWidth: avisosConfigCache.stageWidth,
-    stageHeight: avisosConfigCache.stageHeight,
-    mediaPaneWidth: avisosConfigCache.mediaPaneWidth,
-    displayMode: avisosConfigCache.displayMode,
+    stageWidth:
+      avisosConfigCache.stageWidth,
+
+    stageHeight:
+      avisosConfigCache.stageHeight,
+
+    mediaPaneWidth:
+      avisosConfigCache.mediaPaneWidth,
+
+    displayMode:
+      avisosConfigCache.displayMode,
   };
 };
 
 export const getAvisosConfigCached = () => {
-  return { ...avisosConfigCache };
+  return {
+    ...avisosConfigCache,
+  };
 };
 
-export const hydrateAvisosConfig = async () => {
-  try {
-    const { data } = await api.get("banners/config/", getNoCacheConfig());
-    return setAvisosConfigCache(data);
-  } catch (error) {
-    if (is503(error)) {
-      return setAvisosConfigCache({
-        ...DEFAULT_AVISOS_CONTENT,
-        ...DEFAULT_AVISOS_LAYOUT,
-      });
+export const hydrateAvisosConfig =
+  async () => {
+    try {
+      const {
+        data,
+      } = await api.get(
+        "banners/config/",
+        getNoCacheConfig()
+      );
+
+      return setAvisosConfigCache(
+        data
+      );
+    } catch (error) {
+      if (
+        is503(error)
+      ) {
+        return setAvisosConfigCache({
+          ...DEFAULT_AVISOS_CONTENT,
+          ...DEFAULT_AVISOS_LAYOUT,
+        });
+      }
+
+      throw error;
+    }
+  };
+
+export const saveAvisosConfig =
+  async (
+    value = {}
+  ) => {
+    const payload =
+      buildConfigPatchPayload(
+        value
+      );
+
+    const {
+      data,
+    } = await api.patch(
+      "banners/config/",
+      payload
+    );
+
+    return setAvisosConfigCache(
+      data
+    );
+  };
+
+export const saveAvisosContent =
+  async (
+    value = {}
+  ) => {
+    const payload =
+      buildContentPatchPayload(
+        value
+      );
+
+    const {
+      data,
+    } = await api.patch(
+      "banners/config/",
+      payload
+    );
+
+    return setAvisosConfigCache(
+      data
+    );
+  };
+
+export const saveAvisosLayout =
+  async (
+    value = {}
+  ) => {
+    const payload =
+      buildLayoutPatchPayload(
+        value
+      );
+
+    const {
+      data,
+    } = await api.patch(
+      "banners/config/",
+      payload
+    );
+
+    return setAvisosConfigCache(
+      data
+    );
+  };
+
+export const resetAvisosContent =
+  async () => {
+    return saveAvisosContent(
+      DEFAULT_AVISOS_CONTENT
+    );
+  };
+
+export const resetAvisosLayout =
+  async () => {
+    return saveAvisosLayout(
+      DEFAULT_AVISOS_LAYOUT
+    );
+  };
+
+export const getAvisosStatus =
+  async () => {
+    const {
+      data,
+    } = await api.get(
+      "banners/status/",
+      getNoCacheConfig()
+    );
+
+    return normalizeStatus(
+      data
+    );
+  };
+
+export const shouldOpenAvisos =
+  async (
+    user,
+    providedStatus = null
+  ) => {
+    const avisosStatus =
+      providedStatus ||
+      await getAvisosStatus();
+
+    if (
+      !avisosStatus.hasItems
+    ) {
+      return false;
     }
 
-    throw error;
-  }
-};
+    const seenOnce =
+      localStorage.getItem(
+        getSeenOnceKey(user)
+      ) === "1";
 
-export const saveAvisosConfig = async (value = {}) => {
-  const payload = buildConfigPatchPayload(value);
-  const { data } = await api.patch("banners/config/", payload);
-  return setAvisosConfigCache(data);
-};
+    const seenVersion =
+      localStorage.getItem(
+        getSeenVersionKey(user)
+      ) || "";
 
-export const saveAvisosContent = async (value = {}) => {
-  const payload = buildContentPatchPayload(value);
-  const { data } = await api.patch("banners/config/", payload);
-  return setAvisosConfigCache(data);
-};
+    const currentNotifyVersion =
+      getAvisosCombinedVersion(
+        avisosStatus
+      );
 
-export const saveAvisosLayout = async (value = {}) => {
-  const payload = buildLayoutPatchPayload(value);
-  const { data } = await api.patch("banners/config/", payload);
-  return setAvisosConfigCache(data);
-};
+    if (
+      !seenOnce
+    ) {
+      return true;
+    }
 
-export const resetAvisosContent = async () => {
-  return saveAvisosContent(DEFAULT_AVISOS_CONTENT);
-};
+    if (
+      currentNotifyVersion &&
+      seenVersion !==
+        currentNotifyVersion
+    ) {
+      return true;
+    }
 
-export const resetAvisosLayout = async () => {
-  return saveAvisosLayout(DEFAULT_AVISOS_LAYOUT);
-};
-
-export const getAvisosStatus = async () => {
-  const { data } = await api.get("banners/status/", getNoCacheConfig());
-  return normalizeStatus(data);
-};
-
-export const shouldOpenAvisos = async (user, providedStatus = null) => {
-  const status = providedStatus || (await getAvisosStatus());
-
-  if (!status.hasItems) {
     return false;
-  }
+  };
 
-  const seenOnce = localStorage.getItem(getSeenOnceKey(user)) === "1";
-  const seenVersion = localStorage.getItem(getSeenVersionKey(user)) || "";
-  const currentNotifyVersion = status.notifyVersion || status.version || "";
-
-  if (!seenOnce) {
-    return true;
-  }
-
-  if (currentNotifyVersion && seenVersion !== currentNotifyVersion) {
-    return true;
-  }
-
-  return false;
-};
-
-export const markAvisosAsSeen = (user, versionOrStatus = "") => {
-  localStorage.setItem(getSeenOnceKey(user), "1");
+export const markAvisosAsSeen = (
+  user,
+  versionOrStatus = ""
+) => {
+  localStorage.setItem(
+    getSeenOnceKey(user),
+    "1"
+  );
 
   const version =
-    typeof versionOrStatus === "object"
-      ? versionOrStatus?.notifyVersion || versionOrStatus?.version || ""
-      : versionOrStatus;
+    getAvisosCombinedVersion(
+      versionOrStatus
+    );
 
-  if (version) {
-    localStorage.setItem(getSeenVersionKey(user), String(version));
+  if (
+    version
+  ) {
+    localStorage.setItem(
+      getSeenVersionKey(user),
+      String(version)
+    );
   }
 };
 
-export const clearAvisosSeenState = (user) => {
-  localStorage.removeItem(getSeenOnceKey(user));
-  localStorage.removeItem(getSeenVersionKey(user));
+export const clearAvisosSeenState = (
+  user
+) => {
+  localStorage.removeItem(
+    getSeenOnceKey(user)
+  );
+
+  localStorage.removeItem(
+    getSeenVersionKey(user)
+  );
 };

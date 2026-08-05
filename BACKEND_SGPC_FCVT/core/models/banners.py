@@ -1,7 +1,11 @@
+import logging
 import os
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_BANNER_EYEBROW = "SGPC ULEAM"
@@ -11,6 +15,8 @@ DEFAULT_BANNER_TEXT = (
     "Revise la información antes de continuar."
 )
 DEFAULT_BANNER_RECENT_LABEL = "Actualización reciente"
+
+BANNER_TEXT_MAX_LENGTH = 700
 
 STAGE_WIDTH_DEFAULT = 1260
 STAGE_WIDTH_MIN = 900
@@ -86,25 +92,66 @@ def _norm_display_mode(value):
     return DISPLAY_MODE_DEFAULT
 
 
-def _delete_storage_file(field_file):
-    if not field_file:
-        return
-
-    name = getattr(field_file, "name", None)
-    storage = getattr(field_file, "storage", None)
-
-    if not name or storage is None:
+def _delete_storage_file(storage, name):
+    """
+    Elimina un archivo físico después de confirmar la
+    transacción de base de datos.
+    """
+    if storage is None or not name:
         return
 
     try:
         if storage.exists(name):
             storage.delete(name)
-    except (OSError, ValueError):
+
+    except (
+        OSError,
+        ValueError,
+        NotImplementedError,
+    ):
+        logger.exception(
+            "No fue posible eliminar el archivo de banner %s.",
+            name,
+        )
+
+
+def _schedule_storage_file_delete(field_file):
+    """
+    Programa la eliminación para ejecutarse únicamente cuando
+    la transacción actual se confirme correctamente.
+    """
+    if not field_file:
         return
+
+    name = getattr(
+        field_file,
+        "name",
+        None,
+    )
+
+    storage = getattr(
+        field_file,
+        "storage",
+        None,
+    )
+
+    if not name or storage is None:
+        return
+
+    transaction.on_commit(
+        lambda storage=storage, name=name: (
+            _delete_storage_file(
+                storage,
+                name,
+            )
+        )
+    )
 
 
 def banner_upload_to(instance, filename):
-    filename = filename or "banner.jpg"
+    filename = os.path.basename(
+        filename or "banner.jpg"
+    )
     base, extension = os.path.splitext(filename)
 
     extension = extension.lower()
@@ -187,6 +234,12 @@ class Banner(models.Model):
         self.recent_label = _norm_optional_text(
             self.recent_label
         ) or ""
+
+        if len(self.text) > BANNER_TEXT_MAX_LENGTH:
+            errors["text"] = (
+                "El mensaje del banner no puede superar "
+                f"los {BANNER_TEXT_MAX_LENGTH} caracteres."
+            )
 
         if not self.image:
             errors["image"] = (
@@ -291,7 +344,9 @@ class Banner(models.Model):
         )
 
         if old_name and old_name != new_name:
-            _delete_storage_file(old_image)
+            _schedule_storage_file_delete(
+                old_image
+            )
 
         return result
 
@@ -303,7 +358,9 @@ class Banner(models.Model):
             **kwargs,
         )
 
-        _delete_storage_file(image_to_delete)
+        _schedule_storage_file_delete(
+            image_to_delete
+        )
 
         return result
 
@@ -409,6 +466,13 @@ class BannerConfiguracion(models.Model):
             )
             or DEFAULT_BANNER_RECENT_LABEL
         )
+
+        if len(self.text) > BANNER_TEXT_MAX_LENGTH:
+            errors["text"] = (
+                "El mensaje global no puede superar "
+                f"los {BANNER_TEXT_MAX_LENGTH} caracteres."
+            )
+
         self.display_mode = _norm_display_mode(
             self.display_mode
         )

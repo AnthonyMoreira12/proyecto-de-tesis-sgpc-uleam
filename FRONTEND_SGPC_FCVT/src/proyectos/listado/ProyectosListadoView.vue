@@ -307,6 +307,16 @@
                   <span v-else class="pr-muted-text">
                     Sin profesores
                   </span>
+
+                  <span
+                    v-if="
+                      autoresResumen(p).length &&
+                      !tieneInvestigadorPrincipal(p)
+                    "
+                    class="pr-muted-text"
+                  >
+                    Sin investigador principal
+                  </span>
                 </td>
 
                 <td>
@@ -384,7 +394,12 @@
                       class="pr-btn-mini"
                       type="button"
                       :class="estadoActionClass(p.estado)"
-                      :disabled="processingProjectId === p.id || savingExtension"
+                      :disabled="
+                        processingProjectId === p.id ||
+                        savingExtension ||
+                        !puedeCambiarEstado(p)
+                      "
+                      :title="tituloAccionEstado(p)"
                       @click="cambiarEstado(p)"
                     >
                       {{
@@ -475,6 +490,7 @@
               id="extension-fecha"
               v-model="extensionFecha"
               type="date"
+              :min="extensionFechaMin || undefined"
               :disabled="savingExtension"
             />
           </label>
@@ -514,797 +530,2092 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import api from "../../scripts/api/axios";
-import { useUserStore } from "../../scripts/stores/userStore";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+
+import {
+  useRoute,
+  useRouter,
+} from "vue-router";
+
+import {
+  cambiarEstadoProyecto,
+  consultarAniosProyectos,
+  extenderFechaProyecto,
+  getProyectoApiErrorMessage,
+  listarProyectos,
+} from "../../scripts/api/proyectosApi";
+
+import {
+  useUserStore,
+} from "../../scripts/stores/userStore";
+
 
 /* ============================================================
-  ENLACES BASE
+   ENLACES BASE
 ============================================================ */
-const route = useRoute();
-const router = useRouter();
-const userStore = useUserStore();
+
+const route =
+  useRoute();
+
+const router =
+  useRouter();
+
+const userStore =
+  useUserStore();
+
 
 /* ============================================================
-  CONFIGURACIÓN
+   CONFIGURACIÓN
 ============================================================ */
+
 const PAGE_SIZE = 20;
+const MIN_PROJECT_YEAR = 1900;
+const MAX_PROJECT_FUTURE_YEARS = 50;
+
 
 /* ============================================================
-  SESIÓN / PERMISOS
+   SESIÓN Y PERMISOS
 ============================================================ */
-const esAdmin = computed(() => userStore.isAdmin);
+
+const esAdmin =
+  computed(
+    () => Boolean(
+      userStore.isAdmin
+    )
+  );
+
 
 /* ============================================================
-  MENSAJES DINÁMICOS SEGÚN ROL
+   MENSAJES SEGÚN ROL
 ============================================================ */
-const mensajesVista = computed(() =>
-  esAdmin.value
-    ? {
-        heroAriaLabel: "Gestión de proyectos institucionales",
-        eyebrow: "Gestión académica",
-        titulo: "Proyectos institucionales",
-        subtitulo:
-          "Revise, registre y actualice proyectos institucionales con profesores vinculados, periodo, estado y documento PDF.",
-        toolbarAriaLabel: "Filtros y acciones",
-        busquedaAriaLabel: "Buscar proyecto",
-        cardTitulo: "Listado de proyectos",
-        tablaAriaLabel: "Tabla de proyectos institucionales",
-        loading: "Cargando proyectos...",
-        empty: "No se encontraron proyectos con los filtros actuales.",
-        placeholderBusqueda: "Buscar por proyecto, profesor, carrera o facultad",
-      }
-    : {
-        heroAriaLabel: "Consulta de proyectos institucionales",
-        eyebrow: "Consulta académica",
-        titulo: "Consulta de proyectos institucionales",
-        subtitulo:
-          "Revise los proyectos institucionales activos, sus profesores vinculados y su información principal.",
-        toolbarAriaLabel: "Filtros de consulta",
-        busquedaAriaLabel: "Buscar proyecto",
-        cardTitulo: "Proyectos registrados",
-        tablaAriaLabel: "Tabla de consulta de proyectos",
-        loading: "Cargando proyectos...",
-        empty: "No se encontraron proyectos con los filtros actuales.",
-        placeholderBusqueda: "Buscar por proyecto, profesor, carrera o facultad",
-      }
-);
+
+const mensajesVista =
+  computed(
+    () => (
+      esAdmin.value
+        ? {
+            heroAriaLabel:
+              "Gestión de proyectos institucionales",
+
+            eyebrow:
+              "Gestión académica",
+
+            titulo:
+              "Proyectos institucionales",
+
+            subtitulo:
+              (
+                "Revise, registre y actualice proyectos "
+                + "institucionales con profesores vinculados, "
+                + "periodo, estado y documento PDF."
+              ),
+
+            toolbarAriaLabel:
+              "Filtros y acciones",
+
+            busquedaAriaLabel:
+              "Buscar proyecto",
+
+            cardTitulo:
+              "Listado de proyectos",
+
+            tablaAriaLabel:
+              "Tabla de proyectos institucionales",
+
+            loading:
+              "Cargando proyectos...",
+
+            empty:
+              (
+                "No se encontraron proyectos con los "
+                + "filtros actuales."
+              ),
+
+            placeholderBusqueda:
+              (
+                "Buscar por proyecto, profesor, "
+                + "carrera o facultad"
+              ),
+          }
+        : {
+            heroAriaLabel:
+              "Consulta de proyectos institucionales",
+
+            eyebrow:
+              "Consulta académica",
+
+            titulo:
+              "Consulta de proyectos institucionales",
+
+            subtitulo:
+              (
+                "Revise los proyectos institucionales activos, "
+                + "sus profesores vinculados y su información "
+                + "principal."
+              ),
+
+            toolbarAriaLabel:
+              "Filtros de consulta",
+
+            busquedaAriaLabel:
+              "Buscar proyecto",
+
+            cardTitulo:
+              "Proyectos registrados",
+
+            tablaAriaLabel:
+              "Tabla de consulta de proyectos",
+
+            loading:
+              "Cargando proyectos...",
+
+            empty:
+              (
+                "No se encontraron proyectos con los "
+                + "filtros actuales."
+              ),
+
+            placeholderBusqueda:
+              (
+                "Buscar por proyecto, profesor, "
+                + "carrera o facultad"
+              ),
+          }
+    )
+  );
+
 
 /* ============================================================
-  ESTADO PRINCIPAL
+   ESTADO PRINCIPAL
 ============================================================ */
-const proyectos = ref([]);
-const loadingProyectos = ref(false);
-const errorProyectos = ref("");
+
+const proyectos =
+  ref([]);
+
+const loadingProyectos =
+  ref(false);
+
+const errorProyectos =
+  ref("");
+
 
 /* ============================================================
-  FILTROS
+   FILTROS
 ============================================================ */
-const searchQuery = ref("");
-const debouncedSearch = ref("");
-const filtroAnio = ref("");
-const filtroEstado = ref("");
-const listaAnios = ref([]);
-const loadingAnios = ref(false);
+
+const searchQuery =
+  ref("");
+
+const debouncedSearch =
+  ref("");
+
+const filtroAnio =
+  ref("");
+
+const filtroEstado =
+  ref("");
+
+const listaAnios =
+  ref([]);
+
+const loadingAnios =
+  ref(false);
+
 
 /* ============================================================
-  PAGINACIÓN
+   PAGINACIÓN
 ============================================================ */
-const totalRegistros = ref(0);
-const paginaActual = ref(1);
+
+const totalRegistros =
+  ref(0);
+
+const paginaActual =
+  ref(1);
+
 
 /* ============================================================
-  MODAL EXTENSIÓN
+   MODAL DE EXTENSIÓN
 ============================================================ */
-const extensionModalAbierto = ref(false);
-const proyectoExtension = ref(null);
-const extensionFecha = ref("");
-const extensionError = ref("");
-const savingExtension = ref(false);
+
+const extensionModalAbierto =
+  ref(false);
+
+const proyectoExtension =
+  ref(null);
+
+const extensionFecha =
+  ref("");
+
+const extensionError =
+  ref("");
+
+const savingExtension =
+  ref(false);
+
 
 /* ============================================================
-  FEEDBACK / OPERACIONES
+   FEEDBACK Y OPERACIONES
 ============================================================ */
-const feedbackMessage = ref("");
-const feedbackType = ref("info");
-const processingProjectId = ref(null);
+
+const feedbackMessage =
+  ref("");
+
+const feedbackType =
+  ref("info");
+
+const processingProjectId =
+  ref(null);
+
 
 /* ============================================================
-  DROPDOWNS
+   DROPDOWNS
 ============================================================ */
-const dropdownAnioAbierto = ref(false);
-const dropdownEstadoAbierto = ref(false);
-const dropdownAnioRef = ref(null);
-const dropdownEstadoRef = ref(null);
+
+const dropdownAnioAbierto =
+  ref(false);
+
+const dropdownEstadoAbierto =
+  ref(false);
+
+const dropdownAnioRef =
+  ref(null);
+
+const dropdownEstadoRef =
+  ref(null);
+
 
 /* ============================================================
-  CONTROL INTERNO
+   CONTROL INTERNO
 ============================================================ */
+
 let searchTimer = null;
 let feedbackTimer = null;
 let abortController = null;
+let yearsAbortController = null;
 let suspendFilterWatchers = false;
 
+
 /* ============================================================
-  OPCIONES
+   OPCIONES
 ============================================================ */
+
 const estadoOptions = [
-  { value: "nuevo", label: "Nuevo" },
-  { value: "arrastre", label: "Arrastre" },
-  { value: "cierre", label: "Cierre" },
+  {
+    value: "nuevo",
+    label: "Nuevo",
+  },
+  {
+    value: "arrastre",
+    label: "Arrastre",
+  },
+  {
+    value: "cierre",
+    label: "Cierre",
+  },
 ];
 
+
 /* ============================================================
-  HELPERS GENERALES
+   HELPERS GENERALES
 ============================================================ */
-function setFeedback(message = "", type = "info") {
-  feedbackMessage.value = message;
-  feedbackType.value = type;
 
-  clearTimeout(feedbackTimer);
+function setFeedback(
+  message = "",
+  type = "info"
+) {
+  feedbackMessage.value =
+    message;
 
-  if (message) {
-    feedbackTimer = setTimeout(() => {
-      feedbackMessage.value = "";
-    }, 3200);
+  feedbackType.value =
+    type;
+
+  clearTimeout(
+    feedbackTimer
+  );
+
+  if (
+    message
+  ) {
+    feedbackTimer =
+      setTimeout(
+        () => {
+          feedbackMessage.value =
+            "";
+        },
+        4200
+      );
   }
 }
 
-function sanitizeQuery(value) {
-  return String(value || "").trim();
+
+function sanitizeQuery(
+  value
+) {
+  return String(
+    value || ""
+  ).trim();
 }
 
-function normalizeEstado(value) {
-  return String(value || "nuevo").trim().toLowerCase();
+
+function normalizeEstado(
+  value
+) {
+  return String(
+    value || "nuevo"
+  )
+    .trim()
+    .toLowerCase();
 }
 
-function normalizeDate(value) {
-  if (!value) return "";
-  return String(value).slice(0, 10);
-}
 
-function formatFecha(value) {
-  const normalized = normalizeDate(value);
-  if (!normalized) return "—";
-
-  const date = new Date(`${normalized}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return normalized;
-
-  return new Intl.DateTimeFormat("es-EC", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  }).format(date);
-}
-
-function truncateText(value, max = 96) {
-  const text = String(value || "").trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, max).trim()}…`;
-}
-
-function prettyError(val) {
-  if (val == null) return "";
-  if (typeof val === "string") return val;
-  if (Array.isArray(val)) return val.map(prettyError).join(", ");
-
-  if (typeof val === "object") {
-    return Object.entries(val)
-      .map(([key, value]) => `${key}: ${prettyError(value)}`)
-      .join(" | ");
+function normalizeDate(
+  value
+) {
+  if (
+    !value
+  ) {
+    return "";
   }
 
-  return String(val);
+  return String(
+    value
+  ).slice(
+    0,
+    10
+  );
 }
 
-function extractProjectPayload(payload) {
-  if (!payload) return null;
-  if (payload?.id) return payload;
-  if (payload?.proyecto?.id) return payload.proyecto;
-  if (payload?.data?.id) return payload.data;
+
+function addDaysToDate(
+  value,
+  days
+) {
+  const normalized =
+    normalizeDate(
+      value
+    );
+
+  if (
+    !normalized
+  ) {
+    return "";
+  }
+
+  const date =
+    new Date(
+      `${normalized}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  date.setDate(
+    date.getDate()
+    + Number(
+      days || 0
+    )
+  );
+
+  return date
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+}
+
+
+function formatFecha(
+  value
+) {
+  const normalized =
+    normalizeDate(
+      value
+    );
+
+  if (
+    !normalized
+  ) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      `${normalized}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return normalized;
+  }
+
+  return new Intl.DateTimeFormat(
+    "es-EC",
+    {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }
+  ).format(
+    date
+  );
+}
+
+
+function truncateText(
+  value,
+  max = 96
+) {
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+  if (
+    text.length <= max
+  ) {
+    return text;
+  }
+
+  return (
+    `${text.slice(
+      0,
+      max
+    ).trim()}…`
+  );
+}
+
+
+function extractProjectPayload(
+  payload
+) {
+  if (
+    !payload
+  ) {
+    return null;
+  }
+
+  if (
+    payload?.id
+  ) {
+    return payload;
+  }
+
+  if (
+    payload?.proyecto?.id
+  ) {
+    return payload.proyecto;
+  }
+
+  if (
+    payload?.data?.id
+  ) {
+    return payload.data;
+  }
+
   return null;
 }
 
-function updateProjectInCurrentPage(project) {
-  if (!project?.id) return false;
 
-  const index = proyectos.value.findIndex((item) => item.id === project.id);
-  if (index === -1) return false;
+function updateProjectInCurrentPage(
+  project
+) {
+  if (
+    !project?.id
+  ) {
+    return false;
+  }
 
-  proyectos.value[index] = {
-    ...proyectos.value[index],
+  const index =
+    proyectos.value.findIndex(
+      (item) => (
+        item.id
+        === project.id
+      )
+    );
+
+  if (
+    index === -1
+  ) {
+    return false;
+  }
+
+  proyectos.value[
+    index
+  ] = {
+    ...proyectos.value[
+      index
+    ],
     ...project,
   };
 
   return true;
 }
 
+
 function buildFallbackYears() {
-  const currentYear = new Date().getFullYear();
-  const minYear = 2000;
+  const currentYear =
+    new Date().getFullYear();
+
+  const maximumYear = (
+    currentYear
+    + MAX_PROJECT_FUTURE_YEARS
+  );
+
   const years = [];
 
-  for (let year = currentYear + 1; year >= minYear; year -= 1) {
-    years.push(year);
+  for (
+    let year = maximumYear;
+    year >= MIN_PROJECT_YEAR;
+    year -= 1
+  ) {
+    years.push(
+      year
+    );
   }
 
   return years;
 }
 
-function normalizeYears(payload) {
-  const source = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.results)
-      ? payload.results
-      : [];
+
+function normalizeYears(
+  payload
+) {
+  const source = (
+    Array.isArray(
+      payload
+    )
+      ? payload
+      : (
+        Array.isArray(
+          payload?.results
+        )
+          ? payload.results
+          : []
+      )
+  );
+
+  const maximumYear = (
+    new Date().getFullYear()
+    + MAX_PROJECT_FUTURE_YEARS
+  );
 
   return [
     ...new Set(
       source
-        .map((item) => Number(item))
-        .filter((item) => Number.isInteger(item) && item > 1900)
+        .map(
+          (item) => Number(
+            item
+          )
+        )
+        .filter(
+          (item) => (
+            Number.isInteger(
+              item
+            )
+            && item
+            >= MIN_PROJECT_YEAR
+            && item
+            <= maximumYear
+          )
+        )
     ),
-  ].sort((a, b) => b - a);
+  ].sort(
+    (
+      first,
+      second
+    ) => (
+      second
+      - first
+    )
+  );
 }
 
-function labelEstadoProyecto(estado) {
-  const normalized = normalizeEstado(estado);
-  const option = estadoOptions.find((item) => item.value === normalized);
-  return option?.label || "Nuevo";
+
+function labelEstadoProyecto(
+  estado
+) {
+  const normalized =
+    normalizeEstado(
+      estado
+    );
+
+  const option =
+    estadoOptions.find(
+      (item) => (
+        item.value
+        === normalized
+      )
+    );
+
+  return (
+    option?.label
+    || "Nuevo"
+  );
 }
 
-function estadoBadgeClass(estado) {
-  const normalized = normalizeEstado(estado);
+
+function estadoBadgeClass(
+  estado
+) {
+  const normalized =
+    normalizeEstado(
+      estado
+    );
 
   return {
-    "pr-badge-new": normalized === "nuevo",
-    "pr-badge-progress": normalized === "arrastre",
-    "pr-badge-closed": normalized === "cierre",
+    "pr-badge-new":
+      normalized === "nuevo",
+
+    "pr-badge-progress":
+      normalized === "arrastre",
+
+    "pr-badge-closed":
+      normalized === "cierre",
   };
 }
 
-function estadoActionClass(estado) {
-  const normalized = normalizeEstado(estado);
+
+function estadoActionClass(
+  estado
+) {
+  const normalized =
+    normalizeEstado(
+      estado
+    );
 
   return {
-    success: normalized === "nuevo" || normalized === "cierre",
-    danger: normalized === "arrastre",
+    success: (
+      normalized === "nuevo"
+      || normalized === "cierre"
+    ),
+
+    danger:
+      normalized === "arrastre",
   };
 }
 
-function textoAccionEstado(estado) {
-  const normalized = normalizeEstado(estado);
 
-  if (normalized === "nuevo") return "Pasar a arrastre";
-  if (normalized === "arrastre") return "Cerrar";
-  if (normalized === "cierre") return "Reabrir";
+function textoAccionEstado(
+  estado
+) {
+  const normalized =
+    normalizeEstado(
+      estado
+    );
+
+  if (
+    normalized === "nuevo"
+  ) {
+    return "Pasar a arrastre";
+  }
+
+  if (
+    normalized === "arrastre"
+  ) {
+    return "Cerrar";
+  }
+
+  if (
+    normalized === "cierre"
+  ) {
+    return "Reabrir";
+  }
 
   return "Cambiar estado";
 }
 
-function periodoProyecto(proyecto) {
-  const inicio = proyecto?.anio_inicio;
-  const fin = proyecto?.anio_fin;
 
-  if (inicio && fin) return `${inicio} - ${fin}`;
-  if (inicio) return `Desde ${inicio}`;
-  if (fin) return `Hasta ${fin}`;
+function periodoProyecto(
+  proyecto
+) {
+  const inicio =
+    proyecto?.anio_inicio;
+
+  const fin =
+    proyecto?.anio_fin;
+
+  if (
+    inicio
+    && fin
+  ) {
+    return `${inicio} - ${fin}`;
+  }
+
+  if (
+    inicio
+  ) {
+    return `Desde ${inicio}`;
+  }
+
+  if (
+    fin
+  ) {
+    return `Hasta ${fin}`;
+  }
 
   return "—";
 }
 
-function fechaFinalProyecto(proyecto) {
+
+function fechaFinalProyecto(
+  proyecto
+) {
   return formatFecha(
-    proyecto?.fecha_fin_vigente ||
-      proyecto?.fecha_fin_prorrogada ||
-      proyecto?.fecha_fin_planificada ||
-      proyecto?.fecha_cierre
+    proyecto?.fecha_fin_vigente
+    || proyecto?.fecha_fin_prorrogada
+    || proyecto?.fecha_cierre
+    || proyecto?.fecha_fin_planificada
   );
 }
 
-function autoresResumen(proyecto) {
-  const source = Array.isArray(proyecto?.autores_resumen)
-    ? proyecto.autores_resumen
-    : Array.isArray(proyecto?.autores)
-      ? proyecto.autores
-      : [];
+
+function autoresResumen(
+  proyecto
+) {
+  const source = (
+    Array.isArray(
+      proyecto?.autores_resumen
+    )
+      ? proyecto.autores_resumen
+      : (
+        Array.isArray(
+          proyecto?.autores
+        )
+          ? proyecto.autores
+          : []
+      )
+  );
 
   return source
-    .map((item) => {
-      const id = item.id || item.autor_id || item.autor;
-      const nombre =
-        item.nombre ||
-        item.nombre_completo ||
-        `${item.nombres || ""} ${item.apellidos || ""}`.trim();
+    .map(
+      (item) => {
+        const id = (
+          item.id
+          || item.autor_id
+          || item.autor
+        );
 
-      return {
-        id,
-        nombre: nombre || `Autor #${id}`,
-        rol: item.rol,
-        rol_label: item.rol_label,
-        orden: item.orden,
-      };
-    })
-    .filter((item) => item.id);
+        const nombre = (
+          item.nombre
+          || item.nombre_completo
+          || (
+            `${item.nombres || ""} `
+            + `${item.apellidos || ""}`
+          ).trim()
+        );
+
+        return {
+          id,
+
+          nombre: (
+            nombre
+            || `Autor #${id}`
+          ),
+
+          rol:
+            item.rol,
+
+          rol_label:
+            item.rol_label,
+
+          orden:
+            item.orden,
+        };
+      }
+    )
+    .filter(
+      (item) => Boolean(
+        item.id
+      )
+    )
+    .sort(
+      (
+        first,
+        second
+      ) => (
+        Number(
+          first.orden || 0
+        )
+        - Number(
+          second.orden || 0
+        )
+      )
+    );
 }
 
-function puedeExtenderProyecto(proyecto) {
-  const estado = normalizeEstado(proyecto?.estado);
-  return estado !== "cierre";
+
+function tieneInvestigadorPrincipal(
+  proyecto
+) {
+  if (
+    typeof proyecto
+      ?.tiene_investigador_principal
+    === "boolean"
+  ) {
+    return proyecto
+      .tiene_investigador_principal;
+  }
+
+  return autoresResumen(
+    proyecto
+  ).some(
+    (autor) => (
+      String(
+        autor.rol || ""
+      ).toLowerCase()
+      === "principal"
+      && Number(
+        autor.orden || 0
+      ) === 1
+    )
+  );
 }
+
+
+function puedeExtenderProyecto(
+  proyecto
+) {
+  return (
+    normalizeEstado(
+      proyecto?.estado
+    )
+    !== "cierre"
+  );
+}
+
+
+function puedeCambiarEstado(
+  proyecto
+) {
+  const estado =
+    normalizeEstado(
+      proyecto?.estado
+    );
+
+  if (
+    estado === "arrastre"
+  ) {
+    return tieneInvestigadorPrincipal(
+      proyecto
+    );
+  }
+
+  return [
+    "nuevo",
+    "cierre",
+  ].includes(
+    estado
+  );
+}
+
+
+function tituloAccionEstado(
+  proyecto
+) {
+  const estado =
+    normalizeEstado(
+      proyecto?.estado
+    );
+
+  if (
+    estado === "arrastre"
+    && !tieneInvestigadorPrincipal(
+      proyecto
+    )
+  ) {
+    return (
+      "No se puede cerrar el proyecto porque no tiene "
+      + "un investigador principal en el orden 1."
+    );
+  }
+
+  return textoAccionEstado(
+    estado
+  );
+}
+
+
+function fechaReferenciaExtension(
+  proyecto
+) {
+  return normalizeDate(
+    proyecto?.fecha_fin_vigente
+    || proyecto?.fecha_fin_prorrogada
+    || proyecto?.fecha_cierre
+    || proyecto?.fecha_fin_planificada
+    || proyecto?.fecha_inicio
+  );
+}
+
 
 /* ============================================================
-  CARGA DE AÑOS
+   COMPUTEDS
 ============================================================ */
+
+const placeholderBusqueda =
+  computed(
+    () => (
+      mensajesVista
+        .value
+        .placeholderBusqueda
+    )
+  );
+
+
+const proyectosFiltrados =
+  computed(
+    () => proyectos.value
+  );
+
+
+const resultadosPagina =
+  computed(
+    () => (
+      proyectosFiltrados
+        .value
+        .length
+    )
+  );
+
+
+const filtrosActivosCount =
+  computed(
+    () => {
+      let total = 0;
+
+      if (
+        debouncedSearch.value
+      ) {
+        total += 1;
+      }
+
+      if (
+        filtroAnio.value
+      ) {
+        total += 1;
+      }
+
+      if (
+        esAdmin.value
+        && filtroEstado.value
+      ) {
+        total += 1;
+      }
+
+      return total;
+    }
+  );
+
+
+const textoFiltroAnio =
+  computed(
+    () => {
+      if (
+        loadingAnios.value
+      ) {
+        return "Cargando años...";
+      }
+
+      return (
+        filtroAnio.value
+        || "Todos los años"
+      );
+    }
+  );
+
+
+const textoFiltroEstado =
+  computed(
+    () => {
+      if (
+        !filtroEstado.value
+      ) {
+        return "Todos los estados";
+      }
+
+      const option =
+        estadoOptions.find(
+          (item) => (
+            item.value
+            === filtroEstado.value
+          )
+        );
+
+      return (
+        option?.label
+        || "Todos los estados"
+      );
+    }
+  );
+
+
+const totalPaginas =
+  computed(
+    () => {
+      const total =
+        Math.ceil(
+          totalRegistros.value
+          / PAGE_SIZE
+        );
+
+      return (
+        total > 0
+          ? total
+          : 1
+      );
+    }
+  );
+
+
+const puedeIrAnterior =
+  computed(
+    () => (
+      paginaActual.value > 1
+    )
+  );
+
+
+const puedeIrSiguiente =
+  computed(
+    () => (
+      paginaActual.value
+      < totalPaginas.value
+    )
+  );
+
+
+const extensionFechaMin =
+  computed(
+    () => addDaysToDate(
+      fechaReferenciaExtension(
+        proyectoExtension.value
+      ),
+      1
+    )
+  );
+
+
+/* ============================================================
+   AÑOS DISPONIBLES
+============================================================ */
+
 async function cargarAniosDisponibles() {
-  loadingAnios.value = true;
+  yearsAbortController?.abort?.();
+
+  const currentController =
+    new AbortController();
+
+  yearsAbortController =
+    currentController;
+
+  loadingAnios.value =
+    true;
 
   try {
     const params = {};
 
-    if (debouncedSearch.value) {
-      params.q = debouncedSearch.value;
+    if (
+      debouncedSearch.value
+    ) {
+      params.q =
+        debouncedSearch.value;
     }
-
-    if (esAdmin.value && filtroEstado.value) {
-      params.estado = filtroEstado.value;
-    }
-
-    const res = await api.get("/proyectos/anios/", { params });
-    const years = normalizeYears(res.data);
-
-    listaAnios.value = years.length ? years : buildFallbackYears();
 
     if (
-      filtroAnio.value &&
-      !listaAnios.value.some((anio) => String(anio) === String(filtroAnio.value))
+      esAdmin.value
+      && filtroEstado.value
     ) {
-      suspendFilterWatchers = true;
-      filtroAnio.value = "";
-      suspendFilterWatchers = false;
-    }
-  } catch (error) {
-    console.error("Error cargando años de proyectos:", error);
-    listaAnios.value = buildFallbackYears();
-  } finally {
-    loadingAnios.value = false;
-  }
-}
-
-async function recargarAniosYProyectosPorFiltros({ silent = true } = {}) {
-  await cargarAniosDisponibles();
-  await cargarProyectos({ silent });
-}
-
-/* ============================================================
-  DROPDOWN AÑO
-============================================================ */
-function cerrarDropdownAnio() {
-  dropdownAnioAbierto.value = false;
-}
-
-function toggleDropdownAnio() {
-  if (loadingAnios.value) return;
-  dropdownEstadoAbierto.value = false;
-  dropdownAnioAbierto.value = !dropdownAnioAbierto.value;
-}
-
-function seleccionarAnio(anio) {
-  filtroAnio.value = anio;
-  cerrarDropdownAnio();
-}
-
-/* ============================================================
-  DROPDOWN ESTADO
-============================================================ */
-function cerrarDropdownEstado() {
-  dropdownEstadoAbierto.value = false;
-}
-
-function toggleDropdownEstado() {
-  dropdownAnioAbierto.value = false;
-  dropdownEstadoAbierto.value = !dropdownEstadoAbierto.value;
-}
-
-function seleccionarEstado(estado) {
-  filtroEstado.value = estado;
-  cerrarDropdownEstado();
-}
-
-/* ============================================================
-  INTERACCIONES GLOBALES
-============================================================ */
-function handleClickOutside(event) {
-  if (dropdownAnioRef.value && !dropdownAnioRef.value.contains(event.target)) {
-    cerrarDropdownAnio();
-  }
-
-  if (dropdownEstadoRef.value && !dropdownEstadoRef.value.contains(event.target)) {
-    cerrarDropdownEstado();
-  }
-}
-
-function handleGlobalKeydown(event) {
-  if (event.key === "Escape") {
-    cerrarDropdownAnio();
-    cerrarDropdownEstado();
-
-    if (extensionModalAbierto.value) {
-      cerrarExtensionFecha();
-    }
-  }
-}
-
-/* ============================================================
-  COMPUTEDS
-============================================================ */
-const placeholderBusqueda = computed(
-  () => mensajesVista.value.placeholderBusqueda
-);
-
-const proyectosFiltrados = computed(() => proyectos.value);
-
-const resultadosPagina = computed(() => proyectosFiltrados.value.length);
-
-const filtrosActivosCount = computed(() => {
-  let total = 0;
-  if (debouncedSearch.value) total += 1;
-  if (filtroAnio.value) total += 1;
-  if (esAdmin.value && filtroEstado.value) total += 1;
-  return total;
-});
-
-const textoFiltroAnio = computed(() => {
-  if (loadingAnios.value) return "Cargando años...";
-  return filtroAnio.value || "Todos los años";
-});
-
-const textoFiltroEstado = computed(() => {
-  if (!filtroEstado.value) return "Todos los estados";
-  const opcion = estadoOptions.find((item) => item.value === filtroEstado.value);
-  return opcion?.label || "Todos los estados";
-});
-
-const totalPaginas = computed(() => {
-  const total = Math.ceil(totalRegistros.value / PAGE_SIZE);
-  return total > 0 ? total : 1;
-});
-
-const puedeIrAnterior = computed(() => paginaActual.value > 1);
-const puedeIrSiguiente = computed(() => paginaActual.value < totalPaginas.value);
-
-/* ============================================================
-  CARGA PRINCIPAL
-============================================================ */
-async function cargarProyectos({ silent = false } = {}) {
-  abortController?.abort?.();
-
-  const currentController = new AbortController();
-  abortController = currentController;
-
-  loadingProyectos.value = true;
-  errorProyectos.value = "";
-
-  try {
-    const params = {
-      page: paginaActual.value,
-      page_size: PAGE_SIZE,
-    };
-
-    if (debouncedSearch.value) {
-      params.q = debouncedSearch.value;
+      params.estado =
+        filtroEstado.value;
     }
 
-    if (filtroAnio.value) {
-      params.anio = filtroAnio.value;
-    }
+    const payload =
+      await consultarAniosProyectos(
+        params,
+        {
+          signal:
+            currentController.signal,
+        }
+      );
 
-    if (esAdmin.value && filtroEstado.value) {
-      params.estado = filtroEstado.value;
-    }
-
-    const res = await api.get("/proyectos/", {
-      params,
-      signal: currentController.signal,
-    });
-
-    if (abortController !== currentController) return;
-
-    proyectos.value = Array.isArray(res.data?.results) ? res.data.results : [];
-    totalRegistros.value = Number(res.data?.count || 0);
-
-    const maxPage = Math.max(1, Math.ceil(totalRegistros.value / PAGE_SIZE));
-
-    if (paginaActual.value > maxPage) {
-      paginaActual.value = maxPage;
-      await cargarProyectos({ silent: true });
-    }
-  } catch (error) {
-    if (error?.name === "CanceledError" || error?.code === "ERR_CANCELED") {
+    if (
+      yearsAbortController
+      !== currentController
+    ) {
       return;
     }
 
-    console.error("Error cargando proyectos:", error);
+    const years =
+      normalizeYears(
+        payload
+      );
 
-    proyectos.value = [];
-    totalRegistros.value = 0;
-    errorProyectos.value = "No se pudieron cargar los proyectos. Intente nuevamente.";
+    listaAnios.value = (
+      years.length
+        ? years
+        : buildFallbackYears()
+    );
 
-    if (!silent) {
-      setFeedback("No se pudo actualizar la lista de proyectos.", "error");
+    if (
+      filtroAnio.value
+      && !listaAnios.value.some(
+        (year) => (
+          String(
+            year
+          )
+          === String(
+            filtroAnio.value
+          )
+        )
+      )
+    ) {
+      suspendFilterWatchers =
+        true;
+
+      filtroAnio.value =
+        "";
+
+      suspendFilterWatchers =
+        false;
     }
+  } catch (
+    error
+  ) {
+    if (
+      error?.name === "CanceledError"
+      || error?.code === "ERR_CANCELED"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando años de proyectos:",
+      error
+    );
+
+    listaAnios.value =
+      buildFallbackYears();
   } finally {
-    if (abortController === currentController) {
-      loadingProyectos.value = false;
+    if (
+      yearsAbortController
+      === currentController
+    ) {
+      loadingAnios.value =
+        false;
     }
   }
 }
 
-/* ============================================================
-  NAVEGACIÓN A FORMULARIO
-============================================================ */
-function irANuevoProyecto() {
-  router.push({ name: "ProyectoNuevo" });
-}
 
-function editarProyecto(proyecto) {
-  if (!proyecto?.id) return;
+async function recargarAniosYProyectosPorFiltros({
+  silent = true,
+} = {}) {
+  await cargarAniosDisponibles();
 
-  router.push({
-    name: "ProyectoEditar",
-    params: { id: proyecto.id },
+  await cargarProyectos({
+    silent,
   });
 }
 
-/* ============================================================
-  CAMBIO DE ESTADO
-============================================================ */
-async function cambiarEstado(proyecto) {
-  if (!proyecto?.id) return;
-
-  processingProjectId.value = proyecto.id;
-
-  try {
-    const res = await api.patch(`/proyectos/${proyecto.id}/cambiar_estado/`);
-    const proyectoActualizado = extractProjectPayload(res?.data);
-
-    if (proyectoActualizado?.id) {
-      const updatedLocally = updateProjectInCurrentPage(proyectoActualizado);
-
-      if (!updatedLocally) {
-        await cargarProyectos({ silent: true });
-      }
-    } else {
-      await cargarProyectos({ silent: true });
-    }
-
-    await cargarAniosDisponibles();
-
-    setFeedback("El estado del proyecto se actualizó correctamente.", "success");
-  } catch (error) {
-    console.error("Error cambiando estado del proyecto:", error);
-    setFeedback("No se pudo actualizar el estado del proyecto.", "error");
-  } finally {
-    processingProjectId.value = null;
-  }
-}
 
 /* ============================================================
-  EXTENDER FECHA
+   DROPDOWN AÑO
 ============================================================ */
-function abrirExtensionFecha(proyecto) {
-  if (!proyecto?.id) return;
 
-  proyectoExtension.value = proyecto;
-  extensionFecha.value = normalizeDate(
-    proyecto.fecha_fin_prorrogada ||
-      proyecto.fecha_fin_vigente ||
-      proyecto.fecha_fin_planificada ||
-      ""
-  );
-  extensionError.value = "";
-  extensionModalAbierto.value = true;
+function cerrarDropdownAnio() {
+  dropdownAnioAbierto.value =
+    false;
 }
 
-function cerrarExtensionFecha() {
-  if (savingExtension.value) return;
 
-  extensionModalAbierto.value = false;
-  proyectoExtension.value = null;
-  extensionFecha.value = "";
-  extensionError.value = "";
-}
-
-async function confirmarExtensionFecha() {
-  if (!proyectoExtension.value?.id) return;
-
-  extensionError.value = "";
-
-  if (!extensionFecha.value) {
-    extensionError.value = "Debe seleccionar una nueva fecha de finalización.";
+function toggleDropdownAnio() {
+  if (
+    loadingAnios.value
+  ) {
     return;
   }
 
-  const fechaInicio = normalizeDate(proyectoExtension.value.fecha_inicio);
+  dropdownEstadoAbierto.value =
+    false;
 
-  if (fechaInicio && extensionFecha.value < fechaInicio) {
-    extensionError.value = "La fecha extendida no puede ser menor a la fecha de inicio.";
-    return;
+  dropdownAnioAbierto.value =
+    !dropdownAnioAbierto.value;
+}
+
+
+function seleccionarAnio(
+  anio
+) {
+  filtroAnio.value =
+    anio;
+
+  cerrarDropdownAnio();
+}
+
+
+/* ============================================================
+   DROPDOWN ESTADO
+============================================================ */
+
+function cerrarDropdownEstado() {
+  dropdownEstadoAbierto.value =
+    false;
+}
+
+
+function toggleDropdownEstado() {
+  dropdownAnioAbierto.value =
+    false;
+
+  dropdownEstadoAbierto.value =
+    !dropdownEstadoAbierto.value;
+}
+
+
+function seleccionarEstado(
+  estado
+) {
+  filtroEstado.value =
+    estado;
+
+  cerrarDropdownEstado();
+}
+
+
+/* ============================================================
+   INTERACCIONES GLOBALES
+============================================================ */
+
+function handleClickOutside(
+  event
+) {
+  if (
+    dropdownAnioRef.value
+    && !dropdownAnioRef.value.contains(
+      event.target
+    )
+  ) {
+    cerrarDropdownAnio();
   }
 
-  const fechaPlanificada = normalizeDate(proyectoExtension.value.fecha_fin_planificada);
-
-  if (fechaPlanificada && extensionFecha.value < fechaPlanificada) {
-    extensionError.value =
-      "La fecha extendida no puede ser menor a la fecha final planificada.";
-    return;
-  }
-
-  savingExtension.value = true;
-
-  try {
-    const res = await api.patch(
-      `/proyectos/${proyectoExtension.value.id}/extender_fecha/`,
-      {
-        fecha_fin_prorrogada: extensionFecha.value,
-      }
-    );
-
-    const proyectoActualizado = extractProjectPayload(res?.data);
-
-    if (proyectoActualizado?.id) {
-      const updatedLocally = updateProjectInCurrentPage(proyectoActualizado);
-
-      if (!updatedLocally) {
-        await cargarProyectos({ silent: true });
-      }
-    } else {
-      await cargarProyectos({ silent: true });
-    }
-
-    await cargarAniosDisponibles();
-
-    setFeedback("La fecha final del proyecto se extendió correctamente.", "success");
-    cerrarExtensionFecha();
-  } catch (error) {
-    console.error("Error extendiendo fecha del proyecto:", error);
-    extensionError.value =
-      error?.response?.data
-        ? prettyError(error.response.data)
-        : "No se pudo extender la fecha final del proyecto.";
-  } finally {
-    savingExtension.value = false;
+  if (
+    dropdownEstadoRef.value
+    && !dropdownEstadoRef.value.contains(
+      event.target
+    )
+  ) {
+    cerrarDropdownEstado();
   }
 }
 
-/* ============================================================
-  FILTROS / ACCIONES
-============================================================ */
-async function limpiarFiltros() {
-  suspendFilterWatchers = true;
-  searchQuery.value = "";
-  debouncedSearch.value = "";
-  filtroAnio.value = "";
-  filtroEstado.value = "";
-  paginaActual.value = 1;
-  suspendFilterWatchers = false;
+
+function handleGlobalKeydown(
+  event
+) {
+  if (
+    event.key !== "Escape"
+  ) {
+    return;
+  }
 
   cerrarDropdownAnio();
   cerrarDropdownEstado();
 
-  await recargarAniosYProyectosPorFiltros({ silent: true });
-}
-
-async function recargarProyectos() {
-  await recargarAniosYProyectosPorFiltros({ silent: false });
-  setFeedback("La lista de proyectos se actualizó correctamente.", "info");
-}
-
-/* ============================================================
-  PAGINACIÓN
-============================================================ */
-async function irAPagina(page) {
-  if (page < 1 || page > totalPaginas.value || page === paginaActual.value) return;
-
-  paginaActual.value = page;
-  await cargarProyectos({ silent: true });
-}
-
-async function paginaAnterior() {
-  if (!puedeIrAnterior.value) return;
-  await irAPagina(paginaActual.value - 1);
-}
-
-async function paginaSiguiente() {
-  if (!puedeIrSiguiente.value) return;
-  await irAPagina(paginaActual.value + 1);
-}
-
-/* ============================================================
-  LIMPIEZA DE QUERY PARAMS LEGACY
-============================================================ */
-async function limpiarQueryLegacy() {
-  const nextQuery = { ...route.query };
-  let changed = false;
-
-  ["tab", "scope", "type", "project"].forEach((key) => {
-    if (key in nextQuery) {
-      delete nextQuery[key];
-      changed = true;
-    }
-  });
-
-  if (changed) {
-    await router.replace({ query: nextQuery });
+  if (
+    extensionModalAbierto.value
+  ) {
+    cerrarExtensionFecha();
   }
 }
 
-/* ============================================================
-  WATCHERS
-============================================================ */
-watch(searchQuery, (value) => {
-  if (suspendFilterWatchers) return;
-
-  clearTimeout(searchTimer);
-
-  searchTimer = setTimeout(async () => {
-    debouncedSearch.value = sanitizeQuery(value);
-    paginaActual.value = 1;
-    await recargarAniosYProyectosPorFiltros({ silent: true });
-  }, 300);
-});
-
-watch(filtroEstado, async () => {
-  if (suspendFilterWatchers) return;
-
-  paginaActual.value = 1;
-  await recargarAniosYProyectosPorFiltros({ silent: true });
-});
-
-watch(filtroAnio, async () => {
-  if (suspendFilterWatchers) return;
-
-  paginaActual.value = 1;
-  await cargarProyectos({ silent: true });
-});
 
 /* ============================================================
-  CICLO DE VIDA
+   CARGA PRINCIPAL
 ============================================================ */
-onMounted(async () => {
-  document.addEventListener("click", handleClickOutside);
-  document.addEventListener("keydown", handleGlobalKeydown);
 
-  await limpiarQueryLegacy();
-  await recargarAniosYProyectosPorFiltros({ silent: true });
-
-  const debeAbrirNuevo = route.query?.nuevo === "1";
-
-  if (debeAbrirNuevo && esAdmin.value) {
-    const nextQuery = { ...route.query };
-    delete nextQuery.nuevo;
-    await router.replace({ query: nextQuery });
-    irANuevoProyecto();
-  }
-
-  if (route.query?.guardado === "1") {
-    setFeedback("El proyecto se guardó correctamente.", "success");
-
-    const nextQuery = { ...route.query };
-    delete nextQuery.guardado;
-    await router.replace({ query: nextQuery });
-  }
-});
-
-onBeforeUnmount(() => {
-  clearTimeout(searchTimer);
-  clearTimeout(feedbackTimer);
+async function cargarProyectos({
+  silent = false,
+} = {}) {
   abortController?.abort?.();
 
-  document.removeEventListener("click", handleClickOutside);
-  document.removeEventListener("keydown", handleGlobalKeydown);
-});
+  const currentController =
+    new AbortController();
+
+  abortController =
+    currentController;
+
+  loadingProyectos.value =
+    true;
+
+  errorProyectos.value =
+    "";
+
+  try {
+    const params = {
+      page:
+        paginaActual.value,
+
+      page_size:
+        PAGE_SIZE,
+    };
+
+    if (
+      debouncedSearch.value
+    ) {
+      params.q =
+        debouncedSearch.value;
+    }
+
+    if (
+      filtroAnio.value
+    ) {
+      params.anio =
+        filtroAnio.value;
+    }
+
+    if (
+      esAdmin.value
+      && filtroEstado.value
+    ) {
+      params.estado =
+        filtroEstado.value;
+    }
+
+    const payload =
+      await listarProyectos(
+        params,
+        {
+          signal:
+            currentController.signal,
+        }
+      );
+
+    if (
+      abortController
+      !== currentController
+    ) {
+      return;
+    }
+
+    proyectos.value = (
+      Array.isArray(
+        payload?.results
+      )
+        ? payload.results
+        : (
+          Array.isArray(
+            payload
+          )
+            ? payload
+            : []
+        )
+    );
+
+    totalRegistros.value =
+      Number(
+        payload?.count
+        ?? proyectos.value.length
+        ?? 0
+      ) || 0;
+
+    const maxPage =
+      Math.max(
+        1,
+        Math.ceil(
+          totalRegistros.value
+          / PAGE_SIZE
+        )
+      );
+
+    if (
+      paginaActual.value
+      > maxPage
+    ) {
+      paginaActual.value =
+        maxPage;
+
+      await cargarProyectos({
+        silent: true,
+      });
+    }
+  } catch (
+    error
+  ) {
+    if (
+      error?.name === "CanceledError"
+      || error?.code === "ERR_CANCELED"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando proyectos:",
+      error
+    );
+
+    proyectos.value = [];
+    totalRegistros.value = 0;
+
+    errorProyectos.value =
+      getProyectoApiErrorMessage(
+        error,
+        (
+          "No se pudieron cargar los proyectos. "
+          + "Intente nuevamente."
+        )
+      );
+
+    if (
+      !silent
+    ) {
+      setFeedback(
+        errorProyectos.value,
+        "error"
+      );
+    }
+  } finally {
+    if (
+      abortController
+      === currentController
+    ) {
+      loadingProyectos.value =
+        false;
+    }
+  }
+}
+
+
+/* ============================================================
+   NAVEGACIÓN AL FORMULARIO
+============================================================ */
+
+function irANuevoProyecto() {
+  router.push({
+    name:
+      "ProyectoNuevo",
+  });
+}
+
+
+function editarProyecto(
+  proyecto
+) {
+  if (
+    !proyecto?.id
+  ) {
+    return;
+  }
+
+  router.push({
+    name:
+      "ProyectoEditar",
+
+    params: {
+      id:
+        proyecto.id,
+    },
+  });
+}
+
+
+/* ============================================================
+   CAMBIO DE ESTADO
+============================================================ */
+
+async function cambiarEstado(
+  proyecto
+) {
+  if (
+    !proyecto?.id
+  ) {
+    return;
+  }
+
+  if (
+    !puedeCambiarEstado(
+      proyecto
+    )
+  ) {
+    setFeedback(
+      tituloAccionEstado(
+        proyecto
+      ),
+      "error"
+    );
+
+    return;
+  }
+
+  processingProjectId.value =
+    proyecto.id;
+
+  try {
+    const payload =
+      await cambiarEstadoProyecto(
+        proyecto.id
+      );
+
+    const updatedProject =
+      extractProjectPayload(
+        payload
+      );
+
+    if (
+      updatedProject?.id
+    ) {
+      const updatedLocally =
+        updateProjectInCurrentPage(
+          updatedProject
+        );
+
+      if (
+        !updatedLocally
+      ) {
+        await cargarProyectos({
+          silent: true,
+        });
+      }
+    } else {
+      await cargarProyectos({
+        silent: true,
+      });
+    }
+
+    await cargarAniosDisponibles();
+
+    setFeedback(
+      (
+        "El estado del proyecto se "
+        + "actualizó correctamente."
+      ),
+      "success"
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "Error cambiando estado del proyecto:",
+      error
+    );
+
+    setFeedback(
+      getProyectoApiErrorMessage(
+        error,
+        (
+          "No se pudo actualizar el "
+          + "estado del proyecto."
+        )
+      ),
+      "error"
+    );
+  } finally {
+    processingProjectId.value =
+      null;
+  }
+}
+
+
+/* ============================================================
+   EXTENSIÓN DE FECHA
+============================================================ */
+
+function abrirExtensionFecha(
+  proyecto
+) {
+  if (
+    !proyecto?.id
+  ) {
+    return;
+  }
+
+  proyectoExtension.value =
+    proyecto;
+
+  extensionError.value =
+    "";
+
+  extensionModalAbierto.value =
+    true;
+
+  extensionFecha.value = (
+    addDaysToDate(
+      fechaReferenciaExtension(
+        proyecto
+      ),
+      1
+    )
+    || ""
+  );
+}
+
+
+function cerrarExtensionFecha() {
+  if (
+    savingExtension.value
+  ) {
+    return;
+  }
+
+  extensionModalAbierto.value =
+    false;
+
+  proyectoExtension.value =
+    null;
+
+  extensionFecha.value =
+    "";
+
+  extensionError.value =
+    "";
+}
+
+
+async function confirmarExtensionFecha() {
+  if (
+    !proyectoExtension.value?.id
+  ) {
+    return;
+  }
+
+  extensionError.value =
+    "";
+
+  if (
+    !extensionFecha.value
+  ) {
+    extensionError.value =
+      (
+        "Debe seleccionar una nueva "
+        + "fecha de finalización."
+      );
+
+    return;
+  }
+
+  const minimumDate =
+    extensionFechaMin.value;
+
+  if (
+    minimumDate
+    && extensionFecha.value
+    < minimumDate
+  ) {
+    extensionError.value = (
+      "La nueva fecha debe ser posterior "
+      + "a la fecha final vigente."
+    );
+
+    return;
+  }
+
+  savingExtension.value =
+    true;
+
+  try {
+    const payload =
+      await extenderFechaProyecto(
+        proyectoExtension.value.id,
+        extensionFecha.value
+      );
+
+    const updatedProject =
+      extractProjectPayload(
+        payload
+      );
+
+    if (
+      updatedProject?.id
+    ) {
+      const updatedLocally =
+        updateProjectInCurrentPage(
+          updatedProject
+        );
+
+      if (
+        !updatedLocally
+      ) {
+        await cargarProyectos({
+          silent: true,
+        });
+      }
+    } else {
+      await cargarProyectos({
+        silent: true,
+      });
+    }
+
+    await cargarAniosDisponibles();
+
+    setFeedback(
+      (
+        "La fecha final del proyecto "
+        + "se extendió correctamente."
+      ),
+      "success"
+    );
+
+    cerrarExtensionFecha();
+  } catch (
+    error
+  ) {
+    console.error(
+      "Error extendiendo fecha del proyecto:",
+      error
+    );
+
+    extensionError.value =
+      getProyectoApiErrorMessage(
+        error,
+        (
+          "No se pudo extender la fecha "
+          + "final del proyecto."
+        )
+      );
+  } finally {
+    savingExtension.value =
+      false;
+  }
+}
+
+
+/* ============================================================
+   FILTROS Y ACCIONES
+============================================================ */
+
+async function limpiarFiltros() {
+  suspendFilterWatchers =
+    true;
+
+  searchQuery.value =
+    "";
+
+  debouncedSearch.value =
+    "";
+
+  filtroAnio.value =
+    "";
+
+  filtroEstado.value =
+    "";
+
+  paginaActual.value =
+    1;
+
+  suspendFilterWatchers =
+    false;
+
+  cerrarDropdownAnio();
+  cerrarDropdownEstado();
+
+  await recargarAniosYProyectosPorFiltros({
+    silent: true,
+  });
+}
+
+
+async function recargarProyectos() {
+  await recargarAniosYProyectosPorFiltros({
+    silent: false,
+  });
+
+  if (
+    !errorProyectos.value
+  ) {
+    setFeedback(
+      (
+        "La lista de proyectos se "
+        + "actualizó correctamente."
+      ),
+      "info"
+    );
+  }
+}
+
+
+/* ============================================================
+   PAGINACIÓN
+============================================================ */
+
+async function irAPagina(
+  page
+) {
+  if (
+    page < 1
+    || page > totalPaginas.value
+    || page === paginaActual.value
+  ) {
+    return;
+  }
+
+  paginaActual.value =
+    page;
+
+  await cargarProyectos({
+    silent: true,
+  });
+}
+
+
+async function paginaAnterior() {
+  if (
+    !puedeIrAnterior.value
+  ) {
+    return;
+  }
+
+  await irAPagina(
+    paginaActual.value
+    - 1
+  );
+}
+
+
+async function paginaSiguiente() {
+  if (
+    !puedeIrSiguiente.value
+  ) {
+    return;
+  }
+
+  await irAPagina(
+    paginaActual.value
+    + 1
+  );
+}
+
+
+/* ============================================================
+   QUERY PARAMS HEREDADOS
+============================================================ */
+
+async function limpiarQueryLegacy() {
+  const nextQuery = {
+    ...route.query,
+  };
+
+  let changed =
+    false;
+
+  [
+    "tab",
+    "scope",
+    "type",
+    "project",
+  ].forEach(
+    (key) => {
+      if (
+        key in nextQuery
+      ) {
+        delete nextQuery[
+          key
+        ];
+
+        changed =
+          true;
+      }
+    }
+  );
+
+  if (
+    changed
+  ) {
+    await router.replace({
+      query:
+        nextQuery,
+    });
+  }
+}
+
+
+/* ============================================================
+   WATCHERS
+============================================================ */
+
+watch(
+  searchQuery,
+  (
+    value
+  ) => {
+    if (
+      suspendFilterWatchers
+    ) {
+      return;
+    }
+
+    clearTimeout(
+      searchTimer
+    );
+
+    searchTimer =
+      setTimeout(
+        async () => {
+          debouncedSearch.value =
+            sanitizeQuery(
+              value
+            );
+
+          paginaActual.value =
+            1;
+
+          await recargarAniosYProyectosPorFiltros({
+            silent: true,
+          });
+        },
+        300
+      );
+  }
+);
+
+
+watch(
+  filtroEstado,
+  async () => {
+    if (
+      suspendFilterWatchers
+    ) {
+      return;
+    }
+
+    paginaActual.value =
+      1;
+
+    await recargarAniosYProyectosPorFiltros({
+      silent: true,
+    });
+  }
+);
+
+
+watch(
+  filtroAnio,
+  async () => {
+    if (
+      suspendFilterWatchers
+    ) {
+      return;
+    }
+
+    paginaActual.value =
+      1;
+
+    await cargarProyectos({
+      silent: true,
+    });
+  }
+);
+
+
+/* ============================================================
+   CICLO DE VIDA
+============================================================ */
+
+onMounted(
+  async () => {
+    document.addEventListener(
+      "click",
+      handleClickOutside
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleGlobalKeydown
+    );
+
+    await limpiarQueryLegacy();
+
+    await recargarAniosYProyectosPorFiltros({
+      silent: true,
+    });
+
+    const shouldOpenNew = (
+      route.query?.nuevo
+      === "1"
+    );
+
+    if (
+      shouldOpenNew
+      && esAdmin.value
+    ) {
+      const nextQuery = {
+        ...route.query,
+      };
+
+      delete nextQuery.nuevo;
+
+      await router.replace({
+        query:
+          nextQuery,
+      });
+
+      irANuevoProyecto();
+    }
+
+    if (
+      route.query?.guardado
+      === "1"
+    ) {
+      setFeedback(
+        (
+          "El proyecto se guardó "
+          + "correctamente."
+        ),
+        "success"
+      );
+
+      const nextQuery = {
+        ...route.query,
+      };
+
+      delete nextQuery.guardado;
+
+      await router.replace({
+        query:
+          nextQuery,
+      });
+    }
+  }
+);
+
+
+onBeforeUnmount(
+  () => {
+    clearTimeout(
+      searchTimer
+    );
+
+    clearTimeout(
+      feedbackTimer
+    );
+
+    abortController?.abort?.();
+    yearsAbortController?.abort?.();
+
+    document.removeEventListener(
+      "click",
+      handleClickOutside
+    );
+
+    document.removeEventListener(
+      "keydown",
+      handleGlobalKeydown
+    );
+  }
+);
 </script>
 
 <style src="./proyectos-listado.css" lang="css"></style>

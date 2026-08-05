@@ -6,6 +6,8 @@
         'is-manage-open': manageModeActive,
         'is-banner-mode': isBannerOnly,
         'is-text-mode': isTextOnly,
+        'is-empty': isEmptyState,
+        'has-media': showCarousel && !isTextOnly,
       }"
       :style="stageCardStyle"
     >
@@ -473,7 +475,7 @@
                   v-if="index === currentBanner"
                   class="avn-published-item__active"
                 >
-                  Activo
+                  En vista previa
                 </span>
               </div>
 
@@ -562,8 +564,8 @@
               <h4>Contenido del aviso activo</h4>
 
               <p>
-                Edita el texto asociado al aviso que se muestra en la vista
-                previa.
+                Edita el texto propio del aviso. Los campos vacíos utilizarán
+                automáticamente el contenido global predeterminado.
               </p>
             </div>
 
@@ -643,7 +645,7 @@
                 id="avn-content-text"
                 v-model="activeBannerContentDraft.text"
                 rows="6"
-                maxlength="700"
+                :maxlength="AVISOS_TEXT_MAX_LENGTH"
               ></textarea>
             </label>
 
@@ -699,6 +701,127 @@
               Ir a publicar
             </button>
           </div>
+        </section>
+
+        <section
+          v-show="activeAdminTab === 'content'"
+          class="avn-admin-panel"
+          aria-labelledby="avn-global-content-title"
+        >
+          <div class="avn-panel-heading">
+            <div>
+              <h4 id="avn-global-content-title">
+                Contenido global predeterminado
+              </h4>
+
+              <p>
+                Este contenido se utiliza cuando un aviso no tiene textos
+                propios guardados.
+              </p>
+            </div>
+          </div>
+
+          <form
+            class="avn-form-grid"
+            @submit.prevent="saveGlobalContent"
+          >
+            <label
+              class="avn-field avn-field--half"
+              for="avn-global-eyebrow"
+            >
+              <span>Etiqueta superior global</span>
+
+              <input
+                id="avn-global-eyebrow"
+                v-model="globalContentDraft.eyebrow"
+                type="text"
+                maxlength="60"
+                autocomplete="off"
+              />
+            </label>
+
+            <label
+              class="avn-field avn-field--half"
+              for="avn-global-recent"
+            >
+              <span>Etiqueta de actualización global</span>
+
+              <input
+                id="avn-global-recent"
+                v-model="globalContentDraft.recentLabel"
+                type="text"
+                maxlength="60"
+                autocomplete="off"
+              />
+            </label>
+
+            <label
+              class="avn-field"
+              for="avn-global-title"
+            >
+              <span>Título global</span>
+
+              <input
+                id="avn-global-title"
+                v-model="globalContentDraft.title"
+                type="text"
+                maxlength="220"
+                autocomplete="off"
+              />
+            </label>
+
+            <label
+              class="avn-field"
+              for="avn-global-text"
+            >
+              <span>Mensaje global</span>
+
+              <textarea
+                id="avn-global-text"
+                v-model="globalContentDraft.text"
+                rows="6"
+                :maxlength="AVISOS_TEXT_MAX_LENGTH"
+              ></textarea>
+            </label>
+
+            <div class="avn-form-actions">
+              <button
+                class="avn-btn avn-btn--ghost"
+                type="button"
+                :disabled="
+                  !hasGlobalContentChanges ||
+                  savingGlobalContent
+                "
+                @click="cancelGlobalContent"
+              >
+                Descartar cambios
+              </button>
+
+              <button
+                class="avn-btn avn-btn--secondary"
+                type="button"
+                :disabled="savingGlobalContent"
+                @click="resetGlobalContent"
+              >
+                Restablecer valores
+              </button>
+
+              <button
+                class="avn-btn avn-btn--primary"
+                type="submit"
+                :disabled="
+                  !hasGlobalContentChanges ||
+                  savingGlobalContent
+                "
+              >
+                {{
+                  savingGlobalContent
+                    ? "Guardando…"
+                    : "Guardar contenido global"
+                }}
+              </button>
+            </div>
+          </form>
         </section>
 
         <section
@@ -1070,12 +1193,15 @@ import {
 import api from "../../scripts/api/axios";
 
 import {
+  AVISOS_LAYOUT_LIMITS,
+  AVISOS_TEXT_MAX_LENGTH,
   DEFAULT_AVISOS_CONTENT,
   getAvisosCombinedVersion,
   getAvisosContent,
   getAvisosLayout,
   getAvisosStatus,
   hydrateAvisosConfig,
+  saveAvisosContent,
   saveAvisosLayout,
 } from "../../scripts/utils/avisosGate";
 
@@ -1113,6 +1239,14 @@ const CAROUSEL_CYCLE_MS = 5200;
 const TEMPORARY_PAUSE_MS = 4000;
 const COMPACT_BREAKPOINT = 920;
 
+/*
+ * El estado vacío no debe heredar las dimensiones amplias
+ * configuradas para un banner real. Mantiene el modal compacto
+ * y alinea la vista previa con el panel administrativo.
+ */
+const EMPTY_STAGE_WIDTH = 1120;
+const EMPTY_STAGE_HEIGHT = 480;
+
 const FOCUSABLE_SELECTOR = [
   "button:not([disabled])",
   "[href]",
@@ -1132,18 +1266,18 @@ const DISPLAY_MODE_VALUES = new Set([
 
 const SIZE_PRESETS = Object.freeze({
   compact: Object.freeze({
-    width: 840,
+    width: 900,
     height: 440,
   }),
 
   standard: Object.freeze({
-    width: 1000,
-    height: 520,
+    width: 1260,
+    height: 640,
   }),
 
   wide: Object.freeze({
-    width: 1120,
-    height: 580,
+    width: 1500,
+    height: 760,
   }),
 });
 
@@ -1153,14 +1287,22 @@ const DISTRIBUTION_PRESETS = Object.freeze({
   text: 0.44,
 });
 
-const STAGE_WIDTH_MIN = 760;
-const STAGE_WIDTH_MAX = 1120;
+const STAGE_WIDTH_MIN =
+  AVISOS_LAYOUT_LIMITS.stageWidthMin;
+const STAGE_WIDTH_MAX =
+  AVISOS_LAYOUT_LIMITS.stageWidthMax;
 
-const STAGE_HEIGHT_MIN = 420;
-const STAGE_HEIGHT_MAX = 580;
+const STAGE_HEIGHT_MIN =
+  AVISOS_LAYOUT_LIMITS.stageHeightMin;
+const STAGE_HEIGHT_MAX =
+  AVISOS_LAYOUT_LIMITS.stageHeightMax;
 
-const ASIDE_WIDTH_MIN = 300;
-const MEDIA_WIDTH_MIN = 320;
+const ASIDE_WIDTH_MIN =
+  AVISOS_LAYOUT_LIMITS.asideWidthMin;
+const MEDIA_WIDTH_MIN =
+  AVISOS_LAYOUT_LIMITS.mediaPaneWidthMin;
+const SPLITTER_WIDTH =
+  AVISOS_LAYOUT_LIMITS.splitterWidth;
 
 const adminTabs = [
   {
@@ -1302,31 +1444,103 @@ const sanitizeDisplayMode = (value) => {
     : DISPLAY_MODE_DEFAULT;
 };
 
-const cloneContent = (value) => {
+const EMPTY_AVISOS_CONTENT = Object.freeze({
+  eyebrow: "",
+  title: "",
+  text: "",
+  recentLabel: "",
+});
+
+const cloneContent = (
+  value = {},
+  fallback = EMPTY_AVISOS_CONTENT
+) => {
   return {
-    ...DEFAULT_AVISOS_CONTENT,
-    ...(value || {}),
+    eyebrow: String(
+      value?.eyebrow ??
+        fallback?.eyebrow ??
+        ""
+    ),
+
+    title: String(
+      value?.title ??
+        fallback?.title ??
+        ""
+    ),
+
+    text: String(
+      value?.text ??
+        fallback?.text ??
+        ""
+    ),
+
+    recentLabel: String(
+      value?.recentLabel ??
+        value?.recent_label ??
+        fallback?.recentLabel ??
+        ""
+    ),
   };
 };
 
-const normalizeContent = (value) => {
+const normalizeSingleLine = (value) => {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const normalizeMultiLine = (value) => {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+};
+
+const normalizeContentForPayload = (
+  value
+) => {
   const next = cloneContent(value);
 
   return {
+    eyebrow: normalizeSingleLine(
+      next.eyebrow
+    ),
+
+    title: normalizeSingleLine(
+      next.title
+    ),
+
+    text: normalizeMultiLine(
+      next.text
+    ),
+
+    recentLabel: normalizeSingleLine(
+      next.recentLabel
+    ),
+  };
+};
+
+const normalizeContentForDisplay = (
+  value
+) => {
+  const next =
+    normalizeContentForPayload(value);
+
+  return {
     eyebrow:
-      String(next.eyebrow || "").trim() ||
+      next.eyebrow ||
       DEFAULT_AVISOS_CONTENT.eyebrow,
 
     title:
-      String(next.title || "").trim() ||
+      next.title ||
       DEFAULT_AVISOS_CONTENT.title,
 
     text:
-      String(next.text || "").trim() ||
+      next.text ||
       DEFAULT_AVISOS_CONTENT.text,
 
     recentLabel:
-      String(next.recentLabel || "").trim() ||
+      next.recentLabel ||
       DEFAULT_AVISOS_CONTENT.recentLabel,
   };
 };
@@ -1346,7 +1560,9 @@ const getRawBannerContent = (banner) => {
     ).trim(),
 
     recentLabel: String(
-      banner?.recentLabel || ""
+      banner?.recentLabel ??
+        banner?.recent_label ??
+        ""
     ).trim(),
   };
 };
@@ -1380,7 +1596,9 @@ const sanitizeStageHeight = (value) => {
 const getMediaWidthMax = (width) => {
   return Math.max(
     MEDIA_WIDTH_MIN,
-    width - ASIDE_WIDTH_MIN
+    width -
+      ASIDE_WIDTH_MIN -
+      SPLITTER_WIDTH
   );
 };
 
@@ -1423,6 +1641,7 @@ const bulkDeleteTotal = ref(0);
 
 const savingLayout = ref(false);
 const savingBannerContent = ref(false);
+const savingGlobalContent = ref(false);
 
 const uploadIndex = ref(0);
 const uploadTotal = ref(0);
@@ -1497,11 +1716,25 @@ const contentSaved = ref(
 );
 
 const activeBannerContentSaved = ref(
-  cloneContent(DEFAULT_AVISOS_CONTENT)
+  cloneContent(EMPTY_AVISOS_CONTENT)
 );
 
 const activeBannerContentDraft = ref(
-  cloneContent(DEFAULT_AVISOS_CONTENT)
+  cloneContent(EMPTY_AVISOS_CONTENT)
+);
+
+const globalContentSaved = ref(
+  cloneContent(
+    getAvisosContent(),
+    DEFAULT_AVISOS_CONTENT
+  )
+);
+
+const globalContentDraft = ref(
+  cloneContent(
+    getAvisosContent(),
+    DEFAULT_AVISOS_CONTENT
+  )
 );
 
 let carouselTimer = null;
@@ -1574,6 +1807,14 @@ const showCarousel = computed(() => {
   );
 });
 
+const isEmptyState = computed(() => {
+  return (
+    !loading.value &&
+    heroReady.value &&
+    !hasBanners.value
+  );
+});
+
 const showAdminPanel = computed(() => {
   return isAdmin.value;
 });
@@ -1623,17 +1864,44 @@ const hasActiveBannerContentChanges =
   computed(() => {
     return (
       JSON.stringify(
-        normalizeContent(
+        normalizeContentForPayload(
           activeBannerContentDraft.value
         )
       ) !==
       JSON.stringify(
-        normalizeContent(
+        normalizeContentForPayload(
           activeBannerContentSaved.value
         )
       )
     );
   });
+
+const hasGlobalContentChanges =
+  computed(() => {
+    return (
+      JSON.stringify(
+        normalizeContentForPayload(
+          globalContentDraft.value
+        )
+      ) !==
+      JSON.stringify(
+        normalizeContentForPayload(
+          globalContentSaved.value
+        )
+      )
+    );
+  });
+
+const hasBlockingOperation = computed(() => {
+  return Boolean(
+    uploading.value ||
+      deletingBulk.value ||
+      deletingId.value !== null ||
+      savingLayout.value ||
+      savingBannerContent.value ||
+      savingGlobalContent.value
+  );
+});
 
 const isLayoutDirty = computed(() => {
   return (
@@ -1721,6 +1989,10 @@ const pendingChangeCount = computed(() => {
     count += 1;
   }
 
+  if (hasGlobalContentChanges.value) {
+    count += 1;
+  }
+
   if (files.value.length) {
     count += 1;
   }
@@ -1758,15 +2030,32 @@ const allSelected = computed(() => {
   );
 });
 
+const visualStageWidth = computed(() => {
+  if (!isEmptyState.value) {
+    return stageWidth.value;
+  }
+
+  return Math.min(
+    stageWidth.value,
+    EMPTY_STAGE_WIDTH
+  );
+});
+
+const visualStageHeight = computed(() => {
+  return isEmptyState.value
+    ? EMPTY_STAGE_HEIGHT
+    : stageHeight.value;
+});
+
 const stageShellStyle = computed(() => {
   if (isCompactScreen.value) {
     return {};
   }
 
   return {
-    width: `${stageWidth.value}px`,
-    maxWidth:
-      "calc(100vw - 24px)",
+    width: `${visualStageWidth.value}px`,
+    maxWidth: "100%",
+    minWidth: "0",
   };
 });
 
@@ -1776,10 +2065,10 @@ const stageCardStyle = computed(() => {
   }
 
   return {
-    width: `${stageWidth.value}px`,
-    height: `${stageHeight.value}px`,
-    maxWidth:
-      "calc(100vw - 24px)",
+    width: `${visualStageWidth.value}px`,
+    height: `${visualStageHeight.value}px`,
+    maxWidth: "100%",
+    minWidth: "0",
   };
 });
 
@@ -1791,9 +2080,16 @@ const stageGridStyle = computed(() => {
     return {};
   }
 
+  const ratio = clamp(
+    mediaPaneWidth.value /
+      Math.max(stageWidth.value, 1),
+    0,
+    1
+  );
+
   return {
     gridTemplateColumns:
-      `${mediaPaneWidth.value}px minmax(0, 1fr)`,
+      `${(ratio * 100).toFixed(4)}% minmax(0, 1fr)`,
   };
 });
 
@@ -1954,17 +2250,9 @@ const syncPersistedLayout = () => {
     displayMode.value;
 };
 
-const applyRemoteConfig = (
+const applyRemoteLayout = (
   config = {}
 ) => {
-  contentSaved.value = cloneContent({
-    eyebrow: config?.eyebrow,
-    title: config?.title,
-    text: config?.text,
-    recentLabel:
-      config?.recentLabel,
-  });
-
   const width =
     sanitizeStageWidth(
       config?.stageWidth
@@ -2011,6 +2299,31 @@ const applyRemoteConfig = (
   layoutLoaded.value = true;
 };
 
+const applyRemoteConfig = (
+  config = {}
+) => {
+  const remoteContent =
+    normalizeContentForDisplay({
+      eyebrow: config?.eyebrow,
+      title: config?.title,
+      text: config?.text,
+      recentLabel:
+        config?.recentLabel ??
+        config?.recent_label,
+    });
+
+  contentSaved.value =
+    cloneContent(remoteContent);
+
+  globalContentSaved.value =
+    cloneContent(remoteContent);
+
+  globalContentDraft.value =
+    cloneContent(remoteContent);
+
+  applyRemoteLayout(config);
+};
+
 const loadRemoteConfig = async () => {
   try {
     const config =
@@ -2028,18 +2341,18 @@ const loadRemoteConfig = async () => {
 };
 
 const syncActiveBannerEditor = () => {
-  const resolved =
+  const rawContent =
     activeBannerItem.value
-      ? resolveBannerContent(
+      ? getRawBannerContent(
           activeBannerItem.value
         )
-      : contentSaved.value;
+      : EMPTY_AVISOS_CONTENT;
 
   activeBannerContentSaved.value =
-    cloneContent(resolved);
+    cloneContent(rawContent);
 
   activeBannerContentDraft.value =
-    cloneContent(resolved);
+    cloneContent(rawContent);
 };
 
 const updateBannerInList = (
@@ -2114,8 +2427,7 @@ const persistRemoteLayout = async ({
           displayMode.value,
       });
 
-    applyRemoteConfig({
-      ...contentSaved.value,
+    applyRemoteLayout({
       ...saved,
 
       displayMode:
@@ -2168,7 +2480,7 @@ const saveActiveBannerContent =
 
     try {
       const payload =
-        normalizeContent(
+        normalizeContentForPayload(
           activeBannerContentDraft.value
         );
 
@@ -2196,6 +2508,70 @@ const saveActiveBannerContent =
         false;
     }
   };
+
+const saveGlobalContent = async () => {
+  if (
+    !isAdmin.value ||
+    savingGlobalContent.value ||
+    !hasGlobalContentChanges.value
+  ) {
+    return;
+  }
+
+  savingGlobalContent.value = true;
+
+  clearPanelError();
+
+  try {
+    const payload =
+      normalizeContentForPayload(
+        globalContentDraft.value
+      );
+
+    const saved =
+      await saveAvisosContent(payload);
+
+    const normalized =
+      normalizeContentForDisplay(saved);
+
+    contentSaved.value =
+      cloneContent(normalized);
+
+    globalContentSaved.value =
+      cloneContent(normalized);
+
+    globalContentDraft.value =
+      cloneContent(normalized);
+
+    setEditorStatus(
+      "Contenido global guardado correctamente."
+    );
+
+    await requestVersionSync();
+  } catch (error) {
+    console.error(error);
+
+    setPanelError(
+      "No fue posible guardar el contenido global."
+    );
+  } finally {
+    savingGlobalContent.value = false;
+  }
+};
+
+const cancelGlobalContent = () => {
+  globalContentDraft.value =
+    cloneContent(
+      globalContentSaved.value
+    );
+};
+
+const resetGlobalContent = () => {
+  globalContentDraft.value =
+    cloneContent(
+      DEFAULT_AVISOS_CONTENT
+    );
+};
 
 const cancelActiveBannerContent =
   () => {
@@ -2280,17 +2656,68 @@ const openPublishTab = () => {
   activeAdminTab.value = "publish";
 };
 
+const discardPendingChanges = () => {
+  activeBannerContentDraft.value =
+    cloneContent(
+      activeBannerContentSaved.value
+    );
+
+  globalContentDraft.value =
+    cloneContent(
+      globalContentSaved.value
+    );
+
+  setFiles([]);
+
+  stageWidth.value =
+    persistedStageWidth.value;
+
+  stageHeight.value =
+    persistedStageHeight.value;
+
+  mediaPaneWidth.value =
+    persistedMediaPaneWidth.value;
+
+  displayMode.value =
+    persistedDisplayMode.value;
+};
+
 const handleContinue = async () => {
   if (dialogData.value.visible) {
-    return;
+    return false;
   }
 
-  if (
-    isAdmin.value &&
-    isLayoutDirty.value &&
-    !savingLayout.value
-  ) {
-    await persistRemoteLayout();
+  if (hasBlockingOperation.value) {
+    setPanelError(
+      "Espere a que finalice la operación actual antes de cerrar."
+    );
+
+    return false;
+  }
+
+  const hasDraftChanges = Boolean(
+    hasActiveBannerContentChanges.value ||
+      hasGlobalContentChanges.value ||
+      files.value.length
+  );
+
+  if (hasDraftChanges) {
+    const confirmed = window.confirm(
+      "Hay cambios sin guardar. ¿Desea descartarlos y cerrar los avisos?"
+    );
+
+    if (!confirmed) {
+      return false;
+    }
+
+    discardPendingChanges();
+  } else if (isLayoutDirty.value) {
+    const saved =
+      await persistRemoteLayout();
+
+    if (!saved) {
+      return false;
+    }
   }
 
   if (
@@ -2302,7 +2729,13 @@ const handleContinue = async () => {
   }
 
   emit("continue");
+
+  return true;
 };
+
+defineExpose({
+  requestClose: handleContinue,
+});
 
 const selectBanner = (index) => {
   moveToBanner(index, true);
@@ -2821,20 +3254,26 @@ const subirBanners = async () => {
 
   clearPanelError();
 
+  const pendingFiles = [
+    ...files.value,
+  ];
+
+  const failedFiles = [];
+
   uploadIndex.value = 0;
   uploadTotal.value =
-    files.value.length;
+    pendingFiles.length;
 
   const activeIdBeforeUpload =
     activeBannerItem.value?.id ??
     null;
 
-  let success = true;
+  let successCount = 0;
 
   try {
     for (
       let index = 0;
-      index < files.value.length;
+      index < pendingFiles.length;
       index += 1
     ) {
       uploadIndex.value =
@@ -2844,51 +3283,65 @@ const subirBanners = async () => {
 
       form.append(
         "image",
-        files.value[index]
+        pendingFiles[index]
       );
 
-      await api.post(
-        "banners/",
-        form,
-        {
-          headers: {
-            "Content-Type":
-              "multipart/form-data",
-          },
-        }
-      );
-    }
-  } catch (error) {
-    console.error(error);
+      try {
+        await api.post(
+          "banners/",
+          form
+        );
 
-    success = false;
+        successCount += 1;
+      } catch (error) {
+        console.error(error);
 
-    setPanelError(
-      "No fue posible publicar los avisos. Intenta nuevamente."
-    );
-  } finally {
-    if (success) {
-      setFiles([]);
+        failedFiles.push(
+          pendingFiles[index]
+        );
+      }
     }
 
-    await cargarBanners({
-      preserveActive: true,
-      showLoading: false,
-      preferredBannerId:
-        activeIdBeforeUpload,
-    });
+    setFiles(failedFiles);
 
-    if (success) {
-      setEditorStatus(
-        "Avisos publicados correctamente."
-      );
+    if (successCount > 0) {
+      await cargarBanners({
+        preserveActive: true,
+        showLoading: false,
+        preferredBannerId:
+          activeIdBeforeUpload,
+      });
 
       activeAdminTab.value =
-        "published";
+        failedFiles.length
+          ? "publish"
+          : "published";
 
       await requestVersionSync();
     }
 
+    if (!failedFiles.length) {
+      setEditorStatus(
+        successCount === 1
+          ? "Aviso publicado correctamente."
+          : `${successCount} avisos publicados correctamente.`
+      );
+    } else if (successCount > 0) {
+      setPanelError(
+        `${successCount} aviso${
+          successCount !== 1 ? "s" : ""
+        } publicado${
+          successCount !== 1 ? "s" : ""
+        } y ${failedFiles.length} pendiente${
+          failedFiles.length !== 1 ? "s" : ""
+        } por error. Solo se conservaron en la cola los archivos fallidos.`
+      );
+    } else {
+      setPanelError(
+        "No fue posible publicar los avisos seleccionados. Los archivos permanecen en la cola para reintentar."
+      );
+    }
+  } finally {
     uploading.value = false;
     uploadIndex.value = 0;
     uploadTotal.value = 0;

@@ -71,81 +71,124 @@
   --z-modal: 100;
   --z-toast: 120;
 
+  /*
+   * Las duraciones finales consumen los valores "-base"
+   * escritos por transicionesRuta.js mediante themeStore.
+   *
+   * De esta forma, el preset seleccionado sí controla la
+   * transición real y --animate-speed puede neutralizarla.
+   */
   --page-shell-enter-duration:
     calc(
-      240ms *
+      var(
+        --page-shell-enter-duration-base,
+        220ms
+      ) *
       var(--animate-speed)
     );
 
+  /*
+   * La salida queda en 0 ms por defecto para impedir que la
+   * ruta anterior desaparezca con una segunda animación.
+   */
   --page-shell-leave-duration:
     calc(
-      160ms *
+      var(
+        --page-shell-leave-duration-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-shell-enter-ease:
     cubic-bezier(
-      0.2,
-      0.8,
-      0.2,
+      0.22,
+      1,
+      0.36,
       1
     );
 
   --page-shell-leave-ease:
-    ease-out;
+    linear;
 
   --page-shell-enter-x: 0px;
-  --page-shell-enter-y: 6px;
+  --page-shell-enter-y: 0px;
 
   --page-shell-leave-x: 0px;
-  --page-shell-leave-y: -3px;
+  --page-shell-leave-y: 0px;
 
-  --page-shell-enter-scale: 1;
+  --page-shell-enter-scale: 0.998;
   --page-shell-leave-scale: 1;
 
+  /*
+   * Los bloques internos conservan sus tokens por
+   * compatibilidad, pero la animación escalonada queda
+   * desactivada. Solo se anima el contenedor de la ruta.
+   */
   --page-stage-duration:
     calc(
-      220ms *
+      var(
+        --page-stage-duration-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-stage-x: 0px;
-  --page-stage-y: 5px;
+  --page-stage-y: 0px;
   --page-stage-scale: 1;
 
   --page-delay-1:
     calc(
-      20ms *
+      var(
+        --page-delay-1-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-delay-2:
     calc(
-      40ms *
+      var(
+        --page-delay-2-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-delay-3:
     calc(
-      60ms *
+      var(
+        --page-delay-3-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-delay-4:
     calc(
-      80ms *
+      var(
+        --page-delay-4-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-delay-5:
     calc(
-      100ms *
+      var(
+        --page-delay-5-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 
   --page-delay-6:
     calc(
-      120ms *
+      var(
+        --page-delay-6-base,
+        0ms
+      ) *
       var(--animate-speed)
     );
 }
@@ -910,6 +953,21 @@ body.dark {
   box-sizing: border-box;
 }
 
+/* ============================================================
+   10.1 CAMBIO INSTANTÁNEO ENTRE TEMAS
+   Solo neutraliza las transiciones durante los dos fotogramas
+   utilizados para sustituir las variables de apariencia.
+   Las animaciones normales del sistema permanecen activas.
+============================================================ */
+
+html.sgpc-theme-switching,
+html.sgpc-theme-switching *,
+html.sgpc-theme-switching *::before,
+html.sgpc-theme-switching *::after {
+  transition: none !important;
+  transition-delay: 0s !important;
+}
+
 html {
   min-height: 100%;
 
@@ -971,6 +1029,24 @@ body {
   color:
     var(--text-primary);
 }
+
+/* ============================================================
+   SUPERFICIE ESTABLE DEL ROUTER
+============================================================ */
+
+.route-transition-stage,
+.route-transition-shell {
+  background:
+    var(--bg-main);
+
+  color:
+    var(--text-primary);
+}
+
+.route-transition-shell {
+  isolation: isolate;
+}
+
 
 :where(
   button,
@@ -1541,150 +1617,165 @@ body {
 
 /* ============================================================
    18. TRANSICIONES DE RUTAS
+   INDICADOR INSTITUCIONAL SIN PARPADEO
 ============================================================ */
+
+/*
+ * La página completa no se anima.
+ *
+ * No se aplican transformaciones, opacidad, filtros ni
+ * will-change sobre .route-transition-shell. Esto evita que el
+ * navegador cree y destruya una capa de composición para toda
+ * la interfaz al finalizar la navegación.
+ *
+ * La única señal visual es una línea institucional muy breve
+ * situada en la parte superior de la nueva ruta.
+ */
 
 .page-assembly-enter-active,
 .page-premium-enter-active {
-  transition:
-    opacity
-      var(--page-shell-enter-duration)
-      var(--page-shell-enter-ease),
-    transform
-      var(--page-shell-enter-duration)
-      var(--page-shell-enter-ease);
-}
+  position: relative;
 
-.page-assembly-leave-active,
-.page-premium-leave-active {
-  pointer-events: none;
+  z-index: 2;
 
-  transition:
-    opacity
-      var(--page-shell-leave-duration)
-      var(--page-shell-leave-ease),
-    transform
-      var(--page-shell-leave-duration)
-      var(--page-shell-leave-ease);
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  transition: none !important;
 }
 
 .page-assembly-enter-from,
-.page-premium-enter-from {
-  opacity: 0;
-
-  transform:
-    translate3d(
-      var(--page-shell-enter-x),
-      var(--page-shell-enter-y),
-      0
-    )
-    scale(
-      var(--page-shell-enter-scale)
-    );
-}
-
+.page-premium-enter-from,
 .page-assembly-enter-to,
-.page-premium-enter-to,
-.page-assembly-leave-from,
-.page-premium-leave-from {
-  opacity: 1;
+.page-premium-enter-to {
+  opacity: 1 !important;
+  visibility: visible !important;
 
-  transform:
-    translate3d(
-      0,
-      0,
-      0
-    )
-    scale(1);
+  transform: none !important;
+  filter: none !important;
 }
 
-.page-assembly-leave-to,
-.page-premium-leave-to {
-  opacity: 0;
+/* ============================================================
+   INDICADOR VISUAL DE LA NUEVA RUTA
+============================================================ */
 
-  transform:
-    translate3d(
-      var(--page-shell-leave-x),
-      var(--page-shell-leave-y),
-      0
-    )
-    scale(
-      var(--page-shell-leave-scale)
-    );
-}
+.page-assembly-enter-active::before,
+.page-premium-enter-active::before {
+  content: "";
 
-.page-assembly-enter-active
-.page-stage,
-.page-premium-enter-active
-.page-stage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  z-index: 3;
+
+  height:
+    var(--page-route-indicator-height, 2px);
+
+  pointer-events: none;
+
+  background:
+    var(--color-primary, #1d4ed8);
+
+  transform-origin: left center;
+
   animation:
-    pageStageEnter
-    var(--page-stage-duration)
-    ease
+    sgpc-route-indicator
+    var(--page-route-indicator-duration, 220ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
     both;
-
-  animation-delay:
-    var(
-      --page-stage-delay,
-      0ms
-    );
 }
 
-.page-stage-1 {
-  --page-stage-delay:
-    var(--page-delay-1);
-}
-
-.page-stage-2 {
-  --page-stage-delay:
-    var(--page-delay-2);
-}
-
-.page-stage-3 {
-  --page-stage-delay:
-    var(--page-delay-3);
-}
-
-.page-stage-4 {
-  --page-stage-delay:
-    var(--page-delay-4);
-}
-
-.page-stage-5 {
-  --page-stage-delay:
-    var(--page-delay-5);
-}
-
-.page-stage-6 {
-  --page-stage-delay:
-    var(--page-delay-6);
-}
-
-@keyframes pageStageEnter {
+@keyframes sgpc-route-indicator {
   from {
-    opacity: 0;
-
-    transform:
-      translate3d(
-        var(--page-stage-x),
-        var(--page-stage-y),
-        0
-      )
-      scale(
-        var(--page-stage-scale)
-      );
+    opacity: 0.85;
+    transform: scaleX(0);
   }
 
   to {
-    opacity: 1;
-
-    transform:
-      translate3d(
-        0,
-        0,
-        0
-      )
-      scale(1);
+    opacity: 0;
+    transform: scaleX(1);
   }
+}
+
+/* ============================================================
+   SALIDA INMEDIATA DE LA RUTA ANTERIOR
+============================================================ */
+
+.page-assembly-leave-active,
+.page-premium-leave-active,
+.page-assembly-leave-from,
+.page-premium-leave-from,
+.page-assembly-leave-to,
+.page-premium-leave-to {
+  z-index: 1;
+
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  pointer-events: none !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ============================================================
+   BLOQUES INTERNOS ESTABLES
+============================================================ */
+
+/*
+ * Las clases page-stage se conservan por compatibilidad con las
+ * vistas existentes, pero no ejecutan animaciones de entrada.
+ * De esta forma no aparece una segunda fase después de montar la
+ * ruta principal.
+ */
+
+.route-transition-shell
+  :is(
+    .page-stage,
+    .page-stagger > *
+  ) {
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0ms !important;
+  animation-delay: 0ms !important;
+
+  transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+}
+
+.page-stage-1,
+.page-stage-2,
+.page-stage-3,
+.page-stage-4,
+.page-stage-5,
+.page-stage-6 {
+  --page-stage-delay: 0ms;
 }
 
 /* ============================================================

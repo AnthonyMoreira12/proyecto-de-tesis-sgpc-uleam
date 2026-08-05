@@ -23,11 +23,15 @@ from django.db.models import (
     Value,
     When,
 )
+from django.db.models.functions import Concat
 from django.utils import timezone
 
 from core.models import (
     Proyecto,
     ProyectoAutor,
+)
+from core.proyectos.services.proyectos_proyecto_services import (
+    user_is_project_admin,
 )
 
 
@@ -171,51 +175,21 @@ def _parse_year(value):
 
 def user_is_project_admin_like(user):
     """
-    Determina si un usuario puede administrar proyectos.
+    Alias compatible con importaciones anteriores.
+
+    La regla real se encuentra centralizada en
+    user_is_project_admin() para evitar diferencias entre:
+
+    - Visibilidad de proyectos.
+    - Permisos del ViewSet.
+    - Operaciones de escritura.
     """
-    if (
-        user is None
-        or not getattr(
-            user,
-            "is_authenticated",
-            False,
-        )
-    ):
-        return False
-
-    role = _normalize_text(
-        getattr(
-            user,
-            "rol",
-            "",
-        ),
-        max_length=30,
-    ).lower()
-
-    return bool(
-        getattr(
-            user,
-            "is_staff",
-            False,
-        )
-        or getattr(
-            user,
-            "is_superuser",
-            False,
-        )
-        or getattr(
-            user,
-            "es_admin",
-            False,
-        )
-        or role in {
-            "admin",
-            "administrador",
-        }
+    return user_is_project_admin(
+        user
     )
 
 
-# Alias mantenido para no romper imports existentes.
+# Alias histórico mantenido para no romper imports existentes.
 _user_is_project_admin_like = (
     user_is_project_admin_like
 )
@@ -307,9 +281,22 @@ def proyectos_visible_queryset_for_user(user):
 def _apply_q_filter(
     queryset,
     query,
+    *,
+    is_admin=False,
 ):
     """
     Busca proyectos por información institucional y equipo.
+
+    La consulta se divide en palabras. Cada palabra debe
+    coincidir en al menos uno de los campos admitidos, lo que
+    permite buscar correctamente nombres completos como:
+
+        Juan Martín Mero Ávila
+
+    Los datos sensibles del equipo —correo e identificación—
+    únicamente se utilizan como criterio para administradores.
+    El usuario creador no se considera parte del equipo
+    investigador.
     """
     normalized_query = _normalize_text(
         query
@@ -318,76 +305,99 @@ def _apply_q_filter(
     if not normalized_query:
         return queryset
 
+    search_terms = [
+        term
+        for term in normalized_query.split()
+        if term
+    ]
+
+    queryset = queryset.annotate(
+        _participant_full_name=Concat(
+            "participaciones__autor__nombres",
+            Value(" "),
+            "participaciones__autor__apellidos",
+        )
+    )
+
+    combined_query = Q()
+
+    for term in search_terms:
+        term_query = (
+            Q(
+                nombre__icontains=term
+            )
+            | Q(
+                descripcion__icontains=term
+            )
+            | Q(
+                carrera__nombre__icontains=term
+            )
+            | Q(
+                carrera__facultad__nombre__icontains=term
+            )
+            | Q(
+                participaciones__autor__nombres__icontains=term
+            )
+            | Q(
+                participaciones__autor__apellidos__icontains=term
+            )
+            | Q(
+                _participant_full_name__icontains=term
+            )
+            | Q(
+                participaciones__autor__institucion__icontains=term
+            )
+        )
+
+        if is_admin:
+            term_query |= (
+                Q(
+                    participaciones__autor__correo__icontains=term
+                )
+                | Q(
+                    participaciones__autor__identificacion__icontains=term
+                )
+                | Q(
+                    participaciones__autor__usuario__email__icontains=term
+                )
+            )
+
+        combined_query &= term_query
+
     return (
         queryset
         .filter(
-            Q(
-                nombre__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                descripcion__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                carrera__nombre__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                carrera__facultad__nombre__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                creado_por__nombres__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                creado_por__apellidos__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                creado_por__email__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__nombres__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__apellidos__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__correo__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__identificacion__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__institucion__icontains=(
-                    normalized_query
-                )
-            )
-            | Q(
-                participaciones__autor__usuario__email__icontains=(
-                    normalized_query
-                )
+            combined_query
+        )
+        .annotate(
+            _project_search_priority=Case(
+                When(
+                    nombre__iexact=normalized_query,
+                    then=Value(0),
+                ),
+                When(
+                    nombre__istartswith=normalized_query,
+                    then=Value(1),
+                ),
+                When(
+                    carrera__nombre__iexact=normalized_query,
+                    then=Value(2),
+                ),
+                When(
+                    carrera__facultad__nombre__iexact=normalized_query,
+                    then=Value(2),
+                ),
+                default=Value(3),
+                output_field=IntegerField(),
             )
         )
         .distinct()
+        .order_by(
+            "_project_search_priority",
+            "-anio_inicio",
+            "nombre",
+            "id",
+        )
     )
 
 
@@ -507,6 +517,7 @@ def filter_proyectos_queryset(
     queryset = _apply_q_filter(
         queryset,
         q,
+        is_admin=is_admin,
     )
 
     queryset = _apply_anio_filter(

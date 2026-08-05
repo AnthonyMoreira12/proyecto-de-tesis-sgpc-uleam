@@ -66,6 +66,7 @@ from rest_framework_simplejwt.authentication import (
 from core.models import Proyecto
 from core.proyectos.serializers.proyectos_proyecto_serializers import (
     ProyectoAutorReadSerializer,
+    ProyectoAutorResumenSerializer,
     ProyectoListSerializer,
     ProyectoSerializer,
 )
@@ -75,7 +76,6 @@ from core.proyectos.selectors.proyectos_proyecto_selectors import (
     proyectos_base_queryset,
 )
 from core.proyectos.services.proyectos_proyecto_services import (
-    autores_payload_tiene_principal,
     normalize_proyecto_autores_payload,
     require_project_admin,
     resolver_estado_destino,
@@ -502,6 +502,111 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                 }
             ) from exc
 
+    def _get_project_file_reference(
+        self,
+        project,
+    ):
+        """
+        Captura el almacenamiento y nombre del PDF del proyecto.
+        """
+        file_field = getattr(
+            project,
+            "archivo_pdf",
+            None,
+        )
+
+        if not file_field:
+            return None, None
+
+        file_name = getattr(
+            file_field,
+            "name",
+            None,
+        )
+
+        storage = getattr(
+            file_field,
+            "storage",
+            None,
+        )
+
+        if (
+            not file_name
+            or storage is None
+        ):
+            return None, None
+
+        return storage, file_name
+
+    def _schedule_project_file_delete(
+        self,
+        storage,
+        file_name,
+    ):
+        """
+        Elimina el archivo físico solamente después del commit.
+        """
+        if (
+            storage is None
+            or not file_name
+        ):
+            return
+
+        def delete_file():
+            try:
+                if storage.exists(
+                    file_name
+                ):
+                    storage.delete(
+                        file_name
+                    )
+
+            except Exception:
+                logger.exception(
+                    (
+                        "No fue posible eliminar el PDF "
+                        "del proyecto '%s'."
+                    ),
+                    file_name,
+                )
+
+        transaction.on_commit(
+            delete_file
+        )
+
+    def _project_serializer_context(
+        self,
+        *,
+        allow_state_transition=False,
+    ):
+        """
+        Construye el contexto del serializer y controla si una
+        acción especializada puede cambiar el estado.
+        """
+        context = self.get_serializer_context()
+
+        if allow_state_transition:
+            context[
+                "allow_state_transition"
+            ] = True
+
+        return context
+
+    def _team_serializer_class(
+        self,
+        request,
+    ):
+        """
+        Entrega datos personales del equipo únicamente a
+        administradores.
+        """
+        if user_is_project_admin(
+            request.user
+        ):
+            return ProyectoAutorReadSerializer
+
+        return ProyectoAutorResumenSerializer
+
     def _database_unavailable_response(
         self,
         detail,
@@ -541,7 +646,19 @@ class ProyectoViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 project = self._get_locked_project()
 
+                (
+                    file_storage,
+                    file_name,
+                ) = self._get_project_file_reference(
+                    project
+                )
+
                 project.delete()
+
+                self._schedule_project_file_delete(
+                    file_storage,
+                    file_name,
+                )
 
         except ProtectedError as exc:
             raise ValidationError(
@@ -701,8 +818,14 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                 project.participaciones.all()
             )
 
+            serializer_class = (
+                self._team_serializer_class(
+                    request
+                )
+            )
+
             participation_serializer = (
-                ProyectoAutorReadSerializer(
+                serializer_class(
                     participations,
                     many=True,
                     context=self.get_serializer_context(),
@@ -760,16 +883,15 @@ class ProyectoViewSet(viewsets.ModelViewSet):
 
                 if (
                     locked_project.estado == "cierre"
-                    and not autores_payload_tiene_principal(
-                        normalized_authors
-                    )
+                    and not normalized_authors
                 ):
                     raise ValidationError(
                         {
                             "autores_data": (
                                 "Un proyecto cerrado debe "
-                                "conservar al menos un "
-                                "investigador principal."
+                                "conservar su equipo con un "
+                                "investigador principal en el "
+                                "orden 1."
                             )
                         }
                     )
@@ -885,7 +1007,9 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                     locked_project,
                     data=payload,
                     partial=True,
-                    context=self.get_serializer_context(),
+                    context=self._project_serializer_context(
+                        allow_state_transition=True,
+                    ),
                 )
 
                 project_serializer.is_valid(
@@ -996,9 +1120,14 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                 )
 
                 current_reference_date = (
-                    locked_project.fecha_fin_prorrogada
-                    or locked_project.fecha_fin_planificada
+                    getattr(
+                        locked_project,
+                        "fecha_fin_vigente",
+                        None,
+                    )
+                    or locked_project.fecha_fin_prorrogada
                     or locked_project.fecha_cierre
+                    or locked_project.fecha_fin_planificada
                     or locked_project.fecha_inicio
                 )
 
@@ -1027,7 +1156,9 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                     locked_project,
                     data=payload,
                     partial=True,
-                    context=self.get_serializer_context(),
+                    context=self._project_serializer_context(
+                        allow_state_transition=True,
+                    ),
                 )
 
                 project_serializer.is_valid(

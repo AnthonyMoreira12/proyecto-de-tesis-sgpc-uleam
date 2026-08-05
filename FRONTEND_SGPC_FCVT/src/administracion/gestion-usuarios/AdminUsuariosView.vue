@@ -688,7 +688,6 @@ import {
   isAdminUser,
   isExternalUser,
   isInstitutionalUser,
-  isPendingExternalUser,
 } from "../../scripts/utils/auth";
 
 import { useNotice } from "../../scripts/composables/useNotice";
@@ -823,21 +822,11 @@ const isAdministrator = (usuario) => {
 
 const isPendiente = (usuario) => {
   /*
-    Se prioriza el valor calculado por el backend.
-
-    Como respaldo, se utiliza la clasificación externa local
-    y el estado inactivo.
+    La condición de pendiente depende también de que la cuenta
+    todavía no posea una contraseña utilizable. Esa información
+    solo debe determinarla el backend.
   */
-  if (
-    typeof usuario?.es_pendiente ===
-    "boolean"
-  ) {
-    return usuario.es_pendiente;
-  }
-
-  return isPendingExternalUser(
-    usuario
-  );
+  return usuario?.es_pendiente === true;
 };
 
 

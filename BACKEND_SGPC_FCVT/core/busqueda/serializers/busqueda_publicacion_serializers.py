@@ -7,16 +7,24 @@ Expone:
 - Tipo general y tipo final.
 - Proyecto, carrera y facultad.
 - Área y subárea.
-- Usuario creador.
+- Autores científicos obtenidos desde PublicacionAutor.
+- Autor principal para compatibilidad con consumidores antiguos.
 - Fecha y año de publicación.
+- Revista, evento, editorial o libro contenedor.
+- DOI y enlace externo.
 - Disponibilidad y URL absoluta del PDF.
 
-Se mantienen alias en inglés utilizados por el frontend:
+Se mantienen alias utilizados por el frontend:
 
 - title
 - authors
 - year
+- area_label
+- source
+- venue
+- snippet
 - has_pdf
+- hasPdf
 - pdf_url
 """
 
@@ -47,9 +55,11 @@ FINAL_TYPE_CONFERENCE = "ponencia"
 FINAL_TYPE_BOOK = "libro"
 FINAL_TYPE_BOOK_CHAPTER = "capitulo_libro"
 
+SNIPPET_MAX_LENGTH = 320
+
 
 # ============================================================
-# UTILIDADES
+# UTILIDADES DE TEXTO
 # ============================================================
 
 def _normalize_text(value):
@@ -65,12 +75,43 @@ def _optional_text(value):
     """
     Devuelve texto normalizado o None.
     """
-    normalized = _normalize_text(
-        value
-    )
+    normalized = _normalize_text(value)
 
     return normalized or None
 
+
+def _truncate_text(
+    value,
+    *,
+    max_length=SNIPPET_MAX_LENGTH,
+):
+    """
+    Limita un texto sin cortar palabras innecesariamente.
+    """
+    normalized = _optional_text(value)
+
+    if not normalized:
+        return None
+
+    if len(normalized) <= max_length:
+        return normalized
+
+    shortened = normalized[
+        : max_length + 1
+    ].rsplit(
+        " ",
+        1,
+    )[0].strip()
+
+    if not shortened:
+        shortened = normalized[:max_length].strip()
+
+    return f"{shortened}…"
+
+
+# ============================================================
+# UTILIDADES DE RELACIONES
+# ============================================================
 
 def _get_related_object(
     instance,
@@ -94,6 +135,144 @@ def _get_related_object(
     ):
         return None
 
+
+def _get_participations(publication):
+    """
+    Obtiene las autorías científicas en el orden registrado.
+
+    El selector general precarga la relación en el atributo
+    _busqueda_participaciones. Se conserva un respaldo para los
+    casos en que el serializer se utilice desde otra vista.
+    """
+    prefetched = getattr(
+        publication,
+        "_busqueda_participaciones",
+        None,
+    )
+
+    if isinstance(prefetched, list):
+        return prefetched
+
+    manager = getattr(
+        publication,
+        "participaciones",
+        None,
+    )
+
+    if manager is None:
+        return []
+
+    try:
+        return list(
+            manager
+            .select_related(
+                "autor",
+                "autor__usuario",
+            )
+            .order_by(
+                "orden",
+                "pk",
+            )
+        )
+
+    except (
+        AttributeError,
+        TypeError,
+        ObjectDoesNotExist,
+    ):
+        return []
+
+
+def _build_author_name(author):
+    """
+    Construye el nombre público de un Autor.
+    """
+    if author is None:
+        return None
+
+    model_full_name = getattr(
+        author,
+        "nombre_completo",
+        None,
+    )
+
+    if callable(model_full_name):
+        resolved_name = _optional_text(
+            model_full_name()
+        )
+
+        if resolved_name:
+            return resolved_name
+
+    if isinstance(model_full_name, str):
+        resolved_name = _optional_text(
+            model_full_name
+        )
+
+        if resolved_name:
+            return resolved_name
+
+    names = _optional_text(
+        getattr(
+            author,
+            "nombres",
+            None,
+        )
+    )
+
+    surnames = _optional_text(
+        getattr(
+            author,
+            "apellidos",
+            None,
+        )
+    )
+
+    full_name = " ".join(
+        value
+        for value in [
+            names,
+            surnames,
+        ]
+        if value
+    )
+
+    return full_name or None
+
+
+def _resolve_principal_participation(publication):
+    """
+    Obtiene el autor principal o, como respaldo, el primer autor.
+    """
+    participations = _get_participations(
+        publication
+    )
+
+    for participation in participations:
+        role = str(
+            getattr(
+                participation,
+                "rol_autoria",
+                "",
+            )
+            or ""
+        ).strip().lower()
+
+        order = getattr(
+            participation,
+            "orden",
+            None,
+        )
+
+        if role == "principal" or order == 1:
+            return participation
+
+    return participations[0] if participations else None
+
+
+# ============================================================
+# UTILIDADES DE ARCHIVOS
+# ============================================================
 
 def _safe_file_url(
     file_field,
@@ -143,54 +322,9 @@ def _safe_file_url(
         return file_url
 
 
-def _get_user_full_name(user):
-    """
-    Construye el nombre completo de un usuario.
-    """
-    if user is None:
-        return None
-
-    get_full_name = getattr(
-        user,
-        "get_full_name",
-        None,
-    )
-
-    if callable(get_full_name):
-        resolved_name = _optional_text(
-            get_full_name()
-        )
-
-        if resolved_name:
-            return resolved_name
-
-    names = _optional_text(
-        getattr(
-            user,
-            "nombres",
-            None,
-        )
-    )
-
-    surnames = _optional_text(
-        getattr(
-            user,
-            "apellidos",
-            None,
-        )
-    )
-
-    full_name = " ".join(
-        value
-        for value in [
-            names,
-            surnames,
-        ]
-        if value
-    )
-
-    return full_name or None
-
+# ============================================================
+# RESOLUCIÓN DEL SUBTIPO
+# ============================================================
 
 def _resolve_specific_title(publication):
     """
@@ -266,9 +400,7 @@ def _resolve_publication_title(publication):
     return specific_title or "—"
 
 
-def _resolve_final_publication_type(
-    publication,
-):
+def _resolve_final_publication_type(publication):
     """
     Obtiene el tipo final.
 
@@ -330,14 +462,10 @@ def _resolve_final_publication_type(
         )
 
         if article_type == "alto_impacto":
-            return (
-                FINAL_TYPE_ARTICLE_HIGH_IMPACT
-            )
+            return FINAL_TYPE_ARTICLE_HIGH_IMPACT
 
         if article_type == "regional":
-            return (
-                FINAL_TYPE_ARTICLE_REGIONAL
-            )
+            return FINAL_TYPE_ARTICLE_REGIONAL
 
     if category == "ponencia":
         return FINAL_TYPE_CONFERENCE
@@ -429,6 +557,158 @@ def _resolve_doi(publication):
     )
 
 
+def _resolve_venue(publication):
+    """
+    Obtiene el medio académico de publicación o presentación.
+    """
+    relation_fields = (
+        (
+            "articulo",
+            "nombre_revista",
+        ),
+        (
+            "ponencia",
+            "nombre_evento",
+        ),
+        (
+            "libro",
+            "editorial_compilador",
+        ),
+        (
+            "capitulo_libro",
+            "nombre_libro",
+        ),
+    )
+
+    for relation_name, field_name in relation_fields:
+        related_object = _get_related_object(
+            publication,
+            relation_name,
+        )
+
+        if related_object is None:
+            continue
+
+        value = _optional_text(
+            getattr(
+                related_object,
+                field_name,
+                None,
+            )
+        )
+
+        if value:
+            return value
+
+    return None
+
+
+def _resolve_source(publication):
+    """
+    Utiliza el proyecto relacionado como fuente contextual.
+
+    La carrera y facultad se exponen en campos independientes y
+    el store puede combinarlas para construir la línea visual.
+    """
+    project = getattr(
+        publication,
+        "proyecto",
+        None,
+    )
+
+    if project is None:
+        return None
+
+    return _optional_text(
+        getattr(
+            project,
+            "nombre",
+            None,
+        )
+    )
+
+
+def _resolve_snippet(publication):
+    """
+    Obtiene un resumen breve cuando alguno de los modelos lo
+    proporciona.
+
+    Se consultan nombres compatibles sin asumir que todos los
+    subtipos poseen los mismos campos.
+    """
+    candidate_fields = (
+        "resumen",
+        "descripcion",
+        "abstract",
+        "detalle",
+    )
+
+    for field_name in candidate_fields:
+        value = _truncate_text(
+            getattr(
+                publication,
+                field_name,
+                None,
+            )
+        )
+
+        if value:
+            return value
+
+    for relation_name in (
+        "articulo",
+        "ponencia",
+        "libro",
+        "capitulo_libro",
+    ):
+        related_object = _get_related_object(
+            publication,
+            relation_name,
+        )
+
+        if related_object is None:
+            continue
+
+        for field_name in candidate_fields:
+            value = _truncate_text(
+                getattr(
+                    related_object,
+                    field_name,
+                    None,
+                )
+            )
+
+            if value:
+                return value
+
+    return None
+
+
+def _resolve_specific_alias(
+    publication,
+    relation_name,
+    field_name,
+):
+    """
+    Obtiene un campo textual específico para aliases públicos.
+    """
+    related_object = _get_related_object(
+        publication,
+        relation_name,
+    )
+
+    if related_object is None:
+        return None
+
+    return _optional_text(
+        getattr(
+            related_object,
+            field_name,
+            None,
+        )
+    )
+
+
 # ============================================================
 # SERIALIZER
 # ============================================================
@@ -486,7 +766,7 @@ class PublicacionBusquedaSerializer(
     )
 
     # --------------------------------------------------------
-    # Proyecto
+    # Proyecto, fuente y medio
     # --------------------------------------------------------
 
     proyecto_id = serializers.IntegerField(
@@ -494,6 +774,26 @@ class PublicacionBusquedaSerializer(
     )
 
     proyecto = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    source = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    venue = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    revista = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    evento = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    snippet = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -529,6 +829,10 @@ class PublicacionBusquedaSerializer(
         read_only=True,
     )
 
+    area_label = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
     subarea_id = serializers.IntegerField(
         read_only=True,
     )
@@ -538,10 +842,14 @@ class PublicacionBusquedaSerializer(
     )
 
     # --------------------------------------------------------
-    # Autor creador
+    # Autorías científicas
     # --------------------------------------------------------
 
     usuario_creador_id = serializers.IntegerField(
+        read_only=True,
+    )
+
+    autor_id = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -570,6 +878,10 @@ class PublicacionBusquedaSerializer(
     )
 
     has_pdf = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    hasPdf = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -613,9 +925,14 @@ class PublicacionBusquedaSerializer(
             "tipo_publicacion_final",
             "tipo_publicacion_final_label",
 
-            # Proyecto
+            # Proyecto, fuente y medio
             "proyecto_id",
             "proyecto",
+            "source",
+            "venue",
+            "revista",
+            "evento",
+            "snippet",
 
             # Carrera y facultad
             "carrera_id",
@@ -626,11 +943,13 @@ class PublicacionBusquedaSerializer(
             # Área y subárea
             "area_id",
             "area",
+            "area_label",
             "subarea_id",
             "subarea",
 
-            # Autor creador
+            # Autorías
             "usuario_creador_id",
+            "autor_id",
             "autor",
             "authors",
 
@@ -642,6 +961,7 @@ class PublicacionBusquedaSerializer(
             # PDF
             "tiene_pdf",
             "has_pdf",
+            "hasPdf",
             "archivo_pdf_url",
             "pdf_url",
 
@@ -660,17 +980,13 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return _resolve_publication_title(
-            obj
-        )
+        return _resolve_publication_title(obj)
 
     def get_title(
         self,
         obj,
     ):
-        return self.get_titulo(
-            obj
-        )
+        return self.get_titulo(obj)
 
     # ========================================================
     # TIPO
@@ -722,18 +1038,14 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return _resolve_final_publication_type(
-            obj
-        )
+        return _resolve_final_publication_type(obj)
 
     def get_tipo_publicacion_final_label(
         self,
         obj,
     ):
-        final_type = (
-            self.get_tipo_publicacion_final(
-                obj
-            )
+        final_type = self.get_tipo_publicacion_final(
+            obj
         )
 
         return tipo_publicacion_label(
@@ -744,15 +1056,12 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return (
-            self
-            .get_tipo_publicacion_final_label(
-                obj
-            )
+        return self.get_tipo_publicacion_final_label(
+            obj
         )
 
     # ========================================================
-    # PROYECTO
+    # PROYECTO, FUENTE Y MEDIO
     # ========================================================
 
     def get_proyecto(
@@ -775,6 +1084,44 @@ class PublicacionBusquedaSerializer(
                 None,
             )
         )
+
+    def get_source(
+        self,
+        obj,
+    ):
+        return _resolve_source(obj)
+
+    def get_venue(
+        self,
+        obj,
+    ):
+        return _resolve_venue(obj)
+
+    def get_revista(
+        self,
+        obj,
+    ):
+        return _resolve_specific_alias(
+            obj,
+            "articulo",
+            "nombre_revista",
+        )
+
+    def get_evento(
+        self,
+        obj,
+    ):
+        return _resolve_specific_alias(
+            obj,
+            "ponencia",
+            "nombre_evento",
+        )
+
+    def get_snippet(
+        self,
+        obj,
+    ):
+        return _resolve_snippet(obj)
 
     # ========================================================
     # CARRERA Y FACULTAD
@@ -875,6 +1222,12 @@ class PublicacionBusquedaSerializer(
             )
         )
 
+    def get_area_label(
+        self,
+        obj,
+    ):
+        return self.get_area(obj)
+
     def get_subarea(
         self,
         obj,
@@ -897,37 +1250,125 @@ class PublicacionBusquedaSerializer(
         )
 
     # ========================================================
-    # AUTOR
+    # AUTORÍAS CIENTÍFICAS
     # ========================================================
+
+    def get_autor_id(
+        self,
+        obj,
+    ):
+        participation = _resolve_principal_participation(
+            obj
+        )
+
+        author = getattr(
+            participation,
+            "autor",
+            None,
+        )
+
+        return getattr(
+            author,
+            "pk",
+            None,
+        )
 
     def get_autor(
         self,
         obj,
     ):
-        user = getattr(
-            obj,
-            "usuario_creador",
+        """
+        Mantiene un alias textual para consumidores antiguos.
+
+        El valor representa al autor científico principal, no al
+        Usuario que registró la publicación.
+        """
+        participation = _resolve_principal_participation(
+            obj
+        )
+
+        author = getattr(
+            participation,
+            "autor",
             None,
         )
 
-        return _get_user_full_name(
-            user
-        )
+        return _build_author_name(author)
 
     def get_authors(
         self,
         obj,
     ):
         """
-        Mantiene el alias utilizado por el frontend.
-
-        La búsqueda rápida expone al usuario creador como autor
-        principal. El detalle completo de autorías corresponde
-        al endpoint de detalle de la publicación.
+        Devuelve las autorías reales, ordenadas según
+        PublicacionAutor.orden.
         """
-        return self.get_autor(
-            obj
-        ) or "—"
+        output = []
+
+        for participation in _get_participations(obj):
+            author = getattr(
+                participation,
+                "autor",
+                None,
+            )
+
+            if author is None:
+                continue
+
+            author_name = _build_author_name(
+                author
+            )
+
+            if not author_name:
+                continue
+
+            raw_role = str(
+                getattr(
+                    participation,
+                    "rol_autoria",
+                    "",
+                )
+                or ""
+            ).strip().lower()
+
+            order = getattr(
+                participation,
+                "orden",
+                None,
+            )
+
+            is_principal = bool(
+                raw_role == "principal"
+                or order == 1
+            )
+
+            resolved_role = (
+                "principal"
+                if is_principal
+                else "coautor"
+            )
+
+            output.append(
+                {
+                    "id": author.pk,
+                    "autor_id": author.pk,
+                    "name": author_name,
+                    "nombre_completo": author_name,
+                    "role": resolved_role,
+                    "rol_autoria": resolved_role,
+                    "order": order,
+                    "orden": order,
+                    "es_externo": bool(
+                        getattr(
+                            author,
+                            "es_externo",
+                            False,
+                        )
+                    ),
+                }
+            )
+
+        return output
 
     # ========================================================
     # AÑO
@@ -988,9 +1429,13 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return self.get_tiene_pdf(
-            obj
-        )
+        return self.get_tiene_pdf(obj)
+
+    def get_hasPdf(
+        self,
+        obj,
+    ):
+        return self.get_tiene_pdf(obj)
 
     def get_archivo_pdf_url(
         self,
@@ -1011,9 +1456,7 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return self.get_archivo_pdf_url(
-            obj
-        )
+        return self.get_archivo_pdf_url(obj)
 
     # ========================================================
     # METADATOS ESPECÍFICOS
@@ -1023,14 +1466,10 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        return _resolve_doi(
-            obj
-        )
+        return _resolve_doi(obj)
 
     def get_external_url(
         self,
         obj,
     ):
-        return _resolve_external_link(
-            obj
-        )
+        return _resolve_external_link(obj)

@@ -1,28 +1,19 @@
 """
-Servicios para búsqueda, vinculación y sincronización entre
-los modelos Autor y Usuario.
+Servicios de búsqueda y sincronización entre Autor y Usuario.
 
-Responsabilidades:
-
-- Buscar autores existentes por identificación, correo o nombre.
-- Serializar coincidencias para formularios y selectores.
-- Reutilizar el servicio oficial de sincronización Usuario → Autor.
-- Crear usuarios externos pendientes desde autores manuales.
-- Evitar conflictos entre correos, identificaciones y vínculos.
-- Proteger las operaciones concurrentes mediante transacciones.
-
-La sincronización principal Usuario → Autor se encuentra en:
-
-    core.auth.services.auth_author_sync_services
+El Autor se crea primero como registro científico. En la misma
+transacción se crea o reutiliza una cuenta local pendiente y se
+vincula mediante Autor.usuario. Las participaciones siempre
+permanecen asociadas al mismo Autor, incluso cuando el Usuario
+recibe acceso posteriormente.
 """
 
+import re
+
 from django.contrib.auth import get_user_model
-from django.core.exceptions import (
-    ValidationError as DjangoValidationError,
-)
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-
 from rest_framework import status
 
 from core.auth.services.auth_author_sync_services import (
@@ -33,26 +24,14 @@ from core.models import Autor
 
 User = get_user_model()
 
-
-# ============================================================
-# CONSTANTES
-# ============================================================
-
 AUTH_SOURCE_LOCAL = User.AuthSource.LOCAL
 AUTH_SOURCE_MICROSOFT = User.AuthSource.MICROSOFT
-
 ROLE_EXTERNAL_AUTHOR = User.Rol.AUTOR_EXTERNO
+CEDULA_PATTERN = re.compile(r"^\d{10}$")
 
-
-# ============================================================
-# EXCEPCIÓN
-# ============================================================
 
 class AutorUsuarioSyncError(Exception):
-    """
-    Error controlado durante la vinculación entre Autor
-    y Usuario.
-    """
+    """Error controlado durante la vinculación Autor ↔ Usuario."""
 
     def __init__(
         self,
@@ -61,84 +40,117 @@ class AutorUsuarioSyncError(Exception):
     ):
         self.detail = detail
         self.status_code = status_code
+        super().__init__(str(detail))
 
-        super().__init__(
-            str(detail)
-        )
-
-
-# ============================================================
-# NORMALIZACIÓN
-# ============================================================
 
 def _normalize_text(value):
-    """
-    Normaliza un texto obligatorio o general.
-    """
-    return " ".join(
-        str(value or "").split()
-    )
+    return " ".join(str(value or "").split())
 
 
 def _normalize_optional_text(value):
-    """
-    Normaliza un texto opcional.
-    """
-    normalized = _normalize_text(
-        value
-    )
+    normalized = _normalize_text(value)
+    return normalized or None
 
+
+def _normalize_identification(value):
+    normalized = str(value or "").strip()
     return normalized or None
 
 
 def _normalize_email(value):
-    """
-    Normaliza un correo mediante el manager del modelo Usuario.
-    """
-    normalized = _normalize_optional_text(
-        value
-    )
-
+    normalized = _normalize_optional_text(value)
     if normalized is None:
         return None
 
     return (
-        User.objects
-        .normalize_email(normalized)
+        User.objects.normalize_email(normalized)
         .strip()
         .lower()
     )
 
 
+def _normalize_account_value(value):
+    return str(value or "").strip().lower()
+
+
 def _django_validation_payload(exc):
-    """
-    Convierte ValidationError de Django en una estructura
-    adecuada para Django REST Framework.
-    """
-    if hasattr(
-        exc,
-        "message_dict",
-    ):
+    if hasattr(exc, "message_dict"):
         return exc.message_dict
+    if hasattr(exc, "messages"):
+        return {"detail": list(exc.messages)}
+    return {"detail": str(exc)}
 
-    if hasattr(
-        exc,
-        "messages",
-    ):
-        return {
-            "detail": list(
-                exc.messages
+
+def _unique_fields(fields):
+    return list(dict.fromkeys(field for field in fields if field))
+
+
+def _validate_cedula(value, *, required=True):
+    normalized = _normalize_identification(value)
+
+    if normalized is None:
+        if required:
+            raise AutorUsuarioSyncError(
+                {"identificacion": "El número de cédula es obligatorio."}
             )
-        }
+        return None
 
-    return {
-        "detail": str(exc),
-    }
+    if not CEDULA_PATTERN.fullmatch(normalized):
+        raise AutorUsuarioSyncError(
+            {
+                "identificacion": (
+                    "La cédula debe contener exactamente "
+                    "10 dígitos numéricos."
+                )
+            }
+        )
+
+    return normalized
 
 
-# ============================================================
-# BÚSQUEDA DE AUTORES
-# ============================================================
+def _has_usable_password(user):
+    if user is None:
+        return False
+    try:
+        return bool(user.has_usable_password())
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _is_external_local_user(user):
+    if user is None:
+        return False
+
+    return bool(
+        _normalize_account_value(getattr(user, "rol", ""))
+        == _normalize_account_value(ROLE_EXTERNAL_AUTHOR)
+        and _normalize_account_value(getattr(user, "auth_source", ""))
+        == _normalize_account_value(AUTH_SOURCE_LOCAL)
+    )
+
+
+def _is_pending_external_user(user):
+    """
+    Pendiente significa que la cuenta aún no recibió acceso.
+    Una cuenta desactivada que conserva contraseña es inactiva,
+    no pendiente.
+    """
+    return bool(
+        _is_external_local_user(user)
+        and not getattr(user, "is_active", False)
+        and not _has_usable_password(user)
+    )
+
+
+def _resolve_user_state(user):
+    if user is None:
+        return "sin_usuario"
+    if _is_pending_external_user(user):
+        return "pendiente"
+    if bool(getattr(user, "is_active", False)):
+        return "activo"
+    return "inactivo"
+
 
 def buscar_autor_existente(
     *,
@@ -149,75 +161,25 @@ def buscar_autor_existente(
     exclude_autor_id=None,
 ):
     """
-    Busca un autor existente utilizando el siguiente orden:
-
-    1. Identificación.
-    2. Correo.
-    3. Nombres y apellidos.
-
-    La búsqueda también considera los datos del Usuario
-    relacionado, porque el correo o la identificación podrían
-    estar almacenados en el perfil del usuario vinculado.
-
-    Retorna:
-
-    {
-        "exists": True,
-        "match_type": "identificacion",
-        "autor": Autor(...)
-    }
+    Busca primero por cédula, luego por correo y finalmente por
+    nombres y apellidos. La coincidencia por nombre es solo una
+    advertencia; no debe bloquear por sí sola la creación.
     """
-    normalized_identification = (
-        _normalize_optional_text(
-            identificacion
-        )
-    )
+    identification = _normalize_identification(identificacion)
+    email = _normalize_email(correo)
+    names = _normalize_text(nombres)
+    surnames = _normalize_text(apellidos)
 
-    normalized_email = _normalize_email(
-        correo
-    )
-
-    normalized_names = _normalize_text(
-        nombres
-    )
-
-    normalized_surnames = _normalize_text(
-        apellidos
-    )
-
-    queryset = (
-        Autor.objects
-        .select_related("usuario")
-        .order_by("pk")
-    )
+    queryset = Autor.objects.select_related("usuario").order_by("pk")
 
     if exclude_autor_id:
-        queryset = queryset.exclude(
-            pk=exclude_autor_id
-        )
+        queryset = queryset.exclude(pk=exclude_autor_id)
 
-    # ========================================================
-    # IDENTIFICACIÓN
-    # ========================================================
-
-    if normalized_identification:
-        author = (
-            queryset
-            .filter(
-                Q(
-                    identificacion=(
-                        normalized_identification
-                    )
-                )
-                | Q(
-                    usuario__identificacion=(
-                        normalized_identification
-                    )
-                )
-            )
-            .first()
-        )
-
+    if identification:
+        author = queryset.filter(
+            Q(identificacion=identification)
+            | Q(usuario__identificacion=identification)
+        ).first()
         if author is not None:
             return {
                 "exists": True,
@@ -225,28 +187,11 @@ def buscar_autor_existente(
                 "autor": author,
             }
 
-    # ========================================================
-    # CORREO
-    # ========================================================
-
-    if normalized_email:
-        author = (
-            queryset
-            .filter(
-                Q(
-                    correo__iexact=(
-                        normalized_email
-                    )
-                )
-                | Q(
-                    usuario__email__iexact=(
-                        normalized_email
-                    )
-                )
-            )
-            .first()
-        )
-
+    if email:
+        author = queryset.filter(
+            Q(correo__iexact=email)
+            | Q(usuario__email__iexact=email)
+        ).first()
         if author is not None:
             return {
                 "exists": True,
@@ -254,27 +199,11 @@ def buscar_autor_existente(
                 "autor": author,
             }
 
-    # ========================================================
-    # NOMBRES Y APELLIDOS
-    # ========================================================
-
-    if (
-        normalized_names
-        and normalized_surnames
-    ):
-        author = (
-            queryset
-            .filter(
-                nombres__iexact=(
-                    normalized_names
-                ),
-                apellidos__iexact=(
-                    normalized_surnames
-                ),
-            )
-            .first()
-        )
-
+    if names and surnames:
+        author = queryset.filter(
+            nombres__iexact=names,
+            apellidos__iexact=surnames,
+        ).first()
         if author is not None:
             return {
                 "exists": True,
@@ -282,693 +211,375 @@ def buscar_autor_existente(
                 "autor": author,
             }
 
-    return {
-        "exists": False,
-        "match_type": None,
-        "autor": None,
-    }
+    return {"exists": False, "match_type": None, "autor": None}
 
 
-# ============================================================
-# SERIALIZACIÓN DE COINCIDENCIAS
-# ============================================================
-
-def serializar_autor_match(
-    autor,
-    match_type=None,
-):
-    """
-    Convierte una coincidencia de Autor en una estructura
-    segura para el frontend.
-    """
+def serializar_autor_match(autor, match_type=None):
     if autor is None:
         return {
             "exists": False,
             "match_type": match_type,
+            "blocking": False,
+            "warning_only": False,
+            "input_incomplete": False,
+            "message": None,
             "autor": None,
         }
 
-    user = getattr(
-        autor,
-        "usuario",
-        None,
-    )
-
-    resolved_email = None
-
-    if user is not None:
-        resolved_email = _normalize_email(
-            getattr(
-                user,
-                "email",
-                None,
-            )
-        )
-
-    if resolved_email is None:
-        resolved_email = _normalize_email(
-            getattr(
-                autor,
-                "correo",
-                None,
-            )
-        )
+    user = getattr(autor, "usuario", None)
+    resolved_email = (
+        _normalize_email(getattr(user, "email", None))
+        if user is not None
+        else None
+    ) or _normalize_email(getattr(autor, "correo", None))
 
     full_name = " ".join(
         part
         for part in [
-            _normalize_text(
-                getattr(
-                    autor,
-                    "nombres",
-                    "",
-                )
-            ),
-            _normalize_text(
-                getattr(
-                    autor,
-                    "apellidos",
-                    "",
-                )
-            ),
+            _normalize_text(getattr(autor, "nombres", "")),
+            _normalize_text(getattr(autor, "apellidos", "")),
         ]
         if part
     )
 
+    blocking = match_type in {"identificacion", "correo"}
+    warning_only = match_type == "nombre_apellido"
+
+    messages = {
+        "identificacion": (
+            "Ya existe un autor registrado con este número de cédula."
+        ),
+        "correo": (
+            "Ya existe un autor registrado con este correo electrónico."
+        ),
+        "nombre_apellido": (
+            "Existe un autor con los mismos nombres y apellidos. "
+            "Revise la coincidencia antes de continuar."
+        ),
+    }
+
     return {
         "exists": True,
         "match_type": match_type,
+        "blocking": blocking,
+        "warning_only": warning_only,
+        "input_incomplete": False,
+        "message": messages.get(match_type),
         "autor": {
             "id": autor.pk,
             "nombre_completo": full_name,
             "nombres": autor.nombres,
             "apellidos": autor.apellidos,
-            "identificacion": (
-                autor.identificacion
-            ),
-            "correo_resuelto": (
-                resolved_email
-            ),
-            "institucion": (
-                autor.institucion
-            ),
-            "usuario_id": (
-                autor.usuario_id
-            ),
+            "identificacion": autor.identificacion,
+            "correo": autor.correo,
+            "correo_resuelto": resolved_email,
+            "institucion": autor.institucion,
+            "es_externo": bool(autor.es_externo),
+            "usuario_id": autor.usuario_id,
             "usuario_activo": bool(
-                getattr(
-                    user,
-                    "is_active",
-                    False,
-                )
+                getattr(user, "is_active", False)
                 if user is not None
                 else False
             ),
-            "es_externo": bool(
-                autor.es_externo
+            "usuario_pendiente": _is_pending_external_user(user),
+            "usuario_estado": _resolve_user_state(user),
+            "usuario_tiene_password_utilizable": _has_usable_password(user),
+            "usuario_creado_desde_selector": bool(
+                getattr(user, "creado_desde_selector", False)
+                if user is not None
+                else False
             ),
         },
     }
 
 
-# ============================================================
-# SINCRONIZACIÓN USUARIO → AUTOR
-# ============================================================
-
 def asegurar_autor_para_usuario(user):
-    """
-    Mantiene esta función por compatibilidad con importaciones
-    antiguas.
-
-    La implementación real se encuentra centralizada en el
-    módulo de autenticación para evitar dos comportamientos
-    diferentes de sincronización.
-    """
-    return asegurar_autor_auth(
-        user
-    )
+    """Compatibilidad con importaciones antiguas."""
+    return asegurar_autor_auth(user)
 
 
-# ============================================================
-# BÚSQUEDA DE USUARIOS COINCIDENTES
-# ============================================================
-
-def _find_matching_locked_user(
-    *,
-    author,
-    identification,
-    email,
-):
-    """
-    Busca y bloquea usuarios que coincidan con la identificación,
-    correo o vínculo actual del autor.
-
-    Detecta cuando la identificación y el correo corresponden a
-    usuarios diferentes.
-    """
+def _find_matching_locked_user(*, author, identification, email):
     query = Q()
 
     if identification:
-        query |= Q(
-            identificacion=identification
-        )
-
+        query |= Q(identificacion=identification)
     if email:
-        query |= Q(
-            email__iexact=email
-        )
-
+        query |= Q(email__iexact=email)
     if author.usuario_id:
-        query |= Q(
-            pk=author.usuario_id
-        )
+        query |= Q(pk=author.usuario_id)
 
     if not query:
         return None
 
     candidates = list(
-        User.objects
-        .select_for_update()
-        .filter(query)
-        .order_by("pk")
+        User.objects.select_for_update().filter(query).order_by("pk")
     )
 
-    user_by_identification = None
-    user_by_email = None
-    currently_linked_user = None
+    by_identification = None
+    by_email = None
+    linked = None
 
     for candidate in candidates:
-        candidate_identification = (
-            _normalize_optional_text(
-                getattr(
-                    candidate,
-                    "identificacion",
-                    None,
-                )
-            )
+        candidate_identification = _normalize_identification(
+            getattr(candidate, "identificacion", None)
         )
-
         candidate_email = _normalize_email(
-            getattr(
-                candidate,
-                "email",
-                None,
-            )
+            getattr(candidate, "email", None)
         )
 
-        if (
-            identification
-            and candidate_identification
-            == identification
-        ):
+        if identification and candidate_identification == identification:
             if (
-                user_by_identification is not None
-                and user_by_identification.pk
-                != candidate.pk
+                by_identification is not None
+                and by_identification.pk != candidate.pk
             ):
                 raise AutorUsuarioSyncError(
                     {
                         "identificacion": (
-                            "Existen varios usuarios con "
-                            "esta identificación."
+                            "Existen varios usuarios con este número "
+                            "de cédula."
                         )
                     },
-                    status_code=(
-                        status.HTTP_409_CONFLICT
-                    ),
+                    status_code=status.HTTP_409_CONFLICT,
                 )
+            by_identification = candidate
 
-            user_by_identification = candidate
-
-        if (
-            email
-            and candidate_email == email
-        ):
-            if (
-                user_by_email is not None
-                and user_by_email.pk
-                != candidate.pk
-            ):
+        if email and candidate_email == email:
+            if by_email is not None and by_email.pk != candidate.pk:
                 raise AutorUsuarioSyncError(
                     {
                         "correo": (
-                            "Existen varios usuarios con "
-                            "este correo."
+                            "Existen varios usuarios con este correo "
+                            "electrónico."
                         )
                     },
-                    status_code=(
-                        status.HTTP_409_CONFLICT
-                    ),
+                    status_code=status.HTTP_409_CONFLICT,
                 )
+            by_email = candidate
 
-            user_by_email = candidate
+        if author.usuario_id and candidate.pk == author.usuario_id:
+            linked = candidate
 
-        if (
-            author.usuario_id
-            and candidate.pk
-            == author.usuario_id
-        ):
-            currently_linked_user = candidate
-
-    matched_users = {
+    matched = {
         candidate.pk: candidate
-        for candidate in [
-            user_by_identification,
-            user_by_email,
-            currently_linked_user,
-        ]
+        for candidate in (by_identification, by_email, linked)
         if candidate is not None
     }
 
-    if len(matched_users) > 1:
+    if len(matched) > 1:
         raise AutorUsuarioSyncError(
             {
                 "detail": (
-                    "La identificación, el correo y el "
-                    "usuario vinculado corresponden a "
-                    "cuentas diferentes. Revise los datos."
+                    "La cédula, el correo y el Usuario vinculado "
+                    "corresponden a cuentas diferentes."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,
         )
 
-    if not matched_users:
-        return None
+    return next(iter(matched.values()), None)
 
-    return next(
-        iter(
-            matched_users.values()
-        )
+
+def _validate_existing_user(*, user, author, identification, email):
+    auth_source = _normalize_account_value(
+        getattr(user, "auth_source", "")
     )
+    role = _normalize_account_value(getattr(user, "rol", ""))
 
-
-# ============================================================
-# VALIDACIÓN DEL USUARIO ENCONTRADO
-# ============================================================
-
-def _validate_existing_user(
-    *,
-    user,
-    author,
-    identification,
-    email,
-):
-    """
-    Verifica que el usuario pueda vincularse al autor externo.
-    """
-    auth_source = _normalize_text(
-        getattr(
-            user,
-            "auth_source",
-            "",
-        )
-    ).lower()
-
-    role = _normalize_text(
-        getattr(
-            user,
-            "rol",
-            "",
-        )
-    ).lower()
-
-    if auth_source == AUTH_SOURCE_MICROSOFT:
-        raise AutorUsuarioSyncError(
-            {
-                "correo": (
-                    "Ya existe un usuario institucional "
-                    "con este correo o identificación. "
-                    "No puede registrarse como autor "
-                    "externo pendiente."
-                )
-            },
-            status_code=status.HTTP_409_CONFLICT,
-        )
-
-    if role != ROLE_EXTERNAL_AUTHOR:
+    if auth_source == _normalize_account_value(AUTH_SOURCE_MICROSOFT):
         raise AutorUsuarioSyncError(
             {
                 "detail": (
-                    "Ya existe un usuario con esos datos, "
-                    "pero no corresponde al rol de autor "
+                    "Ya existe un usuario institucional con esta "
+                    "cédula o correo. No puede vincularse como autor "
                     "externo."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,
         )
 
-    linked_author = (
-        Autor.objects
-        .select_for_update()
-        .filter(
-            usuario_id=user.pk
+    if auth_source != _normalize_account_value(AUTH_SOURCE_LOCAL):
+        raise AutorUsuarioSyncError(
+            {"detail": "El usuario encontrado no utiliza autenticación local."},
+            status_code=status.HTTP_409_CONFLICT,
         )
-        .exclude(
-            pk=author.pk
+
+    if role != _normalize_account_value(ROLE_EXTERNAL_AUTHOR):
+        raise AutorUsuarioSyncError(
+            {
+                "detail": (
+                    "El usuario encontrado no corresponde al rol "
+                    "de autor externo."
+                )
+            },
+            status_code=status.HTTP_409_CONFLICT,
         )
+
+    other_author = (
+        Autor.objects.select_for_update()
+        .filter(usuario_id=user.pk)
+        .exclude(pk=author.pk)
         .first()
     )
+    if other_author is not None:
+        raise AutorUsuarioSyncError(
+            {"detail": "El usuario ya está vinculado a otro autor."},
+            status_code=status.HTTP_409_CONFLICT,
+        )
 
-    if linked_author is not None:
+    user_identification = _normalize_identification(
+        getattr(user, "identificacion", None)
+    )
+    user_email = _normalize_email(getattr(user, "email", None))
+
+    if user_identification and user_identification != identification:
         raise AutorUsuarioSyncError(
             {
-                "detail": (
-                    "El usuario encontrado ya está "
-                    "vinculado a otro autor."
+                "identificacion": (
+                    "La cédula no coincide con el usuario externo existente."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,
         )
 
-    user_identification = (
-        _normalize_optional_text(
-            getattr(
-                user,
-                "identificacion",
-                None,
-            )
-        )
-    )
-
-    user_email = _normalize_email(
-        getattr(
-            user,
-            "email",
-            None,
-        )
-    )
-
-    is_pending_user = bool(
-        not user.is_active
-        and getattr(
-            user,
-            "creado_desde_selector",
-            False,
-        )
-    )
-
-    # Un usuario activo no debe ser modificado silenciosamente
-    # desde el formulario de creación de autores.
-    if user.is_active:
-        if (
-            user_identification
-            and user_identification
-            != identification
-        ):
-            raise AutorUsuarioSyncError(
-                {
-                    "identificacion": (
-                        "La identificación no coincide con "
-                        "el usuario externo existente."
-                    )
-                },
-                status_code=status.HTTP_409_CONFLICT,
-            )
-
-        if (
-            user_email
-            and user_email != email
-        ):
-            raise AutorUsuarioSyncError(
-                {
-                    "correo": (
-                        "El correo no coincide con el "
-                        "usuario externo existente."
-                    )
-                },
-                status_code=status.HTTP_409_CONFLICT,
-            )
-
-    elif not is_pending_user:
+    if user_email and user_email != email:
         raise AutorUsuarioSyncError(
             {
-                "detail": (
-                    "Existe una cuenta externa inactiva "
-                    "con estos datos, pero no fue creada "
-                    "como usuario pendiente desde el "
-                    "selector."
+                "correo": (
+                    "El correo no coincide con el usuario externo existente."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,
         )
 
-    return is_pending_user
+    return _resolve_user_state(user)
 
-
-# ============================================================
-# ACTUALIZACIÓN DEL USUARIO PENDIENTE
-# ============================================================
 
 def _update_pending_user(
-    *,
-    user,
-    email,
-    identification,
-    names,
-    surnames,
+    *, user, email, identification, names, surnames
 ):
     """
-    Actualiza únicamente usuarios pendientes creados desde el
-    selector.
-
-    No modifica automáticamente los datos de usuarios activos.
+    Actualiza solo una cuenta realmente pendiente. Nunca activa,
+    desactiva, asigna o elimina contraseñas.
     """
-    changed_fields = []
+    if not _is_pending_external_user(user):
+        raise AutorUsuarioSyncError(
+            {
+                "detail": (
+                    "La cuenta ya no está pendiente y no puede "
+                    "modificarse mediante este flujo."
+                )
+            },
+            status_code=status.HTTP_409_CONFLICT,
+        )
+
+    changed = []
 
     if user.email != email:
         user.email = email
-        changed_fields.append(
-            "email"
-        )
-
-    if (
-        _normalize_optional_text(
-            user.identificacion
-        )
-        != identification
-    ):
+        changed.append("email")
+    if _normalize_identification(user.identificacion) != identification:
         user.identificacion = identification
-        changed_fields.append(
-            "identificacion"
-        )
-
+        changed.append("identificacion")
     if user.nombres != names:
         user.nombres = names
-        changed_fields.append(
-            "nombres"
-        )
-
+        changed.append("nombres")
     if user.apellidos != surnames:
         user.apellidos = surnames
-        changed_fields.append(
-            "apellidos"
-        )
+        changed.append("apellidos")
 
-    if user.rol != ROLE_EXTERNAL_AUTHOR:
-        user.rol = ROLE_EXTERNAL_AUTHOR
-        changed_fields.append(
-            "rol"
-        )
-
-    if user.auth_source != AUTH_SOURCE_LOCAL:
-        user.auth_source = AUTH_SOURCE_LOCAL
-        changed_fields.append(
-            "auth_source"
-        )
-
-    if user.is_active:
-        user.is_active = False
-        changed_fields.append(
-            "is_active"
-        )
-
-    if not getattr(
-        user,
-        "creado_desde_selector",
-        False,
-    ):
-        user.creado_desde_selector = True
-        changed_fields.append(
-            "creado_desde_selector"
-        )
-
-    if user.has_usable_password():
-        user.set_unusable_password()
-        changed_fields.append(
-            "password"
-        )
-
-    if changed_fields:
-        user.save(
-            update_fields=list(
-                dict.fromkeys(
-                    changed_fields
-                )
-            )
-        )
+    if changed:
+        user.save(update_fields=_unique_fields(changed))
 
     return user
 
 
-# ============================================================
-# ACTUALIZACIÓN DEL AUTOR
-# ============================================================
-
 def _link_author_to_user(
-    *,
-    author,
-    user,
-    email,
-    identification,
-    names,
-    surnames,
+    *, author, user, email, identification, names, surnames
 ):
-    """
-    Vincula el autor al usuario y mantiene los campos básicos
-    coherentes.
-    """
-    changed_fields = []
+    changed = []
 
     if author.usuario_id != user.pk:
         author.usuario = user
-        changed_fields.append(
-            "usuario"
-        )
-
+        changed.append("usuario")
     if author.identificacion != identification:
         author.identificacion = identification
-        changed_fields.append(
-            "identificacion"
-        )
-
+        changed.append("identificacion")
     if author.correo != email:
         author.correo = email
-        changed_fields.append(
-            "correo"
-        )
-
+        changed.append("correo")
     if author.nombres != names:
         author.nombres = names
-        changed_fields.append(
-            "nombres"
-        )
-
+        changed.append("nombres")
     if author.apellidos != surnames:
         author.apellidos = surnames
-        changed_fields.append(
-            "apellidos"
-        )
-
+        changed.append("apellidos")
     if not author.es_externo:
         author.es_externo = True
-        changed_fields.append(
-            "es_externo"
-        )
+        changed.append("es_externo")
 
-    if changed_fields:
-        author.save(
-            update_fields=list(
-                dict.fromkeys(
-                    changed_fields
-                )
-            )
-        )
+    if changed:
+        author.save(update_fields=_unique_fields(changed))
 
     return author
 
 
-# ============================================================
-# SERVICIO PRINCIPAL AUTOR → USUARIO PENDIENTE
-# ============================================================
+def _create_pending_user(*, email, identification, names, surnames):
+    return User.objects.create_user(
+        email=email,
+        nombres=names,
+        apellidos=surnames,
+        password=None,
+        identificacion=identification,
+        rol=ROLE_EXTERNAL_AUTHOR,
+        auth_source=AUTH_SOURCE_LOCAL,
+        carrera=None,
+        is_active=False,
+        is_staff=False,
+        is_superuser=False,
+        perfil_completo=False,
+        creado_desde_selector=True,
+    )
 
-def asegurar_usuario_pendiente_para_autor(
-    autor,
-):
+
+def asegurar_usuario_pendiente_para_autor(autor):
     """
-    Garantiza que un autor externo tenga un usuario local
-    pendiente asociado.
+    Garantiza el vínculo permanente Autor ↔ Usuario.
 
-    Cuando no existe usuario:
-
-    - Crea una cuenta local inactiva.
-    - Asigna rol autor_externo.
-    - Establece contraseña inutilizable.
-    - Marca creado_desde_selector=True.
-
-    Cuando ya existe:
-
-    - Rechaza cuentas Microsoft.
-    - Rechaza roles diferentes.
-    - Rechaza vínculos con otro autor.
-    - Solo actualiza automáticamente cuentas pendientes.
-    - No modifica silenciosamente cuentas activas.
+    Se evita combinar select_for_update() con select_related()
+    sobre Autor.usuario, porque la relación es nullable y
+    PostgreSQL no permite bloquear el lado nullable de ese
+    LEFT OUTER JOIN.
     """
-    if autor is None or not getattr(
-        autor,
-        "pk",
-        None,
-    ):
+    if autor is None or not getattr(autor, "pk", None):
         raise AutorUsuarioSyncError(
-            {
-                "detail": (
-                    "El autor debe estar guardado antes "
-                    "de crear su usuario pendiente."
-                )
-            }
+            {"detail": "El autor debe estar guardado antes de vincularlo."}
         )
 
     try:
         with transaction.atomic():
             locked_author = (
-                Autor.objects
-                .select_for_update()
-                .select_related("usuario")
-                .get(
-                    pk=autor.pk
-                )
+                Autor.objects.select_for_update().get(pk=autor.pk)
             )
 
-            identification = (
-                _normalize_optional_text(
-                    locked_author.identificacion
-                )
+            identification = _validate_cedula(
+                locked_author.identificacion,
+                required=True,
             )
-
-            email = _normalize_email(
-                locked_author.correo
-            )
-
-            names = (
-                _normalize_text(
-                    locked_author.nombres
-                )
-                or "Autor"
-            )
-
-            surnames = _normalize_text(
-                locked_author.apellidos
-            )
-
-            if not identification:
-                raise AutorUsuarioSyncError(
-                    {
-                        "identificacion": (
-                            "Para registrar el usuario "
-                            "pendiente, la identificación "
-                            "es obligatoria."
-                        )
-                    }
-                )
+            email = _normalize_email(locked_author.correo)
+            names = _normalize_text(locked_author.nombres)
+            surnames = _normalize_text(locked_author.apellidos)
 
             if not email:
                 raise AutorUsuarioSyncError(
-                    {
-                        "correo": (
-                            "Para registrar el usuario "
-                            "pendiente, el correo es "
-                            "obligatorio."
-                        )
-                    }
+                    {"correo": "El correo electrónico es obligatorio."}
+                )
+            if not names:
+                raise AutorUsuarioSyncError(
+                    {"nombres": "Los nombres son obligatorios."}
+                )
+            if not surnames:
+                raise AutorUsuarioSyncError(
+                    {"apellidos": "Los apellidos son obligatorios."}
                 )
 
             user = _find_matching_locked_user(
@@ -978,32 +589,21 @@ def asegurar_usuario_pendiente_para_autor(
             )
 
             if user is None:
-                user = User.objects.create_user(
+                user = _create_pending_user(
                     email=email,
-                    nombres=names,
-                    apellidos=surnames,
-                    password=None,
-                    identificacion=identification,
-                    rol=ROLE_EXTERNAL_AUTHOR,
-                    auth_source=AUTH_SOURCE_LOCAL,
-                    is_active=False,
-                    is_staff=False,
-                    is_superuser=False,
-                    perfil_completo=False,
-                    creado_desde_selector=True,
+                    identification=identification,
+                    names=names,
+                    surnames=surnames,
                 )
-
             else:
-                is_pending_user = (
-                    _validate_existing_user(
-                        user=user,
-                        author=locked_author,
-                        identification=identification,
-                        email=email,
-                    )
+                state = _validate_existing_user(
+                    user=user,
+                    author=locked_author,
+                    identification=identification,
+                    email=email,
                 )
 
-                if is_pending_user:
+                if state == "pendiente":
                     user = _update_pending_user(
                         user=user,
                         email=email,
@@ -1011,37 +611,16 @@ def asegurar_usuario_pendiente_para_autor(
                         names=names,
                         surnames=surnames,
                     )
-
                 else:
-                    # El usuario activo conserva sus datos como
-                    # fuente principal.
-                    names = (
-                        _normalize_text(
-                            user.nombres
-                        )
-                        or names
-                    )
-
-                    surnames = (
-                        _normalize_text(
-                            user.apellidos
-                        )
-                        or surnames
-                    )
-
+                    # Usuario activo o previamente activado: se
+                    # conservan su estado y contraseña.
+                    email = _normalize_email(user.email) or email
                     identification = (
-                        _normalize_optional_text(
-                            user.identificacion
-                        )
+                        _normalize_identification(user.identificacion)
                         or identification
                     )
-
-                    email = (
-                        _normalize_email(
-                            user.email
-                        )
-                        or email
-                    )
+                    names = _normalize_text(user.nombres) or names
+                    surnames = _normalize_text(user.apellidos) or surnames
 
             _link_author_to_user(
                 author=locked_author,
@@ -1056,33 +635,22 @@ def asegurar_usuario_pendiente_para_autor(
 
     except AutorUsuarioSyncError:
         raise
-
     except Autor.DoesNotExist as exc:
         raise AutorUsuarioSyncError(
-            {
-                "detail": (
-                    "El autor ya no existe en la "
-                    "base de datos."
-                )
-            },
+            {"detail": "El autor ya no existe."},
             status_code=status.HTTP_404_NOT_FOUND,
         ) from exc
-
     except DjangoValidationError as exc:
         raise AutorUsuarioSyncError(
-            _django_validation_payload(
-                exc
-            ),
+            _django_validation_payload(exc),
             status_code=status.HTTP_400_BAD_REQUEST,
         ) from exc
-
-    except IntegrityError as exc:
+    except (IntegrityError, ValueError) as exc:
         raise AutorUsuarioSyncError(
             {
                 "detail": (
-                    "No fue posible vincular el autor y "
-                    "el usuario porque existe un conflicto "
-                    "con el correo, identificación o vínculo."
+                    "No fue posible vincular el autor y el usuario "
+                    "por un conflicto de cédula, correo o vínculo."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,

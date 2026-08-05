@@ -1,79 +1,228 @@
 /* ============================================================
    SGPC ULEAM — MIS PUBLICACIONES
-   Diseño institucional unificado
+   Estilos exclusivos de la interfaz
 ============================================================ */
 
 .mispub {
-  --mp-bg: var(--bg-main, #f2f5fa);
-  --mp-card: var(--bg-card, #ffffff);
-  --mp-input: var(--bg-input, #ffffff);
-  --mp-elev: var(--bg-elevated, #f8faff);
+  --mp-bg:
+    var(
+      --sgpc-list-bg,
+      var(--bg-main, #f2f5fa)
+    );
 
-  --mp-text: var(--text-primary, #172033);
-  --mp-muted: var(--text-secondary, #637187);
-  --mp-disabled: var(--text-disabled, rgba(23, 32, 51, 0.42));
+  --mp-card:
+    var(
+      --sgpc-list-card,
+      var(--bg-card, #ffffff)
+    );
 
-  --mp-line: var(--border-color, #dce4ef);
-  --mp-line-strong: var(--border-strong, #c6d2e1);
+  --mp-input:
+    var(
+      --sgpc-list-input,
+      var(--bg-input, #ffffff)
+    );
 
-  --mp-primary: var(
-    --color-primary-effective,
-    var(--color-primary, #245f98)
-  );
-  --mp-primary-soft: color-mix(
-    in srgb,
-    var(--mp-primary) 8%,
-    var(--mp-card)
-  );
-  --mp-primary-line: color-mix(
-    in srgb,
-    var(--mp-primary) 20%,
-    var(--mp-line)
-  );
+  --mp-elev:
+    var(
+      --sgpc-list-elev,
+      var(--bg-elevated, #f8faff)
+    );
 
-  --mp-success: var(--success, #287957);
-  --mp-danger: var(--danger, #b64d45);
-  --mp-info: var(--info, #356f9f);
+  --mp-text:
+    var(
+      --sgpc-list-text,
+      var(--text-primary, #172033)
+    );
 
-  --mp-radius-sm: var(--radius-sm, 10px);
-  --mp-radius-md: var(--radius-md, 12px);
-  --mp-radius-lg: var(--radius-lg, 16px);
-  --mp-radius-xl: var(--radius-xl, 20px);
-  --mp-radius-2xl: var(--radius-2xl, 24px);
-  --mp-radius-pill: var(--radius-pill, 999px);
+  --mp-muted:
+    var(
+      --sgpc-list-muted,
+      var(--text-secondary, #637187)
+    );
 
-  --mp-shadow-soft: var(
-    --shadow-soft,
-    0 8px 24px rgba(31, 45, 68, 0.055)
-  );
-  --mp-shadow-strong: var(
-    --shadow-strong,
-    0 18px 42px rgba(31, 45, 68, 0.09)
-  );
+  --mp-disabled:
+    var(
+      --sgpc-list-disabled,
+      var(
+        --text-disabled,
+        rgba(23, 32, 51, 0.42)
+      )
+    );
+
+  --mp-line:
+    var(
+      --sgpc-list-line,
+      var(--border-color, #dce4ef)
+    );
+
+  --mp-line-strong:
+    var(
+      --sgpc-list-line-strong,
+      var(--border-strong, #c6d2e1)
+    );
+
+  --mp-primary:
+    var(
+      --sgpc-list-primary,
+      var(
+        --color-primary-effective,
+        var(--color-primary, #245f98)
+      )
+    );
+
+  --mp-primary-soft:
+    color-mix(
+      in srgb,
+      var(--mp-primary) 8%,
+      var(--mp-card)
+    );
+
+  --mp-primary-line:
+    color-mix(
+      in srgb,
+      var(--mp-primary) 20%,
+      var(--mp-line)
+    );
+
+  --mp-success:
+    var(
+      --sgpc-list-success,
+      var(--success, #287957)
+    );
+
+  --mp-danger:
+    var(
+      --sgpc-list-danger,
+      var(--danger, #b64d45)
+    );
+
+  --mp-info:
+    var(
+      --sgpc-list-info,
+      var(--info, #356f9f)
+    );
+
+  /*
+   * Contraste oficial definido por el tema global.
+   * Ejemplos:
+   * - azul/rojo -> texto blanco;
+   * - acento blanco -> texto negro u oscuro.
+   */
+  --mp-accent-contrast:
+    var(
+      --accent-contrast,
+      #ffffff
+    );
+
+  /* Tokens del interruptor en tema claro. */
+  --mp-toggle-track-off:
+    var(
+      --surface-4,
+      color-mix(
+        in srgb,
+        var(--mp-muted) 18%,
+        var(--mp-input)
+      )
+    );
+
+  --mp-toggle-thumb-off:
+    var(
+      --bg-card,
+      #ffffff
+    );
+
+  --mp-radius-sm:
+    var(
+      --sgpc-list-radius-sm,
+      var(--radius-sm, 10px)
+    );
+
+  --mp-radius-md:
+    var(
+      --sgpc-list-radius-md,
+      var(--radius-md, 12px)
+    );
+
+  --mp-radius-lg:
+    var(
+      --sgpc-list-radius-lg,
+      var(--radius-lg, 16px)
+    );
+
+  --mp-radius-xl:
+    var(
+      --sgpc-list-radius-xl,
+      var(--radius-xl, 20px)
+    );
+
+  --mp-radius-2xl:
+    var(
+      --sgpc-list-radius-2xl,
+      var(--radius-2xl, 24px)
+    );
+
+  --mp-radius-pill:
+    var(
+      --sgpc-list-radius-pill,
+      var(--radius-pill, 999px)
+    );
+
+  --mp-shadow-soft:
+    var(
+      --sgpc-list-shadow-soft,
+      var(
+        --shadow-soft,
+        0 8px 24px rgba(31, 45, 68, 0.055)
+      )
+    );
+
+  --mp-shadow-strong:
+    var(
+      --sgpc-list-shadow-strong,
+      var(
+        --shadow-strong,
+        0 18px 42px rgba(31, 45, 68, 0.09)
+      )
+    );
+
+  --page-accent: var(--mp-primary);
+  --page-accent-soft: var(--mp-primary-soft);
+  --page-accent-line: var(--mp-primary-line);
+  --page-accent-ink: var(--mp-primary);
 
   box-sizing: border-box;
+
   width: 100%;
   min-height: 100vh;
+
   padding:
     calc(var(--sgpc-nav-offset, 78px) + 16px)
     clamp(14px, 2vw, 28px)
     36px;
+
   background:
     radial-gradient(
       circle at 8% 0%,
-      color-mix(in srgb, var(--mp-primary) 4%, transparent),
+      color-mix(
+        in srgb,
+        var(--mp-primary) 4%,
+        transparent
+      ),
       transparent 30%
     ),
     var(--mp-bg);
+
   color: var(--mp-text);
-  font-family: var(
-    --font-body,
-    "Geist",
-    "Inter",
-    "Segoe UI",
-    system-ui,
-    sans-serif
-  );
+
+  font-family:
+    var(
+      --font-body,
+      "Geist",
+      "Inter",
+      "Segoe UI",
+      system-ui,
+      sans-serif
+    );
 }
 
 .mispub *,
@@ -86,33 +235,43 @@
 .mispub input,
 .mispub select,
 .mispub textarea {
-  font-family: var(
-    --font-control,
-    "Geist",
-    "Inter",
-    "Segoe UI",
-    system-ui,
-    sans-serif
-  );
+  font-family:
+    var(
+      --font-control,
+      "Geist",
+      "Inter",
+      "Segoe UI",
+      system-ui,
+      sans-serif
+    );
+}
+
+.mispub button,
+.mispub select,
+.mispub input {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mispub__wrap {
-  width: min(var(--container-max, 1320px), 100%);
+  width:
+    min(
+      var(--container-max, 1320px),
+      100%
+    );
+
   margin: 0 auto;
+
   display: grid;
-  gap: 14px;
+  gap:
+    var(
+      --sgpc-list-page-gap,
+      14px
+    );
 }
 
 /* ============================================================
    ACENTO DINÁMICO POR TIPO
 ============================================================ */
-
-.mispub {
-  --page-accent: var(--mp-primary);
-  --page-accent-soft: var(--mp-primary-soft);
-  --page-accent-line: var(--mp-primary-line);
-  --page-accent-ink: var(--mp-primary);
-}
 
 .mispub[data-tipo="AAI"] {
   --page-accent: var(--pub-aai);
@@ -150,38 +309,74 @@
 }
 
 /* ============================================================
-   HERO
+   ENCABEZADO
 ============================================================ */
 
 .mispub .mispub__hero {
   position: relative;
+
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.72fr);
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(390px, 0.72fr);
+
   align-items: center;
+
   gap: 20px;
+
   padding: 18px 20px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-xl);
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-xl);
+
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--mp-card) 97%, var(--mp-bg)),
+      color-mix(
+        in srgb,
+        var(--mp-card) 97%,
+        var(--mp-bg)
+      ),
       var(--mp-card)
     );
-  box-shadow: var(--mp-shadow-soft);
+
+  box-shadow:
+    var(--mp-shadow-soft);
+
   overflow: hidden;
 }
 
 .mispub .mispub__hero::before {
   content: "";
+
   position: absolute;
-  inset: 0 0 auto 0;
+
+  inset:
+    0
+    0
+    auto
+    0;
+
   height: 3px;
+
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--page-accent) 78%, transparent),
-      color-mix(in srgb, var(--page-accent) 18%, transparent)
+      color-mix(
+        in srgb,
+        var(--page-accent) 78%,
+        transparent
+      ),
+      color-mix(
+        in srgb,
+        var(--page-accent) 18%,
+        transparent
+      )
     );
 }
 
@@ -192,8 +387,11 @@
 .mispub .hero__eyebrow {
   display: inline-flex;
   align-items: center;
+
   margin: 0;
+
   color: var(--mp-muted);
+
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.085em;
@@ -202,9 +400,25 @@
 
 .mispub .hero__title {
   margin: 6px 0 0;
+
   color: var(--mp-text);
-  font-family: var(--font-heading);
-  font-size: clamp(1.72rem, 2vw, 2.45rem);
+
+  font-family:
+    var(
+      --font-heading,
+      "Geist",
+      "Inter",
+      "Segoe UI",
+      sans-serif
+    );
+
+  font-size:
+    clamp(
+      1.72rem,
+      2vw,
+      2.45rem
+    );
+
   line-height: 1.02;
   letter-spacing: -0.043em;
   font-weight: 700;
@@ -212,8 +426,11 @@
 
 .mispub .hero__subtitle {
   max-width: 72ch;
+
   margin: 8px 0 0;
+
   color: var(--mp-muted);
+
   font-size: 0.88rem;
   line-height: 1.48;
   font-weight: 500;
@@ -222,19 +439,36 @@
 .mispub .hero__pills {
   display: flex;
   flex-wrap: wrap;
+
   gap: 7px;
+
   margin-top: 12px;
 }
 
 .mispub .pill {
   display: inline-flex;
   align-items: center;
+
   min-height: 30px;
+
   padding: 0 11px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-pill);
-  background: color-mix(in srgb, var(--mp-card) 91%, var(--mp-bg));
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 91%,
+      var(--mp-bg)
+    );
+
   color: var(--mp-muted);
+
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
@@ -242,19 +476,27 @@
 
 .mispub .pill strong {
   margin-left: 4px;
+
   color: var(--mp-text);
   font-weight: 850;
 }
 
 .mispub .pill--active {
-  color: var(--page-accent-ink);
-  border-color: var(--page-accent-line);
-  background: var(--page-accent-soft);
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
 }
 
 .mispub .hero__tools {
   min-width: 0;
+
   display: grid;
+
   gap: 10px;
 }
 
@@ -264,14 +506,30 @@
 
 .mispub .search.search--navbar {
   position: relative;
+
   display: flex;
   align-items: center;
+
   width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-md);
-  background: var(--mp-input);
+
+  min-height:
+    var(
+      --sgpc-list-control-height-lg,
+      44px
+    );
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-md);
+
+  background:
+    var(--mp-input);
+
   overflow: hidden;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     box-shadow var(--t-fast, 0.18s ease),
@@ -279,57 +537,94 @@
 }
 
 .mispub .search.search--navbar:hover {
-  border-color: var(--mp-line-strong);
+  border-color:
+    var(--mp-line-strong);
 }
 
 .mispub .search.search--navbar:focus-within {
-  border-color: color-mix(
-    in srgb,
-    var(--page-accent) 32%,
-    var(--mp-line)
-  );
-  box-shadow: var(
-    --ring-primary,
-    0 0 0 3px color-mix(in srgb, var(--page-accent) 16%, transparent)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--page-accent) 32%,
+      var(--mp-line)
+    );
+
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--page-accent) 16%,
+        transparent
+      )
+    );
 }
 
 .mispub .search__lead {
   position: absolute;
+
   left: 13px;
   top: 50%;
+
   width: 18px;
   height: 18px;
+
   display: inline-grid;
   place-items: center;
-  transform: translateY(-50%);
+
+  transform:
+    translateY(-50%);
+
   color: var(--mp-muted);
+
   pointer-events: none;
 }
 
 .mispub .search__svg {
   width: 17px;
   height: 17px;
+
   display: block;
 }
 
 .mispub .search__input {
   width: 100%;
   min-width: 0;
-  min-height: 42px;
-  padding: 0 50px 0 40px;
+
+  min-height:
+    var(
+      --sgpc-list-control-height,
+      42px
+    );
+
+  padding:
+    0
+    50px
+    0
+    40px;
+
   border: none !important;
   border-radius: 0 !important;
+
   background: transparent !important;
   color: var(--mp-text) !important;
+
   outline: none !important;
   box-shadow: none !important;
+
   font-size: 0.86rem;
   font-weight: 600;
 }
 
 .mispub .search__input::placeholder {
-  color: color-mix(in srgb, var(--mp-muted) 80%, transparent);
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-muted) 80%,
+      transparent
+    );
+
   font-weight: 500;
 }
 
@@ -339,18 +634,37 @@
 
 .mispub .search__action {
   position: absolute;
+
   right: 5px;
   top: 50%;
+
   width: 34px;
   height: 34px;
+
   display: inline-grid;
   place-items: center;
-  transform: translateY(-50%);
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-sm);
-  background: color-mix(in srgb, var(--mp-card) 92%, var(--mp-bg));
+
+  transform:
+    translateY(-50%);
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-sm);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 92%,
+      var(--mp-bg)
+    );
+
   color: var(--mp-muted);
+
   cursor: pointer;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     background var(--t-fast, 0.18s ease),
@@ -358,9 +672,14 @@
 }
 
 .mispub .search__action:hover {
-  color: var(--page-accent-ink);
-  border-color: var(--page-accent-line);
-  background: var(--page-accent-soft);
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
 }
 
 .mispub .search__x {
@@ -375,24 +694,52 @@
 
 .mispub .view__switch {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
   gap: 6px;
+
   padding: 4px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-md);
-  background: color-mix(in srgb, var(--mp-card) 91%, var(--mp-bg));
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-md);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 91%,
+      var(--mp-bg)
+    );
 }
 
 .mispub .view__btn {
   min-height: 36px;
+
   padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: var(--mp-radius-sm);
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius:
+    var(--mp-radius-sm);
+
   background: transparent;
   color: var(--mp-muted);
+
   font-size: 0.8rem;
   font-weight: 750;
+
   cursor: pointer;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     background var(--t-fast, 0.18s ease),
@@ -402,252 +749,1035 @@
 
 .mispub .view__btn:hover {
   color: var(--mp-text);
-  background: color-mix(in srgb, var(--mp-card) 94%, var(--mp-bg));
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 94%,
+      var(--mp-bg)
+    );
 }
 
 .mispub .view__btn.activo {
-  color: var(--page-accent-ink);
-  border-color: var(--page-accent-line);
-  background: var(--mp-card);
-  box-shadow: var(--mp-shadow-soft);
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--mp-card);
+
+  box-shadow:
+    var(--mp-shadow-soft);
 }
 
 /* ============================================================
-   FILTROS
+   CONTENEDOR DE FILTROS COMPACTO
 ============================================================ */
 
 .mispub .mispub__filters {
   display: grid;
-  gap: 13px;
-  padding: 15px 16px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-xl);
-  background: var(--mp-card);
-  box-shadow: var(--mp-shadow-soft);
+  gap: 10px;
+
+  padding: 13px 14px 14px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-xl);
+
+  background:
+    var(--mp-card);
+
+  box-shadow:
+    var(--mp-shadow-soft);
 }
 
 .mispub .filters__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid color-mix(
-    in srgb,
-    var(--mp-line) 75%,
-    transparent
-  );
+
+  gap: 14px;
+
+  padding-bottom: 9px;
+
+  border-bottom:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-line) 72%,
+      transparent
+    );
 }
 
 .mispub .filters__titlewrap {
   min-width: 0;
+
+  display: grid;
+  gap: 3px;
+}
+
+.mispub .filters__titleLine {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
 }
 
 .mispub .filters__title {
   margin: 0;
+
   color: var(--mp-text);
-  font-family: var(--font-heading);
-  font-size: 1rem;
+
+  font-family:
+    var(
+      --font-heading,
+      "Geist",
+      "Inter",
+      "Segoe UI",
+      sans-serif
+    );
+
+  font-size: 0.98rem;
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: 720;
   letter-spacing: -0.02em;
 }
 
+.mispub .filters__activeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 22px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--page-accent-line);
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--page-accent-soft);
+
+  color:
+    var(--page-accent-ink);
+
+  font-size: 0.66rem;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mispub .filters__description {
+  max-width: 78ch;
+
+  margin: 0;
+
+  color: var(--mp-muted);
+
+  font-size: 0.73rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
 .mispub .filters__clear {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-sm);
-  background: var(--mp-input);
-  color: var(--mp-text);
-  font-size: 0.76rem;
-  font-weight: 750;
+  min-height: 32px;
+
+  padding: 0 11px;
+
+  flex: 0 0 auto;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-sm);
+
+  background:
+    var(--mp-input);
+
+  color:
+    var(--mp-text);
+
+  font-size: 0.73rem;
+  font-weight: 760;
+
   cursor: pointer;
   white-space: nowrap;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     background var(--t-fast, 0.18s ease),
+    color var(--t-fast, 0.18s ease),
     opacity var(--t-fast, 0.18s ease);
 }
 
 .mispub .filters__clear:hover:not(:disabled) {
-  border-color: var(--mp-line-strong);
-  background: color-mix(in srgb, var(--mp-card) 92%, var(--mp-bg));
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
 }
 
 .mispub .filters__clear.is-hidden {
   visibility: hidden;
   opacity: 0;
+
   pointer-events: none;
 }
 
 .mispub .filters__clear:disabled {
   opacity: 0.5;
+
   cursor: not-allowed;
 }
 
+/* ============================================================
+   GRUPOS DE FILTROS
+============================================================ */
+
+.mispub .filters__group {
+  min-width: 0;
+
+  display: grid;
+  gap: 8px;
+
+  padding: 10px 11px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-line) 80%,
+      transparent
+    );
+
+  border-radius:
+    var(--mp-radius-lg);
+
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--mp-card) 97%,
+        var(--mp-elev)
+      ),
+      color-mix(
+        in srgb,
+        var(--mp-card) 99%,
+        var(--mp-bg)
+      )
+    );
+}
+
+.mispub .filters__group--advanced {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--page-accent) 15%,
+      var(--mp-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--page-accent-soft) 22%,
+      var(--mp-card)
+    );
+}
+
+.mispub .filters__groupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.mispub .filters__groupTitle {
+  margin: 0;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-text) 92%,
+      var(--mp-muted)
+    );
+
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 820;
+  letter-spacing: 0.005em;
+}
+
+.mispub .filters__groupHint {
+  color: var(--mp-muted);
+
+  font-size: 0.66rem;
+  line-height: 1.3;
+  font-weight: 550;
+
+  text-align: right;
+}
+
+/* ============================================================
+   CHIPS DE TIPO COMPACTOS
+============================================================ */
+
 .mispub .filters__row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+
+  gap: 6px;
 }
 
 .mispub .chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 0 11px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-pill);
-  background: var(--mp-input);
-  color: var(--mp-muted);
-  font-size: 0.77rem;
-  font-weight: 700;
+
+  gap: 6px;
+
+  min-height: 32px;
+
+  padding: 0 9px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--mp-input);
+
+  color:
+    var(--mp-muted);
+
+  font-size: 0.72rem;
+  font-weight: 720;
+
   cursor: pointer;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     background var(--t-fast, 0.18s ease),
     color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease);
+    box-shadow var(--t-fast, 0.18s ease),
+    transform var(--t-fast, 0.18s ease);
 }
 
 .mispub .chip:hover {
   color: var(--mp-text);
-  border-color: var(--mp-line-strong);
-  background: color-mix(in srgb, var(--mp-card) 93%, var(--mp-bg));
+
+  border-color:
+    var(--mp-line-strong);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 93%,
+      var(--mp-bg)
+    );
+
+  transform:
+    translateY(-1px);
 }
 
 .mispub .chip.activo {
-  color: var(--page-accent-ink);
-  border-color: var(--page-accent-line);
-  background: var(--page-accent-soft);
-  box-shadow: 0 0 0 2px color-mix(
-    in srgb,
-    var(--page-accent) 8%,
-    transparent
-  );
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
+
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--page-accent) 7%,
+      transparent
+    );
 }
 
 .mispub .chip__dot {
-  --chip-dot: var(--mp-primary);
+  --chip-dot:
+    var(--mp-primary);
 
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
+
   flex: 0 0 auto;
-  border-radius: var(--mp-radius-pill);
-  background: var(--chip-dot);
-  box-shadow: 0 0 0 3px color-mix(
-    in srgb,
-    var(--chip-dot) 13%,
-    transparent
-  );
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--chip-dot);
+
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--chip-dot) 12%,
+      transparent
+    );
 }
 
 .mispub .chip__dot[data-tipo="ALL"] {
-  --chip-dot: var(--mp-primary);
+  --chip-dot:
+    var(--mp-primary);
 }
 
 .mispub .chip__dot[data-tipo="AAI"] {
-  --chip-dot: var(--pub-aai);
+  --chip-dot:
+    var(--pub-aai);
 }
 
 .mispub .chip__dot[data-tipo="AR"] {
-  --chip-dot: var(--pub-ar);
+  --chip-dot:
+    var(--pub-ar);
 }
 
 .mispub .chip__dot[data-tipo="PON"] {
-  --chip-dot: var(--pub-pon);
+  --chip-dot:
+    var(--pub-pon);
 }
 
 .mispub .chip__dot[data-tipo="CAP"] {
-  --chip-dot: var(--pub-cap);
+  --chip-dot:
+    var(--pub-cap);
 }
 
 .mispub .chip__dot[data-tipo="LIB"] {
-  --chip-dot: var(--pub-lib);
+  --chip-dot:
+    var(--pub-lib);
+}
+
+.mispub .chip__label {
+  min-width: 0;
 }
 
 .mispub .chip__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid color-mix(
-    in srgb,
-    var(--mp-line) 78%,
-    transparent
-  );
-  border-radius: var(--mp-radius-pill);
-  background: color-mix(in srgb, var(--mp-card) 90%, transparent);
-  color: var(--mp-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
+
+  min-width: 21px;
+  height: 19px;
+
+  padding: 0 6px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-line) 76%,
+      transparent
+    );
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 90%,
+      transparent
+    );
+
+  color:
+    var(--mp-muted);
+
+  font-size: 0.63rem;
+  font-weight: 820;
 }
 
 /* ============================================================
-   FILTROS DE FECHA
+   CUADRÍCULAS COMPACTAS
 ============================================================ */
 
-.mispub .filters__dateGrid {
+.mispub .filters__primaryGrid,
+.mispub .filters__advancedGrid {
+  min-width: 0;
+
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+
+  gap: 9px;
+}
+
+.mispub .filters__primaryGrid {
+  grid-template-columns:
+    minmax(190px, 1.3fr)
+    minmax(175px, 1.15fr)
+    minmax(175px, 1.15fr)
+    minmax(105px, 0.58fr)
+    minmax(145px, 0.76fr);
+}
+
+.mispub .filters__advancedGrid {
+  grid-template-columns:
+    minmax(190px, 1.2fr)
+    minmax(115px, 0.66fr)
+    minmax(115px, 0.66fr)
+    minmax(170px, 1fr)
+    minmax(185px, 1.05fr);
 }
 
 .mispub .filter-field {
   min-width: 0;
+
   display: grid;
-  gap: 6px;
+  align-content: start;
+
+  gap: 5px;
+}
+
+.mispub .filter-field--toggle {
+  align-self: stretch;
 }
 
 .mispub .filter-label {
-  color: color-mix(in srgb, var(--mp-text) 82%, var(--mp-muted));
-  font-size: 0.72rem;
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-text) 82%,
+      var(--mp-muted)
+    );
+
+  font-size: 0.68rem;
+  line-height: 1.2;
   font-weight: 800;
 }
 
 .mispub .filter-select {
   width: 100%;
   min-width: 0;
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--mp-line) !important;
-  border-radius: var(--mp-radius-md);
-  background: var(--mp-input) !important;
-  color: var(--mp-text) !important;
+
+  min-height: 39px;
+
+  padding: 0 34px 0 11px;
+
+  border:
+    1px solid
+    var(--mp-line) !important;
+
+  border-radius:
+    var(--mp-radius-md);
+
+  background-color:
+    var(--mp-input) !important;
+
+  color:
+    var(--mp-text) !important;
+
   outline: none;
   box-shadow: none;
-  font-size: 0.84rem;
+
+  font-size: 0.78rem;
   font-weight: 650;
+
   cursor: pointer;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     box-shadow var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease);
+    background var(--t-fast, 0.18s ease),
+    opacity var(--t-fast, 0.18s ease);
 }
 
 .mispub .filter-select:hover:not(:disabled) {
-  border-color: var(--mp-line-strong) !important;
+  border-color:
+    var(--mp-line-strong) !important;
 }
 
 .mispub .filter-select:focus {
-  border-color: color-mix(
-    in srgb,
-    var(--page-accent) 32%,
-    var(--mp-line)
-  ) !important;
-  box-shadow: var(
-    --ring-primary,
-    0 0 0 3px color-mix(in srgb, var(--page-accent) 16%, transparent)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--page-accent) 32%,
+      var(--mp-line)
+    ) !important;
+
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--page-accent) 16%,
+        transparent
+      )
+    );
 }
 
 .mispub .filter-select:disabled {
-  opacity: 0.58;
+  opacity: 0.56;
+
+  color:
+    var(--mp-disabled) !important;
+
   cursor: not-allowed;
+}
+
+/* ============================================================
+   BOTÓN DE FILTROS AVANZADOS
+============================================================ */
+
+.mispub .filters__advancedButton {
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto
+    auto;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 0 10px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-md);
+
+  background:
+    var(--mp-input);
+
+  color:
+    var(--mp-muted);
+
+  font-size: 0.74rem;
+  font-weight: 780;
+
+  cursor: pointer;
+
+  transition:
+    color var(--t-fast, 0.18s ease),
+    border-color var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease);
+}
+
+.mispub .filters__advancedButton:hover,
+.mispub .filters__advancedButton.is-open,
+.mispub .filters__advancedButton.has-active {
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
+}
+
+.mispub .filters__advancedButton.is-open {
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--page-accent) 7%,
+      transparent
+    );
+}
+
+.mispub .filters__advancedIcon,
+.mispub .filters__advancedChevron {
+  width: 16px;
+  height: 16px;
+
+  display: block;
+
+  flex: 0 0 auto;
+}
+
+.mispub .filters__advancedLabel {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  text-align: left;
+}
+
+.mispub .filters__advancedCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 20px;
+  height: 20px;
+
+  padding: 0 6px;
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--page-accent);
+
+  color:
+    var(--mp-accent-contrast);
+
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
+.mispub .filters__advancedChevron {
+  transition:
+    transform var(--t-fast, 0.18s ease);
+}
+
+.mispub .filters__advancedButton.is-open
+  .filters__advancedChevron {
+  transform:
+    rotate(180deg);
+}
+
+/* ============================================================
+   INTERRUPTOR SOLO CON PDF COMPACTO
+============================================================ */
+
+.mispub .filter-toggle {
+  min-width: 0;
+  min-height: 39px;
+
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 6px 9px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-md);
+
+  background:
+    var(--mp-input);
+
+  cursor: pointer;
+
+  transition:
+    border-color var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease);
+}
+
+.mispub .filter-toggle:hover {
+  border-color:
+    var(--mp-line-strong);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-input) 94%,
+      var(--page-accent-soft)
+    );
+}
+
+.mispub .filter-toggle:has(
+  .filter-toggle__input:checked
+) {
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--page-accent-soft) 56%,
+      var(--mp-input)
+    );
+}
+
+.mispub .filter-toggle:has(
+  .filter-toggle__input:focus-visible
+) {
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--page-accent) 16%,
+        transparent
+      )
+    );
+}
+
+.mispub .filter-toggle__input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  margin: -1px;
+  padding: 0;
+
+  overflow: hidden;
+
+  clip:
+    rect(
+      0,
+      0,
+      0,
+      0
+    );
+
+  white-space: nowrap;
+
+  border: 0;
+}
+
+.mispub .filter-toggle__control {
+  position: relative;
+
+  width: 40px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-muted) 38%,
+      var(--mp-line)
+    );
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--mp-toggle-track-off);
+
+  transition:
+    border-color var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease);
+}
+
+.mispub .filter-toggle__thumb {
+  width: 14px;
+  height: 14px;
+
+  display: block;
+
+  border-radius:
+    50%;
+
+  background:
+    var(--mp-toggle-thumb-off);
+
+  box-shadow:
+    0 1px 4px
+    rgba(15, 23, 42, 0.2);
+
+  transform:
+    translateX(0);
+
+  transition:
+    transform var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease);
+}
+
+.mispub
+  .filter-toggle__input:checked
+  + .filter-toggle__control {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--page-accent) 68%,
+      var(--page-accent-line)
+    );
+
+  background:
+    var(--page-accent);
+}
+
+.mispub
+  .filter-toggle__input:checked
+  + .filter-toggle__control
+  .filter-toggle__thumb {
+  transform:
+    translateX(18px);
+
+  background:
+    var(--mp-accent-contrast);
+}
+
+.mispub .filter-toggle__content {
+  min-width: 0;
+
+  display: grid;
+  gap: 0;
+}
+
+.mispub .filter-toggle__title {
+  color:
+    var(--mp-text);
+
+  font-size: 0.72rem;
+  line-height: 1.15;
+  font-weight: 810;
+}
+
+.mispub .filter-toggle__description {
+  color:
+    var(--mp-muted);
+
+  font-size: 0.61rem;
+  line-height: 1.2;
+  font-weight: 520;
+}
+
+/* ============================================================
+   INTEGRACIÓN CON EL TEMA GLOBAL OSCURO
+
+   El tema global activa el modo oscuro mediante la clase .dark
+   en :root/html/body. No se crea una paleta paralela: únicamente
+   se reutilizan sus tokens oficiales.
+============================================================ */
+
+:root.dark .mispub,
+html.dark .mispub,
+body.dark .mispub {
+  color-scheme: dark;
+
+  --mp-accent-contrast:
+    var(
+      --accent-contrast,
+      #ffffff
+    );
+
+  --mp-toggle-track-off:
+    var(
+      --surface-4,
+      var(--bg-soft, #242424)
+    );
+
+  --mp-toggle-thumb-off:
+    var(
+      --text-primary,
+      #ffffff
+    );
+}
+
+:root.dark .mispub .filter-select,
+html.dark .mispub .filter-select,
+body.dark .mispub .filter-select {
+  color-scheme: dark;
+}
+
+:root.dark .mispub .filter-select option,
+html.dark .mispub .filter-select option,
+body.dark .mispub .filter-select option {
+  background:
+    var(--bg-input);
+
+  color:
+    var(--text-primary);
+}
+
+:root.dark .mispub .filter-toggle__control,
+html.dark .mispub .filter-toggle__control,
+body.dark .mispub .filter-toggle__control {
+  box-shadow:
+    inset 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--text-primary) 7%,
+      transparent
+    );
+}
+
+:root.dark .mispub .filter-toggle__thumb,
+html.dark .mispub .filter-toggle__thumb,
+body.dark .mispub .filter-toggle__thumb {
+  box-shadow:
+    0 1px 5px
+    rgba(0, 0, 0, 0.52);
+}
+
+:root.dark .mispub
+  .filter-toggle__input:checked
+  + .filter-toggle__control,
+html.dark .mispub
+  .filter-toggle__input:checked
+  + .filter-toggle__control,
+body.dark .mispub
+  .filter-toggle__input:checked
+  + .filter-toggle__control {
+  box-shadow:
+    inset 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--mp-accent-contrast) 18%,
+      transparent
+    );
+}
+
+/* ============================================================
+   TRANSICIÓN DEL PANEL AVANZADO
+============================================================ */
+
+.filters-advanced-enter-active,
+.filters-advanced-leave-active {
+  overflow: hidden;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.filters-advanced-enter-from,
+.filters-advanced-leave-to {
+  opacity: 0;
+
+  transform:
+    translateY(-6px);
 }
 
 /* ============================================================
@@ -660,44 +1790,101 @@
 
 .mispub .state {
   min-height: 58px;
+
   display: flex;
   align-items: center;
+
   gap: 10px;
+
   padding: 14px 16px;
-  border: 1px dashed var(--mp-line);
-  border-radius: var(--mp-radius-lg);
-  background: color-mix(in srgb, var(--mp-card) 93%, var(--mp-bg));
-  color: var(--mp-muted);
+
+  border:
+    1px dashed
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-lg);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 93%,
+      var(--mp-bg)
+    );
+
+  color:
+    var(--mp-muted);
+
   font-size: 0.84rem;
   font-weight: 650;
 }
 
 .mispub .state--empty {
   justify-content: center;
+
   min-height: 118px;
+
+  flex-direction: column;
+
   text-align: center;
+}
+
+.mispub .state--error {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--mp-danger) 30%,
+      var(--mp-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-danger) 5%,
+      var(--mp-card)
+    );
+
+  color:
+    var(--mp-danger);
 }
 
 .mispub .dot {
   width: 9px;
   height: 9px;
+
   flex: 0 0 auto;
-  border-radius: var(--mp-radius-pill);
-  background: var(--page-accent);
-  box-shadow: 0 0 0 4px var(--page-accent-soft);
-  animation: mp-loading 1.2s ease-in-out infinite;
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--page-accent);
+
+  box-shadow:
+    0 0 0 4px
+    var(--page-accent-soft);
+
+  animation:
+    mp-loading
+    1.2s
+    ease-in-out
+    infinite;
 }
 
 @keyframes mp-loading {
   0%,
   100% {
     opacity: 0.48;
-    transform: scale(0.9);
+
+    transform:
+      scale(0.9);
   }
 
   50% {
     opacity: 1;
-    transform: scale(1);
+
+    transform:
+      scale(1);
   }
 }
 
@@ -711,38 +1898,88 @@
 
 .mispub .cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    var(
+      --sgpc-list-page-gap,
+      14px
+    );
 }
 
 /* ============================================================
-   TARJETAS DE PUBLICACIÓN
+   TARJETAS
 ============================================================ */
 
 .mispub .card {
-  --card-accent: var(--pub-otro, var(--mp-primary));
-  --card-accent-soft: var(--pub-otro-soft, var(--mp-primary-soft));
-  --card-accent-line: var(--pub-otro-line, var(--mp-primary-line));
-  --card-accent-ink: var(--pub-otro-ink, var(--mp-text));
+  --card-accent:
+    var(
+      --pub-otro,
+      var(--mp-primary)
+    );
+
+  --card-accent-soft:
+    var(
+      --pub-otro-soft,
+      var(--mp-primary-soft)
+    );
+
+  --card-accent-line:
+    var(
+      --pub-otro-line,
+      var(--mp-primary-line)
+    );
+
+  --card-accent-ink:
+    var(
+      --pub-otro-ink,
+      var(--mp-text)
+    );
 
   position: relative;
+
   min-width: 0;
-  min-height: 210px;
+  min-height: 232px;
+
   display: grid;
-  grid-template-rows: auto 1fr auto;
+
+  grid-template-rows:
+    auto
+    1fr
+    auto;
+
   gap: 13px;
+
   padding: 15px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-xl);
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-xl);
+
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--mp-card) 98%, var(--mp-bg)),
+      color-mix(
+        in srgb,
+        var(--mp-card) 98%,
+        var(--mp-bg)
+      ),
       var(--mp-card)
     );
-  box-shadow: var(--mp-shadow-soft);
+
+  box-shadow:
+    var(--mp-shadow-soft);
+
   overflow: hidden;
-  cursor: pointer;
+
   transition:
     border-color var(--t-fast, 0.18s ease),
     box-shadow var(--t-fast, 0.18s ease),
@@ -752,37 +1989,60 @@
 
 .mispub .card::before {
   content: "";
+
   position: absolute;
-  inset: 0 0 auto 0;
+
+  inset:
+    0
+    0
+    auto
+    0;
+
   height: 3px;
+
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--card-accent) 74%, transparent),
-      color-mix(in srgb, var(--card-accent) 20%, transparent)
+      color-mix(
+        in srgb,
+        var(--card-accent) 74%,
+        transparent
+      ),
+      color-mix(
+        in srgb,
+        var(--card-accent) 20%,
+        transparent
+      )
     );
 }
 
 .mispub .card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(
-    in srgb,
-    var(--card-accent) 25%,
-    var(--mp-line)
-  );
-  box-shadow: var(--mp-shadow-strong);
+  transform:
+    translateY(-2px);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--card-accent) 25%,
+      var(--mp-line)
+    );
+
+  box-shadow:
+    var(--mp-shadow-strong);
 }
 
-.mispub .card:focus-visible {
-  outline: none;
-  border-color: color-mix(
-    in srgb,
-    var(--card-accent) 35%,
-    var(--mp-line)
-  );
+.mispub .card:focus-within {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--card-accent) 35%,
+      var(--mp-line)
+    );
+
   box-shadow:
     var(--mp-shadow-soft),
-    0 0 0 3px color-mix(
+    0 0 0 3px
+    color-mix(
       in srgb,
       var(--card-accent) 15%,
       transparent
@@ -828,85 +2088,223 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+
   gap: 10px;
 }
 
 .mispub .card__body {
   min-width: 0;
+
   display: grid;
+
   align-content: start;
+
   gap: 7px;
+}
+
+.mispub .card__titleLink {
+  display: block;
+
+  color: inherit;
+  text-decoration: none;
+
+  border-radius: 6px;
+}
+
+.mispub .card__titleLink:hover .card__title {
+  color:
+    var(--card-accent-ink);
 }
 
 .mispub .card__title {
   margin: 0;
-  color: var(--mp-text);
-  font-family: var(--font-heading);
+
+  color:
+    var(--mp-text);
+
+  font-family:
+    var(
+      --font-heading,
+      "Geist",
+      "Inter",
+      "Segoe UI",
+      sans-serif
+    );
+
   font-size: 1.02rem;
   line-height: 1.3;
   letter-spacing: -0.018em;
   font-weight: 750;
+
   display: -webkit-box;
+
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+
   overflow: hidden;
+
+  overflow-wrap: anywhere;
+
+  transition:
+    color var(--t-fast, 0.18s ease);
 }
 
 .mispub .card__meta {
   margin: 0;
-  color: var(--mp-muted);
+
+  color:
+    var(--mp-muted);
+
   font-size: 0.8rem;
   line-height: 1.42;
   font-weight: 520;
+
   display: -webkit-box;
+
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .mispub .card__meta--soft {
-  color: color-mix(in srgb, var(--mp-text) 78%, var(--mp-muted));
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-text) 78%,
+      var(--mp-muted)
+    );
+
   font-weight: 700;
+}
+
+.mispub .card__origin {
+  margin: 3px 0 0;
+
+  padding: 8px 10px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--card-accent) 18%,
+      var(--mp-line)
+    );
+
+  border-radius:
+    var(--mp-radius-sm);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--card-accent) 5%,
+      var(--mp-card)
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-text) 88%,
+      var(--mp-muted)
+    );
+
+  font-size: 0.76rem;
+  line-height: 1.4;
+  font-weight: 550;
+
+  display: -webkit-box;
+
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.mispub .card__origin strong {
+  color:
+    var(--card-accent-ink);
+
+  font-weight: 800;
 }
 
 .mispub .card__footer {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 9px;
-  border-top: 1px solid color-mix(
-    in srgb,
-    var(--mp-line) 78%,
-    transparent
-  );
+
+  gap: 7px;
+
+  padding-top: 10px;
+
+  border-top:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-line) 78%,
+      transparent
+    );
 }
 
-.mispub .card__action {
-  color: var(--card-accent-ink);
-  font-size: 0.78rem;
-  font-weight: 800;
+.mispub .card__footer--actions {
+  flex-wrap: wrap;
 }
 
 /* ============================================================
-   BADGES
+   BADGES Y FECHA
 ============================================================ */
 
 .mispub .type__badge,
 .mispub .mini-badge {
-  --badge-accent: var(--pub-otro, var(--mp-primary));
-  --badge-accent-soft: var(--pub-otro-soft, var(--mp-primary-soft));
-  --badge-accent-line: var(--pub-otro-line, var(--mp-primary-line));
-  --badge-accent-ink: var(--pub-otro-ink, var(--mp-text));
+  --badge-accent:
+    var(
+      --pub-otro,
+      var(--mp-primary)
+    );
+
+  --badge-accent-soft:
+    var(
+      --pub-otro-soft,
+      var(--mp-primary-soft)
+    );
+
+  --badge-accent-line:
+    var(
+      --pub-otro-line,
+      var(--mp-primary-line)
+    );
+
+  --badge-accent-ink:
+    var(
+      --pub-otro-ink,
+      var(--mp-text)
+    );
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   min-height: 28px;
+
   padding: 0 9px;
-  border: 1px solid var(--badge-accent-line);
-  border-radius: var(--mp-radius-pill);
-  background: var(--badge-accent-soft);
-  color: var(--badge-accent-ink);
+
+  border:
+    1px solid
+    var(--badge-accent-line);
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--badge-accent-soft);
+
+  color:
+    var(--badge-accent-ink);
+
   font-size: 0.7rem;
   line-height: 1;
   font-weight: 850;
@@ -914,7 +2312,10 @@
 }
 
 .mispub
-  :is(.type__badge, .mini-badge)[data-tipo="AAI"] {
+  :is(
+    .type__badge,
+    .mini-badge
+  )[data-tipo="AAI"] {
   --badge-accent: var(--pub-aai);
   --badge-accent-soft: var(--pub-aai-soft);
   --badge-accent-line: var(--pub-aai-line);
@@ -922,7 +2323,10 @@
 }
 
 .mispub
-  :is(.type__badge, .mini-badge)[data-tipo="AR"] {
+  :is(
+    .type__badge,
+    .mini-badge
+  )[data-tipo="AR"] {
   --badge-accent: var(--pub-ar);
   --badge-accent-soft: var(--pub-ar-soft);
   --badge-accent-line: var(--pub-ar-line);
@@ -930,7 +2334,10 @@
 }
 
 .mispub
-  :is(.type__badge, .mini-badge)[data-tipo="PON"] {
+  :is(
+    .type__badge,
+    .mini-badge
+  )[data-tipo="PON"] {
   --badge-accent: var(--pub-pon);
   --badge-accent-soft: var(--pub-pon-soft);
   --badge-accent-line: var(--pub-pon-line);
@@ -938,7 +2345,10 @@
 }
 
 .mispub
-  :is(.type__badge, .mini-badge)[data-tipo="CAP"] {
+  :is(
+    .type__badge,
+    .mini-badge
+  )[data-tipo="CAP"] {
   --badge-accent: var(--pub-cap);
   --badge-accent-soft: var(--pub-cap-soft);
   --badge-accent-line: var(--pub-cap-line);
@@ -946,7 +2356,10 @@
 }
 
 .mispub
-  :is(.type__badge, .mini-badge)[data-tipo="LIB"] {
+  :is(
+    .type__badge,
+    .mini-badge
+  )[data-tipo="LIB"] {
   --badge-accent: var(--pub-lib);
   --badge-accent-soft: var(--pub-lib-soft);
   --badge-accent-line: var(--pub-lib-line);
@@ -957,15 +2370,83 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   min-height: 28px;
+
   padding: 0 9px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-pill);
-  background: var(--mp-input);
-  color: var(--mp-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    var(--mp-input);
+
+  color:
+    var(--mp-muted);
+
+  font-size: 0.69rem;
+  line-height: 1;
+  font-weight: 750;
   white-space: nowrap;
+}
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.mispub .btn-mini {
+  min-height: 32px;
+
+  padding: 0 11px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-sm);
+
+  background:
+    var(--mp-input);
+
+  color:
+    var(--mp-text);
+
+  font-size: 0.74rem;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    border-color var(--t-fast, 0.18s ease),
+    background var(--t-fast, 0.18s ease),
+    color var(--t-fast, 0.18s ease),
+    transform var(--t-fast, 0.18s ease),
+    opacity var(--t-fast, 0.18s ease);
+}
+
+.mispub .btn-mini:hover:not(:disabled) {
+  color:
+    var(--page-accent-ink);
+
+  border-color:
+    var(--page-accent-line);
+
+  background:
+    var(--page-accent-soft);
+
+  transform:
+    translateY(-1px);
+}
+
+.mispub .btn-mini:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
 }
 
 /* ============================================================
@@ -973,121 +2454,138 @@
 ============================================================ */
 
 .mispub .table-wrap {
-  width: 100%;
-  overflow: auto;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-xl);
-  background: var(--mp-card);
-  box-shadow: var(--mp-shadow-soft);
-  scrollbar-gutter: stable;
+  min-width: 0;
+
+  overflow-x: auto;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius:
+    var(--mp-radius-xl);
+
+  background:
+    var(--mp-card);
+
+  box-shadow:
+    var(--mp-shadow-soft);
 }
 
 .mispub .table {
   width: 100%;
   min-width: 1080px;
-  table-layout: fixed;
-  border-collapse: separate;
+
+  border-collapse: collapse;
   border-spacing: 0;
-  background: transparent;
+
+  color:
+    var(--mp-text);
 }
 
 .mispub .table th,
 .mispub .table td {
-  padding: 12px 13px;
-  border: 0;
-  border-bottom: 1px solid color-mix(
-    in srgb,
-    var(--mp-line) 78%,
-    transparent
-  );
+  padding: 13px 14px;
+
+  border-bottom:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--mp-line) 82%,
+      transparent
+    );
+
   text-align: left;
   vertical-align: middle;
 }
 
-.mispub .table thead th {
+.mispub .table th {
   position: sticky;
+
   top: 0;
+
   z-index: 2;
-  background: color-mix(in srgb, var(--mp-card) 96%, var(--mp-primary) 3%);
-  color: color-mix(in srgb, var(--mp-text) 78%, var(--mp-muted));
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-card) 88%,
+      var(--mp-elev)
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--mp-text) 86%,
+      var(--mp-muted)
+    );
+
   font-size: 0.7rem;
+  line-height: 1.2;
   font-weight: 850;
-  letter-spacing: 0.055em;
+  letter-spacing: 0.045em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
+.mispub .table td {
+  color:
+    var(--mp-muted);
+
+  font-size: 0.78rem;
+  line-height: 1.4;
+  font-weight: 550;
+}
+
 .mispub .table tbody tr {
-  background: transparent;
-  transition: background var(--t-fast, 0.18s ease);
+  transition:
+    background var(--t-fast, 0.18s ease);
 }
 
 .mispub .table tbody tr:hover {
-  background: color-mix(
-    in srgb,
-    var(--mp-primary) 3%,
-    transparent
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--page-accent) 3%,
+      var(--mp-card)
+    );
 }
 
 .mispub .table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.mispub .table td {
-  color: color-mix(in srgb, var(--mp-text) 92%, transparent);
-  font-size: 0.8rem;
-  line-height: 1.42;
-  font-weight: 520;
-  overflow-wrap: anywhere;
-}
-
-.mispub .table th:nth-child(1),
-.mispub .table td:nth-child(1) {
-  width: 12%;
-}
-
-.mispub .table th:nth-child(2),
-.mispub .table td:nth-child(2) {
-  width: 25%;
-}
-
-.mispub .table th:nth-child(3),
-.mispub .table td:nth-child(3) {
-  width: 17%;
-}
-
-.mispub .table th:nth-child(4),
-.mispub .table td:nth-child(4) {
-  width: 12%;
-}
-
-.mispub .table th:nth-child(5),
-.mispub .table td:nth-child(5) {
-  width: 14%;
-}
-
-.mispub .table th:nth-child(6),
-.mispub .table td:nth-child(6) {
-  width: 14%;
-}
-
-.mispub .table th:nth-child(7),
-.mispub .table td:nth-child(7) {
-  width: 6%;
-}
-
 .mispub .td-strong {
-  color: var(--mp-text);
-  font-weight: 800;
+  color:
+    var(--mp-text) !important;
+
+  font-weight: 750 !important;
 }
 
 .mispub .td-title {
-  color: var(--mp-text);
+  min-width: 260px;
+  max-width: 420px;
+}
+
+.mispub .table__titleLink {
+  color:
+    var(--mp-text);
+
   font-weight: 750;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-decoration: none;
+
+  overflow-wrap: anywhere;
+
+  transition:
+    color var(--t-fast, 0.18s ease);
+}
+
+.mispub .table__titleLink:hover {
+  color:
+    var(--page-accent-ink);
+
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .mispub .th-actions,
@@ -1095,26 +2593,12 @@
   text-align: right;
 }
 
-.mispub .btn-mini {
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--mp-line);
-  border-radius: var(--mp-radius-sm);
-  background: var(--mp-input);
-  color: var(--mp-text);
-  font-size: 0.74rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease);
-}
+.mispub .table__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 
-.mispub .btn-mini:hover {
-  color: var(--page-accent-ink);
-  border-color: var(--page-accent-line);
-  background: var(--page-accent-soft);
+  gap: 6px;
 }
 
 /* ============================================================
@@ -1126,14 +2610,26 @@
 }
 
 .mispub .table-wrap::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: var(--mp-radius-pill);
-  background: color-mix(in srgb, var(--mp-muted) 34%, transparent);
-  background-clip: padding-box;
+  border:
+    3px solid
+    transparent;
+
+  border-radius:
+    var(--mp-radius-pill);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--mp-muted) 34%,
+      transparent
+    );
+
+  background-clip:
+    padding-box;
 }
 
 /* ============================================================
-   FOCUS
+   ACCESIBILIDAD Y FOCO
 ============================================================ */
 
 .mispub
@@ -1141,32 +2637,67 @@
     .search__action,
     .view__btn,
     .filters__clear,
+    .filters__advancedButton,
     .chip,
     .filter-select,
-    .btn-mini
+    .btn-mini,
+    .card__titleLink,
+    .table__titleLink
   ):focus-visible {
   outline: none;
-  box-shadow: var(
-    --ring-primary,
-    0 0 0 3px color-mix(in srgb, var(--page-accent) 16%, transparent)
-  );
+
+  box-shadow:
+    var(
+      --ring-primary,
+      0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--page-accent) 16%,
+        transparent
+      )
+    );
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE — ESCRITORIO MEDIO
 ============================================================ */
 
 @media (max-width: 1180px) {
   .mispub .mispub__hero {
-    grid-template-columns: minmax(0, 1fr) minmax(350px, 0.72fr);
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(340px, 0.72fr);
+  }
+
+  .mispub .filters__dateGrid--classification {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub
+    .filters__dateGrid--classification
+    .filter-field--toggle {
+    grid-column:
+      1 / -1;
   }
 
   .mispub .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
   }
 }
 
-@media (max-width: 920px) {
+/* ============================================================
+   RESPONSIVE — TABLET
+============================================================ */
+
+@media (max-width: 960px) {
   .mispub {
     padding:
       calc(var(--sgpc-nav-offset, 72px) + 14px)
@@ -1175,11 +2706,15 @@
   }
 
   .mispub .mispub__hero {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .mispub .hero__tools {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+
     align-items: center;
   }
 
@@ -1187,10 +2722,33 @@
     min-width: 220px;
   }
 
-  .mispub .filters__dateGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .mispub .filters__dateGrid--academic,
+  .mispub .filters__dateGrid--period {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub
+    .filters__dateGrid--academic
+    .filter-field:last-child {
+    grid-column:
+      1 / -1;
+  }
+
+  .mispub
+    .filters__dateGrid--period
+    .filter-field:first-child {
+    grid-column:
+      1 / -1;
   }
 }
+
+/* ============================================================
+   RESPONSIVE — MÓVIL
+============================================================ */
 
 @media (max-width: 720px) {
   .mispub {
@@ -1205,8 +2763,10 @@
   }
 
   .mispub .mispub__hero,
-  .mispub .mispub__filters {
-    border-radius: var(--mp-radius-lg);
+  .mispub .mispub__filters,
+  .mispub .table-wrap {
+    border-radius:
+      var(--mp-radius-lg);
   }
 
   .mispub .mispub__hero {
@@ -1222,7 +2782,8 @@
   }
 
   .mispub .hero__tools {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .mispub .view__switch {
@@ -1231,59 +2792,13 @@
   }
 
   .mispub .mispub__filters {
-    padding: 14px;
-  }
-
-  .mispub .filters__head {
-    align-items: center;
-  }
-
-  .mispub .filters__row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .mispub .chip {
-    justify-content: flex-start;
-    width: 100%;
-  }
-
-  .mispub .chip__count {
-    margin-left: auto;
-  }
-
-  .mispub .filters__dateGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .mispub .cards {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .mispub .card {
-    min-height: 0;
-    padding: 14px;
-  }
-
-  .mispub .table-wrap {
-    border-radius: var(--mp-radius-lg);
-  }
-}
-
-@media (max-width: 480px) {
-  .mispub .hero__pills {
-    gap: 6px;
-  }
-
-  .mispub .pill {
-    min-height: 28px;
-    padding: 0 9px;
-    font-size: 0.7rem;
+    padding: 13px;
   }
 
   .mispub .filters__head {
     align-items: stretch;
+
+    flex-direction: column;
   }
 
   .mispub .filters__clear {
@@ -1294,30 +2809,403 @@
     display: none;
   }
 
+  .mispub .filters__group {
+    padding: 12px;
+  }
+
+  .mispub .filters__groupHead {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  .mispub .filters__groupHint {
+    text-align: left;
+  }
+
   .mispub .filters__row {
-    grid-template-columns: 1fr;
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .chip {
+    width: 100%;
+
+    justify-content: flex-start;
+  }
+
+  .mispub .chip__label {
+    flex: 1;
+
+    text-align: left;
+  }
+
+  .mispub .filters__dateGrid--academic,
+  .mispub .filters__dateGrid--classification,
+  .mispub .filters__dateGrid--period {
+    grid-template-columns:
+      1fr;
+  }
+
+  .mispub
+    .filters__dateGrid--academic
+    .filter-field:last-child,
+  .mispub
+    .filters__dateGrid--classification
+    .filter-field--toggle,
+  .mispub
+    .filters__dateGrid--period
+    .filter-field:first-child {
+    grid-column:
+      auto;
+  }
+
+  .mispub .cards {
+    grid-template-columns:
+      1fr;
+  }
+
+  .mispub .card {
+    min-height: 0;
+
+    border-radius:
+      var(--mp-radius-lg);
   }
 
   .mispub .card__head {
-    flex-direction: column;
     align-items: flex-start;
+  }
+
+  .mispub .type__badge {
+    white-space: normal;
+
+    text-align: center;
+  }
+
+  .mispub .state {
+    padding: 13px;
+  }
+
+  .mispub .table {
+    min-width: 960px;
+  }
+
+  .mispub .card:hover,
+  .mispub .chip:hover,
+  .mispub .view__btn:hover,
+  .mispub .filters__clear:hover:not(:disabled),
+  .mispub .btn-mini:hover:not(:disabled) {
+    transform: none;
   }
 }
 
 /* ============================================================
-   REDUCED MOTION
+   RESPONSIVE — MÓVIL PEQUEÑO
 ============================================================ */
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 480px) {
+  .mispub {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .mispub .hero__pills {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .pill {
+    justify-content: center;
+  }
+
+  .mispub .pill--active {
+    grid-column:
+      1 / -1;
+  }
+
+  .mispub .filters__row {
+    grid-template-columns:
+      1fr;
+  }
+
+  .mispub .filter-toggle {
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
+  }
+
+  .mispub .card__head {
+    flex-direction: column;
+  }
+
+  .mispub .date {
+    align-self: flex-start;
+  }
+
+  .mispub .card__footer,
+  .mispub .table__actions {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    width: 100%;
+  }
+
+  .mispub .btn-mini {
+    width: 100%;
+  }
+}
+
+
+
+/* ============================================================
+   AJUSTES RESPONSIVOS DEL PANEL COMPACTO
+============================================================ */
+
+@media (max-width: 1180px) {
+  .mispub .filters__primaryGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .filter-field--year,
+  .mispub .filter-field--advancedAction {
+    grid-column:
+      auto;
+  }
+
+  .mispub .filters__advancedGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .filters__advancedGrid
+    .filter-field--toggle {
+    grid-column:
+      span 2;
+  }
+}
+
+@media (max-width: 960px) {
+  .mispub .filters__primaryGrid,
+  .mispub .filters__advancedGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .filter-field--faculty,
+  .mispub .filter-field--project {
+    grid-column:
+      auto;
+  }
+
+  .mispub .filters__advancedGrid
+    .filter-field--toggle {
+    grid-column:
+      auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .mispub .mispub__filters {
+    gap: 9px;
+
+    padding: 11px;
+  }
+
+  .mispub .filters__head {
+    align-items: stretch;
+    flex-direction: column;
+
+    gap: 9px;
+  }
+
+  .mispub .filters__clear {
+    width: 100%;
+  }
+
+  .mispub .filters__clear.is-hidden {
+    display: none;
+  }
+
+  .mispub .filters__group {
+    padding: 10px;
+  }
+
+  .mispub .filters__groupHead {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 3px;
+  }
+
+  .mispub .filters__groupHint {
+    text-align: left;
+  }
+
+  .mispub .filters__row {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub .chip {
+    width: 100%;
+
+    justify-content: flex-start;
+  }
+
+  .mispub .chip__label {
+    flex: 1;
+
+    text-align: left;
+  }
+
+  .mispub .filters__primaryGrid,
+  .mispub .filters__advancedGrid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .mispub .filter-field--faculty,
+  .mispub .filter-field--career,
+  .mispub .filter-field--project,
+  .mispub .filter-field--year,
+  .mispub .filter-field--advancedAction,
+  .mispub .filters__advancedGrid
+    .filter-field--toggle {
+    grid-column:
+      auto;
+  }
+
+  .mispub .filter-select,
+  .mispub .filters__advancedButton,
+  .mispub .filter-toggle {
+    min-height: 41px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mispub .filters__row {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+/* ============================================================
+   MOVIMIENTO REDUCIDO
+============================================================ */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
   .mispub *,
   .mispub *::before,
   .mispub *::after {
     scroll-behavior: auto !important;
-    animation: none !important;
-    transition: none !important;
+
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.001ms !important;
   }
 
-  .mispub .card:hover {
-    transform: none;
+  .mispub .card,
+  .mispub .chip,
+  .mispub .btn-mini {
+    transform: none !important;
   }
+}
+
+/* ============================================================
+   IMPRESIÓN
+============================================================ */
+
+@media print {
+  .mispub {
+    min-height: auto;
+
+    padding: 0;
+
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .mispub .mispub__filters,
+  .mispub .hero__tools,
+  .mispub .card__footer,
+  .mispub .table__actions,
+  .mispub .td-actions,
+  .mispub .th-actions {
+    display: none !important;
+  }
+
+  .mispub .mispub__hero,
+  .mispub .card,
+  .mispub .table-wrap {
+    box-shadow: none !important;
+  }
+
+  .mispub .cards {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+/* ============================================================
+   ARMONIZACIÓN CON LA BASE COMPARTIDA
+============================================================ */
+
+.mispub .filter-select {
+  min-block-size: 39px;
+}
+
+.mispub .search.search--navbar {
+  min-block-size:
+    var(
+      --sgpc-list-control-height-lg,
+      44px
+    );
+}
+
+.mispub .hero__tools,
+.mispub .filters__dateGrid,
+.mispub .cards,
+.mispub .table-wrap,
+.mispub .filters__group,
+.mispub .filter-toggle {
+  min-width: 0;
 }

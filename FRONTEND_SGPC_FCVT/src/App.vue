@@ -1,6 +1,6 @@
 <template>
   <div
-    id="app"
+    class="app-root"
     :class="{
       'app-has-navbar': showNavbar,
       'app-public-layout': isPublicLayout,
@@ -18,19 +18,41 @@
       }"
     >
       <RouterView v-slot="{ Component, route: currentRoute }">
-        <Transition
-          :name="currentRoute.meta?.transitionName || 'page-assembly'"
-          mode="out-in"
-          appear
+        <!--
+          Las rutas comparten un escenario estable.
+
+          No se utiliza mode="out-in" ni mode="in-out" porque esos
+          modos pueden dejar un fotograma intermedio o prolongar la
+          coexistencia de las dos vistas.
+
+          Cuando las animaciones están desactivadas, :css="false"
+          hace que Vue cambie la vista de manera inmediata.
+        -->
+        <div
+          class="route-transition-stage"
+          :class="{
+            'is-public-stage': isPublicLayout,
+          }"
         >
-          <div
-            :key="currentRoute.fullPath"
-            class="route-transition-shell"
-            :style="currentRoute.meta?.vars || {}"
+          <Transition
+            :name="getTransitionName(currentRoute)"
+            :css="animations"
+            :duration="
+              animations
+                ? routeTransitionDuration
+                : 0
+            "
           >
-            <component :is="Component" />
-          </div>
-        </Transition>
+            <div
+              v-if="Component"
+              :key="getRouteKey(currentRoute)"
+              class="route-transition-shell"
+              :style="currentRoute.meta?.vars || {}"
+            >
+              <component :is="Component" />
+            </div>
+          </Transition>
+        </div>
       </RouterView>
     </main>
 
@@ -49,24 +71,38 @@
 
 <script setup>
 import { computed } from "vue";
+import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 
 import BarraNavegacion from "./inicio/componentes/BarraNavegacion.vue";
 import FooterInstitucional from "./inicio/componentes/FooterInstitucional.vue";
 import AvisosGlobalHost from "./inicio/avisos-global-host/AvisosGlobalHost.vue";
 
+import { useThemeStore } from "./scripts/stores/themeStore";
+
 const route = useRoute();
+const themeStore = useThemeStore();
+
+const { animations } = storeToRefs(themeStore);
+
+/*
+ * Mantiene las clases de entrada el tiempo suficiente para que
+ * el indicador superior complete su animación. La salida es
+ * inmediata y no deja un fotograma vacío.
+ */
+const routeTransitionDuration = Object.freeze({
+  enter: 220,
+  leave: 0,
+});
 
 /**
  * Una ruta utiliza el diseño público cuando cualquiera de sus
  * registros coincidentes tiene meta.publicLayout = true.
- *
- * Esto funciona también con alias como:
- * /reset-password
  */
 const isPublicLayout = computed(() => {
   return route.matched.some(
-    (record) => record.meta?.publicLayout === true
+    (record) =>
+      record.meta?.publicLayout === true
   );
 });
 
@@ -81,10 +117,69 @@ const showFooter = computed(() => {
 const showGlobalAvisos = computed(() => {
   return !isPublicLayout.value;
 });
+
+/**
+ * Devuelve el nombre de transición definido en la ruta.
+ */
+function getTransitionName(currentRoute) {
+  return (
+    currentRoute?.meta?.transitionName ||
+    "page-assembly"
+  );
+}
+
+/**
+ * Clave estable para representar la interfaz.
+ *
+ * Se utiliza path y no fullPath para impedir que un cambio de
+ * query string, filtro o hash desmonte toda la vista.
+ */
+function getRouteKey(currentRoute) {
+  const customKey =
+    currentRoute?.meta?.transitionKey;
+
+  if (
+    customKey !== undefined &&
+    customKey !== null
+  ) {
+    return String(customKey);
+  }
+
+  return currentRoute?.path || "/";
+}
 </script>
 
 <style>
+/* =========================================================
+   ELEMENTO DE MONTAJE
+========================================================= */
+
+/*
+ * index.html contiene el único elemento con id="app".
+ * La raíz de App.vue usa la clase .app-root para evitar dos
+ * identificadores iguales después de app.mount("#app").
+ */
 #app {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  margin: 0;
+
+  background:
+    var(--bg-main, #f4f6f8);
+
+  color:
+    var(--text-primary, #111827);
+}
+
+/* =========================================================
+   RAÍZ DE LA APLICACIÓN
+========================================================= */
+
+.app-root {
   display: flex;
   flex-direction: column;
 
@@ -94,29 +189,32 @@ const showGlobalAvisos = computed(() => {
   min-height: 100vh;
   min-height: 100dvh;
 
-  /*
-   * clip evita el desbordamiento horizontal sin crear
-   * un contenedor de desplazamiento que bloquee sticky.
-   */
   overflow-x: clip;
   overflow-y: visible;
 
-  background: var(--bg-main, #f4f2ed);
+  background:
+    var(--bg-main, #f4f6f8);
+
+  color:
+    var(--text-primary, #111827);
 }
 
 html,
 body {
+  width: 100%;
   min-width: 0;
   min-height: 100%;
 
   margin: 0;
 
-  /*
-   * No usar hidden aquí. hidden puede crear un ancestro
-   * de desplazamiento para position: sticky.
-   */
   overflow-x: clip;
   overflow-y: visible;
+
+  background:
+    var(--bg-main, #f4f6f8);
+
+  color:
+    var(--text-primary, #111827);
 }
 
 /* =========================================================
@@ -131,11 +229,10 @@ body {
   width: 100%;
   min-width: 0;
 
-  /*
-   * El contenido debe permitir que los componentes sticky
-   * utilicen el desplazamiento principal de la ventana.
-   */
   overflow: visible;
+
+  background:
+    var(--bg-main, #f4f6f8);
 }
 
 /* =========================================================
@@ -154,14 +251,12 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
 
-  margin-left: var(--sgpc-sidebar-width, 250px);
+  margin-left:
+    var(--sgpc-sidebar-width, 250px);
 
-  padding-top: var(--sgpc-nav-offset, 66px);
+  padding-top:
+    var(--sgpc-nav-offset, 78px);
 
-  /*
-   * clip controla únicamente el exceso horizontal.
-   * visible mantiene funcional position: sticky.
-   */
   overflow-x: clip;
   overflow-y: visible;
 
@@ -192,12 +287,70 @@ body {
 }
 
 .app-public-layout {
-  background: var(--bg-main, #f4f2ed);
+  background:
+    var(--bg-main, #f4f6f8);
 }
 
 /* =========================================================
-   TRANSICIÓN DE RUTAS
+   ESCENARIO ESTABLE DE RUTAS
 ========================================================= */
+
+.route-transition-stage {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr);
+
+  grid-template-rows:
+    minmax(
+      calc(
+        100dvh -
+        var(--sgpc-nav-offset, 78px)
+      ),
+      auto
+    );
+
+  align-items: start;
+
+  position: relative;
+  isolation: isolate;
+
+  width: 100%;
+  min-width: 0;
+
+  min-height: calc(
+    100vh - var(--sgpc-nav-offset, 78px)
+  );
+
+  min-height: calc(
+    100dvh - var(--sgpc-nav-offset, 78px)
+  );
+
+  overflow: visible;
+
+  background:
+    var(--bg-main, #f4f6f8);
+
+  box-sizing: border-box;
+}
+
+.route-transition-stage.is-public-stage {
+  grid-template-rows:
+    minmax(100dvh, auto);
+
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* =========================================================
+   CONTENEDOR DE CADA RUTA
+========================================================= */
+
+.route-transition-stage
+  > .route-transition-shell {
+  grid-area: 1 / 1;
+  align-self: stretch;
+}
 
 .route-transition-shell {
   position: relative;
@@ -205,14 +358,52 @@ body {
   width: 100%;
   min-width: 0;
 
-  min-height: inherit;
+  min-height: calc(
+    100vh - var(--sgpc-nav-offset, 78px)
+  );
 
-  /*
-   * No debe convertirse en un contenedor de scroll.
-   */
+  min-height: calc(
+    100dvh - var(--sgpc-nav-offset, 78px)
+  );
+
   overflow: visible;
 
+  background:
+    var(--bg-main, #f4f6f8);
+
+  color:
+    var(--text-primary, #111827);
+
   box-sizing: border-box;
+}
+
+.route-transition-shell
+  > :first-child {
+  min-height: inherit;
+}
+
+.app-main.is-public
+  .route-transition-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* =========================================================
+   CAPAS DURANTE EL CAMBIO DE RUTA
+========================================================= */
+
+.route-transition-stage
+  > .page-assembly-enter-active,
+.route-transition-stage
+  > .page-premium-enter-active {
+  z-index: 2;
+}
+
+.route-transition-stage
+  > .page-assembly-leave-active,
+.route-transition-stage
+  > .page-premium-leave-active {
+  z-index: 1;
 }
 
 /* =========================================================
@@ -230,18 +421,15 @@ body {
   max-width: 100% !important;
 
   min-height: calc(
-    100vh - var(--sgpc-nav-offset, 66px)
+    100vh - var(--sgpc-nav-offset, 78px)
   ) !important;
 
   min-height: calc(
-    100dvh - var(--sgpc-nav-offset, 66px)
+    100dvh - var(--sgpc-nav-offset, 78px)
   ) !important;
 
   margin-left: 0 !important;
 
-  /*
-   * clip no crea el ancestro de scroll que bloqueaba sticky.
-   */
   overflow-x: clip !important;
   overflow-y: visible !important;
 
@@ -272,16 +460,6 @@ body {
   padding-top: 24px !important;
 }
 
-/* Las interfaces públicas controlan su propio espaciado */
-.app-main.is-public
-  .route-transition-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
-
-  overflow-x: clip;
-  overflow-y: visible;
-}
-
 /* =========================================================
    FORMULARIOS CON RESUMEN STICKY
 ========================================================= */
@@ -291,6 +469,7 @@ body {
   > .sgpc-form-page {
   width: 100%;
   min-width: 0;
+  min-height: inherit;
 
   overflow: visible !important;
 }
@@ -343,7 +522,7 @@ body {
     margin-left: 0;
 
     padding-top:
-      var(--sgpc-nav-offset, 66px);
+      var(--sgpc-nav-offset, 78px);
 
     overflow-x: clip;
     overflow-y: visible;
@@ -391,15 +570,47 @@ body {
 }
 
 /* =========================================================
-   ACCESIBILIDAD
+   MOVIMIENTO REDUCIDO
 ========================================================= */
+
+html.reduced-motion
+  .route-transition-stage,
+html.reduced-motion
+  .route-transition-shell,
+html.reduced-motion
+  .route-transition-shell
+  :is(
+    .page-stage,
+    .page-stagger > *
+  ) {
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  animation: none !important;
+  transition: none !important;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .app-main.has-navbar,
   .app-footer-with-navbar,
-  .route-transition-shell {
+  .route-transition-stage,
+  .route-transition-shell,
+  .route-transition-shell
+    :is(
+      .page-stage,
+      .page-stagger > *
+    ) {
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    transform: none !important;
+    filter: none !important;
+
     animation: none !important;
     transition: none !important;
   }
 }
-</style>  
+</style>

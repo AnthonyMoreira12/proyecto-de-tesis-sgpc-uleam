@@ -104,6 +104,84 @@ def _is_external_user(user):
     )
 
 
+def _is_pending_external_user(user):
+    """
+    Determina si una cuenta externa todavía está pendiente de
+    activación. Una cuenta externa desactivada que ya posee una
+    contraseña utilizable no debe volver a clasificarse como
+    pendiente.
+    """
+    if (
+        not _is_external_user(user)
+        or getattr(user, "is_active", False)
+    ):
+        return False
+
+    try:
+        return not user.has_usable_password()
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _publication_title(publication):
+    """
+    Resuelve el título real según el subtipo de publicación.
+
+    Publicacion no almacena un campo ``titulo`` propio; el valor
+    se encuentra en Articulo, Ponencia, Libro o CapituloLibro.
+    """
+    if publication is None:
+        return None
+
+    candidates = (
+        ("articulo", "nombre_articulo"),
+        ("ponencia", "nombre_ponencia"),
+        ("libro", "nombre_libro"),
+        ("capitulo_libro", "nombre_capitulo"),
+    )
+
+    for relation_name, field_name in candidates:
+        try:
+            related = getattr(
+                publication,
+                relation_name,
+                None,
+            )
+        except ObjectDoesNotExist:
+            related = None
+
+        title = _text(
+            getattr(
+                related,
+                field_name,
+                "",
+            )
+        )
+
+        if title:
+            return title
+
+    try:
+        project = getattr(
+            publication,
+            "proyecto",
+            None,
+        )
+    except ObjectDoesNotExist:
+        project = None
+
+    return (
+        _text(
+            getattr(
+                project,
+                "nombre",
+                "",
+            )
+        )
+        or None
+    )
+
+
 def _has_valid_cedula(user):
     """
     Comprueba que el usuario tenga una cédula válida en cuanto
@@ -507,15 +585,8 @@ class AdminUsuarioSerializer(
         self,
         obj,
     ):
-        return bool(
-            _is_external_user(
-                obj
-            )
-            and not getattr(
-                obj,
-                "is_active",
-                False,
-            )
+        return _is_pending_external_user(
+            obj
         )
 
     def get_perfil_completo(
@@ -825,15 +896,8 @@ class AdminUsuarioSerializer(
                 or None
             )
 
-            title = (
-                _text(
-                    getattr(
-                        publication,
-                        "titulo",
-                        "",
-                    )
-                )
-                or None
+            title = _publication_title(
+                publication
             )
 
             publication_number = getattr(

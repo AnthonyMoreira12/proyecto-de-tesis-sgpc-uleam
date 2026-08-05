@@ -232,6 +232,10 @@
                     <option value="doctoral">
                       Tesis doctoral
                     </option>
+
+                    <option value="otro">
+                      Otro
+                    </option>
                   </select>
 
                   <p
@@ -249,10 +253,14 @@
                     class="sgpc-label"
                     for="lb-origen_grado"
                   >
-                    Grado / programa
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Especifique el origen"
+                        : "Grado / programa"
+                    }}
 
                     <span
-                      v-if="form.origen_tipo === 'tic'"
+                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                     >
                       *
@@ -263,18 +271,27 @@
                     id="lb-origen_grado"
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="fieldErrors.origen_grado ? 'lb-origen-grado-error' : undefined"
-                    maxlength="255"
+                    maxlength="120"
                     v-model.trim="form.origen_grado"
                     class="sgpc-input"
                     type="text"
-                    :disabled="form.origen_tipo !== 'tic'"
-                    :required="form.origen_tipo === 'tic'"
-                    placeholder="Ej. Ingeniería de Software / ..."
+                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
+                    :required="['tic', 'otro'].includes(form.origen_tipo)"
+                    :placeholder="
+                      form.origen_tipo === 'otro'
+                        ? 'Ej. Proyecto de investigación institucional'
+                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                    "
                   />
 
                   <p class="sgpc-hint">
-                    Se habilita únicamente cuando el origen es “Trabajo de
-                    integración curricular”.
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Escriba el origen específico de la publicación."
+                        : form.origen_tipo === "tic"
+                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
+                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                    }}
                   </p>
 
                   <p
@@ -327,7 +344,7 @@
                     id="lb-nombre_libro"
                     :aria-invalid="Boolean(fieldErrors.nombre_libro)"
                     :aria-describedby="fieldErrors.nombre_libro ? 'lb-nombre-libro-error' : undefined"
-                    maxlength="500"
+                    maxlength="255"
                     v-model.trim="form.nombre_libro"
                     class="sgpc-input"
                     type="text"
@@ -387,7 +404,7 @@
                     id="lb-codigo_isbn"
                     :aria-invalid="Boolean(fieldErrors.codigo_isbn)"
                     :aria-describedby="fieldErrors.codigo_isbn ? 'lb-codigo-isbn-error' : undefined"
-                    maxlength="32"
+                    maxlength="100"
                     v-model.trim="form.codigo_isbn"
                     class="sgpc-input"
                     type="text"
@@ -546,13 +563,6 @@
                 v-model="form.autores"
                 :error="fieldErrors.autores"
               />
-
-              <p
-                v-if="fieldErrors.autores"
-                class="sgpc-hint sgpc-hint-error"
-              >
-                {{ fieldErrors.autores }}
-              </p>
             </div>
           </section>
 
@@ -907,16 +917,30 @@ const STANDARD_CREATE_ENDPOINT =
 const ADMIN_CREATE_ENDPOINT =
   "/admin/publicaciones/libros/crear/";
 
+const BULK_ATTACHMENTS_ENDPOINT =
+  "/archivos-publicacion/bulk-upload/";
+
 const ERROR_KEY_ALIASES = Object.freeze({
+  usuario_objetivo_id: "admin_context",
+  usuario_id: "admin_context",
+  autor_objetivo_id: "admin_context",
+  autor_id: "admin_context",
+  usuario_creador: "admin_context",
+
+  adjuntos: "archivos",
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  archivo: "archivos",
   archivo_pdf: "archivos",
-  non_field_errors: "admin_context",
+
+  non_field_errors: "general",
+  detail: "general",
 });
 
 const FIELD_LABELS = Object.freeze({
+  general: "Validación general",
   admin_context: "Usuario objetivo",
   facultad: "Facultad",
   carrera: "Carrera",
@@ -924,7 +948,7 @@ const FIELD_LABELS = Object.freeze({
   area: "Área del conocimiento (UNESCO)",
   subarea: "Subárea del conocimiento (UNESCO)",
   origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa",
+  origen_grado: "Grado / programa u otro origen",
   nombre_libro: "Nombre del libro",
   fecha_publicacion: "Fecha de publicación",
   codigo_isbn: "Código ISBN",
@@ -936,6 +960,7 @@ const FIELD_LABELS = Object.freeze({
 });
 
 const ERROR_FIELD_ORDER = Object.freeze([
+  "general",
   "admin_context",
   "facultad",
   "carrera",
@@ -953,6 +978,14 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "autores",
   "archivos",
 ]);
+
+const FIELD_LIMITS = Object.freeze({
+  origen_grado: 120,
+  nombre_libro: 255,
+  codigo_isbn: 100,
+  editorial_compilador: 255,
+  link_libro: 500,
+});
 
 function createEmptyForm() {
   return {
@@ -1141,11 +1174,36 @@ function appendIfPresent(
   );
 }
 
-function normalizeComparableText(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
+function positiveId(value) {
+  const parsed =
+    Number(value);
+
+  return (
+    Number.isInteger(parsed) &&
+    parsed > 0
+      ? parsed
+      : null
+  );
+}
+
+function extractPublicacionId(payload) {
+  return positiveId(
+    payload?.publicacion_id ??
+    payload?.publicacion?.id ??
+    payload?.libro?.publicacion_id
+  );
+}
+
+function exceedsLength(
+  value,
+  maxLength
+) {
+  return (
+    String(value || "")
+      .trim()
+      .length >
+    maxLength
+  );
 }
 
 export default {
@@ -1186,27 +1244,12 @@ export default {
           ""
         );
 
-      const query =
-        this.$route?.query ||
-        {};
-
-      const params =
-        this.$route?.params ||
-        {};
-
       return Boolean(
         this.$route?.meta
           ?.delegatedPublication ||
-          path.startsWith(
-            "/admin/publicaciones/usuario/"
-          ) ||
-          params.usuarioId ||
-          query.modo ===
-            "delegado" ||
-          query.delegado ===
-            "1" ||
-          query.admin ===
-            "1"
+        path.startsWith(
+          "/admin/publicaciones/usuario/"
+        )
       );
     },
 
@@ -1220,10 +1263,9 @@ export default {
       const usuarioId =
         this.adminContext
           .usuarioId ||
-        Number(
+        positiveId(
           this.$route?.params
-            ?.usuarioId ||
-          0
+            ?.usuarioId
         ) ||
         "sin-usuario";
 
@@ -1274,45 +1316,19 @@ export default {
         return false;
       }
 
-      const usuarioNombre =
-        normalizeComparableText(
+      /*
+       * Usuario.id y Autor.id pertenecen a entidades
+       * diferentes y no deben compararse entre sí.
+       */
+      return Boolean(
+        this.adminContext
+          .autorId ||
+        String(
           this.adminContext
-            .usuarioNombre
-        );
-
-      const autorNombre =
-        normalizeComparableText(
-          this.adminContext
-            .autorNombre
-        );
-
-      if (
-        autorNombre &&
-        usuarioNombre &&
-        autorNombre !==
-          usuarioNombre
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext.autorId &&
-        this.adminContext.usuarioId &&
-        this.adminContext.autorId !==
-          this.adminContext.usuarioId
-      ) {
-        return true;
-      }
-
-      if (
-        this.adminContext.autorId &&
-        !this.adminContext
-          .usuarioNombre
-      ) {
-        return true;
-      }
-
-      return false;
+            .autorNombre ||
+          ""
+        ).trim()
+      );
     },
 
     pageKicker() {
@@ -1367,8 +1383,7 @@ export default {
       }
 
       if (
-        this.form.origen_tipo ===
-        "tic"
+        ["tic", "otro"].includes(this.form.origen_tipo)
       ) {
         return Boolean(
           String(
@@ -1583,7 +1598,7 @@ export default {
     },
 
     "form.origen_tipo"(value) {
-      if (value !== "tic") {
+      if (!["tic", "otro"].includes(value)) {
         this.form.origen_grado =
           "";
       }
@@ -1607,6 +1622,7 @@ export default {
       const usuarioId =
         Number(
           params.usuarioId ||
+          query.usuario_objetivo_id ||
           query.usuario_id ||
           query.usuarioId ||
           query.user_id ||
@@ -1616,6 +1632,7 @@ export default {
       const autorId =
         Number(
           params.autorId ||
+          query.autor_objetivo_id ||
           query.autor_id ||
           query.autorId ||
           0
@@ -1681,6 +1698,8 @@ export default {
         const parsed =
           JSON.parse(raw);
 
+        this.suspendDraftOnce();
+
         this.form = {
           ...this.form,
           ...(parsed.form || parsed),
@@ -1727,7 +1746,11 @@ export default {
             );
 
           this.draftInfo =
-            `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
+            Number.isNaN(
+              date.getTime()
+            )
+              ? "Se recuperó un borrador guardado."
+              : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
         } else {
           this.draftInfo =
             "Se recuperó un borrador guardado.";
@@ -1936,6 +1959,19 @@ export default {
       );
     },
 
+    selectedUploadItems() {
+      return (
+        Array.isArray(
+          this.form.archivos
+        )
+          ? this.form.archivos
+          : []
+      ).filter(
+        (item) =>
+          item?.file
+      );
+    },
+
     validateAdminContext() {
       if (
         !this.isAdminDelegado
@@ -2004,8 +2040,7 @@ export default {
       }
 
       if (
-        this.form.origen_tipo ===
-          "tic" &&
+        ["tic", "otro"].includes(this.form.origen_tipo) &&
         !String(
           this.form
             .origen_grado ||
@@ -2017,6 +2052,16 @@ export default {
       }
 
       if (
+        exceedsLength(
+          this.form.origen_grado,
+          FIELD_LIMITS.origen_grado
+        )
+      ) {
+        errors.origen_grado =
+          `El grado, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+      }
+
+      if (
         !String(
           this.form
             .nombre_libro ||
@@ -2025,6 +2070,14 @@ export default {
       ) {
         errors.nombre_libro =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form.nombre_libro,
+          FIELD_LIMITS.nombre_libro
+        )
+      ) {
+        errors.nombre_libro =
+          `El nombre del libro no puede superar ${FIELD_LIMITS.nombre_libro} caracteres.`;
       }
 
       if (
@@ -2044,6 +2097,14 @@ export default {
       ) {
         errors.codigo_isbn =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form.codigo_isbn,
+          FIELD_LIMITS.codigo_isbn
+        )
+      ) {
+        errors.codigo_isbn =
+          `El ISBN no puede superar ${FIELD_LIMITS.codigo_isbn} caracteres.`;
       }
 
       if (
@@ -2055,14 +2116,32 @@ export default {
       ) {
         errors.editorial_compilador =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form.editorial_compilador,
+          FIELD_LIMITS.editorial_compilador
+        )
+      ) {
+        errors.editorial_compilador =
+          `La editorial / compilador no puede superar ${FIELD_LIMITS.editorial_compilador} caracteres.`;
       }
 
-      if (
-        !String(
+      const arbitraje =
+        String(
           this.form
             .revisor_par_arbitraje ||
           ""
-        ).trim()
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        ![
+          "si",
+          "no",
+        ].includes(
+          arbitraje
+        )
       ) {
         errors.revisor_par_arbitraje =
           "Seleccione Sí o No.";
@@ -2077,6 +2156,14 @@ export default {
       ) {
         errors.link_libro =
           "Campo obligatorio.";
+      } else if (
+        exceedsLength(
+          this.form.link_libro,
+          FIELD_LIMITS.link_libro
+        )
+      ) {
+        errors.link_libro =
+          `El enlace del libro no puede superar ${FIELD_LIMITS.link_libro} caracteres.`;
       }
 
       if (
@@ -2125,46 +2212,192 @@ export default {
       return true;
     },
 
-    buildCreateUrl() {
-      if (!this.isAdminDelegado) {
-        return STANDARD_CREATE_ENDPOINT;
+    appendCreateFiles(
+      formData
+    ) {
+      const uploadItems =
+        this.selectedUploadItems();
+
+      if (!uploadItems.length) {
+        return {
+          attachments: [],
+        };
       }
 
-      const params =
-        new URLSearchParams();
+      /*
+       * En el endpoint delegado, el backend procesa el
+       * PDF principal y los adjuntos dentro de la misma
+       * transacción.
+       */
+      if (this.isAdminDelegado) {
+        appendArchivosToFormData(
+          formData,
+          uploadItems,
+          {
+            primaryField:
+              "archivo_pdf",
 
-      if (
-        this.adminContext
-          .usuarioId
-      ) {
-        params.set(
-          "usuario_id",
-          String(
-            this.adminContext
-              .usuarioId
-          )
+            filesField:
+              "archivos",
+
+            metaField:
+              "archivos_meta",
+          }
+        );
+
+        return {
+          attachments: [],
+        };
+      }
+
+      /*
+       * El endpoint estándar /libros/ consume únicamente
+       * el PDF principal. Los adjuntos complementarios se
+       * cargan después mediante bulk-upload.
+       */
+      appendArchivosToFormData(
+        formData,
+        uploadItems.slice(
+          0,
+          1
+        ),
+        {
+          primaryField:
+            "archivo_pdf",
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      return {
+        attachments:
+          uploadItems.slice(
+            1
+          ),
+      };
+    },
+
+    async uploadStandardAttachments(
+      publicacionId,
+      attachments
+    ) {
+      if (!attachments.length) {
+        return 0;
+      }
+
+      if (!positiveId(publicacionId)) {
+        throw new Error(
+          "El backend no devolvió un publicacion_id válido para asociar los adjuntos."
         );
       }
 
-      if (
-        this.adminContext
-          .autorId
-      ) {
-        params.set(
-          "autor_id",
-          String(
-            this.adminContext
-              .autorId
-          )
+      const formData =
+        new FormData();
+
+      formData.append(
+        "publicacion_id",
+        String(publicacionId)
+      );
+
+      appendArchivosToFormData(
+        formData,
+        attachments,
+        {
+          primaryField:
+            null,
+
+          filesField:
+            "archivos",
+
+          metaField:
+            "archivos_meta",
+        }
+      );
+
+      await api.post(
+        BULK_ATTACHMENTS_ENDPOINT,
+        formData
+      );
+
+      return attachments.length;
+    },
+
+    finalizeSuccess(
+      message
+    ) {
+      clearTimeout(
+        this._draftTimer
+      );
+
+      try {
+        localStorage.removeItem(
+          this.draftStorageKey
+        );
+      } catch (error) {
+        console.warn(
+          "No se pudo eliminar el borrador después del registro.",
+          error
         );
       }
 
-      const queryString =
-        params.toString();
+      this.suspendDraftOnce();
+      this.resetForm();
 
-      return queryString
-        ? `${ADMIN_CREATE_ENDPOINT}?${queryString}`
-        : ADMIN_CREATE_ENDPOINT;
+      this.mensaje =
+        message;
+
+      this.mensajeTipo =
+        "success";
+    },
+
+    finalizePartialAttachmentFailure(
+      publicacionId,
+      error
+    ) {
+      /*
+       * El libro ya fue creado. Se elimina el borrador y se
+       * limpia el formulario para impedir un registro duplicado.
+       */
+      clearTimeout(
+        this._draftTimer
+      );
+
+      try {
+        localStorage.removeItem(
+          this.draftStorageKey
+        );
+      } catch (storageError) {
+        console.warn(
+          "No se pudo eliminar el borrador después del registro.",
+          storageError
+        );
+      }
+
+      this.suspendDraftOnce();
+      this.resetForm();
+
+      this.fieldErrors =
+        {};
+
+      this.mensaje =
+        `El libro fue registrado correctamente${
+          publicacionId
+            ? ` (publicación #${publicacionId})`
+            : ""
+        }, pero no se pudieron cargar los adjuntos complementarios. No vuelva a registrar el libro; agregue los adjuntos desde el detalle de la publicación.`;
+
+      this.mensajeTipo =
+        "error";
+
+      console.error(
+        "Libro creado, pero falló la carga de adjuntos:",
+        error?.response?.data ||
+        error
+      );
     },
 
     async registrarLibro() {
@@ -2177,7 +2410,6 @@ export default {
 
       try {
         if (!this.validateFront()) {
-          this.loading = false;
           return;
         }
 
@@ -2204,7 +2436,6 @@ export default {
             "autores"
           );
 
-          this.loading = false;
           return;
         }
 
@@ -2231,7 +2462,6 @@ export default {
             "admin_context"
           );
 
-          this.loading = false;
           return;
         }
 
@@ -2266,8 +2496,7 @@ export default {
         );
 
         if (
-          this.form.origen_tipo ===
-          "tic"
+          ["tic", "otro"].includes(this.form.origen_tipo)
         ) {
           appendIfPresent(
             formData,
@@ -2330,48 +2559,53 @@ export default {
           }
         }
 
-        appendArchivosToFormData(
-          formData,
-          this.form.archivos,
-          {
-            primaryField:
-              "archivo_pdf",
+        const {
+          attachments,
+        } =
+          this.appendCreateFiles(
+            formData
+          );
 
-            filesField:
-              "archivos",
+        const endpoint =
+          this.isAdminDelegado
+            ? ADMIN_CREATE_ENDPOINT
+            : STANDARD_CREATE_ENDPOINT;
 
-            metaField:
-              "archivos_meta",
+        const response =
+          await api.post(
+            endpoint,
+            formData
+          );
+
+        const publicacionId =
+          extractPublicacionId(
+            response?.data
+          );
+
+        if (
+          !this.isAdminDelegado &&
+          attachments.length
+        ) {
+          try {
+            await this.uploadStandardAttachments(
+              publicacionId,
+              attachments
+            );
+          } catch (attachmentError) {
+            this.finalizePartialAttachmentFailure(
+              publicacionId,
+              attachmentError
+            );
+
+            return;
           }
-        );
-
-        await api.post(
-          this.buildCreateUrl(),
-          formData
-        );
-
-        this.suspendDraftOnce();
-
-        try {
-          localStorage.removeItem(
-            this.draftStorageKey
-          );
-        } catch (error) {
-          console.warn(
-            "No se pudo eliminar el borrador después del registro.",
-            error
-          );
         }
 
-        this.resetForm();
-
-        this.mensaje =
+        this.finalizeSuccess(
           this.isAdminDelegado
             ? "Libro registrado correctamente para el usuario seleccionado."
-            : "Libro registrado exitosamente.";
-
-        this.mensajeTipo =
-          "success";
+            : "Libro registrado exitosamente."
+        );
       } catch (error) {
         const status =
           error?.response
@@ -2384,6 +2618,16 @@ export default {
         if (status === 401) {
           this.mensaje =
             "Sesión expirada. Vuelva a iniciar sesión.";
+
+          this.mensajeTipo =
+            "error";
+
+          return;
+        }
+
+        if (status === 403) {
+          this.mensaje =
+            "No tiene permisos para registrar este libro.";
 
           this.mensajeTipo =
             "error";

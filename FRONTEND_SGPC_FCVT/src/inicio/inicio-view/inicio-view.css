@@ -1209,6 +1209,45 @@
   opacity: 0.65;
 }
 
+.ivbi-field--month {
+  min-width: 132px;
+}
+
+.ivbi-field input[type="month"] {
+  padding-right: 8px;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.ivbi-field input[type="month"]::-webkit-calendar-picker-indicator {
+  width: 16px;
+  height: 16px;
+
+  margin: 0;
+  padding: 2px;
+
+  cursor: pointer;
+
+  border-radius: 4px;
+
+  opacity: 0.78;
+
+  transition:
+    opacity
+      var(--ivbi-transition-med),
+    background
+      var(--ivbi-transition-med);
+}
+
+.ivbi-field input[type="month"]:hover::-webkit-calendar-picker-indicator,
+.ivbi-field input[type="month"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+
+  background:
+    var(--ivbi-accent-soft);
+}
+
 
 /* =========================================================
    13. ACCIONES DE FILTRO

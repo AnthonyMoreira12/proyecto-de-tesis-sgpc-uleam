@@ -13,6 +13,7 @@ Este módulo gestiona:
 - Reglas requeridas para cerrar un proyecto.
 """
 
+import logging
 import os
 import unicodedata
 
@@ -30,7 +31,11 @@ from core.proyectos.services.proyectos_proyecto_services import (
     normalize_proyecto_autores_payload,
     proyecto_tiene_investigador_principal,
     sync_proyecto_autores,
+    user_is_project_admin,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -226,6 +231,94 @@ def _safe_file_url(
 
     if request is None:
         return file_url
+
+
+
+def _get_storage_reference(
+    file_field,
+):
+    """
+    Obtiene el almacenamiento y el nombre de un archivo.
+
+    La referencia se captura antes de modificar el modelo para
+    poder eliminar el archivo anterior después del commit.
+    """
+    if not file_field:
+        return None, None
+
+    file_name = getattr(
+        file_field,
+        "name",
+        None,
+    )
+
+    storage = getattr(
+        file_field,
+        "storage",
+        None,
+    )
+
+    if (
+        not file_name
+        or storage is None
+    ):
+        return None, None
+
+    return storage, file_name
+
+
+def _delete_storage_file(
+    storage,
+    file_name,
+):
+    """
+    Elimina un archivo de almacenamiento sin comprometer la
+    respuesta ya confirmada en la base de datos.
+    """
+    if (
+        storage is None
+        or not file_name
+    ):
+        return
+
+    try:
+        if storage.exists(
+            file_name
+        ):
+            storage.delete(
+                file_name
+            )
+
+    except Exception:
+        logger.exception(
+            (
+                "No fue posible eliminar el archivo de "
+                "proyecto '%s' del almacenamiento."
+            ),
+            file_name,
+        )
+
+
+def _schedule_storage_file_delete(
+    storage,
+    file_name,
+):
+    """
+    Programa la eliminación física únicamente después de que la
+    transacción de base de datos se confirme.
+    """
+    if (
+        storage is None
+        or not file_name
+    ):
+        return
+
+    transaction.on_commit(
+        lambda: _delete_storage_file(
+            storage,
+            file_name,
+        )
+    )
 
     try:
         return request.build_absolute_uri(
@@ -484,14 +577,21 @@ class FlexibleJSONField(
 
 
 # ============================================================
-# SERIALIZER DE PARTICIPACIONES
+# SERIALIZERS DE PARTICIPACIONES
 # ============================================================
 
-class ProyectoAutorReadSerializer(
+class ProyectoAutorResumenSerializer(
     serializers.Serializer
 ):
     """
-    Representación de un integrante del equipo investigador.
+    Representación académica mínima de un integrante.
+
+    Se utiliza en listados y respuestas para usuarios que no
+    administran proyectos. No expone:
+
+    - Identificación.
+    - Correo.
+    - Identificador interno del Usuario.
     """
 
     participacion_id = serializers.IntegerField(
@@ -504,31 +604,11 @@ class ProyectoAutorReadSerializer(
         read_only=True,
     )
 
-    nombres = serializers.CharField(
-        source="autor.nombres",
-        read_only=True,
-    )
-
-    apellidos = serializers.CharField(
-        source="autor.apellidos",
-        read_only=True,
-    )
-
     nombre = serializers.SerializerMethodField(
         read_only=True,
     )
 
     nombre_completo = serializers.SerializerMethodField(
-        read_only=True,
-    )
-
-    identificacion = serializers.CharField(
-        source="autor.identificacion",
-        read_only=True,
-        allow_null=True,
-    )
-
-    correo = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -541,12 +621,6 @@ class ProyectoAutorReadSerializer(
     es_externo = serializers.BooleanField(
         source="autor.es_externo",
         read_only=True,
-    )
-
-    usuario_id = serializers.IntegerField(
-        source="autor.usuario_id",
-        read_only=True,
-        allow_null=True,
     )
 
     rol = serializers.CharField(
@@ -615,6 +689,71 @@ class ProyectoAutorReadSerializer(
             obj
         )
 
+    def get_rol_label(
+        self,
+        obj,
+    ):
+        get_display = getattr(
+            obj,
+            "get_rol_display",
+            None,
+        )
+
+        if callable(
+            get_display
+        ):
+            label = _optional_text(
+                get_display()
+            )
+
+            if label:
+                return label
+
+        return _optional_text(
+            getattr(
+                obj,
+                "rol",
+                None,
+            )
+        )
+
+
+class ProyectoAutorReadSerializer(
+    ProyectoAutorResumenSerializer
+):
+    """
+    Representación administrativa del integrante.
+
+    Los campos personales se entregan solamente cuando la vista
+    ha comprobado que el solicitante administra proyectos.
+    """
+
+    nombres = serializers.CharField(
+        source="autor.nombres",
+        read_only=True,
+    )
+
+    apellidos = serializers.CharField(
+        source="autor.apellidos",
+        read_only=True,
+    )
+
+    identificacion = serializers.CharField(
+        source="autor.identificacion",
+        read_only=True,
+        allow_null=True,
+    )
+
+    correo = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    usuario_id = serializers.IntegerField(
+        source="autor.usuario_id",
+        read_only=True,
+        allow_null=True,
+    )
+
     def get_correo(
         self,
         obj,
@@ -655,32 +794,6 @@ class ProyectoAutorReadSerializer(
 
         return user_email or author_email
 
-    def get_rol_label(
-        self,
-        obj,
-    ):
-        get_display = getattr(
-            obj,
-            "get_rol_display",
-            None,
-        )
-
-        if callable(get_display):
-            label = _optional_text(
-                get_display()
-            )
-
-            if label:
-                return label
-
-        return _optional_text(
-            getattr(
-                obj,
-                "rol",
-                None,
-            )
-        )
-
 
 # ============================================================
 # MIXIN DE REPRESENTACIÓN
@@ -690,6 +803,29 @@ class ProyectoRepresentationMixin:
     """
     Métodos compartidos por los serializers de proyecto.
     """
+
+    def _request_is_project_admin(
+        self,
+    ):
+        """
+        Comprueba si la respuesta puede incluir datos
+        administrativos del equipo investigador.
+        """
+        request = self.context.get(
+            "request"
+        )
+
+        if request is None:
+            return False
+
+        return user_is_project_admin(
+            getattr(
+                request,
+                "user",
+                None,
+            )
+        )
+
 
     def _get_participaciones(
         self,
@@ -949,7 +1085,7 @@ class ProyectoListSerializer(
         self,
         obj,
     ):
-        serializer = ProyectoAutorReadSerializer(
+        serializer = ProyectoAutorResumenSerializer(
             self._get_participaciones(
                 obj
             ),
@@ -1043,9 +1179,7 @@ class ProyectoSerializer(
         read_only=True,
     )
 
-    autores = ProyectoAutorReadSerializer(
-        source="participaciones",
-        many=True,
+    autores = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -1053,6 +1187,12 @@ class ProyectoSerializer(
         write_only=True,
         required=False,
         allow_null=True,
+    )
+
+    eliminar_archivo_pdf = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False,
     )
 
     autores_total = serializers.SerializerMethodField(
@@ -1094,6 +1234,7 @@ class ProyectoSerializer(
 
             "archivo_pdf",
             "archivo_pdf_url",
+            "eliminar_archivo_pdf",
 
             "autores",
             "autores_data",
@@ -1119,6 +1260,30 @@ class ProyectoSerializer(
             "creado_por",
             "estado_label",
         ]
+
+    def get_autores(
+        self,
+        obj,
+    ):
+        """
+        Expone datos personales del equipo únicamente a
+        administradores de proyectos.
+        """
+        serializer_class = (
+            ProyectoAutorReadSerializer
+            if self._request_is_project_admin()
+            else ProyectoAutorResumenSerializer
+        )
+
+        serializer = serializer_class(
+            self._get_participaciones(
+                obj
+            ),
+            many=True,
+            context=self.context,
+        )
+
+        return serializer.data
 
     # ========================================================
     # VALIDACIONES DE CAMPOS
@@ -1341,6 +1506,89 @@ class ProyectoSerializer(
                 None,
             ),
         )
+
+        allow_state_transition = bool(
+            self.context.get(
+                "allow_state_transition",
+                False,
+            )
+        )
+
+        state_was_sent = (
+            "estado" in attrs
+        )
+
+        if instance is None:
+            if (
+                state_was_sent
+                and state != "nuevo"
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "estado": (
+                            "Los proyectos nuevos deben "
+                            "registrarse inicialmente con "
+                            "estado 'nuevo'."
+                        )
+                    }
+                )
+
+        elif (
+            state_was_sent
+            and state != current_state
+            and not allow_state_transition
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": (
+                        "El estado no puede modificarse desde "
+                        "el formulario general. Utilice la "
+                        "acción de cambio de estado."
+                    )
+                }
+            )
+
+        delete_pdf = bool(
+            attrs.get(
+                "eliminar_archivo_pdf",
+                False,
+            )
+        )
+
+        new_pdf_was_sent = (
+            "archivo_pdf" in attrs
+            and attrs.get(
+                "archivo_pdf"
+            )
+            is not None
+        )
+
+        if (
+            delete_pdf
+            and new_pdf_was_sent
+        ):
+            raise serializers.ValidationError(
+                {
+                    "eliminar_archivo_pdf": (
+                        "No puede cargar un PDF nuevo y "
+                        "solicitar la eliminación del archivo "
+                        "actual en la misma operación."
+                    )
+                }
+            )
+
+        if (
+            instance is None
+            and delete_pdf
+        ):
+            raise serializers.ValidationError(
+                {
+                    "eliminar_archivo_pdf": (
+                        "No existe un archivo previo que pueda "
+                        "eliminarse durante la creación."
+                    )
+                }
+            )
 
         # ----------------------------------------------------
         # ESTADO Y FECHA DE CIERRE
@@ -1588,22 +1836,54 @@ class ProyectoSerializer(
             None,
         )
 
+        validated_data.pop(
+            "eliminar_archivo_pdf",
+            False,
+        )
+
+        created_file_storage = None
+        created_file_name = None
+
         try:
-            with transaction.atomic():
-                project = Proyecto(
-                    **validated_data
-                )
-
-                project.full_clean()
-                project.save()
-
-                if authors_data is not None:
-                    sync_proyecto_autores(
-                        project,
-                        authors_data,
+            try:
+                with transaction.atomic():
+                    project = Proyecto(
+                        **validated_data
                     )
 
-                return project
+                    project.full_clean()
+                    project.save()
+
+                    (
+                        created_file_storage,
+                        created_file_name,
+                    ) = _get_storage_reference(
+                        getattr(
+                            project,
+                            "archivo_pdf",
+                            None,
+                        )
+                    )
+
+                    if authors_data is not None:
+                        sync_proyecto_autores(
+                            project,
+                            authors_data,
+                        )
+
+                    return project
+
+            except Exception:
+                if (
+                    created_file_storage is not None
+                    and created_file_name
+                ):
+                    _delete_storage_file(
+                        created_file_storage,
+                        created_file_name,
+                    )
+
+                raise
 
         except DjangoValidationError as exc:
             raise serializers.ValidationError(
@@ -1647,6 +1927,21 @@ class ProyectoSerializer(
             None,
         )
 
+        delete_pdf = bool(
+            validated_data.pop(
+                "eliminar_archivo_pdf",
+                False,
+            )
+        )
+
+        new_pdf_was_sent = (
+            "archivo_pdf" in validated_data
+            and validated_data.get(
+                "archivo_pdf"
+            )
+            is not None
+        )
+
         project_id = getattr(
             instance,
             "pk",
@@ -1663,60 +1958,127 @@ class ProyectoSerializer(
                 }
             )
 
+        new_file_storage = None
+        new_file_name = None
+        old_file_storage = None
+        old_file_name = None
+
         try:
-            with transaction.atomic():
-                try:
-                    locked_project = (
-                        Proyecto.objects
-                        .select_for_update()
-                        .get(
-                            pk=project_id
+            try:
+                with transaction.atomic():
+                    try:
+                        locked_project = (
+                            Proyecto.objects
+                            .select_for_update()
+                            .get(
+                                pk=project_id
+                            )
+                        )
+
+                    except Proyecto.DoesNotExist as exc:
+                        raise serializers.ValidationError(
+                            {
+                                "detail": (
+                                    "El proyecto ya no existe."
+                                )
+                            }
+                        ) from exc
+
+                    (
+                        old_file_storage,
+                        old_file_name,
+                    ) = _get_storage_reference(
+                        getattr(
+                            locked_project,
+                            "archivo_pdf",
+                            None,
                         )
                     )
 
-                except Proyecto.DoesNotExist as exc:
-                    raise serializers.ValidationError(
-                        {
-                            "detail": (
-                                "El proyecto ya no existe."
+                    if delete_pdf:
+                        validated_data[
+                            "archivo_pdf"
+                        ] = None
+
+                    for field_name, value in (
+                        validated_data.items()
+                    ):
+                        setattr(
+                            locked_project,
+                            field_name,
+                            value,
+                        )
+
+                    locked_project.full_clean()
+                    locked_project.save()
+
+                    if new_pdf_was_sent:
+                        (
+                            new_file_storage,
+                            new_file_name,
+                        ) = _get_storage_reference(
+                            getattr(
+                                locked_project,
+                                "archivo_pdf",
+                                None,
                             )
-                        }
-                    ) from exc
+                        )
 
-                for field_name, value in (
-                    validated_data.items()
-                ):
-                    setattr(
-                        locked_project,
-                        field_name,
-                        value,
+                    if authors_data is not None:
+                        sync_proyecto_autores(
+                            locked_project,
+                            authors_data,
+                        )
+
+                    file_was_replaced = bool(
+                        new_pdf_was_sent
+                        and old_file_name
+                        and new_file_name
+                        and old_file_name
+                        != new_file_name
                     )
 
-                locked_project.full_clean()
-                locked_project.save()
+                    if (
+                        old_file_name
+                        and (
+                            delete_pdf
+                            or file_was_replaced
+                        )
+                    ):
+                        _schedule_storage_file_delete(
+                            old_file_storage,
+                            old_file_name,
+                        )
 
-                if authors_data is not None:
-                    sync_proyecto_autores(
+                    if hasattr(
                         locked_project,
-                        authors_data,
-                    )
+                        "_prefetched_objects_cache",
+                    ):
+                        locked_project._prefetched_objects_cache = {}
 
-                if hasattr(
-                    locked_project,
-                    "_prefetched_objects_cache",
-                ):
-                    locked_project._prefetched_objects_cache = {}
-
-                if hasattr(
-                    locked_project,
-                    "_serializer_participaciones_cache",
-                ):
-                    delattr(
+                    if hasattr(
                         locked_project,
                         "_serializer_participaciones_cache",
+                    ):
+                        delattr(
+                            locked_project,
+                            "_serializer_participaciones_cache",
+                        )
+
+                    return locked_project
+
+            except Exception:
+                if (
+                    new_file_storage is not None
+                    and new_file_name
+                    and new_file_name != old_file_name
+                ):
+                    _delete_storage_file(
+                        new_file_storage,
+                        new_file_name,
                     )
 
-                return locked_project
+                raise
 
         except DjangoValidationError as exc:
             raise serializers.ValidationError(

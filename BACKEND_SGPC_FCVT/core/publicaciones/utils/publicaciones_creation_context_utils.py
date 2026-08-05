@@ -74,8 +74,53 @@ def _normalize_role(user):
     ).strip().lower()
 
 
+def _normalize_auth_source(user):
+    return str(
+        getattr(
+            user,
+            "auth_source",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+
+def _is_pending_external_user(
+    user,
+):
+    if user is None:
+        return False
+
+    if (
+        _normalize_role(
+            user
+        )
+        != "autor_externo"
+        or _normalize_auth_source(
+            user
+        )
+        != "local"
+        or _is_active(
+            user
+        )
+    ):
+        return False
+
+    try:
+        return not user.has_usable_password()
+
+    except (
+        AttributeError,
+        TypeError,
+        ValueError,
+    ):
+        return False
+
+
 def _validate_usuario_creador(
     usuario,
+    *,
+    allow_inactive=False,
 ):
     if not _is_authenticated(
         usuario
@@ -89,8 +134,11 @@ def _validate_usuario_creador(
             }
         )
 
-    if not _is_active(
-        usuario
+    if (
+        not allow_inactive
+        and not _is_active(
+            usuario
+        )
     ):
         raise ValidationError(
             {
@@ -189,6 +237,7 @@ def resolve_publicacion_creation_context(
             "request": request,
             "usuario_creador_override": usuario,
             "registrado_por_admin": True,
+            "permitir_usuario_inactivo_delegado": False,
         }
 
     También puede proporcionarse explícitamente:
@@ -254,9 +303,55 @@ def resolve_publicacion_creation_context(
         else request_user
     )
 
+    allow_inactive_delegated = bool(
+        context.get(
+            "permitir_usuario_inactivo_delegado",
+            False,
+        )
+    )
+
+    if allow_inactive_delegated:
+        is_real_override = bool(
+            usuario_override is not None
+            and getattr(
+                usuario_override,
+                "pk",
+                None,
+            )
+            != getattr(
+                request_user,
+                "pk",
+                None,
+            )
+        )
+
+        if (
+            not is_real_override
+            or not _is_admin(
+                request_user
+            )
+            or not _is_pending_external_user(
+                usuario_override
+            )
+        ):
+            raise ValidationError(
+                {
+                    "usuario_creador": [
+                        "La excepción para un usuario "
+                        "inactivo solo puede utilizarse "
+                        "con una cuenta externa pendiente "
+                        "en un registro administrativo "
+                        "delegado."
+                    ]
+                }
+            )
+
     usuario_creador = (
         _validate_usuario_creador(
-            usuario_creador
+            usuario_creador,
+            allow_inactive=(
+                allow_inactive_delegated
+            ),
         )
     )
 

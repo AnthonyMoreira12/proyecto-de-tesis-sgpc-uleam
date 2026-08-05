@@ -1,4 +1,3 @@
-# core/urls.py
 # ============================================================
 # SGPC ULEAM — Rutas principales
 # ============================================================
@@ -47,9 +46,11 @@ from core.admin.views.admin_publicaciones_views import (
 
 # Publicaciones
 from core.publicaciones.views.publicaciones_listado_views import (
+    PublicacionAvailableYearsAPIView,
     PublicacionListAPIView,
 )
 from core.publicaciones.views.publicaciones_mis_listados_views import (
+    MyPublicacionAvailableYearsAPIView,
     MyPublicacionListAPIView,
 )
 from core.publicaciones.views.publicaciones_detalle_views import (
@@ -65,6 +66,7 @@ from core.publicaciones.views.publicaciones_pdf_views import (
 # Reportes
 from core.reportes.views.reportes_publicaciones_views import (
     ExportarPublicacionesExcelView,
+    VistaPreviaPublicacionesExcelView,
 )
 
 # Búsqueda
@@ -311,6 +313,18 @@ urlpatterns = [
     # PUBLICACIONES
     # ========================================================
     path(
+        "publicaciones/anios-disponibles/",
+        PublicacionAvailableYearsAPIView.as_view(),
+        name="publicaciones-anios-disponibles",
+    ),
+
+    path(
+        "publicaciones/mias/anios-disponibles/",
+        MyPublicacionAvailableYearsAPIView.as_view(),
+        name="publicaciones-mias-anios-disponibles",
+    ),
+
+    path(
         "publicaciones/",
         PublicacionListAPIView.as_view(),
         name="publicaciones-list",
@@ -347,6 +361,12 @@ urlpatterns = [
         "reportes/publicaciones/excel/",
         ExportarPublicacionesExcelView.as_view(),
         name="exportar-publicaciones-excel",
+    ),
+
+    path(
+        "reportes/publicaciones/excel/preview/",
+        VistaPreviaPublicacionesExcelView.as_view(),
+        name="preview-publicaciones-excel",
     ),
 
     # ========================================================

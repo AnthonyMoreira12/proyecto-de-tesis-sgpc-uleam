@@ -3,6 +3,8 @@
 # SGPC ULEAM — Dashboard institucional + reporte Excel
 # ============================================================
 
+from calendar import monthrange
+from datetime import date
 from io import BytesIO
 import unicodedata
 
@@ -14,6 +16,7 @@ from django.db.models.functions import (
 )
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, DoughnutChart, Reference
@@ -30,6 +33,7 @@ from openpyxl.styles import (
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -116,28 +120,9 @@ CANONICAL_TYPES = (
         "categoria": "libro",
         "orden": 5,
     },
-    {
-        "codigo": "OTRO",
-        "nombre": "Otro",
-        "categoria": "otro",
-        "orden": 99,
-    },
 )
 
 
-CANONICAL_CODES = {
-    item["codigo"]
-    for item in CANONICAL_TYPES
-}
-
-
-CANONICAL_PRIMARY_CODES = (
-    "AAI",
-    "AR",
-    "PON",
-    "CAP",
-    "LIB",
-)
 
 
 # ============================================================
@@ -177,9 +162,6 @@ CANONICAL_ALIASES = {
     # Libro
     "LIB": "LIB",
     "LIBRO": "LIB",
-
-    # Otros
-    "OTRO": "OTRO",
 }
 
 
@@ -330,21 +312,20 @@ def _canonical_meta(
         _normalize_canonical_code(
             code
         )
-        or "OTRO"
     )
 
-    for item in CANONICAL_TYPES:
-        if (
-            item["codigo"]
-            == normalized
-        ):
-            return item
+    if not normalized:
+        return None
 
     return next(
-        item
-        for item in CANONICAL_TYPES
-        if item["codigo"] == "OTRO"
+        (
+            item
+            for item in CANONICAL_TYPES
+            if item["codigo"] == normalized
+        ),
+        None,
     )
+
 
 
 def _normalize_year_range(
@@ -365,6 +346,169 @@ def _normalize_year_range(
         anio_desde,
         anio_hasta,
     )
+
+
+def _safe_period_date(
+    value,
+    *,
+    field_name,
+    end_of_month=False,
+):
+    """
+    Convierte valores de periodo a una fecha válida.
+
+    Formatos aceptados:
+
+        YYYY-MM-DD
+        YYYY-MM
+
+    Cuando recibe YYYY-MM:
+
+        fecha_desde -> primer día del mes
+        fecha_hasta -> último día del mes
+    """
+
+    raw = str(
+        value or ""
+    ).strip()
+
+    if not raw:
+        return None
+
+    parsed = parse_date(raw)
+
+    if parsed:
+        return parsed
+
+    parts = raw.split("-")
+
+    if len(parts) == 2:
+        try:
+            year = int(parts[0])
+            month = int(parts[1])
+
+            if month < 1 or month > 12:
+                raise ValueError
+
+            day = (
+                monthrange(
+                    year,
+                    month,
+                )[1]
+                if end_of_month
+                else 1
+            )
+
+            return date(
+                year,
+                month,
+                day,
+            )
+
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+        ):
+            pass
+
+    raise DRFValidationError(
+        {
+            field_name: (
+                "Utilice el formato YYYY-MM "
+                "o YYYY-MM-DD."
+            )
+        }
+    )
+
+
+def _resolve_period_filters(
+    params,
+):
+    """
+    Resuelve los filtros temporales del dashboard.
+
+    Los filtros por fecha tienen prioridad sobre los filtros
+    históricos por año. Esto conserva compatibilidad con el
+    frontend anterior mientras se migra a selectores mensuales.
+    """
+
+    raw_fecha_desde = (
+        params.get("fecha_desde")
+        or params.get("mes_desde")
+    )
+
+    raw_fecha_hasta = (
+        params.get("fecha_hasta")
+        or params.get("mes_hasta")
+    )
+
+    fecha_desde = _safe_period_date(
+        raw_fecha_desde,
+        field_name="fecha_desde",
+        end_of_month=False,
+    )
+
+    fecha_hasta = _safe_period_date(
+        raw_fecha_hasta,
+        field_name="fecha_hasta",
+        end_of_month=True,
+    )
+
+    if (
+        fecha_desde
+        and fecha_hasta
+        and fecha_desde > fecha_hasta
+    ):
+        fecha_desde = _safe_period_date(
+            raw_fecha_hasta,
+            field_name="fecha_desde",
+            end_of_month=False,
+        )
+
+        fecha_hasta = _safe_period_date(
+            raw_fecha_desde,
+            field_name="fecha_hasta",
+            end_of_month=True,
+        )
+
+    if fecha_desde or fecha_hasta:
+        return {
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta,
+            "anio_desde": None,
+            "anio_hasta": None,
+            "modo": "fecha",
+        }
+
+    anio_desde = _safe_int(
+        params.get("anio_desde")
+    )
+
+    anio_hasta = _safe_int(
+        params.get("anio_hasta")
+    )
+
+    (
+        anio_desde,
+        anio_hasta,
+    ) = _normalize_year_range(
+        anio_desde,
+        anio_hasta,
+    )
+
+    return {
+        "fecha_desde": None,
+        "fecha_hasta": None,
+        "anio_desde": anio_desde,
+        "anio_hasta": anio_hasta,
+        "modo": (
+            "anio"
+            if anio_desde or anio_hasta
+            else None
+        ),
+    }
+
 
 
 # ============================================================
@@ -409,24 +553,8 @@ def _build_base_queryset(
         )
     )
 
-    anio_desde = _safe_int(
-        params.get(
-            "anio_desde"
-        )
-    )
-
-    anio_hasta = _safe_int(
-        params.get(
-            "anio_hasta"
-        )
-    )
-
-    (
-        anio_desde,
-        anio_hasta,
-    ) = _normalize_year_range(
-        anio_desde,
-        anio_hasta,
+    period = _resolve_period_filters(
+        params
     )
 
     # --------------------------------------------------------
@@ -454,28 +582,46 @@ def _build_base_queryset(
         )
 
     # --------------------------------------------------------
-    # Año desde
+    # Periodo exacto o mensual
     # --------------------------------------------------------
 
-    if anio_desde:
+    if period["fecha_desde"]:
         queryset = queryset.filter(
-            anio_publicacion__gte=(
-                anio_desde
+            fecha_publicacion__gte=(
+                period["fecha_desde"]
+            )
+        )
+
+    if period["fecha_hasta"]:
+        queryset = queryset.filter(
+            fecha_publicacion__lte=(
+                period["fecha_hasta"]
             )
         )
 
     # --------------------------------------------------------
-    # Año hasta
+    # Compatibilidad con filtros históricos por año
+    #
+    # Solo se aplican cuando no se enviaron fecha_desde ni
+    # fecha_hasta.
     # --------------------------------------------------------
 
-    if anio_hasta:
+    if period["anio_desde"]:
+        queryset = queryset.filter(
+            anio_publicacion__gte=(
+                period["anio_desde"]
+            )
+        )
+
+    if period["anio_hasta"]:
         queryset = queryset.filter(
             anio_publicacion__lte=(
-                anio_hasta
+                period["anio_hasta"]
             )
         )
 
     return queryset
+
 
 
 # ============================================================
@@ -600,33 +746,6 @@ def _canonical_queryset(
             )
         )
 
-    # --------------------------------------------------------
-    # OTRO
-    # --------------------------------------------------------
-
-    if normalized == "OTRO":
-        queryset = publicaciones
-
-        for primary_code in (
-            CANONICAL_PRIMARY_CODES
-        ):
-            source = id_sources.get(
-                primary_code
-            )
-
-            if source is not None:
-                queryset = (
-                    queryset.exclude(
-                        id__in=source
-                    )
-                )
-
-        return queryset
-
-    # --------------------------------------------------------
-    # Tipo normal
-    # --------------------------------------------------------
-
     source = id_sources.get(
         normalized
     )
@@ -637,6 +756,7 @@ def _canonical_queryset(
     return publicaciones.filter(
         id__in=source
     )
+
 
 
 def _apply_canonical_type_filter(
@@ -1897,24 +2017,8 @@ def _build_filtros_aplicados(
         )
     )
 
-    anio_desde = _safe_int(
-        params.get(
-            "anio_desde"
-        )
-    )
-
-    anio_hasta = _safe_int(
-        params.get(
-            "anio_hasta"
-        )
-    )
-
-    (
-        anio_desde,
-        anio_hasta,
-    ) = _normalize_year_range(
-        anio_desde,
-        anio_hasta,
+    period = _resolve_period_filters(
+        params
     )
 
     anio = _safe_int(
@@ -1966,6 +2070,14 @@ def _build_filtros_aplicados(
         else None
     )
 
+    fecha_desde = period[
+        "fecha_desde"
+    ]
+
+    fecha_hasta = period[
+        "fecha_hasta"
+    ]
+
     return {
         "facultad_id": (
             facultad_id
@@ -1993,12 +2105,28 @@ def _build_filtros_aplicados(
             else None
         ),
 
+        "fecha_desde": (
+            fecha_desde.isoformat()
+            if fecha_desde
+            else None
+        ),
+
+        "fecha_hasta": (
+            fecha_hasta.isoformat()
+            if fecha_hasta
+            else None
+        ),
+
         "anio_desde": (
-            anio_desde
+            period["anio_desde"]
         ),
 
         "anio_hasta": (
-            anio_hasta
+            period["anio_hasta"]
+        ),
+
+        "periodo_modo": (
+            period["modo"]
         ),
 
         "anio": (
@@ -2013,6 +2141,7 @@ def _build_filtros_aplicados(
             top
         ),
     }
+
 
 
 # ============================================================
@@ -2056,7 +2185,7 @@ def _build_dashboard_payload(
     )
 
     # --------------------------------------------------------
-    # Queryset general con filtros institucionales/año
+    # Queryset general con filtros institucionales/periodo
     # --------------------------------------------------------
 
     publicaciones_base = (
@@ -2306,7 +2435,6 @@ REPORT_TYPE_COLORS = {
     "PON": "7251B5",
     "CAP": "B85C2E",
     "LIB": "1F7A73",
-    "OTRO": "7C8798",
 }
 
 REPORT_KPI_COLORS = (
@@ -2395,16 +2523,77 @@ def _merge_block(
 
 
 def _format_periodo(filtros):
-    desde = filtros.get("anio_desde")
-    hasta = filtros.get("anio_hasta")
+    fecha_desde_raw = filtros.get(
+        "fecha_desde"
+    )
+
+    fecha_hasta_raw = filtros.get(
+        "fecha_hasta"
+    )
+
+    fecha_desde = (
+        parse_date(fecha_desde_raw)
+        if fecha_desde_raw
+        else None
+    )
+
+    fecha_hasta = (
+        parse_date(fecha_hasta_raw)
+        if fecha_hasta_raw
+        else None
+    )
+
+    if fecha_desde or fecha_hasta:
+        def format_date(value):
+            return value.strftime(
+                "%d/%m/%Y"
+            )
+
+        if fecha_desde and fecha_hasta:
+            if fecha_desde == fecha_hasta:
+                return format_date(
+                    fecha_desde
+                )
+
+            return (
+                f"{format_date(fecha_desde)} "
+                f"– {format_date(fecha_hasta)}"
+            )
+
+        if fecha_desde:
+            return (
+                "Desde "
+                f"{format_date(fecha_desde)}"
+            )
+
+        return (
+            "Hasta "
+            f"{format_date(fecha_hasta)}"
+        )
+
+    desde = filtros.get(
+        "anio_desde"
+    )
+
+    hasta = filtros.get(
+        "anio_hasta"
+    )
 
     if desde and hasta:
-        return str(desde) if desde == hasta else f"{desde} – {hasta}"
+        return (
+            str(desde)
+            if desde == hasta
+            else f"{desde} – {hasta}"
+        )
+
     if desde:
         return f"Desde {desde}"
+
     if hasta:
         return f"Hasta {hasta}"
-    return "Todos los años"
+
+    return "Todos los periodos"
+
 
 
 def _set_sheet_print_settings(ws, *, print_area=None):
@@ -2918,7 +3107,7 @@ def _add_summary_charts(summary_ws, data_ws, dashboards):
                 point = DataPoint(idx=index)
                 color = REPORT_TYPE_COLORS.get(
                     item.get("tipo_codigo"),
-                    REPORT_TYPE_COLORS["OTRO"],
+                    REPORT_COLORS["muted"],
                 )
                 point.graphicalProperties.solidFill = color
                 point.graphicalProperties.line.solidFill = color

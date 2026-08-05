@@ -251,6 +251,10 @@
                     <option value="doctoral">
                       Tesis doctoral
                     </option>
+
+                    <option value="otro">
+                      Otro
+                    </option>
                   </select>
 
                   <p
@@ -269,10 +273,14 @@
                     class="sgpc-label"
                     for="cl-origen_grado"
                   >
-                    Grado / programa
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Especifique el origen"
+                        : "Grado / programa"
+                    }}
 
                     <span
-                      v-if="form.origen_tipo === 'tic'"
+                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                       aria-hidden="true"
                     >
@@ -286,20 +294,29 @@
                     class="sgpc-input"
                     type="text"
                     maxlength="120"
-                    :disabled="form.origen_tipo !== 'tic'"
-                    :required="form.origen_tipo === 'tic'"
+                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
+                    :required="['tic', 'otro'].includes(form.origen_tipo)"
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="
                       fieldErrors.origen_grado
                         ? 'cl-origen-grado-error'
                         : undefined
                     "
-                    placeholder="Ej. Ingeniería de Software"
+                    :placeholder="
+                      form.origen_tipo === 'otro'
+                        ? 'Ej. Proyecto de investigación institucional'
+                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                    "
                   />
 
                   <p class="sgpc-hint">
-                    Se habilita únicamente cuando el origen es “Trabajo de
-                    integración curricular”.
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Escriba el origen específico de la publicación."
+                        : form.origen_tipo === "tic"
+                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
+                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                    }}
                   </p>
 
                   <p
@@ -1039,24 +1056,33 @@ const BULK_ATTACHMENTS_ENDPOINT =
 ============================================================ */
 
 const ERROR_KEY_ALIASES = Object.freeze({
+  usuario_objetivo_id: "admin_context",
+  usuario_id: "admin_context",
+  autor_objetivo_id: "admin_context",
+  autor_id: "admin_context",
+  usuario_creador: "admin_context",
+
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  adjuntos: "archivos",
   archivo: "archivos",
   archivo_pdf: "archivos",
-  non_field_errors: "admin_context",
+
+  non_field_errors: "general",
 });
 
 const FIELD_LABELS = Object.freeze({
   admin_context: "Usuario objetivo",
+  general: "Validación general",
   facultad: "Facultad",
   carrera: "Carrera",
   proyecto: "Proyecto de investigación",
   area: "Área del conocimiento (UNESCO)",
   subarea: "Subárea del conocimiento (UNESCO)",
   origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa",
+  origen_grado: "Grado / programa u otro origen",
   nombre_capitulo: "Nombre del capítulo",
   nombre_libro: "Nombre del libro",
   fecha_publicacion: "Fecha de publicación",
@@ -1070,6 +1096,7 @@ const FIELD_LABELS = Object.freeze({
 
 const ERROR_FIELD_ORDER = Object.freeze([
   "admin_context",
+  "general",
   "facultad",
   "carrera",
   "proyecto",
@@ -1223,6 +1250,9 @@ function normalizeDrfErrors(data) {
   if (fields.admin_context) {
     message =
       fields.admin_context;
+  } else if (fields.general) {
+    message =
+      fields.general;
   } else if (fields.autores) {
     message =
       "Revise la sección de Autores: debe existir al menos un autor y el orden debe ser válido.";
@@ -1366,27 +1396,12 @@ export default {
           ""
         );
 
-      const query =
-        this.$route?.query ||
-        {};
-
-      const params =
-        this.$route?.params ||
-        {};
-
       return Boolean(
         this.$route?.meta
           ?.delegatedPublication ||
         path.startsWith(
           "/admin/publicaciones/usuario/"
-        ) ||
-        params.usuarioId ||
-        query.modo ===
-          "delegado" ||
-        query.delegado ===
-          "1" ||
-        query.admin ===
-          "1"
+        )
       );
     },
 
@@ -1526,9 +1541,8 @@ export default {
       }
 
       if (
-        this.form
-          .origen_tipo ===
-        "tic"
+        ["tic", "otro"].includes(this.form
+          .origen_tipo)
       ) {
         return Boolean(
           String(
@@ -1789,8 +1803,7 @@ export default {
       value
     ) {
       if (
-        value !==
-        "tic"
+        !["tic", "otro"].includes(value)
       ) {
         this.form
           .origen_grado =
@@ -1827,6 +1840,7 @@ export default {
         usuarioId:
           positiveId(
             params.usuarioId ||
+            query.usuario_objetivo_id ||
             query.usuario_id ||
             query.usuarioId ||
             query.user_id
@@ -1835,6 +1849,7 @@ export default {
         autorId:
           positiveId(
             params.autorId ||
+            query.autor_objetivo_id ||
             query.autor_id ||
             query.autorId
           ),
@@ -1918,6 +1933,8 @@ export default {
 
         const empty =
           createEmptyForm();
+
+        this.suspendDraftOnce();
 
         this.form = {
           ...empty,
@@ -2350,9 +2367,8 @@ export default {
       }
 
       if (
-        this.form
-          .origen_tipo ===
-          "tic" &&
+        ["tic", "otro"].includes(this.form
+          .origen_tipo) &&
         !String(
           this.form
             .origen_grado ||
@@ -2550,9 +2566,8 @@ export default {
       );
 
       if (
-        this.form
-          .origen_tipo ===
-        "tic"
+        ["tic", "otro"].includes(this.form
+          .origen_tipo)
       ) {
         appendIfPresent(
           formData,

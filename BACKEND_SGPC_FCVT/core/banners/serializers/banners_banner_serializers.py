@@ -25,6 +25,7 @@ from rest_framework import serializers
 
 from core.models.banners import (
     ASIDE_WIDTH_MIN,
+    BANNER_TEXT_MAX_LENGTH,
     DEFAULT_BANNER_EYEBROW,
     DEFAULT_BANNER_RECENT_LABEL,
     DEFAULT_BANNER_TEXT,
@@ -96,9 +97,6 @@ FORMAT_CONTENT_TYPES = {
 # ============================================================
 # CONFIGURACIÓN DE TEXTOS
 # ============================================================
-
-BANNER_TEXT_MAX_LENGTH = 5000
-
 
 def _model_max_length(
     model,
@@ -579,7 +577,7 @@ class BannerSerializer(
 
     image = serializers.ImageField(
         required=False,
-        allow_null=True,
+        allow_null=False,
         allow_empty_file=False,
         error_messages={
             "empty": (
@@ -666,6 +664,42 @@ class BannerSerializer(
             value
         )
 
+    def validate(
+        self,
+        attrs,
+    ):
+        """
+        La imagen es obligatoria al crear un banner.
+
+        Durante una actualización puede omitirse para conservar
+        la imagen actual, pero no puede enviarse como null.
+        """
+        if (
+            self.instance is None
+            and "image" not in attrs
+        ):
+            raise serializers.ValidationError(
+                {
+                    "image": (
+                        "La imagen del banner es obligatoria."
+                    )
+                }
+            )
+
+        if (
+            "image" in attrs
+            and attrs.get("image") is None
+        ):
+            raise serializers.ValidationError(
+                {
+                    "image": (
+                        "La imagen del banner no puede ser nula."
+                    )
+                }
+            )
+
+        return attrs
+
     # ========================================================
     # VALIDACIÓN DE IMAGEN
     # ========================================================
@@ -678,7 +712,9 @@ class BannerSerializer(
         Valida extensión, MIME, peso, formato real y dimensiones.
         """
         if value is None:
-            return None
+            raise serializers.ValidationError(
+                "La imagen del banner no puede ser nula."
+            )
 
         file_name = str(
             getattr(

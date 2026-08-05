@@ -1,6 +1,7 @@
 """Selectors administrativos para usuarios."""
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.db.models import (
     CharField,
     Count,
@@ -42,6 +43,14 @@ INSTITUTIONAL_USER_Q = Q(
 EXTERNAL_USER_Q = Q(
     rol=ROLE_EXTERNAL,
     auth_source=AUTH_SOURCE_LOCAL,
+)
+
+PENDING_EXTERNAL_USER_Q = (
+    EXTERNAL_USER_Q
+    & Q(
+        is_active=False,
+        password__startswith=UNUSABLE_PASSWORD_PREFIX,
+    )
 )
 
 ACTIVE_ADMIN_Q = (
@@ -161,6 +170,13 @@ def _participations_queryset():
         .select_related(
             "publicacion",
             "publicacion__tipo",
+            "publicacion__proyecto",
+            "publicacion__carrera",
+            "publicacion__carrera__facultad",
+            "publicacion__articulo",
+            "publicacion__ponencia",
+            "publicacion__libro",
+            "publicacion__capitulo_libro",
             "autor",
         )
         .order_by(
@@ -325,7 +341,7 @@ def filter_admin_users_queryset(
       rol=autor_externo y auth_source=local.
 
     - pendientes:
-      cuenta externa local e inactiva.
+      cuenta externa local, inactiva y sin contraseña utilizable.
 
     - administradores:
       is_staff o is_superuser.
@@ -358,8 +374,7 @@ def filter_admin_users_queryset(
 
     elif normalized_scope == "pendientes":
         queryset = queryset.filter(
-            EXTERNAL_USER_Q,
-            is_active=False,
+            PENDING_EXTERNAL_USER_Q
         )
 
     elif normalized_scope == "activos":

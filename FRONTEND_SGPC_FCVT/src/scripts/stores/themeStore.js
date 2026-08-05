@@ -594,6 +594,79 @@ function getRoot() {
     : document.documentElement;
 }
 
+/* ============================================================
+   CAMBIO INSTANTÁNEO DE TEMA
+============================================================ */
+
+let themeSwitchFrame = null;
+let themeSwitchReleaseFrame = null;
+
+function cancelThemeSwitchFrames() {
+  if (
+    typeof cancelAnimationFrame !== "function"
+  ) {
+    themeSwitchFrame = null;
+    themeSwitchReleaseFrame = null;
+    return;
+  }
+
+  if (themeSwitchFrame !== null) {
+    cancelAnimationFrame(themeSwitchFrame);
+    themeSwitchFrame = null;
+  }
+
+  if (themeSwitchReleaseFrame !== null) {
+    cancelAnimationFrame(
+      themeSwitchReleaseFrame
+    );
+
+    themeSwitchReleaseFrame = null;
+  }
+}
+
+function beginThemeSwitch(root) {
+  if (!root) return;
+
+  cancelThemeSwitchFrames();
+
+  root.classList.add(
+    "sgpc-theme-switching"
+  );
+}
+
+function finishThemeSwitch(root) {
+  if (!root) return;
+
+  /*
+   * Obliga al navegador a reconocer la clase que deshabilita
+   * temporalmente las transiciones antes de liberar el cambio.
+   */
+  void root.offsetWidth;
+
+  if (
+    typeof requestAnimationFrame !== "function"
+  ) {
+    root.classList.remove(
+      "sgpc-theme-switching"
+    );
+
+    return;
+  }
+
+  themeSwitchFrame =
+    requestAnimationFrame(() => {
+      themeSwitchReleaseFrame =
+        requestAnimationFrame(() => {
+          root.classList.remove(
+            "sgpc-theme-switching"
+          );
+
+          themeSwitchFrame = null;
+          themeSwitchReleaseFrame = null;
+        });
+    });
+}
+
 function normalizeFontSize(value) {
   return FONT_SIZES.includes(value)
     ? value
@@ -632,11 +705,13 @@ function normalizeDarkVariant(value) {
 }
 
 function getDarkPreset(value) {
-  const normalized = normalizeDarkVariant(value);
+  const normalized =
+    normalizeDarkVariant(value);
 
   return (
     DARK_PRESETS.find(
-      (preset) => preset.variant === normalized
+      (preset) =>
+        preset.variant === normalized
     ) ?? DARK_PRESETS[0]
   );
 }
@@ -648,9 +723,11 @@ function getCurrentPreset(store) {
 }
 
 function removeDarkClasses(root) {
-  DARK_VARIANT_CLASSES.forEach((className) => {
-    root.classList.remove(className);
-  });
+  DARK_VARIANT_CLASSES.forEach(
+    (className) => {
+      root.classList.remove(className);
+    }
+  );
 }
 
 function applyPresetVariables(root, preset) {
@@ -663,7 +740,10 @@ function applyPresetVariables(root, preset) {
           : preset.palette[key];
 
       if (value != null) {
-        root.style.setProperty(cssName, value);
+        root.style.setProperty(
+          cssName,
+          value
+        );
       }
     }
   );
@@ -758,8 +838,10 @@ function applyPresetVariables(root, preset) {
 function migrateLegacySettings() {
   const oldDark = getStorage("darkMode");
   const oldFont = getStorage("fontSize");
-  const oldAnimations = getStorage("animations");
-  const oldMono = getStorage("sgpc-mono-dark");
+  const oldAnimations =
+    getStorage("animations");
+  const oldMono =
+    getStorage("sgpc-mono-dark");
 
   if (
     getStorage(STORAGE.theme) === null &&
@@ -767,7 +849,9 @@ function migrateLegacySettings() {
   ) {
     setStorage(
       STORAGE.theme,
-      oldDark === "true" ? "dark" : "light"
+      oldDark === "true"
+        ? "dark"
+        : "light"
     );
   }
 
@@ -782,7 +866,8 @@ function migrateLegacySettings() {
   }
 
   if (
-    getStorage(STORAGE.animations) === null &&
+    getStorage(STORAGE.animations) ===
+      null &&
     oldAnimations !== null
   ) {
     setStorage(
@@ -794,7 +879,8 @@ function migrateLegacySettings() {
   }
 
   if (
-    getStorage(STORAGE.darkVariant) === null &&
+    getStorage(STORAGE.darkVariant) ===
+      null &&
     oldMono === "true"
   ) {
     setStorage(
@@ -1034,31 +1120,48 @@ export const useThemeStore = defineStore(
       },
 
       setAppearance(value) {
-        if (value === "light") {
-          this.darkMode = false;
+        const root = getRoot();
 
-          this.primaryColor =
-            LIGHT_PRESET.accent;
-        } else {
-          const preset =
-            getDarkPreset(value);
+        /*
+         * Antes de cambiar las variables se desactivan
+         * temporalmente las transiciones CSS globales.
+         */
+        beginThemeSwitch(root);
 
-          this.darkMode = true;
-          this.darkVariant =
-            preset.variant;
+        try {
+          if (value === "light") {
+            this.darkMode = false;
 
-          this.surfacePresetDark =
-            preset.surface;
+            this.primaryColor =
+              LIGHT_PRESET.accent;
+          } else {
+            const preset =
+              getDarkPreset(value);
 
-          this.primaryColor =
-            preset.accent;
+            this.darkMode = true;
+
+            this.darkVariant =
+              preset.variant;
+
+            this.surfacePresetDark =
+              preset.surface;
+
+            this.primaryColor =
+              preset.accent;
+          }
+
+          this.hasCustomPrimary = false;
+
+          /*
+           * Primero se refleja el cambio visual y después
+           * se guarda la configuración en localStorage.
+           */
+          this.applyTheme();
+          this.applySurfacePalette();
+          this.persist();
+        } finally {
+          finishThemeSwitch(root);
         }
-
-        this.hasCustomPrimary = false;
-
-        this.persist();
-        this.applyTheme();
-        this.applySurfacePalette();
       },
 
       setDark(value) {
@@ -1219,9 +1322,8 @@ export const useThemeStore = defineStore(
          * mediante --font-base. theme.css aplica esa variable
          * al elemento <html>.
          *
-         * No dejamos un font-size inline en <html>, porque sería
-         * una segunda fuente de verdad y complica la adaptación
-         * de las vistas.
+         * No se mantiene un font-size inline en <html>, porque
+         * produciría una segunda fuente de verdad.
          */
         root.style.setProperty(
           "--font-base",
@@ -1233,7 +1335,10 @@ export const useThemeStore = defineStore(
             .replace("px", "")
             .trim();
 
-        /* Limpia el valor inline creado por versiones anteriores. */
+        /*
+         * Limpia el valor inline creado por versiones
+         * anteriores del store.
+         */
         root.style.removeProperty(
           "font-size"
         );

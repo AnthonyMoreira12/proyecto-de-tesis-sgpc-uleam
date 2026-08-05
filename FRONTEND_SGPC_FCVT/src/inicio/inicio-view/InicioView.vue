@@ -317,79 +317,55 @@
 
                 <!-- RESUMEN -->
                 <template v-if="vistaActiva === 'resumen'">
-                  <label class="ivbi-field">
+                  <label class="ivbi-field ivbi-field--month">
                     <span>Desde</span>
 
-                    <select v-model="viewFilters.resumen.anio_desde">
-                      <option value="">
-                        Todos
-                      </option>
-
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`r-desde-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
+                    <input
+                      v-model="viewFilters.resumen.fecha_desde"
+                      type="month"
+                      aria-label="Mes inicial del período"
+                      title="Seleccione el mes inicial"
+                      autocomplete="off"
+                    />
                   </label>
 
-                  <label class="ivbi-field">
+                  <label class="ivbi-field ivbi-field--month">
                     <span>Hasta</span>
 
-                    <select v-model="viewFilters.resumen.anio_hasta">
-                      <option value="">
-                        Todos
-                      </option>
-
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`r-hasta-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
+                    <input
+                      v-model="viewFilters.resumen.fecha_hasta"
+                      type="month"
+                      aria-label="Mes final del período"
+                      title="Seleccione el mes final"
+                      autocomplete="off"
+                    />
                   </label>
                 </template>
 
                 <!-- TENDENCIA -->
                 <template v-else-if="vistaActiva === 'tendencia'">
-                  <label class="ivbi-field">
+                  <label class="ivbi-field ivbi-field--month">
                     <span>Desde</span>
 
-                    <select v-model="viewFilters.tendencia.anio_desde">
-                      <option value="">
-                        Todos
-                      </option>
-
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-desde-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
+                    <input
+                      v-model="viewFilters.tendencia.fecha_desde"
+                      type="month"
+                      aria-label="Mes inicial de la tendencia"
+                      title="Seleccione el mes inicial"
+                      autocomplete="off"
+                    />
                   </label>
 
-                  <label class="ivbi-field">
+                  <label class="ivbi-field ivbi-field--month">
                     <span>Hasta</span>
 
-                    <select v-model="viewFilters.tendencia.anio_hasta">
-                      <option value="">
-                        Todos
-                      </option>
-
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-hasta-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
+                    <input
+                      v-model="viewFilters.tendencia.fecha_hasta"
+                      type="month"
+                      aria-label="Mes final de la tendencia"
+                      title="Seleccione el mes final"
+                      autocomplete="off"
+                    />
                   </label>
 
                   <label class="ivbi-field">
@@ -413,6 +389,30 @@
 
                 <!-- RANKINGS -->
                 <template v-else>
+                  <label class="ivbi-field ivbi-field--month">
+                    <span>Desde</span>
+
+                    <input
+                      v-model="viewFilters.rankings.fecha_desde"
+                      type="month"
+                      aria-label="Mes inicial de los rankings"
+                      title="Seleccione el mes inicial"
+                      autocomplete="off"
+                    />
+                  </label>
+
+                  <label class="ivbi-field ivbi-field--month">
+                    <span>Hasta</span>
+
+                    <input
+                      v-model="viewFilters.rankings.fecha_hasta"
+                      type="month"
+                      aria-label="Mes final de los rankings"
+                      title="Seleccione el mes final"
+                      autocomplete="off"
+                    />
+                  </label>
+
                   <label class="ivbi-field">
                     <span>Cantidad</span>
 
@@ -2102,10 +2102,6 @@ const CANONICAL_TYPES = Object.freeze([
     code: "LIB",
     label: "Libro",
   },
-  {
-    code: "OTRO",
-    label: "Otro",
-  },
 ]);
 
 const CANONICAL_TYPE_MAP = Object.freeze(
@@ -2121,7 +2117,6 @@ const TYPE_COLOR_VAR_MAP = Object.freeze({
   PON: "--ivbi-chart-3",
   CAP: "--ivbi-chart-4",
   LIB: "--ivbi-chart-5",
-  OTRO: "--ivbi-chart-6",
 });
 
 /* =========================================================
@@ -2299,19 +2294,21 @@ const globalFilters = reactive({
 const defaultViewFilters = () => ({
   resumen: {
     tipo_codigo: "",
-    anio_desde: "",
-    anio_hasta: "",
+    fecha_desde: "",
+    fecha_hasta: "",
   },
 
   tendencia: {
     tipo_codigo: "",
-    anio_desde: "",
-    anio_hasta: "",
+    fecha_desde: "",
+    fecha_hasta: "",
     anio: "",
   },
 
   rankings: {
     tipo_codigo: "",
+    fecha_desde: "",
+    fecha_hasta: "",
     top: "10",
   },
 });
@@ -2343,7 +2340,7 @@ function normalizeCanonicalCode(input) {
   const raw = normalizeTextToken(input);
 
   if (!raw) {
-    return "OTRO";
+    return null;
   }
 
   if (CANONICAL_TYPE_MAP[raw]) {
@@ -2386,14 +2383,7 @@ function normalizeCanonicalCode(input) {
     return "LIB";
   }
 
-  if (
-    raw === "OTRO" ||
-    raw === "OTROS"
-  ) {
-    return "OTRO";
-  }
-
-  return "OTRO";
+  return null;
 }
 
 function getCanonicalTypeLabel(input) {
@@ -2402,7 +2392,7 @@ function getCanonicalTypeLabel(input) {
 
   return (
     CANONICAL_TYPE_MAP[code]?.label ||
-    "Otro"
+    "Tipo de publicación"
   );
 }
 
@@ -2424,6 +2414,10 @@ function normalizeTiposDisponibles(
           item?.nombre ||
           item?.label
       );
+
+    if (!code) {
+      continue;
+    }
 
     totals.set(
       code,
@@ -2467,6 +2461,10 @@ function normalizePublicacionesPorTipoPayload(
           item?.tipo_nombre ||
           item?.label
       );
+
+    if (!code) {
+      continue;
+    }
 
     totals.set(
       code,
@@ -2620,6 +2618,51 @@ function formatPercent(value) {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   })}%`;
+}
+
+const MONTH_NAMES_ES = Object.freeze([
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+]);
+
+function formatMonthYear(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/^(\d{4})-(\d{2})/);
+
+  if (!match) {
+    return "";
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+
+  if (
+    !Number.isInteger(year) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return "";
+  }
+
+  const monthName =
+    MONTH_NAMES_ES[month - 1];
+
+  return (
+    monthName.charAt(0).toUpperCase() +
+    monthName.slice(1) +
+    ` ${year}`
+  );
 }
 
 /* =========================================================
@@ -2903,14 +2946,14 @@ function buildParams() {
           .tipo_codigo ||
         undefined,
 
-      anio_desde:
+      fecha_desde:
         currentViewFilters
-          .anio_desde ||
+          .fecha_desde ||
         undefined,
 
-      anio_hasta:
+      fecha_hasta:
         currentViewFilters
-          .anio_hasta ||
+          .fecha_hasta ||
         undefined,
 
       anio:
@@ -2990,6 +3033,40 @@ function buildReportFileName() {
   );
 }
 
+function extractApiErrorMessage(
+  payload,
+  fallback = ""
+) {
+  if (!payload) {
+    return fallback;
+  }
+
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  const direct =
+    payload.detail ||
+    payload.error ||
+    payload.message;
+
+  if (direct) {
+    return String(direct);
+  }
+
+  for (const value of Object.values(payload)) {
+    if (Array.isArray(value) && value.length) {
+      return String(value[0]);
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
 async function readBlobErrorMessage(
   errorBlob
 ) {
@@ -3011,10 +3088,8 @@ async function readBlobErrorMessage(
       const json =
         JSON.parse(text);
 
-      return (
-        json?.detail ||
-        json?.error ||
-        json?.message ||
+      return extractApiErrorMessage(
+        json,
         text
       );
     } catch {
@@ -3087,9 +3162,10 @@ async function downloadDashboardReport() {
 
     error.value =
       blobMessage ||
-      err?.response?.data
-        ?.detail ||
-      err?.message ||
+      extractApiErrorMessage(
+        err?.response?.data,
+        err?.message
+      ) ||
       "No fue posible descargar el reporte del dashboard.";
   } finally {
     downloadingReport.value = false;
@@ -3179,9 +3255,10 @@ async function loadDashboard() {
     }
 
     error.value =
-      err?.response?.data
-        ?.detail ||
-      err?.message ||
+      extractApiErrorMessage(
+        err?.response?.data,
+        err?.message
+      ) ||
       "No fue posible cargar el panel analítico.";
 
     response.value =
@@ -3207,15 +3284,15 @@ async function aplicarFiltros() {
     ] || {};
 
   if (
-    current.anio_desde &&
-    current.anio_hasta &&
-    Number(current.anio_desde) >
-      Number(current.anio_hasta)
+    current.fecha_desde &&
+    current.fecha_hasta &&
+    current.fecha_desde >
+      current.fecha_hasta
   ) {
     error.value =
-      "El rango anual es inválido: " +
-      "'Desde' no puede ser mayor " +
-      "que 'Hasta'.";
+      "El período mensual es inválido: " +
+      "'Desde' no puede ser posterior " +
+      "a 'Hasta'.";
 
     return;
   }
@@ -3239,10 +3316,10 @@ async function resetCurrentViewFilters() {
     viewFilters.resumen.tipo_codigo =
       "";
 
-    viewFilters.resumen.anio_desde =
+    viewFilters.resumen.fecha_desde =
       "";
 
-    viewFilters.resumen.anio_hasta =
+    viewFilters.resumen.fecha_hasta =
       "";
   } else if (
     vistaActiva.value ===
@@ -3251,16 +3328,22 @@ async function resetCurrentViewFilters() {
     viewFilters.tendencia.tipo_codigo =
       "";
 
-    viewFilters.tendencia.anio_desde =
+    viewFilters.tendencia.fecha_desde =
       "";
 
-    viewFilters.tendencia.anio_hasta =
+    viewFilters.tendencia.fecha_hasta =
       "";
 
     viewFilters.tendencia.anio =
       "";
   } else {
     viewFilters.rankings.tipo_codigo =
+      "";
+
+    viewFilters.rankings.fecha_desde =
+      "";
+
+    viewFilters.rankings.fecha_hasta =
       "";
 
     viewFilters.rankings.top =
@@ -3318,7 +3401,7 @@ async function resetAllFilters() {
 
 function handleLegendEnter(code) {
   hoveredTypeCode.value =
-    normalizeCanonicalCode(code);
+    normalizeCanonicalCode(code) || "";
 }
 
 function handleLegendLeave() {
@@ -3338,6 +3421,10 @@ function isTypeSelected(code) {
 function applyTypeFilter(code) {
   const normalized =
     normalizeCanonicalCode(code);
+
+  if (!normalized) {
+    return;
+  }
 
   const current =
     String(
@@ -3835,16 +3922,24 @@ const tipoDominanteResumen =
 
 const periodoResumen =
   computed(() => {
-    const desde =
+    const fechaDesde =
       filtrosAplicados.value
-        ?.anio_desde;
+        ?.fecha_desde;
+
+    const fechaHasta =
+      filtrosAplicados.value
+        ?.fecha_hasta;
+
+    const desde =
+      formatMonthYear(fechaDesde);
 
     const hasta =
-      filtrosAplicados.value
-        ?.anio_hasta;
+      formatMonthYear(fechaHasta);
 
     if (desde && hasta) {
-      return `${desde} — ${hasta}`;
+      return desde === hasta
+        ? desde
+        : `${desde} — ${hasta}`;
     }
 
     if (desde) {
@@ -3853,6 +3948,28 @@ const periodoResumen =
 
     if (hasta) {
       return `Hasta ${hasta}`;
+    }
+
+    const anioDesde =
+      filtrosAplicados.value
+        ?.anio_desde;
+
+    const anioHasta =
+      filtrosAplicados.value
+        ?.anio_hasta;
+
+    if (anioDesde && anioHasta) {
+      return anioDesde === anioHasta
+        ? String(anioDesde)
+        : `${anioDesde} — ${anioHasta}`;
+    }
+
+    if (anioDesde) {
+      return `Desde ${anioDesde}`;
+    }
+
+    if (anioHasta) {
+      return `Hasta ${anioHasta}`;
     }
 
     const categorias =

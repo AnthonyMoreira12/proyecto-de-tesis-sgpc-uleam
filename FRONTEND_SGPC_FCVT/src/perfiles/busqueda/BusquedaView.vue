@@ -25,7 +25,7 @@
                 d="m15.5 15.5 5 5"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.8"
+                stroke-width="1.8"a
                 stroke-linecap="round"
               />
 
@@ -695,10 +695,8 @@
             </article>
           </div>
 
-          <div
-            v-else-if="resultsList.length"
-            class="sch-publication-list"
-          >
+          <template v-else-if="resultsList.length">
+            <div class="sch-publication-list">
             <article
               v-for="r in resultsList"
               :key="r.id"
@@ -916,7 +914,54 @@
                 </footer>
               </div>
             </article>
-          </div>
+            </div>
+
+            <nav
+              v-if="pubsTotalPages > 1"
+              class="sch-pagination"
+              aria-label="Paginación de publicaciones"
+            >
+              <button
+                class="sch-btn sch-btn--secondary"
+                type="button"
+                :disabled="
+                  store.pubsLoading ||
+                  pubsCurrentPage <= 1
+                "
+                @click="
+                  goToPublicationsPage(
+                    pubsCurrentPage - 1
+                  )
+                "
+              >
+                Anterior
+              </button>
+
+              <span
+                class="sch-pagination__status"
+                aria-live="polite"
+              >
+                Página {{ pubsCurrentPage }} de
+                {{ pubsTotalPages }}
+              </span>
+
+              <button
+                class="sch-btn sch-btn--secondary"
+                type="button"
+                :disabled="
+                  store.pubsLoading ||
+                  pubsCurrentPage >= pubsTotalPages
+                "
+                @click="
+                  goToPublicationsPage(
+                    pubsCurrentPage + 1
+                  )
+                "
+              >
+                Siguiente
+              </button>
+            </nav>
+          </template>
 
           <div
             v-else
@@ -1041,10 +1086,8 @@
             </article>
           </div>
 
-          <div
-            v-else-if="profilesList.length"
-            class="sch-profile-grid"
-          >
+          <template v-else-if="profilesList.length">
+            <div class="sch-profile-grid">
             <article
               v-for="profile in profilesList"
               :key="profile.id"
@@ -1077,6 +1120,14 @@
                   class="sch-profile-card__type"
                 >
                   Autor externo
+                </span>
+
+                <span
+                  v-if="profile.usuario_pendiente"
+                  class="sch-profile-card__type"
+                  title="Autor registrado sin acceso activo al sistema"
+                >
+                  Cuenta pendiente
                 </span>
               </div>
 
@@ -1158,7 +1209,54 @@
                 </button>
               </footer>
             </article>
-          </div>
+            </div>
+
+            <nav
+              v-if="profilesTotalPages > 1"
+              class="sch-pagination"
+              aria-label="Paginación de investigadores"
+            >
+              <button
+                class="sch-btn sch-btn--secondary"
+                type="button"
+                :disabled="
+                  store.perfilesLoading ||
+                  profilesCurrentPage <= 1
+                "
+                @click="
+                  goToProfilesPage(
+                    profilesCurrentPage - 1
+                  )
+                "
+              >
+                Anterior
+              </button>
+
+              <span
+                class="sch-pagination__status"
+                aria-live="polite"
+              >
+                Página {{ profilesCurrentPage }} de
+                {{ profilesTotalPages }}
+              </span>
+
+              <button
+                class="sch-btn sch-btn--secondary"
+                type="button"
+                :disabled="
+                  store.perfilesLoading ||
+                  profilesCurrentPage >= profilesTotalPages
+                "
+                @click="
+                  goToProfilesPage(
+                    profilesCurrentPage + 1
+                  )
+                "
+              >
+                Siguiente
+              </button>
+            </nav>
+          </template>
 
           <div
             v-else
@@ -1216,6 +1314,7 @@ import {
 import { useScholarStore } from "../../scripts/stores/scholarStore";
 import { useUserStore } from "../../scripts/stores/userStore";
 
+const PUBLICACIONES_PAGE_SIZE = 10;
 const PERFILES_PAGE_SIZE = 8;
 
 const searchSuggestions = [
@@ -1283,6 +1382,28 @@ const state = computed(() => ({
     String(
       route.query.has_pdf || ""
     ).trim(),
+
+  page:
+    Math.max(
+      1,
+      Number.parseInt(
+        String(
+          route.query.page || "1"
+        ),
+        10
+      ) || 1
+    ),
+
+  profilePage:
+    Math.max(
+      1,
+      Number.parseInt(
+        String(
+          route.query.profile_page || "1"
+        ),
+        10
+      ) || 1
+    ),
 }));
 
 const currentSearchKey = computed(() => {
@@ -1299,18 +1420,12 @@ const rawResultsList = computed(() => {
 });
 
 const resultsList = computed(() => {
-  const items = rawResultsList.value;
-
-  if (state.value.hasPdf === "1") {
-    return items.filter((item) => {
-      return Boolean(
-        item?.hasPdf ||
-        item?.pdf_url
-      );
-    });
-  }
-
-  return items;
+  /*
+   * El filtro PDF se ejecuta en el backend. De esta forma, el
+   * total y la paginación representan todas las coincidencias,
+   * no únicamente la página que ya llegó al navegador.
+   */
+  return rawResultsList.value;
 });
 
 const profilesList = computed(() => {
@@ -1341,10 +1456,6 @@ const profilesSearchText = computed(() => {
 });
 
 const pubsCountView = computed(() => {
-  if (state.value.hasPdf === "1") {
-    return resultsList.value.length;
-  }
-
   return Number(
     store.pubsTotal ??
     resultsList.value.length ??
@@ -1357,6 +1468,68 @@ const profilesCountView = computed(() => {
     store.perfilesCount ??
     profilesList.value.length ??
     0
+  );
+});
+
+const pubsCurrentPage = computed(() => {
+  return Math.max(
+    1,
+    Number(
+      store.pubsPage ??
+      state.value.page ??
+      1
+    ) || 1
+  );
+});
+
+const pubsPageSize = computed(() => {
+  return Math.max(
+    1,
+    Number(
+      store.pubsPageSize ??
+      PUBLICACIONES_PAGE_SIZE
+    ) || PUBLICACIONES_PAGE_SIZE
+  );
+});
+
+const pubsTotalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(
+      pubsCountView.value /
+      pubsPageSize.value
+    )
+  );
+});
+
+const profilesCurrentPage = computed(() => {
+  return Math.max(
+    1,
+    Number(
+      store.perfilesPage ??
+      state.value.profilePage ??
+      1
+    ) || 1
+  );
+});
+
+const profilesPageSize = computed(() => {
+  return Math.max(
+    1,
+    Number(
+      store.perfilesPageSize ??
+      PERFILES_PAGE_SIZE
+    ) || PERFILES_PAGE_SIZE
+  );
+});
+
+const profilesTotalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(
+      profilesCountView.value /
+      profilesPageSize.value
+    )
   );
 });
 
@@ -1727,11 +1900,25 @@ const setQuery = (patch = {}) => {
 };
 
 const setParam = (key, value) => {
-  setQuery({
+  const patch = {
     [key]:
       String(value ?? "").trim() ||
       undefined,
-  });
+  };
+
+  if (
+    [
+      "year",
+      "type",
+      "sort",
+      "has_pdf",
+      "author_id",
+    ].includes(key)
+  ) {
+    patch.page = undefined;
+  }
+
+  setQuery(patch);
 };
 
 const submitInlineSearch = () => {
@@ -1756,6 +1943,8 @@ const submitInlineSearch = () => {
     type: undefined,
     has_pdf: undefined,
     sort: "relevance",
+    page: undefined,
+    profile_page: undefined,
   });
 };
 
@@ -1786,6 +1975,7 @@ const clearRefinementFilters = () => {
     type: undefined,
     has_pdf: undefined,
     sort: "relevance",
+    page: undefined,
   });
 };
 
@@ -1805,6 +1995,52 @@ function clearAuthor() {
 
   setParam("author_id", "");
 }
+
+const goToPublicationsPage = (page) => {
+  const nextPage = Math.min(
+    pubsTotalPages.value,
+    Math.max(
+      1,
+      Number(page) || 1
+    )
+  );
+
+  if (
+    nextPage === pubsCurrentPage.value
+  ) {
+    return;
+  }
+
+  setQuery({
+    page:
+      nextPage > 1
+        ? String(nextPage)
+        : undefined,
+  });
+};
+
+const goToProfilesPage = (page) => {
+  const nextPage = Math.min(
+    profilesTotalPages.value,
+    Math.max(
+      1,
+      Number(page) || 1
+    )
+  );
+
+  if (
+    nextPage === profilesCurrentPage.value
+  ) {
+    return;
+  }
+
+  setQuery({
+    profile_page:
+      nextPage > 1
+        ? String(nextPage)
+        : undefined,
+  });
+};
 
 const openProfile = (id) => {
   const profileId =
@@ -1861,6 +2097,8 @@ const openAuthorFromResults = (author) => {
   setQuery({
     q: name,
     author_id: undefined,
+    page: undefined,
+    profile_page: undefined,
   });
 };
 
@@ -2010,6 +2248,18 @@ const runSearch = async () => {
         author_id:
           currentState.authorId ||
           "",
+
+        has_pdf:
+          currentState.hasPdf === "1"
+            ? "1"
+            : "",
+
+        page:
+          currentState.page,
+
+        page_size:
+          store.pubsPageSize ||
+          PUBLICACIONES_PAGE_SIZE,
       }),
     ];
 
@@ -2017,7 +2267,8 @@ const runSearch = async () => {
       tasks.push(
         store.searchPerfiles?.({
           q: profileQuery,
-          page: 1,
+          page:
+            currentState.profilePage,
 
           pageSize:
             store.perfilesPageSize ||

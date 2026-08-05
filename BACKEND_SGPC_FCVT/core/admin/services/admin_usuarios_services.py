@@ -431,6 +431,7 @@ def activate_external_user(
     - Debe ser rol=autor_externo.
     - Debe utilizar auth_source=local.
     - Debe encontrarse inactiva.
+    - Todavía no debe poseer una contraseña utilizable.
     - Debe poseer una cédula válida de 10 dígitos.
     - El correo es obligatorio y debe ser único.
     - La contraseña es obligatoria.
@@ -490,6 +491,27 @@ def activate_external_user(
                 "detail": (
                     "La cuenta seleccionada ya se "
                     "encuentra activa."
+                )
+            },
+            status_code=409,
+        )
+
+    try:
+        has_usable_password = user.has_usable_password()
+    except (
+        AttributeError,
+        TypeError,
+        ValueError,
+    ):
+        has_usable_password = False
+
+    if has_usable_password:
+        raise AdminUsuariosServiceError(
+            {
+                "detail": (
+                    "La cuenta ya fue activada anteriormente. "
+                    "Para reactivarla conserve sus credenciales "
+                    "y utilice la acción de cambio de estado."
                 )
             },
             status_code=409,
@@ -591,6 +613,7 @@ def activate_external_user(
 
     if user.email != normalized_email:
         user.email = normalized_email
+
         _append_field(
             update_fields,
             "email",
@@ -806,8 +829,7 @@ def extend_profile_edit(
         current_deadline
         if (
             current_deadline is not None
-            and current_deadline
-            > current_time
+            and current_deadline > current_time
         )
         else current_time
     )

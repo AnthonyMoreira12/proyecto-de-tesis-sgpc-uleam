@@ -4349,3 +4349,275 @@ body.dark .sch-page,
       var(--radius-lg, 14px);
   }
 }
+
+/* =========================================================
+   PAGINACIÓN Y ALINEACIÓN FINAL CON BUSQUEDAVIEW
+========================================================= */
+
+.sch-pagination {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap:
+    var(--layout-gap-sm, 16px);
+
+  padding:
+    6px 0 2px;
+}
+
+.sch-pagination > .sch-btn:first-child {
+  justify-self: end;
+}
+
+.sch-pagination > .sch-btn:last-child {
+  justify-self: start;
+}
+
+.sch-pagination .sch-btn {
+  min-width:
+    112px;
+}
+
+.sch-pagination__status {
+  min-width:
+    138px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height:
+    var(--control-height-sm, 36px);
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid
+    var(--sch-line);
+
+  border-radius:
+    var(--radius-pill, 999px);
+
+  background:
+    var(--surface-2, var(--sch-soft));
+
+  color:
+    var(--sch-muted);
+
+  font-size:
+    0.72rem;
+
+  line-height:
+    1.25;
+
+  font-weight:
+    700;
+
+  text-align:
+    center;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   FOCO Y ACCESIBILIDAD
+========================================================= */
+
+.sch-page :is(
+  .sch-suggestion,
+  .sch-segment__btn,
+  .sch-clear-filters,
+  .sch-results-search__clear,
+  .sch-chip,
+  .sch-author-link,
+  .sch-action-link,
+  .sch-publication-card__title button,
+  .sch-profile-card__name button
+):focus-visible {
+  outline:
+    2px solid
+    var(--focus-outline, var(--sch-primary));
+
+  outline-offset:
+    2px;
+
+  box-shadow:
+    var(--sch-ring);
+}
+
+.sch-pdf-filter:focus-within {
+  border-color:
+    var(--sch-primary);
+
+  box-shadow:
+    var(--sch-ring);
+}
+
+.sch-pdf-filter input:focus-visible + .sch-pdf-filter__icon {
+  color:
+    var(--sch-primary);
+}
+
+.sch-page button:disabled,
+.sch-page select:disabled,
+.sch-page input:disabled {
+  cursor:
+    not-allowed;
+}
+
+/* =========================================================
+   TEXTO LARGO Y CONTENEDORES FLEXIBLES
+========================================================= */
+
+.sch-querybar__copy,
+.sch-authorstrip__copy,
+.sch-publication-card__content,
+.sch-publication-card__details,
+.sch-profile-card__body,
+.sch-state__content {
+  min-width: 0;
+}
+
+.sch-authorstrip__name,
+.sch-authorstrip__org,
+.sch-publication-card__detail p,
+.sch-profile-card__name,
+.sch-profile-card__org,
+.sch-state__title,
+.sch-state__text {
+  overflow-wrap:
+    anywhere;
+}
+
+.sch-publication-card__tags,
+.sch-profile-card__tags,
+.sch-publication-card__actions,
+.sch-actions {
+  min-width: 0;
+}
+
+.sch-profile-card__type {
+  max-width:
+    100%;
+
+  overflow:
+    hidden;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   COMPATIBILIDAD
+========================================================= */
+
+@supports not (overflow: clip) {
+  .sch-page {
+    overflow-x:
+      hidden;
+  }
+}
+
+@media (forced-colors: active) {
+  .sch-btn,
+  .sch-segment,
+  .sch-segment__btn,
+  .sch-select,
+  .sch-pdf-filter,
+  .sch-pagination__status,
+  .sch-publication-card,
+  .sch-profile-card,
+  .sch-state {
+    border-color:
+      CanvasText;
+  }
+
+  .sch-btn--primary,
+  .sch-switch,
+  .sch-avatar__fallback {
+    forced-color-adjust:
+      auto;
+  }
+}
+
+/* =========================================================
+   PAGINACIÓN RESPONSIVE
+========================================================= */
+
+@media (max-width: 680px) {
+  .sch-pagination {
+    gap:
+      10px;
+  }
+
+  .sch-pagination .sch-btn {
+    min-width:
+      102px;
+  }
+
+  .sch-pagination__status {
+    min-width:
+      124px;
+
+    padding:
+      0 10px;
+  }
+}
+
+@media (max-width: 460px) {
+  .sch-pagination {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .sch-pagination__status {
+    grid-column:
+      1 / -1;
+
+    grid-row:
+      1;
+
+    width:
+      fit-content;
+
+    max-width:
+      100%;
+
+    justify-self:
+      center;
+
+    white-space:
+      normal;
+  }
+
+  .sch-pagination > .sch-btn:first-child,
+  .sch-pagination > .sch-btn:last-child {
+    grid-row:
+      2;
+
+    width:
+      100%;
+
+    min-width:
+      0;
+
+    justify-self:
+      stretch;
+  }
+}

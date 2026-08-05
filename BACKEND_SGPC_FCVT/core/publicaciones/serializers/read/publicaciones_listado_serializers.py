@@ -1,40 +1,158 @@
+"""
+Serializer de lectura para los listados de publicaciones.
+
+Es utilizado por:
+
+- GET /publicaciones/
+- GET /publicaciones/mias/
+
+La respuesta mantiene compatibilidad con el frontend actual
+y expone identificadores reales para que los filtros puedan
+alinearse completamente con el backend.
+"""
+
+from django.urls import reverse
 from rest_framework import serializers
 
 from core.models import (
     Publicacion,
     PublicacionAutor,
 )
+from core.publicaciones.utils.publicaciones_permissions_utils import (
+    can_edit_publicacion,
+)
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     tipo_publicacion_label,
 )
 
 
-def _to_str(value):
+# ============================================================
+# UTILIDADES
+# ============================================================
+
+def _to_str(
+    value,
+):
+    return str(
+        value or ""
+    ).strip()
+
+
+def _to_lower(
+    value,
+):
+    value = _to_str(
+        value
+    )
+
     return (
-        ""
-        if value is None
-        else str(value).strip()
+        value.lower()
+        if value
+        else ""
     )
 
 
-def _first_filled(*values):
-    for value in values:
-        text = _to_str(value)
+def _safe_related(
+    instance,
+    attr_name,
+):
+    """
+    Obtiene de forma segura una relación inversa OneToOne.
 
-        if text:
-            return text
+    Cuando una publicación no posee uno de sus subtipos,
+    Django puede lanzar RelatedObjectDoesNotExist.
+    """
 
-    return ""
+    if instance is None:
+        return None
+
+    try:
+        return getattr(
+            instance,
+            attr_name,
+        )
+
+    except Exception:
+        return None
 
 
-def _resolve_tipo_final_codigo(obj):
-    annotated = _to_str(
+def _build_person_name(
+    autor,
+):
+    """
+    Construye el nombre visible de un autor.
+    """
+
+    if autor is None:
+        return ""
+
+    nombres = _to_str(
+        getattr(
+            autor,
+            "nombres",
+            None,
+        )
+    )
+
+    apellidos = _to_str(
+        getattr(
+            autor,
+            "apellidos",
+            None,
+        )
+    )
+
+    full_name = (
+        f"{nombres} {apellidos}"
+    ).strip()
+
+    if full_name:
+        return full_name
+
+    correo = _to_str(
+        getattr(
+            autor,
+            "correo",
+            None,
+        )
+    )
+
+    if correo:
+        return correo
+
+    return _to_str(
+        getattr(
+            autor,
+            "identificacion",
+            None,
+        )
+    )
+
+
+# ============================================================
+# RESOLUCIÓN DEL TIPO
+# ============================================================
+
+def _resolve_tipo_final_codigo(
+    obj,
+):
+    """
+    Obtiene el código canónico del tipo final.
+
+    Prioridad:
+
+    1. Anotación tipo_publicacion_final del queryset.
+    2. Subtipo real asociado.
+    3. TipoPublicacion base.
+    """
+
+    annotated = _to_lower(
         getattr(
             obj,
             "tipo_publicacion_final",
             None,
         )
-    ).lower()
+    )
 
     if (
         annotated
@@ -42,41 +160,39 @@ def _resolve_tipo_final_codigo(obj):
     ):
         return annotated
 
-    tipo = getattr(
+    tipo = _safe_related(
         obj,
         "tipo",
-        None,
     )
 
-    tipo_codigo = _to_str(
+    tipo_codigo = _to_lower(
         getattr(
             tipo,
             "codigo",
             None,
         )
-    ).lower()
+    )
 
-    tipo_categoria = _to_str(
+    tipo_categoria = _to_lower(
         getattr(
             tipo,
             "categoria",
             None,
         )
-    ).lower()
-
-    articulo = getattr(
-        obj,
-        "articulo",
-        None,
     )
 
-    tipo_articulo = _to_str(
+    articulo = _safe_related(
+        obj,
+        "articulo",
+    )
+
+    tipo_articulo = _to_lower(
         getattr(
             articulo,
             "tipo_articulo",
             None,
         )
-    ).lower()
+    )
 
     if (
         tipo_categoria == "articulo"
@@ -93,20 +209,44 @@ def _resolve_tipo_final_codigo(obj):
         if tipo_articulo == "regional":
             return "articulo_regional"
 
+        if tipo_codigo in {
+            "articulo_alto_impacto",
+            "articulo_regional",
+        }:
+            return tipo_codigo
+
+    ponencia = _safe_related(
+        obj,
+        "ponencia",
+    )
+
     if (
-        tipo_categoria == "ponencia"
+        ponencia is not None
+        or tipo_categoria == "ponencia"
         or tipo_codigo == "ponencia"
     ):
         return "ponencia"
 
+    libro = _safe_related(
+        obj,
+        "libro",
+    )
+
     if (
-        tipo_categoria == "libro"
+        libro is not None
+        or tipo_categoria == "libro"
         or tipo_codigo == "libro"
     ):
         return "libro"
 
+    capitulo = _safe_related(
+        obj,
+        "capitulo_libro",
+    )
+
     if (
-        tipo_categoria == "capitulo"
+        capitulo is not None
+        or tipo_categoria == "capitulo"
         or tipo_codigo
         in {
             "capitulo",
@@ -118,7 +258,9 @@ def _resolve_tipo_final_codigo(obj):
     return "sin_clasificar"
 
 
-def _resolve_tipo_final_label(obj):
+def _resolve_tipo_final_label(
+    obj,
+):
     codigo = _resolve_tipo_final_codigo(
         obj
     )
@@ -127,42 +269,61 @@ def _resolve_tipo_final_label(obj):
         codigo
     )
 
-    if label != "Sin clasificar":
+    if (
+        label
+        and label != "Sin clasificar"
+    ):
         return label
 
-    base_nombre = _to_str(
-        getattr(
-            getattr(
-                obj,
-                "tipo",
-                None,
-            ),
-            "nombre",
-            None,
-        )
+    tipo = _safe_related(
+        obj,
+        "tipo",
     )
 
     return (
-        base_nombre
+        _to_str(
+            getattr(
+                tipo,
+                "nombre",
+                None,
+            )
+        )
         or "Publicación"
     )
 
 
+# ============================================================
+# SERIALIZER
+# ============================================================
+
 class PublicacionListadoSerializer(
     serializers.ModelSerializer
 ):
-    titulo = serializers.SerializerMethodField()
+    # ========================================================
+    # INFORMACIÓN PRINCIPAL
+    # ========================================================
 
+    titulo = serializers.SerializerMethodField()
     autor = serializers.SerializerMethodField()
 
+    # ========================================================
+    # PROYECTO Y UBICACIÓN ACADÉMICA
+    # ========================================================
+
+    proyecto_id = serializers.SerializerMethodField()
     proyecto = serializers.SerializerMethodField()
 
+    facultad_id = serializers.SerializerMethodField()
     facultad = serializers.SerializerMethodField()
 
+    carrera_id = serializers.SerializerMethodField()
     carrera = serializers.SerializerMethodField()
 
-    tipo = serializers.SerializerMethodField()
+    # ========================================================
+    # TIPO
+    # ========================================================
 
+    tipo = serializers.SerializerMethodField()
     tipo_codigo = serializers.SerializerMethodField()
 
     tipo_publicacion_final = (
@@ -173,10 +334,28 @@ class PublicacionListadoSerializer(
         serializers.SerializerMethodField()
     )
 
+    # ========================================================
+    # ORIGEN
+    # ========================================================
+
+    origen_tipo_label = (
+        serializers.SerializerMethodField()
+    )
+
+    origen_detalle_label = (
+        serializers.SerializerMethodField()
+    )
+
+    origen_resumen = (
+        serializers.SerializerMethodField()
+    )
+
+    # ========================================================
+    # PDF
+    # ========================================================
+
     tiene_pdf = serializers.SerializerMethodField()
-
     has_pdf = serializers.SerializerMethodField()
-
     hasPdf = serializers.SerializerMethodField()
 
     archivo_pdf_url = (
@@ -185,32 +364,123 @@ class PublicacionListadoSerializer(
 
     pdf_url = serializers.SerializerMethodField()
 
+    pdf_endpoint = (
+        serializers.SerializerMethodField()
+    )
+
+    # ========================================================
+    # PERMISOS
+    # ========================================================
+
+    puede_editar = (
+        serializers.SerializerMethodField()
+    )
+
     class Meta:
         model = Publicacion
 
         fields = [
             "id",
+            "numero",
+
             "titulo",
             "autor",
+
+            "proyecto_id",
             "proyecto",
+
+            "facultad_id",
             "facultad",
+
+            "carrera_id",
             "carrera",
+
             "fecha_publicacion",
             "anio_publicacion",
+
             "tipo",
             "tipo_codigo",
             "tipo_publicacion_final",
             "tipo_publicacion_final_label",
+
+            "origen_tipo",
+            "origen_tipo_label",
+            "origen_grado",
+            "origen_detalle_label",
+            "origen_resumen",
+
             "tiene_pdf",
             "has_pdf",
             "hasPdf",
             "archivo_pdf_url",
             "pdf_url",
+            "pdf_endpoint",
+
+            "puede_editar",
         ]
 
         read_only_fields = fields
 
+    # ========================================================
+    # PARTICIPACIONES DE AUTORES
+    # ========================================================
+
     def _get_autor_rels(
+        self,
+        obj,
+    ):
+        """
+        Utiliza primero el prefetch generado por el servicio.
+
+        Solo consulta la base de datos si el serializer se usa
+        desde una vista que no precargó las participaciones.
+        """
+
+        ordered = getattr(
+            obj,
+            "participaciones_ordenadas",
+            None,
+        )
+
+        if ordered is not None:
+            return list(
+                ordered
+            )
+
+        prefetched = getattr(
+            obj,
+            "_prefetched_objects_cache",
+            {},
+        )
+
+        if "participaciones" in prefetched:
+            return sorted(
+                prefetched["participaciones"],
+                key=lambda item: (
+                    item.orden,
+                    item.id,
+                ),
+            )
+
+        return list(
+            PublicacionAutor.objects
+            .filter(
+                publicacion=obj
+            )
+            .select_related(
+                "autor"
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
+        )
+
+    # ========================================================
+    # ARCHIVOS
+    # ========================================================
+
+    def _get_archivos(
         self,
         obj,
     ):
@@ -220,96 +490,21 @@ class PublicacionListadoSerializer(
             {},
         )
 
-        if "participaciones" in prefetched:
-            return prefetched[
-                "participaciones"
-            ]
-
-        participaciones_ordenadas = getattr(
-            obj,
-            "participaciones_ordenadas",
-            None,
-        )
-
-        if (
-            participaciones_ordenadas
-            is not None
-        ):
-            return (
-                participaciones_ordenadas
+        if "archivos" in prefetched:
+            return sorted(
+                prefetched["archivos"],
+                key=lambda item: (
+                    item.orden,
+                    item.id,
+                ),
             )
 
-        return (
-            PublicacionAutor.objects
-            .select_related(
-                "autor"
-            )
-            .filter(
-                publicacion=obj
-            )
-            .order_by(
+        return list(
+            obj.archivos.all().order_by(
                 "orden",
                 "id",
             )
         )
-
-    def _get_facultad_obj(
-        self,
-        obj,
-    ):
-        carrera = getattr(
-            obj,
-            "carrera",
-            None,
-        )
-
-        if carrera is None:
-            return None
-
-        return getattr(
-            carrera,
-            "facultad",
-            None,
-        )
-
-    def _build_file_url(
-        self,
-        file_field,
-    ):
-        try:
-            if (
-                not file_field
-                or not getattr(
-                    file_field,
-                    "name",
-                    None,
-                )
-            ):
-                return None
-
-            url = file_field.url
-
-        except (
-            AttributeError,
-            ValueError,
-        ):
-            return None
-
-        request = self.context.get(
-            "request"
-        )
-
-        if request is None:
-            return url
-
-        try:
-            return (
-                request.build_absolute_uri(
-                    url
-                )
-            )
-        except Exception:
-            return url
 
     def _get_pdf_file(
         self,
@@ -322,227 +517,249 @@ class PublicacionListadoSerializer(
         2. Primer PublicacionArchivo válido.
         """
 
-        archivo_pdf = getattr(
+        primary = getattr(
             obj,
             "archivo_pdf",
             None,
         )
 
         if (
-            archivo_pdf
+            primary
             and getattr(
-                archivo_pdf,
+                primary,
                 "name",
                 None,
             )
         ):
-            return archivo_pdf
+            return primary
 
-        prefetched = getattr(
-            obj,
-            "_prefetched_objects_cache",
-            {},
-        )
-
-        if "archivos" in prefetched:
-            archivos = sorted(
-                prefetched["archivos"],
-                key=lambda item: (
-                    getattr(
-                        item,
-                        "orden",
-                        0,
-                    ),
-                    getattr(
-                        item,
-                        "id",
-                        0,
-                    ),
-                ),
+        for attachment in self._get_archivos(
+            obj
+        ):
+            archivo = getattr(
+                attachment,
+                "archivo",
+                None,
             )
 
-            for adjunto in archivos:
-                archivo = getattr(
-                    adjunto,
-                    "archivo",
+            if (
+                archivo
+                and getattr(
+                    archivo,
+                    "name",
                     None,
                 )
+            ):
+                return archivo
 
-                if (
-                    archivo
-                    and getattr(
-                        archivo,
-                        "name",
-                        None,
-                    )
-                ):
-                    return archivo
+        return None
 
+    def _build_file_url(
+        self,
+        field_file,
+    ):
+        if (
+            not field_file
+            or not getattr(
+                field_file,
+                "name",
+                None,
+            )
+        ):
             return None
 
         try:
-            adjunto = (
-                obj.archivos
-                .exclude(
-                    archivo=""
-                )
-                .order_by(
-                    "orden",
-                    "id",
-                )
-                .first()
+            file_url = field_file.url
+
+        except (
+            ValueError,
+            AttributeError,
+        ):
+            return None
+
+        request = self.context.get(
+            "request"
+        )
+
+        if request is None:
+            return file_url
+
+        try:
+            return request.build_absolute_uri(
+                file_url
             )
 
         except Exception:
-            return None
+            return file_url
 
-        if not adjunto:
-            return None
-
-        archivo = getattr(
-            adjunto,
-            "archivo",
-            None,
-        )
-
-        if (
-            archivo
-            and getattr(
-                archivo,
-                "name",
-                None,
-            )
-        ):
-            return archivo
-
-        return None
+    # ========================================================
+    # TÍTULO
+    # ========================================================
 
     def get_titulo(
         self,
         obj,
     ):
-        articulo = getattr(
+        articulo = _safe_related(
             obj,
             "articulo",
-            None,
         )
 
-        ponencia = getattr(
+        ponencia = _safe_related(
             obj,
             "ponencia",
-            None,
         )
 
-        libro = getattr(
+        libro = _safe_related(
             obj,
             "libro",
-            None,
         )
 
-        capitulo = getattr(
+        capitulo = _safe_related(
             obj,
             "capitulo_libro",
-            None,
         )
 
-        return _first_filled(
-            getattr(
-                articulo,
-                "nombre_articulo",
-                None,
-            ),
-            getattr(
-                ponencia,
-                "nombre_ponencia",
-                None,
-            ),
-            getattr(
-                libro,
-                "nombre_libro",
-                None,
-            ),
-            getattr(
-                capitulo,
-                "nombre_capitulo",
-                None,
-            ),
-            "Sin título",
+        proyecto = _safe_related(
+            obj,
+            "proyecto",
         )
+
+        return (
+            _to_str(
+                getattr(
+                    articulo,
+                    "nombre_articulo",
+                    None,
+                )
+            )
+            or _to_str(
+                getattr(
+                    ponencia,
+                    "nombre_ponencia",
+                    None,
+                )
+            )
+            or _to_str(
+                getattr(
+                    libro,
+                    "nombre_libro",
+                    None,
+                )
+            )
+            or _to_str(
+                getattr(
+                    capitulo,
+                    "nombre_capitulo",
+                    None,
+                )
+            )
+            or _to_str(
+                getattr(
+                    proyecto,
+                    "nombre",
+                    None,
+                )
+            )
+            or "Sin título"
+        )
+
+    # ========================================================
+    # AUTORES
+    # ========================================================
 
     def get_autor(
         self,
         obj,
     ):
+        participaciones = self._get_autor_rels(
+            obj
+        )
+
         nombres = []
 
-        for relacion in self._get_autor_rels(
-            obj
-        ):
+        for participacion in participaciones:
             autor = getattr(
-                relacion,
+                participacion,
                 "autor",
                 None,
             )
 
-            if autor is None:
-                continue
-
-            nombres_autor = _to_str(
-                getattr(
-                    autor,
-                    "nombres",
-                    None,
-                )
+            nombre = _build_person_name(
+                autor
             )
 
-            apellidos_autor = _to_str(
-                getattr(
-                    autor,
-                    "apellidos",
-                    None,
-                )
-            )
-
-            nombre_completo = (
-                f"{nombres_autor} "
-                f"{apellidos_autor}"
-            ).strip()
-
-            if nombre_completo:
+            if nombre:
                 nombres.append(
-                    nombre_completo
+                    nombre
                 )
 
-        return (
-            ", ".join(nombres)
-            if nombres
-            else "—"
+        return ", ".join(
+            nombres
+        )
+
+    # ========================================================
+    # PROYECTO
+    # ========================================================
+
+    def get_proyecto_id(
+        self,
+        obj,
+    ):
+        return getattr(
+            obj,
+            "proyecto_id",
+            None,
         )
 
     def get_proyecto(
         self,
         obj,
     ):
+        proyecto = _safe_related(
+            obj,
+            "proyecto",
+        )
+
         return _to_str(
             getattr(
-                getattr(
-                    obj,
-                    "proyecto",
-                    None,
-                ),
+                proyecto,
                 "nombre",
                 None,
             )
+        )
+
+    # ========================================================
+    # FACULTAD
+    # ========================================================
+
+    def get_facultad_id(
+        self,
+        obj,
+    ):
+        carrera = _safe_related(
+            obj,
+            "carrera",
+        )
+
+        return getattr(
+            carrera,
+            "facultad_id",
+            None,
         )
 
     def get_facultad(
         self,
         obj,
     ):
-        facultad = (
-            self._get_facultad_obj(
-                obj
-            )
+        carrera = _safe_related(
+            obj,
+            "carrera",
+        )
+
+        facultad = _safe_related(
+            carrera,
+            "facultad",
         )
 
         return _to_str(
@@ -553,39 +770,63 @@ class PublicacionListadoSerializer(
             )
         )
 
+    # ========================================================
+    # CARRERA
+    # ========================================================
+
+    def get_carrera_id(
+        self,
+        obj,
+    ):
+        return getattr(
+            obj,
+            "carrera_id",
+            None,
+        )
+
     def get_carrera(
         self,
         obj,
     ):
+        carrera = _safe_related(
+            obj,
+            "carrera",
+        )
+
         return _to_str(
             getattr(
-                getattr(
-                    obj,
-                    "carrera",
-                    None,
-                ),
+                carrera,
                 "nombre",
                 None,
             )
         )
 
+    # ========================================================
+    # TIPO
+    # ========================================================
+
     def get_tipo(
         self,
         obj,
     ):
-        return (
-            _resolve_tipo_final_label(
-                obj
-            )
+        return _resolve_tipo_final_label(
+            obj
         )
 
     def get_tipo_codigo(
         self,
         obj,
     ):
-        return (
-            _resolve_tipo_final_codigo(
-                obj
+        tipo = _safe_related(
+            obj,
+            "tipo",
+        )
+
+        return _to_str(
+            getattr(
+                tipo,
+                "codigo",
+                None,
             )
         )
 
@@ -593,21 +834,132 @@ class PublicacionListadoSerializer(
         self,
         obj,
     ):
-        return (
-            _resolve_tipo_final_codigo(
-                obj
-            )
+        return _resolve_tipo_final_codigo(
+            obj
         )
 
     def get_tipo_publicacion_final_label(
         self,
         obj,
     ):
+        return _resolve_tipo_final_label(
+            obj
+        )
+
+    # ========================================================
+    # ORIGEN
+    # ========================================================
+
+    def _get_origen_tipo(
+        self,
+        obj,
+    ):
         return (
-            _resolve_tipo_final_label(
-                obj
+            _to_lower(
+                getattr(
+                    obj,
+                    "origen_tipo",
+                    None,
+                )
+            )
+            or "ninguno"
+        )
+
+    def get_origen_tipo_label(
+        self,
+        obj,
+    ):
+        origen_tipo = self._get_origen_tipo(
+            obj
+        )
+
+        try:
+            display = (
+                obj.get_origen_tipo_display()
+            )
+
+        except Exception:
+            display = ""
+
+        return (
+            _to_str(
+                display
+            )
+            or {
+                "ninguno": "Ninguno",
+                "tic": (
+                    "Trabajo de integración "
+                    "curricular"
+                ),
+                "maestria": (
+                    "Tesis de maestría"
+                ),
+                "doctoral": (
+                    "Tesis doctoral"
+                ),
+                "otro": "Otro",
+            }.get(
+                origen_tipo,
+                origen_tipo,
             )
         )
+
+    def get_origen_detalle_label(
+        self,
+        obj,
+    ):
+        origen_tipo = self._get_origen_tipo(
+            obj
+        )
+
+        if origen_tipo == "tic":
+            return "Grado / programa"
+
+        if origen_tipo == "otro":
+            return "Origen especificado"
+
+        return None
+
+    def get_origen_resumen(
+        self,
+        obj,
+    ):
+        origen_tipo = self._get_origen_tipo(
+            obj
+        )
+
+        if origen_tipo == "ninguno":
+            return None
+
+        label = self.get_origen_tipo_label(
+            obj
+        )
+
+        detalle = _to_str(
+            getattr(
+                obj,
+                "origen_grado",
+                None,
+            )
+        )
+
+        if (
+            origen_tipo
+            in {
+                "tic",
+                "otro",
+            }
+            and detalle
+        ):
+            return (
+                f"{label} · {detalle}"
+            )
+
+        return label
+
+    # ========================================================
+    # PDF
+    # ========================================================
 
     def get_tiene_pdf(
         self,
@@ -652,3 +1004,80 @@ class PublicacionListadoSerializer(
         return self.get_archivo_pdf_url(
             obj
         )
+
+    def get_pdf_endpoint(
+        self,
+        obj,
+    ):
+        """
+        Devuelve la ruta autenticada oficial para visualizar
+        el PDF de la publicación.
+        """
+
+        try:
+            endpoint = reverse(
+                "publicacion-pdf-inline",
+                kwargs={
+                    "id": obj.id,
+                },
+            )
+
+        except Exception:
+            endpoint = (
+                f"/publicaciones/"
+                f"{obj.id}/pdf/"
+            )
+
+        request = self.context.get(
+            "request"
+        )
+
+        if request is None:
+            return endpoint
+
+        try:
+            return request.build_absolute_uri(
+                endpoint
+            )
+
+        except Exception:
+            return endpoint
+
+    # ========================================================
+    # PERMISOS
+    # ========================================================
+
+    def get_puede_editar(
+        self,
+        obj,
+    ):
+        request = self.context.get(
+            "request"
+        )
+
+        user = getattr(
+            request,
+            "user",
+            None,
+        )
+
+        if (
+            user is None
+            or not getattr(
+                user,
+                "is_authenticated",
+                False,
+            )
+        ):
+            return False
+
+        try:
+            return bool(
+                can_edit_publicacion(
+                    user,
+                    obj,
+                )
+            )
+
+        except Exception:
+            return False

@@ -48,6 +48,15 @@ CAPITULO_CODES = {
 }
 
 
+ORIGEN_LABELS = {
+    "ninguno": "Ninguno",
+    "tic": "Trabajo de integración curricular",
+    "maestria": "Tesis de maestría",
+    "doctoral": "Tesis doctoral",
+    "otro": "Otro",
+}
+
+
 def _to_str(value):
     return (
         ""
@@ -64,6 +73,84 @@ def _to_lower(value):
         if value
         else ""
     )
+
+
+def _get_origen_payload(
+    publicacion,
+):
+    """
+    Construye los datos normalizados del origen.
+
+    Reglas:
+    - TIC: origen_grado contiene el grado o programa.
+    - Otro: origen_grado contiene el origen escrito.
+    - Las demás opciones no utilizan detalle.
+    """
+
+    origen_tipo = (
+        _to_lower(
+            getattr(
+                publicacion,
+                "origen_tipo",
+                None,
+            )
+        )
+        or "ninguno"
+    )
+
+    origen_tipo_label = (
+        ORIGEN_LABELS.get(
+            origen_tipo
+        )
+        or origen_tipo
+        or "Ninguno"
+    )
+
+    origen_grado = None
+    origen_detalle_label = None
+    origen_resumen = None
+
+    if origen_tipo in {
+        "tic",
+        "otro",
+    }:
+        origen_grado = (
+            _to_str(
+                getattr(
+                    publicacion,
+                    "origen_grado",
+                    None,
+                )
+            )
+            or None
+        )
+
+        origen_detalle_label = (
+            "Grado / programa"
+            if origen_tipo == "tic"
+            else "Origen especificado"
+        )
+
+    if origen_tipo != "ninguno":
+        origen_resumen = (
+            f"{origen_tipo_label} · {origen_grado}"
+            if origen_grado
+            else origen_tipo_label
+        )
+
+    return {
+        "origen_tipo": origen_tipo,
+        "origen_tipo_label": (
+            origen_tipo_label
+        ),
+        "origen_grado": origen_grado,
+        "origen_detalle_label": (
+            origen_detalle_label
+        ),
+        "origen_resumen": (
+            origen_resumen
+        ),
+    }
 
 
 def _fecha_a_str(value):
@@ -618,17 +705,10 @@ def construir_detalle_publicacion(
         )
     )
 
-    origen_tipo = (
-        _to_lower(
-            publicacion.origen_tipo
+    origen_data = (
+        _get_origen_payload(
+            publicacion
         )
-        or "ninguno"
-    )
-
-    origen_grado = (
-        publicacion.origen_grado
-        if origen_tipo == "tic"
-        else None
     )
 
     data = {
@@ -744,8 +824,31 @@ def construir_detalle_publicacion(
         # Origen
         # -----------------------------------------------------
 
-        "origen_tipo": origen_tipo,
-        "origen_grado": origen_grado,
+        "origen_tipo": (
+            origen_data[
+                "origen_tipo"
+            ]
+        ),
+        "origen_tipo_label": (
+            origen_data[
+                "origen_tipo_label"
+            ]
+        ),
+        "origen_grado": (
+            origen_data[
+                "origen_grado"
+            ]
+        ),
+        "origen_detalle_label": (
+            origen_data[
+                "origen_detalle_label"
+            ]
+        ),
+        "origen_resumen": (
+            origen_data[
+                "origen_resumen"
+            ]
+        ),
 
         # -----------------------------------------------------
         # Fecha

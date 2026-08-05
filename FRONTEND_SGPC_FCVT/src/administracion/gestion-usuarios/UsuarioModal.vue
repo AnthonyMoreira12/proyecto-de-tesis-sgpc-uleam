@@ -973,10 +973,7 @@ const isPendiente = computed(() => {
     return true;
   }
 
-  return Boolean(
-    isExterno.value &&
-    !props.usuario?.is_active
-  );
+  return props.usuario?.es_pendiente === true;
 });
 
 

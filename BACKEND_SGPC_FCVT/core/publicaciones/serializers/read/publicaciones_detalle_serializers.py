@@ -241,6 +241,19 @@ class PublicacionDetalleSerializer(
         serializers.SerializerMethodField()
     )
 
+    # Origen de la publicación
+    origen_tipo_label = (
+        serializers.SerializerMethodField()
+    )
+
+    origen_detalle_label = (
+        serializers.SerializerMethodField()
+    )
+
+    origen_resumen = (
+        serializers.SerializerMethodField()
+    )
+
     archivo_pdf = (
         serializers.SerializerMethodField()
     )
@@ -438,7 +451,10 @@ class PublicacionDetalleSerializer(
             "ciudad",
 
             "origen_tipo",
+            "origen_tipo_label",
             "origen_grado",
+            "origen_detalle_label",
+            "origen_resumen",
 
             "fecha_publicacion",
             "anio_publicacion",
@@ -501,11 +517,21 @@ class PublicacionDetalleSerializer(
         attribute_name,
         default="",
     ):
-        relation = getattr(
-            obj,
-            relation_name,
-            None,
-        )
+        """
+        Lee de forma segura una relación y uno de sus campos.
+
+        Las relaciones OneToOne inversas pueden lanzar
+        RelatedObjectDoesNotExist cuando no existe el subtipo.
+        """
+
+        try:
+            relation = getattr(
+                obj,
+                relation_name,
+                None,
+            )
+        except Exception:
+            return default
 
         if relation is None:
             return default
@@ -1021,6 +1047,122 @@ class PublicacionDetalleSerializer(
             )
         )
 
+    # ---------------------------------------------------------
+    # Origen de la publicación
+    # ---------------------------------------------------------
+
+    def _get_origen_tipo(
+        self,
+        obj,
+    ):
+        return (
+            _to_lower(
+                getattr(
+                    obj,
+                    "origen_tipo",
+                    None,
+                )
+            )
+            or "ninguno"
+        )
+
+    def get_origen_tipo_label(
+        self,
+        obj,
+    ):
+        origen_tipo = (
+            self._get_origen_tipo(
+                obj
+            )
+        )
+
+        try:
+            label = (
+                obj.get_origen_tipo_display()
+            )
+        except Exception:
+            label = ""
+
+        return (
+            _to_str(label)
+            or {
+                "ninguno": "Ninguno",
+                "tic": (
+                    "Trabajo de integración "
+                    "curricular"
+                ),
+                "maestria": (
+                    "Tesis de maestría"
+                ),
+                "doctoral": (
+                    "Tesis doctoral"
+                ),
+                "otro": "Otro",
+            }.get(
+                origen_tipo,
+                origen_tipo,
+            )
+        )
+
+    def get_origen_detalle_label(
+        self,
+        obj,
+    ):
+        origen_tipo = (
+            self._get_origen_tipo(
+                obj
+            )
+        )
+
+        if origen_tipo == "tic":
+            return "Grado / programa"
+
+        if origen_tipo == "otro":
+            return "Origen especificado"
+
+        return None
+
+    def get_origen_resumen(
+        self,
+        obj,
+    ):
+        origen_tipo = (
+            self._get_origen_tipo(
+                obj
+            )
+        )
+
+        if origen_tipo == "ninguno":
+            return None
+
+        label = (
+            self.get_origen_tipo_label(
+                obj
+            )
+        )
+
+        detalle = _to_str(
+            getattr(
+                obj,
+                "origen_grado",
+                None,
+            )
+        )
+
+        if (
+            origen_tipo
+            in {
+                "tic",
+                "otro",
+            }
+            and detalle
+        ):
+            return (
+                f"{label} · {detalle}"
+            )
+
+        return label
+
     def get_archivo_pdf(
         self,
         obj,
@@ -1105,10 +1247,25 @@ class PublicacionDetalleSerializer(
             None,
         )
 
-        return can_edit_publicacion(
-            user,
-            obj,
-        )
+        if (
+            user is None
+            or not getattr(
+                user,
+                "is_authenticated",
+                False,
+            )
+        ):
+            return False
+
+        try:
+            return bool(
+                can_edit_publicacion(
+                    user,
+                    obj,
+                )
+            )
+        except Exception:
+            return False
 
     # ---------------------------------------------------------
     # Compatibilidad

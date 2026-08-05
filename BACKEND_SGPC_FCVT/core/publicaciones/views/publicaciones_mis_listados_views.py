@@ -1,43 +1,48 @@
 """
-Vista para listar las publicaciones vinculadas al usuario
+Vista para consultar las publicaciones vinculadas al usuario
 autenticado.
 
 Incluye:
+
 - publicaciones creadas por el usuario;
-- publicaciones donde participa como Autor.
+- publicaciones donde participa como autor principal;
+- publicaciones donde participa como coautor;
+- filtros, búsqueda y ordenamiento centralizados.
+
+Endpoints:
+
+    GET /publicaciones/mias/
+    GET /publicaciones/mias/anios-disponibles/
+
+Filtros admitidos:
+
+    tipo
+    origen_tipo
+    anio
+    anio_desde
+    anio_hasta
+    texto
+    facultad
+    carrera
+    proyecto
+    orden
+    solo_con_pdf
 """
 
-from django.db.models import (
-    Prefetch,
-    Q,
-)
-from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import (
-    Publicacion,
-    PublicacionAutor,
-)
 from core.publicaciones.mixins.publicaciones_auth_mixins import (
     PublicacionesJWTAuthAPIViewMixin,
 )
 from core.publicaciones.serializers.read.publicaciones_listado_serializers import (
     PublicacionListadoSerializer,
 )
-from core.publicaciones.utils.publicaciones_permissions_utils import (
-    resolve_user_autor_id,
+from core.publicaciones.services.publicaciones_listado_services import (
+    build_publicaciones_queryset,
+    extract_publicaciones_filters,
+    get_publicaciones_available_years,
 )
-from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
-    TIPOS_PUBLICACION_FINALES,
-    annotate_tipo_publicacion_final,
-)
-
-
-def _normalize_tipo(value):
-    return str(
-        value or ""
-    ).strip().lower()
 
 
 class MyPublicacionListAPIView(
@@ -45,149 +50,85 @@ class MyPublicacionListAPIView(
     APIView,
 ):
     """
-    Devuelve únicamente publicaciones relacionadas con
-    el usuario autenticado.
+    Devuelve las publicaciones relacionadas con el usuario
+    autenticado.
+
+    El alcance de usuario, los filtros, la búsqueda textual y
+    el ordenamiento son responsabilidad del servicio centralizado.
     """
-
-    def _build_queryset(
-        self,
-        user,
-    ):
-        autores_prefetch = Prefetch(
-            "participaciones",
-            queryset=(
-                PublicacionAutor.objects
-                .select_related(
-                    "autor"
-                )
-                .order_by(
-                    "orden",
-                    "id",
-                )
-            ),
-            to_attr="participaciones_ordenadas",
-        )
-
-        autor_id = (
-            resolve_user_autor_id(
-                user
-            )
-        )
-
-        filtros = Q(
-            usuario_creador=user
-        )
-
-        if autor_id:
-            filtros |= Q(
-                participaciones__autor_id=(
-                    autor_id
-                )
-            )
-
-        queryset = (
-            Publicacion.objects
-            .select_related(
-                "tipo",
-                "proyecto",
-
-                "usuario_creador",
-                "admin_registrador",
-
-                "carrera",
-                "carrera__facultad",
-
-                "area",
-                "subarea",
-
-                "pais",
-                "ciudad",
-
-                "articulo",
-                "ponencia",
-                "libro",
-                "capitulo_libro",
-            )
-            .prefetch_related(
-                autores_prefetch,
-                "archivos",
-            )
-            .filter(
-                filtros
-            )
-            .distinct()
-            .order_by(
-                "-fecha_publicacion",
-                "-id",
-            )
-        )
-
-        queryset = (
-            annotate_tipo_publicacion_final(
-                queryset
-            )
-            .exclude(
-                tipo_publicacion_final=(
-                    "sin_clasificar"
-                )
-            )
-        )
-
-        return queryset
 
     def get(
         self,
         request,
     ):
-        tipo = (
-            request.query_params.get(
-                "tipo"
-            )
-            or request.query_params.get(
-                "tipo_publicacion_final"
-            )
+        # =====================================================
+        # 1. VALIDAR Y NORMALIZAR FILTROS
+        # =====================================================
+
+        filters = extract_publicaciones_filters(
+            request.query_params
         )
 
-        publicaciones = (
-            self._build_queryset(
-                request.user
-            )
+        # =====================================================
+        # 2. CONSTRUIR QUERYSET DEL USUARIO
+        # =====================================================
+
+        publicaciones = build_publicaciones_queryset(
+            filters=filters,
+            user=request.user,
+            solo_mias=True,
         )
 
-        if tipo:
-            tipo = _normalize_tipo(
-                tipo
-            )
+        # =====================================================
+        # 3. SERIALIZAR RESPUESTA
+        # =====================================================
 
-            if (
-                tipo
-                not in TIPOS_PUBLICACION_FINALES
-            ):
-                raise ValidationError(
-                    {
-                        "tipo": [
-                            "El tipo de publicación "
-                            "seleccionado no es válido."
-                        ]
-                    }
-                )
-
-            publicaciones = (
-                publicaciones.filter(
-                    tipo_publicacion_final=tipo
-                )
-            )
-
-        serializer = (
-            PublicacionListadoSerializer(
-                publicaciones,
-                many=True,
-                context={
-                    "request": request,
-                },
-            )
+        serializer = PublicacionListadoSerializer(
+            publicaciones,
+            many=True,
+            context={
+                "request": request,
+            },
         )
 
         return Response(
             serializer.data
+        )
+
+
+class MyPublicacionAvailableYearsAPIView(
+    PublicacionesJWTAuthAPIViewMixin,
+    APIView,
+):
+    """
+    Devuelve únicamente los años de las publicaciones relacionadas
+    con el usuario autenticado.
+
+    Conserva los filtros no temporales y elimina los filtros de año
+    antes de construir el catálogo, evitando que el selector se
+    reduzca al año que el usuario ya eligió.
+
+    Endpoint:
+
+        GET /publicaciones/mias/anios-disponibles/
+    """
+
+    def get(
+        self,
+        request,
+    ):
+        filters = extract_publicaciones_filters(
+            request.query_params
+        )
+
+        anios = get_publicaciones_available_years(
+            filters=filters,
+            user=request.user,
+            solo_mias=True,
+        )
+
+        return Response(
+            {
+                "anios": anios,
+            }
         )

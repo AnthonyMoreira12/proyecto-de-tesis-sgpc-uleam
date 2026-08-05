@@ -268,6 +268,10 @@
                     <option value="doctoral">
                       Tesis doctoral
                     </option>
+
+                    <option value="otro">
+                      Otro
+                    </option>
                   </select>
 
                   <p
@@ -285,10 +289,14 @@
                     class="sgpc-label"
                     for="pn-origen_grado"
                   >
-                    Grado / programa
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Especifique el origen"
+                        : "Grado / programa"
+                    }}
 
                     <span
-                      v-if="form.origen_tipo === 'tic'"
+                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                       aria-hidden="true"
                     >
@@ -302,20 +310,29 @@
                     class="sgpc-input"
                     type="text"
                     maxlength="120"
-                    :disabled="form.origen_tipo !== 'tic'"
-                    :required="form.origen_tipo === 'tic'"
+                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
+                    :required="['tic', 'otro'].includes(form.origen_tipo)"
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="
                       fieldErrors.origen_grado
                         ? 'pn-origen-grado-error'
                         : undefined
                     "
-                    placeholder="Ej. Ingeniería de Software"
+                    :placeholder="
+                      form.origen_tipo === 'otro'
+                        ? 'Ej. Proyecto de investigación institucional'
+                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                    "
                   />
 
                   <p class="sgpc-hint">
-                    Se habilita cuando el origen es “Trabajo de integración
-                    curricular”.
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Escriba el origen específico de la publicación."
+                        : form.origen_tipo === "tic"
+                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
+                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                    }}
                   </p>
 
                   <p
@@ -1126,17 +1143,26 @@ const VALID_PRESENTATION_TYPES =
 ============================================================ */
 
 const ERROR_KEY_ALIASES = Object.freeze({
+  usuario_objetivo_id: "admin_context",
+  usuario_id: "admin_context",
+  autor_objetivo_id: "admin_context",
+  autor_id: "admin_context",
+  usuario_creador: "admin_context",
+
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  adjuntos: "archivos",
   archivo: "archivos",
   archivo_pdf: "archivos",
-  non_field_errors: "admin_context",
+
+  non_field_errors: "general",
 });
 
 const FIELD_LABELS = Object.freeze({
   admin_context: "Contexto administrativo",
+  general: "Validación general",
   facultad: "Facultad",
   carrera: "Carrera",
   proyecto: "Proyecto de investigación",
@@ -1145,7 +1171,7 @@ const FIELD_LABELS = Object.freeze({
   pais: "País",
   ciudad: "Ciudad",
   origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa",
+  origen_grado: "Grado / programa u otro origen",
   nombre_evento: "Nombre del evento",
   nombre_ponencia: "Nombre de la ponencia",
   fecha_publicacion: "Fecha de presentación",
@@ -1159,6 +1185,7 @@ const FIELD_LABELS = Object.freeze({
 
 const ERROR_FIELD_ORDER = Object.freeze([
   "admin_context",
+  "general",
   "facultad",
   "carrera",
   "proyecto",
@@ -1270,90 +1297,85 @@ function normalizeDrfErrors(data) {
     typeof data.errors === "object" &&
     data.errors !== null
       ? data.errors
-      : typeof data === "object" &&
-          data !== null
-        ? data
-        : null;
+      : data;
 
   if (
-    rawErrors &&
-    typeof rawErrors === "object"
-  ) {
-    const fields = {};
-    let first = null;
-
-    Object.entries(rawErrors).forEach(
-      ([key, value]) => {
-        if (key === "detail") {
-          return;
-        }
-
-        const normalizedKey =
-          normalizeErrorKey(key);
-
-        const message =
-          asText(value);
-
-        if (!message) {
-          return;
-        }
-
-        fields[normalizedKey] =
-          message;
-
-        if (!first) {
-          first =
-            normalizedKey;
-        }
-      }
-    );
-
-    if (
-      Object.keys(fields).length
-    ) {
-      let message =
-        "No se pudo registrar. Revise los campos marcados.";
-
-      if (fields.admin_context) {
-        message =
-          fields.admin_context;
-      } else if (fields.autores) {
-        message =
-          "Revise la sección de autores: debe existir al menos un autor y el orden debe ser válido.";
-      } else if (fields.archivos) {
-        message =
-          "Revise la sección de archivos PDF.";
-      } else if (first) {
-        const label =
-          FIELD_LABELS[first] ||
-          first;
-
-        message =
-          `${label}: ${fields[first]}`;
-      }
-
-      return {
-        fields,
-        message,
-      };
-    }
-  }
-
-  if (
-    typeof data?.detail ===
-    "string"
+    typeof rawErrors !== "object" ||
+    rawErrors === null
   ) {
     return {
       fields: {},
       message:
-        data.detail,
+        typeof data?.detail === "string"
+          ? data.detail
+          : "No se pudo guardar. Verifique los campos.",
     };
   }
 
+  const fields = {};
+  let first = null;
+
+  Object.entries(rawErrors).forEach(
+    ([key, value]) => {
+      if (key === "detail") {
+        return;
+      }
+
+      const normalizedKey =
+        normalizeErrorKey(key);
+
+      const message =
+        asText(value);
+
+      if (!message) {
+        return;
+      }
+
+      fields[normalizedKey] =
+        message;
+
+      if (!first) {
+        first = normalizedKey;
+      }
+    }
+  );
+
+  let message =
+    typeof data?.detail === "string" &&
+    data.detail.trim()
+      ? data.detail.trim()
+      : "No se pudo registrar. Revise los campos marcados.";
+
+  if (fields.admin_context) {
+    message =
+      fields.admin_context;
+  } else if (fields.general) {
+    message =
+      fields.general;
+  } else if (fields.autores) {
+    message =
+      "Revise la sección de autores: debe existir al menos un autor y el orden debe ser válido.";
+  } else if (fields.archivos) {
+    message =
+      "Revise la sección de archivos PDF.";
+  } else if (
+    first &&
+    !(
+      typeof data?.detail === "string" &&
+      data.detail.trim()
+    )
+  ) {
+    const label =
+      FIELD_LABELS[first] ||
+      first;
+
+    message =
+      `${label}: ${fields[first]}`;
+  }
+
   return {
-    fields: {},
-    message:
-      "No se pudo guardar. Verifique los campos.",
+    fields,
+    message,
   };
 }
 
@@ -1483,32 +1505,13 @@ export default {
           ""
         );
 
-      const query =
-        this.$route?.query ||
-        {};
-
-      const params =
-        this.$route?.params ||
-        {};
-
       return Boolean(
         this.$route?.meta
           ?.delegatedPublication ||
 
         path.startsWith(
           "/admin/publicaciones/usuario/"
-        ) ||
-
-        params.usuarioId ||
-
-        query.modo ===
-          "delegado" ||
-
-        query.delegado ===
-          "1" ||
-
-        query.admin ===
-          "1"
+        )
       );
     },
 
@@ -1677,9 +1680,8 @@ export default {
       }
 
       if (
-        this.form
-          .origen_tipo ===
-        "tic"
+        ["tic", "otro"].includes(this.form
+          .origen_tipo)
       ) {
         return Boolean(
           String(
@@ -1951,8 +1953,7 @@ export default {
       value
     ) {
       if (
-        value !==
-        "tic"
+        !["tic", "otro"].includes(value)
       ) {
         this.form
           .origen_grado =
@@ -2109,6 +2110,8 @@ export default {
 
         const empty =
           createDefaultForm();
+
+        this.suspendDraftOnce();
 
         this.form = {
           ...empty,
@@ -2528,9 +2531,8 @@ export default {
       }
 
       if (
-        this.form
-          .origen_tipo ===
-          "tic" &&
+        ["tic", "otro"].includes(this.form
+          .origen_tipo) &&
 
         !String(
           this.form
@@ -2552,7 +2554,7 @@ export default {
         )
       ) {
         errors.origen_grado =
-          `El grado / programa no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+          `El grado, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
       }
 
       /* ----------------------------------------------------
@@ -2810,9 +2812,8 @@ export default {
       );
 
       if (
-        this.form
-          .origen_tipo ===
-        "tic"
+        ["tic", "otro"].includes(this.form
+          .origen_tipo)
       ) {
         appendIfPresent(
           formData,

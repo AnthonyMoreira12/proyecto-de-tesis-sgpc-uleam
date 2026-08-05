@@ -435,6 +435,8 @@ class PublicacionActualizacionSerializer(
             required=False,
             allow_blank=True,
             allow_null=True,
+            max_length=120,
+            trim_whitespace=True,
         )
     )
 
@@ -1244,10 +1246,24 @@ class PublicacionActualizacionSerializer(
                     {
                         "origen_grado": [
                             "Debe especificar el grado "
-                            "cuando el origen es TIC."
+                            "o programa cuando el origen "
+                            "es un Trabajo de Integración "
+                            "Curricular."
                         ]
                     }
                 )
+
+        elif origen_tipo == "otro":
+            if not origen_grado:
+                raise ValidationError(
+                    {
+                        "origen_grado": [
+                            "Debe escribir el origen "
+                            "de la publicación."
+                        ]
+                    }
+                )
+
         else:
             origen_grado = None
 

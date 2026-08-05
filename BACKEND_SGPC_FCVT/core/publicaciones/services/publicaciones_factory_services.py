@@ -4,12 +4,21 @@ from core.models import Publicacion, TipoPublicacion
 
 
 def _norm_text(value):
-    return str(value or "").strip()
+    return str(
+        value or ""
+    ).strip()
 
 
 def _norm_lower(value):
-    value = _norm_text(value)
-    return value.lower() if value else ""
+    value = _norm_text(
+        value
+    )
+
+    return (
+        value.lower()
+        if value
+        else ""
+    )
 
 
 def obtener_o_crear_tipo_publicacion(
@@ -19,18 +28,36 @@ def obtener_o_crear_tipo_publicacion(
     categoria: str,
     orden: int,
 ):
-    codigo = _norm_lower(codigo)
-    nombre = _norm_text(nombre)
-    categoria = _norm_lower(categoria)
+    codigo = _norm_lower(
+        codigo
+    )
+
+    nombre = _norm_text(
+        nombre
+    )
+
+    categoria = _norm_lower(
+        categoria
+    )
 
     if not codigo:
         raise ValidationError(
-            {"tipo_codigo": ["El código del tipo de publicación es obligatorio."]}
+            {
+                "tipo_codigo": [
+                    "El código del tipo de publicación "
+                    "es obligatorio."
+                ]
+            }
         )
 
     if not nombre:
         raise ValidationError(
-            {"tipo_codigo": ["El nombre del tipo de publicación es obligatorio."]}
+            {
+                "tipo_codigo": [
+                    "El nombre del tipo de publicación "
+                    "es obligatorio."
+                ]
+            }
         )
 
     categorias_validas = {
@@ -39,38 +66,57 @@ def obtener_o_crear_tipo_publicacion(
         in TipoPublicacion.CATEGORIAS
     }
 
-    if categoria not in categorias_validas:
+    if (
+        categoria
+        not in categorias_validas
+    ):
         raise ValidationError(
             {
                 "tipo_codigo": [
-                    "La categoría del tipo de publicación no es válida."
+                    "La categoría del tipo de publicación "
+                    "no es válida."
                 ]
             }
         )
 
     try:
-        orden = int(orden)
-    except (TypeError, ValueError):
+        orden = int(
+            orden
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
         raise ValidationError(
-            {"tipo_codigo": ["El orden del tipo de publicación debe ser numérico."]}
+            {
+                "tipo_codigo": [
+                    "El orden del tipo de publicación "
+                    "debe ser numérico."
+                ]
+            }
         )
 
     if orden < 1:
         raise ValidationError(
             {
                 "tipo_codigo": [
-                    "El orden del tipo de publicación debe ser mayor o igual a 1."
+                    "El orden del tipo de publicación "
+                    "debe ser mayor o igual a 1."
                 ]
             }
         )
 
-    tipo, created = TipoPublicacion.objects.get_or_create(
-        codigo=codigo,
-        defaults={
-            "nombre": nombre,
-            "categoria": categoria,
-            "orden": orden,
-        },
+    tipo, created = (
+        TipoPublicacion.objects
+        .get_or_create(
+            codigo=codigo,
+            defaults={
+                "nombre": nombre,
+                "categoria": categoria,
+                "orden": orden,
+            },
+        )
     )
 
     if created:
@@ -80,18 +126,29 @@ def obtener_o_crear_tipo_publicacion(
 
     if tipo.nombre != nombre:
         tipo.nombre = nombre
-        changed_fields.append("nombre")
+
+        changed_fields.append(
+            "nombre"
+        )
 
     if tipo.categoria != categoria:
         tipo.categoria = categoria
-        changed_fields.append("categoria")
+
+        changed_fields.append(
+            "categoria"
+        )
 
     if tipo.orden != orden:
         tipo.orden = orden
-        changed_fields.append("orden")
+
+        changed_fields.append(
+            "orden"
+        )
 
     if changed_fields:
-        tipo.save(update_fields=changed_fields)
+        tipo.save(
+            update_fields=changed_fields
+        )
 
     return tipo
 
@@ -124,30 +181,47 @@ def crear_publicacion_base(
 
         Publicacion -> Carrera -> Facultad
 
-    El argumento ``facultad`` se conserva temporalmente únicamente por
-    compatibilidad con los serializers/formularios existentes. Se utiliza
-    para validar la coherencia Carrera/Facultad, pero nunca se persiste
-    directamente en Publicacion.
+    El argumento ``facultad`` se conserva temporalmente
+    únicamente por compatibilidad con los serializers y
+    formularios existentes.
+
+    Se utiliza para validar la coherencia entre Carrera y
+    Facultad, pero nunca se persiste directamente en
+    Publicacion.
     """
 
     if tipo is None:
         raise ValidationError(
-            {"tipo": ["El tipo de publicación es obligatorio."]}
+            {
+                "tipo": [
+                    "El tipo de publicación "
+                    "es obligatorio."
+                ]
+            }
         )
 
     if usuario is None:
         raise ValidationError(
-            {"usuario_creador": ["El usuario creador es obligatorio."]}
+            {
+                "usuario_creador": [
+                    "El usuario creador "
+                    "es obligatorio."
+                ]
+            }
         )
 
     if carrera is None:
         raise ValidationError(
-            {"carrera": ["La carrera es obligatoria."]}
+            {
+                "carrera": [
+                    "La carrera es obligatoria."
+                ]
+            }
         )
 
-    # ---------------------------------------------------------
-    # Carrera -> Facultad
-    # ---------------------------------------------------------
+    # =========================================================
+    # CARRERA -> FACULTAD
+    # =========================================================
 
     if facultad is not None:
         carrera_facultad_id = getattr(
@@ -162,7 +236,10 @@ def crear_publicacion_base(
             None,
         )
 
-        if carrera_facultad_id != facultad_id:
+        if (
+            carrera_facultad_id
+            != facultad_id
+        ):
             raise ValidationError(
                 {
                     "carrera": [
@@ -172,9 +249,9 @@ def crear_publicacion_base(
                 }
             )
 
-    # ---------------------------------------------------------
-    # Proyecto -> Carrera
-    # ---------------------------------------------------------
+    # =========================================================
+    # PROYECTO -> CARRERA
+    # =========================================================
 
     if proyecto is not None:
         proyecto_carrera_id = getattr(
@@ -189,7 +266,10 @@ def crear_publicacion_base(
             None,
         )
 
-        if proyecto_carrera_id != carrera_id:
+        if (
+            proyecto_carrera_id
+            != carrera_id
+        ):
             raise ValidationError(
                 {
                     "proyecto": [
@@ -199,19 +279,40 @@ def crear_publicacion_base(
                 }
             )
 
-    # ---------------------------------------------------------
-    # Área -> Subárea
-    # ---------------------------------------------------------
+    # =========================================================
+    # ÁREA -> SUBÁREA
+    # =========================================================
 
-    if subarea is not None and area is None:
+    if (
+        subarea is not None
+        and area is None
+    ):
         area = getattr(
             subarea,
             "area",
             None,
         )
 
-    if area is not None and subarea is not None:
-        if getattr(subarea, "area_id", None) != getattr(area, "id", None):
+    if (
+        area is not None
+        and subarea is not None
+    ):
+        subarea_area_id = getattr(
+            subarea,
+            "area_id",
+            None,
+        )
+
+        area_id = getattr(
+            area,
+            "id",
+            None,
+        )
+
+        if (
+            subarea_area_id
+            != area_id
+        ):
             raise ValidationError(
                 {
                     "subarea": [
@@ -221,11 +322,14 @@ def crear_publicacion_base(
                 }
             )
 
-    # ---------------------------------------------------------
-    # País -> Ciudad
-    # ---------------------------------------------------------
+    # =========================================================
+    # PAÍS -> CIUDAD
+    # =========================================================
 
-    if ciudad is not None and pais is None:
+    if (
+        ciudad is not None
+        and pais is None
+    ):
         raise ValidationError(
             {
                 "pais": [
@@ -235,8 +339,26 @@ def crear_publicacion_base(
             }
         )
 
-    if pais is not None and ciudad is not None:
-        if getattr(ciudad, "pais_id", None) != getattr(pais, "id", None):
+    if (
+        pais is not None
+        and ciudad is not None
+    ):
+        ciudad_pais_id = getattr(
+            ciudad,
+            "pais_id",
+            None,
+        )
+
+        pais_id = getattr(
+            pais,
+            "id",
+            None,
+        )
+
+        if (
+            ciudad_pais_id
+            != pais_id
+        ):
             raise ValidationError(
                 {
                     "ciudad": [
@@ -246,12 +368,14 @@ def crear_publicacion_base(
                 }
             )
 
-    # ---------------------------------------------------------
-    # Origen
-    # ---------------------------------------------------------
+    # =========================================================
+    # ORIGEN DE LA PUBLICACIÓN
+    # =========================================================
 
     origen_tipo = (
-        _norm_lower(origen_tipo)
+        _norm_lower(
+            origen_tipo
+        )
         or "ninguno"
     )
 
@@ -261,36 +385,68 @@ def crear_publicacion_base(
         in Publicacion.ORIGEN_TIPO
     }
 
-    if origen_tipo not in origenes_validos:
+    if (
+        origen_tipo
+        not in origenes_validos
+    ):
         raise ValidationError(
             {
                 "origen_tipo": [
-                    "El origen de la publicación no es válido."
+                    "El origen de la publicación "
+                    "no es válido."
                 ]
             }
         )
 
     origen_grado = (
-        _norm_text(origen_grado)
+        _norm_text(
+            origen_grado
+        )
         or None
     )
+
+    # ---------------------------------------------------------
+    # Trabajo de Integración Curricular
+    # ---------------------------------------------------------
 
     if origen_tipo == "tic":
         if not origen_grado:
             raise ValidationError(
                 {
                     "origen_grado": [
-                        "Debe especificar el grado cuando "
-                        "el origen es TIC."
+                        "Debe especificar el grado "
+                        "o programa cuando el origen "
+                        "es un Trabajo de Integración "
+                        "Curricular."
                     ]
                 }
             )
+
+    # ---------------------------------------------------------
+    # Otro origen
+    # ---------------------------------------------------------
+
+    elif origen_tipo == "otro":
+        if not origen_grado:
+            raise ValidationError(
+                {
+                    "origen_grado": [
+                        "Debe escribir el origen "
+                        "de la publicación."
+                    ]
+                }
+            )
+
+    # ---------------------------------------------------------
+    # Opciones que no usan campo complementario
+    # ---------------------------------------------------------
+
     else:
         origen_grado = None
 
-    # ---------------------------------------------------------
-    # Registro administrativo
-    # ---------------------------------------------------------
+    # =========================================================
+    # REGISTRO ADMINISTRATIVO
+    # =========================================================
 
     if admin_registrador is not None:
         es_admin = bool(
@@ -318,7 +474,10 @@ def crear_publicacion_base(
 
         registrado_por_admin = True
 
-    if registrado_por_admin and admin_registrador is None:
+    if (
+        registrado_por_admin
+        and admin_registrador is None
+    ):
         raise ValidationError(
             {
                 "admin_registrador": [
@@ -331,17 +490,17 @@ def crear_publicacion_base(
     if not registrado_por_admin:
         admin_registrador = None
 
-    # ---------------------------------------------------------
-    # Creación
-    # ---------------------------------------------------------
+    # =========================================================
+    # CREACIÓN
+    # =========================================================
 
     return Publicacion.objects.create(
         proyecto=proyecto,
         tipo=tipo,
         usuario_creador=usuario,
 
-        # NO existe:
-        # facultad=facultad
+        # Publicacion no posee una columna facultad.
+        # La facultad se obtiene mediante la carrera.
 
         carrera=carrera,
         area=area,

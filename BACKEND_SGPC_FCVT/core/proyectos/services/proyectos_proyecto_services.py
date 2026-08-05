@@ -56,6 +56,9 @@ PROYECTO_AUTOR_ROLE_ALIASES = {
 MAX_AUTORES_POR_PROYECTO = 100
 MAX_AUTORES_JSON_LENGTH = 100_000
 
+PRIMARY_AUTHOR_ROLE = "principal"
+DEFAULT_SECONDARY_AUTHOR_ROLE = "coinvestigador"
+
 
 # ============================================================
 # CONFIGURACIÓN DE ESTADOS
@@ -460,15 +463,28 @@ def _normalize_author_role(
     value,
     *,
     position,
+    order,
 ):
     """
     Normaliza y valida el rol del autor.
+
+    Cuando el frontend no envía el rol:
+
+    - Orden 1: investigador principal.
+    - Órdenes posteriores: coinvestigador.
+
+    Esto evita convertir accidentalmente a todos los integrantes
+    en investigadores principales.
     """
     if value in (
         None,
         "",
     ):
-        normalized_role = "principal"
+        normalized_role = (
+            PRIMARY_AUTHOR_ROLE
+            if order == 1
+            else DEFAULT_SECONDARY_AUTHOR_ROLE
+        )
 
     else:
         role_token = _normalize_token(
@@ -516,8 +532,13 @@ def normalize_proyecto_autores_payload(
             "orden": 1,
         }
 
-    No exige un investigador principal en todos los estados.
-    Esa regla se aplica cuando el proyecto se cierra.
+    Reglas del equipo cuando contiene integrantes:
+
+    - Los órdenes deben ser consecutivos desde 1.
+    - El orden 1 debe ser investigador principal.
+    - Solo puede existir un investigador principal.
+    - Los demás integrantes deben ser coinvestigadores o
+      colaboradores.
     """
     parsed_items = parse_autores_data_input(
         raw_items
@@ -554,11 +575,6 @@ def normalize_proyecto_autores_payload(
             position=position,
         )
 
-        role = _normalize_author_role(
-            item.get("rol"),
-            position=position,
-        )
-
         raw_order = item.get(
             "orden",
             position,
@@ -575,6 +591,12 @@ def normalize_proyecto_autores_payload(
             field_label=(
                 f"El orden del autor #{position}"
             ),
+        )
+
+        role = _normalize_author_role(
+            item.get("rol"),
+            position=position,
+            order=order,
         )
 
         if author_id in seen_author_ids:
@@ -609,6 +631,69 @@ def normalize_proyecto_autores_payload(
             }
         )
 
+    normalized_items.sort(
+        key=lambda item: (
+            item["orden"],
+            item["autor_id"],
+        )
+    )
+
+    expected_orders = list(
+        range(
+            1,
+            len(normalized_items) + 1,
+        )
+    )
+
+    received_orders = [
+        item["orden"]
+        for item in normalized_items
+    ]
+
+    if received_orders != expected_orders:
+        raise ValidationError(
+            (
+                "El orden del equipo investigador debe ser "
+                "consecutivo y comenzar en 1."
+            )
+        )
+
+    principal_items = [
+        item
+        for item in normalized_items
+        if item["rol"] == PRIMARY_AUTHOR_ROLE
+    ]
+
+    if len(principal_items) != 1:
+        raise ValidationError(
+            (
+                "El equipo investigador debe contener "
+                "exactamente un investigador principal."
+            )
+        )
+
+    if (
+        normalized_items[0]["rol"]
+        != PRIMARY_AUTHOR_ROLE
+    ):
+        raise ValidationError(
+            (
+                "El integrante ubicado en el orden 1 debe "
+                "ser el investigador principal."
+            )
+        )
+
+    if (
+        principal_items[0]["orden"]
+        != 1
+    ):
+        raise ValidationError(
+            (
+                "El investigador principal debe ocupar "
+                "el orden 1."
+            )
+        )
+
     existing_author_ids = set(
         Autor.objects
         .filter(
@@ -639,13 +724,6 @@ def normalize_proyecto_autores_payload(
             )
         )
 
-    normalized_items.sort(
-        key=lambda item: (
-            item["orden"],
-            item["autor_id"],
-        )
-    )
-
     return normalized_items
 
 
@@ -657,35 +735,25 @@ def autores_payload_tiene_principal(
     autores_data,
 ):
     """
-    Indica si el payload contiene al menos un investigador
-    principal.
+    Indica si el payload normalizado contiene un investigador
+    principal válido en el orden 1.
     """
-    parsed_items = parse_autores_data_input(
-        autores_data
+    normalized_items = (
+        normalize_proyecto_autores_payload(
+            autores_data
+        )
     )
 
-    if not parsed_items:
+    if not normalized_items:
         return False
 
-    for position, item in enumerate(
-        parsed_items,
-        start=1,
-    ):
-        if not isinstance(
-            item,
-            Mapping,
-        ):
-            continue
+    first_item = normalized_items[0]
 
-        role = _normalize_author_role(
-            item.get("rol"),
-            position=position,
-        )
-
-        if role == "principal":
-            return True
-
-    return False
+    return bool(
+        first_item["orden"] == 1
+        and first_item["rol"]
+        == PRIMARY_AUTHOR_ROLE
+    )
 
 
 def proyecto_tiene_investigador_principal(
@@ -932,19 +1000,18 @@ def resolver_estado_destino(
     estado_solicitado="",
 ):
     """
-    Resuelve el siguiente estado del proyecto.
+    Resuelve la siguiente transición válida del proyecto.
 
-    Cuando se envía un estado:
-
-    - Se normaliza.
-    - Se valida contra Proyecto.ESTADOS.
-    - Se utiliza directamente.
-
-    Cuando no se envía estado, se aplica la transición automática:
+    Transiciones permitidas:
 
         nuevo -> arrastre
         arrastre -> cierre
         cierre -> arrastre
+
+    El estado solicitado, cuando se envía, debe coincidir con la
+    transición permitida. Esto impide saltar directamente de
+    nuevo a cierre o utilizar dos reglas diferentes entre el
+    formulario y la acción de cambio de estado.
     """
     if proyecto is None:
         raise ValidationError(
@@ -969,6 +1036,22 @@ def resolver_estado_destino(
         default="nuevo",
     )
 
+    allowed_destination = (
+        ESTADO_TRANSITIONS.get(
+            current_state
+        )
+    )
+
+    if allowed_destination is None:
+        raise ValidationError(
+            {
+                "estado": (
+                    "No existe una transición automática "
+                    f"desde el estado '{current_state}'."
+                )
+            }
+        )
+
     raw_requested_state = _normalize_text(
         estado_solicitado
     )
@@ -989,22 +1072,21 @@ def resolver_estado_destino(
                 }
             )
 
-    else:
-        destination_state = (
-            ESTADO_TRANSITIONS.get(
-                current_state
-            )
-        )
-
-        if destination_state is None:
+        if destination_state != allowed_destination:
             raise ValidationError(
                 {
                     "estado": (
-                        "No existe una transición automática "
-                        f"desde el estado '{current_state}'."
+                        f"El proyecto no puede pasar de "
+                        f"'{current_state}' a "
+                        f"'{destination_state}'. "
+                        f"La transición permitida es "
+                        f"'{allowed_destination}'."
                     )
                 }
             )
+
+    else:
+        destination_state = allowed_destination
 
     if destination_state not in valid_states:
         raise ValidationError(
@@ -1022,6 +1104,8 @@ def resolver_estado_destino(
 __all__ = [
     "PROYECTO_AUTOR_ROLES",
     "MAX_AUTORES_POR_PROYECTO",
+    "PRIMARY_AUTHOR_ROLE",
+    "DEFAULT_SECONDARY_AUTHOR_ROLE",
     "ESTADO_TRANSITIONS",
     "LEGACY_ESTADO_MAP",
     "user_is_project_admin",

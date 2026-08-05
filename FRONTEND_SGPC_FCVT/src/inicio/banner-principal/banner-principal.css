@@ -90,6 +90,7 @@
   );
 
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 
   /*
@@ -160,12 +161,13 @@ button {
 
   width:
     min(
-      1000px,
-      calc(100vw - 24px)
+      1260px,
+      100%
     );
 
   min-height: 520px;
   max-width: 100%;
+  min-width: 0;
 
   margin: 0 auto;
 
@@ -175,13 +177,21 @@ button {
     1px solid
     var(--avn-line);
 
-  border-radius: 24px;
+  border-radius:
+    var(
+      --radius-2xl,
+      22px
+    );
 
   background: var(--avn-card);
 
   box-shadow: var(--avn-shadow);
 
   isolation: isolate;
+}
+
+.avn-stage-card.is-empty {
+  min-height: 480px;
 }
 
 .avn-stage-card.is-manage-open {
@@ -197,8 +207,8 @@ button {
 .avn-close {
   position: absolute;
 
-  top: 14px;
-  right: 14px;
+  top: 16px;
+  right: 16px;
 
   z-index: 20;
 
@@ -212,43 +222,95 @@ button {
 
   border:
     1px solid
+    var(--avn-line);
+
+  border-radius:
+    var(
+      --radius-md,
+      10px
+    );
+
+  background:
     color-mix(
       in srgb,
-      #ffffff 28%,
+      var(--avn-card) 94%,
+      var(--avn-page) 6%
+    );
+
+  color:
+    var(--avn-muted);
+
+  box-shadow:
+    0 6px 16px
+    color-mix(
+      in srgb,
+      var(--avn-text) 8%,
       transparent
     );
 
-  border-radius: 12px;
-
-  background:
-    rgba(15, 23, 42, 0.56);
-
-  color: #ffffff;
-
   cursor: pointer;
-
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 
   transition:
     transform 160ms ease,
     background 160ms ease,
-    border-color 160ms ease;
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .avn-close:hover {
   transform:
     translateY(-1px);
 
-  background:
-    rgba(15, 23, 42, 0.76);
+  border-color:
+    var(--avn-primary-line);
 
+  background:
+    var(--avn-primary-soft);
+
+  color:
+    var(--avn-primary);
+}
+
+/*
+ * Cuando existe una imagen, el botón recupera el acabado
+ * translúcido para conservar contraste sobre el banner.
+ */
+.avn-stage-card.has-media
+  .avn-close {
+  border-color:
+    color-mix(
+      in srgb,
+      #ffffff 28%,
+      transparent
+    );
+
+  background:
+    rgba(15, 23, 42, 0.58);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 20px
+    rgba(15, 23, 42, 0.18);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.avn-stage-card.has-media
+  .avn-close:hover {
   border-color:
     color-mix(
       in srgb,
       #ffffff 42%,
       transparent
     );
+
+  background:
+    rgba(15, 23, 42, 0.78);
+
+  color: #ffffff;
 }
 
 .avn-close:focus-visible,
@@ -1166,29 +1228,43 @@ button {
 
   min-height: 100%;
 
-  padding: 54px 24px;
+  padding:
+    clamp(
+      48px,
+      7vw,
+      72px
+    )
+    24px;
 
   text-align: center;
 
   background:
     radial-gradient(
-      circle at 50% 0%,
+      circle at 50% -12%,
       color-mix(
         in srgb,
-        var(--avn-primary) 8%,
+        var(--avn-primary) 10%,
         transparent
       ),
-      transparent 38%
+      transparent 46%
     ),
-    var(--avn-card);
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--avn-card) 97%,
+        var(--avn-page) 3%
+      ),
+      var(--avn-card)
+    );
 }
 
 .avn-empty__icon {
   display: grid;
   place-items: center;
 
-  width: 64px;
-  height: 64px;
+  width: 62px;
+  height: 62px;
 
   margin-bottom: 18px;
 
@@ -1196,13 +1272,25 @@ button {
     1px solid
     var(--avn-primary-line);
 
-  border-radius: 18px;
+  border-radius:
+    var(
+      --radius-lg,
+      14px
+    );
 
   background:
     var(--avn-primary-soft);
 
   color:
     var(--avn-primary);
+
+  box-shadow:
+    0 10px 24px
+    color-mix(
+      in srgb,
+      var(--avn-primary) 10%,
+      transparent
+    );
 }
 
 .avn-empty__kicker {
@@ -1220,6 +1308,9 @@ button {
 }
 
 .avn-empty__title {
+  width: 100%;
+  max-width: 720px;
+
   margin: 0;
 
   color:
@@ -1227,25 +1318,28 @@ button {
 
   font-size:
     clamp(
-      1.4em,
+      1.55em,
       3vw,
-      2em
+      2.05em
     );
 
   font-weight: 740;
+  line-height: 1.15;
 
   letter-spacing:
     -0.025em;
 }
 
 .avn-empty__text {
-  max-width: 540px;
+  width: 100%;
+  max-width: 620px;
 
   margin: 14px 0 0;
 
   color:
     var(--avn-muted);
 
+  font-size: 0.98em;
   line-height: 1.65;
 }
 
@@ -1267,13 +1361,14 @@ button {
 .avn-admin-shell {
   width:
     min(
-      1000px,
-      calc(100vw - 24px)
+      1260px,
+      100%
     );
 
   max-width: 100%;
+  min-width: 0;
 
-  margin: 14px auto 0;
+  margin: 16px auto 0;
 }
 
 .avn-admin {
@@ -1283,7 +1378,11 @@ button {
     1px solid
     var(--avn-line);
 
-  border-radius: 22px;
+  border-radius:
+    var(
+      --radius-2xl,
+      22px
+    );
 
   background:
     var(--avn-card);
@@ -2537,6 +2636,10 @@ body.dark .avn-stage__aside,
     height: auto !important;
   }
 
+  .avn-stage-card.is-empty {
+    min-height: 420px;
+  }
+
   .avn-stage-main--mixed {
     grid-template-columns:
       1fr !important;
@@ -2602,6 +2705,16 @@ body.dark .avn-stage__aside,
 @media (max-width: 680px) {
   .avn-stage-card {
     border-radius: 18px;
+  }
+
+  .avn-stage-card.is-empty {
+    min-height: 380px;
+  }
+
+  .avn-empty {
+    padding:
+      56px 20px
+      42px;
   }
 
   .avn-close {

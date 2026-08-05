@@ -2,7 +2,7 @@
   <div class="preferences-page">
     <div class="preferences-shell">
       <header
-        class="preferences-hero page-stage page-stage-1"
+        class="preferences-hero"
         aria-labelledby="preferences-title"
       >
         <div class="preferences-hero__identity">
@@ -66,7 +66,7 @@
         </div>
       </header>
 
-      <main class="preferences-layout page-stage page-stage-2">
+      <main class="preferences-layout">
         <div class="preferences-main">
           <!-- APARIENCIA -->
           <section

@@ -5,7 +5,8 @@ de publicaciones.
 Centraliza:
 
 - origen de la publicación;
-- grado/programa asociado al TIC;
+- grado o programa asociado al TIC;
+- origen escrito manualmente cuando se selecciona Otro;
 - fecha de publicación;
 - PDF principal.
 
@@ -21,12 +22,20 @@ from core.models import Publicacion
 
 
 def _norm_text(value):
+    """
+    Convierte el valor recibido en texto limpio.
+    """
+
     return str(
         value or ""
     ).strip()
 
 
 def _norm_optional_text(value):
+    """
+    Convierte cadenas vacías en None.
+    """
+
     value = _norm_text(
         value
     )
@@ -60,6 +69,7 @@ class PublicacionCamposBaseMixin(
         required=False,
         allow_blank=True,
         allow_null=True,
+        trim_whitespace=True,
     )
 
     fecha_publicacion = serializers.DateField(
@@ -85,19 +95,26 @@ class PublicacionCamposBaseMixin(
         attrs,
     ):
         """
-        Aplica exactamente las reglas de Publicacion:
+        Aplica las reglas del origen de la publicación.
+
+        Reglas:
 
         ninguno
             origen_grado = None
 
         tic
-            origen_grado obligatorio
+            origen_grado es obligatorio y representa
+            el grado o programa relacionado.
 
         maestria
             origen_grado = None
 
         doctoral
             origen_grado = None
+
+        otro
+            origen_grado es obligatorio y contiene
+            el origen escrito por el usuario.
         """
 
         origen_tipo = (
@@ -136,9 +153,9 @@ class PublicacionCamposBaseMixin(
             )
         )
 
-        # -----------------------------------------------------
-        # TIC
-        # -----------------------------------------------------
+        # =====================================================
+        # TRABAJO DE INTEGRACIÓN CURRICULAR
+        # =====================================================
 
         if origen_tipo == "tic":
             if not origen_grado:
@@ -146,15 +163,31 @@ class PublicacionCamposBaseMixin(
                     {
                         "origen_grado": [
                             "Debe especificar el grado "
-                            "cuando el origen es un "
-                            "Trabajo de Integración Curricular."
+                            "o programa cuando el origen "
+                            "es un Trabajo de Integración "
+                            "Curricular."
                         ]
                     }
                 )
 
-        # -----------------------------------------------------
-        # Cualquier otro origen
-        # -----------------------------------------------------
+        # =====================================================
+        # OTRO ORIGEN
+        # =====================================================
+
+        elif origen_tipo == "otro":
+            if not origen_grado:
+                raise ValidationError(
+                    {
+                        "origen_grado": [
+                            "Debe escribir el origen "
+                            "de la publicación."
+                        ]
+                    }
+                )
+
+        # =====================================================
+        # ORÍGENES PREDETERMINADOS SIN CAMPO COMPLEMENTARIO
+        # =====================================================
 
         else:
             origen_grado = None

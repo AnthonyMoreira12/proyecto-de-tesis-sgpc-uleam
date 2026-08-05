@@ -23,7 +23,7 @@
           type="button"
           tabindex="-1"
           aria-label="Cerrar avisos"
-          @click="cerrarOverlay"
+          @click="solicitarCierre"
         ></button>
 
         <div
@@ -32,7 +32,7 @@
           tabindex="-1"
         >
           <BannerPrincipal
-            :key="`${version}:${initialManage ? 'manage' : 'view'}`"
+            ref="bannerPrincipal"
             :user="user"
             :version="version"
             :initial-manage="initialManage"
@@ -85,13 +85,14 @@ const emit = defineEmits([
 
 const dialogRoot = ref(null);
 const dialogShell = ref(null);
+const bannerPrincipal = ref(null);
 
 const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
+  'a[href]:not([tabindex="-1"])',
+  'button:not([disabled]):not([tabindex="-1"])',
+  'input:not([disabled]):not([tabindex="-1"])',
+  'select:not([disabled]):not([tabindex="-1"])',
+  'textarea:not([disabled]):not([tabindex="-1"])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
@@ -115,8 +116,10 @@ const getFocusableElements = () => {
       window.getComputedStyle(element);
 
     return (
+      element.tabIndex >= 0 &&
       style.visibility !== "hidden" &&
-      style.display !== "none"
+      style.display !== "none" &&
+      element.getAttribute("aria-hidden") !== "true"
     );
   });
 };
@@ -191,6 +194,20 @@ const cerrarOverlay = () => {
   });
 };
 
+const solicitarCierre = async () => {
+  if (closing) return;
+
+  const requestClose =
+    bannerPrincipal.value?.requestClose;
+
+  if (typeof requestClose === "function") {
+    await requestClose();
+    return;
+  }
+
+  cerrarOverlay();
+};
+
 const propagarCambioVersion = (
   nextVersion
 ) => {
@@ -243,7 +260,7 @@ const onDialogKeydown = (event) => {
 
   if (event.key === "Escape") {
     event.preventDefault();
-    cerrarOverlay();
+    solicitarCierre();
     return;
   }
 

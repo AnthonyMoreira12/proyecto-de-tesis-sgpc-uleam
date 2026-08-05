@@ -772,20 +772,26 @@ class AdminUsuariosViewSet(
                     .first()
                 )
 
-                # Cuando existen publicaciones, se conserva el
-                # Autor y únicamente se elimina su relación con
-                # la cuenta de Usuario.
-                if (
-                    author is not None
-                    and author.participaciones.exists()
-                ):
-                    author.usuario = None
-
-                    author.save(
-                        update_fields=[
-                            "usuario",
-                        ]
+                if author is not None:
+                    has_related_records = bool(
+                        author.participaciones.exists()
+                        or author.proyectos_participaciones.exists()
                     )
+
+                    # Se conserva el Autor cuando participa en
+                    # publicaciones o proyectos. Si no mantiene
+                    # registros científicos, se elimina para no
+                    # dejar un Autor huérfano con correo o cédula
+                    # reservados por sus restricciones únicas.
+                    if has_related_records:
+                        author.usuario = None
+                        author.save(
+                            update_fields=[
+                                "usuario",
+                            ]
+                        )
+                    else:
+                        author.delete()
 
                 user.delete()
 

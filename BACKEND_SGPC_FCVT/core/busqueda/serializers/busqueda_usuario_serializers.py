@@ -1,21 +1,20 @@
 """
-Serializer para resultados rápidos de búsqueda de usuarios
-académicos.
+Serializer público para resultados rápidos de usuarios académicos.
 
-Expone:
+La búsqueda pública utiliza ``Autor.id`` como identificador canónico del
+perfil científico. El Usuario solo aporta datos académicos y visuales.
 
-- Información básica del usuario.
-- Nombre completo.
-- Rol y etiqueta legible.
-- Carrera y facultad relacionadas.
-- Estado de completitud del perfil.
-- URL absoluta del avatar.
+Por seguridad no se exponen:
 
-La facultad se deriva exclusivamente desde:
-
-    usuario.carrera.facultad
+- Correo electrónico.
+- Número de cédula.
+- Fuente de autenticación.
+- Identificador interno del Usuario.
+- Privilegios administrativos.
+- Datos de credenciales.
 """
 
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from core.models import Usuario
@@ -26,346 +25,338 @@ from core.models import Usuario
 # ============================================================
 
 def _normalize_text(value):
-    """
-    Normaliza un texto eliminando espacios repetidos.
-    """
-    return " ".join(
-        str(value or "").split()
-    )
+    """Normaliza un texto eliminando espacios repetidos."""
+    return " ".join(str(value or "").split())
 
 
 def _optional_text(value):
-    """
-    Devuelve un texto normalizado o None.
-    """
-    normalized = _normalize_text(
-        value
-    )
-
+    """Devuelve texto normalizado o ``None``."""
+    normalized = _normalize_text(value)
     return normalized or None
 
 
-def _safe_file_url(
-    file_field,
-    *,
-    request=None,
-):
-    """
-    Obtiene de forma segura la URL de un archivo almacenado.
-
-    Cuando existe una petición HTTP, devuelve una URL absoluta.
-    """
-    if not file_field:
+def _safe_author(user):
+    """Obtiene de forma segura el Autor vinculado al Usuario."""
+    if user is None:
         return None
 
-    file_name = getattr(
-        file_field,
-        "name",
-        None,
-    )
+    try:
+        return user.autor
+    except (ObjectDoesNotExist, AttributeError):
+        return None
 
-    if not file_name:
+
+def _safe_file_url(file_field, *, request=None):
+    """Obtiene una URL segura y, cuando es posible, absoluta."""
+    if not file_field or not getattr(file_field, "name", None):
         return None
 
     try:
         file_url = file_field.url
-
-    except (
-        ValueError,
-        OSError,
-        NotImplementedError,
-    ):
+    except (ValueError, OSError, NotImplementedError):
         return None
 
     if request is None:
         return file_url
 
     try:
-        return request.build_absolute_uri(
-            file_url
-        )
-
-    except (
-        ValueError,
-        TypeError,
-    ):
+        return request.build_absolute_uri(file_url)
+    except (ValueError, TypeError):
         return file_url
 
 
 def _build_full_name(user):
-    """
-    Construye el nombre completo del usuario.
-    """
+    """Construye el nombre completo del Usuario."""
     if user is None:
         return None
 
-    get_full_name = getattr(
-        user,
-        "get_full_name",
-        None,
-    )
-
+    get_full_name = getattr(user, "get_full_name", None)
     if callable(get_full_name):
-        full_name = _optional_text(
-            get_full_name()
-        )
-
+        full_name = _optional_text(get_full_name())
         if full_name:
             return full_name
 
-    names = _optional_text(
-        getattr(
-            user,
-            "nombres",
-            None,
-        )
-    )
-
-    surnames = _optional_text(
-        getattr(
-            user,
-            "apellidos",
-            None,
-        )
-    )
-
-    resolved_name = " ".join(
+    full_name = " ".join(
         value
-        for value in [
-            names,
-            surnames,
-        ]
+        for value in (
+            _optional_text(getattr(user, "nombres", None)),
+            _optional_text(getattr(user, "apellidos", None)),
+        )
         if value
     )
 
-    return resolved_name or None
+    return full_name or None
+
+
+def _career(user):
+    """Obtiene la carrera del Usuario."""
+    return getattr(user, "carrera", None) if user is not None else None
+
+
+def _faculty(user):
+    """Obtiene la facultad mediante ``usuario.carrera.facultad``."""
+    career = _career(user)
+    return getattr(career, "facultad", None) if career is not None else None
+
+
+def _unique_text_list(values):
+    """Construye una lista de etiquetas sin duplicados."""
+    seen = set()
+    result = []
+
+    for value in values:
+        normalized = _optional_text(value)
+        if not normalized:
+            continue
+
+        key = normalized.casefold()
+        if key in seen:
+            continue
+
+        seen.add(key)
+        result.append(normalized)
+
+    return result
+
+
+def _publications_count(author):
+    """Obtiene el total de publicaciones distintas del Autor."""
+    if author is None:
+        return 0
+
+    for attribute_name in (
+        "publicaciones_count",
+        "total_publicaciones",
+        "_publications_count",
+    ):
+        annotated_value = getattr(author, attribute_name, None)
+
+        if annotated_value is None:
+            continue
+
+        try:
+            return max(0, int(annotated_value))
+        except (TypeError, ValueError, OverflowError):
+            continue
+
+    relation_manager = getattr(author, "participaciones", None)
+    if relation_manager is None:
+        return 0
+
+    try:
+        return relation_manager.values("publicacion_id").distinct().count()
+    except (AttributeError, TypeError, ValueError):
+        return 0
 
 
 # ============================================================
 # SERIALIZER
 # ============================================================
 
-class UsuarioBusquedaSerializer(
-    serializers.ModelSerializer
-):
+class UsuarioBusquedaSerializer(serializers.ModelSerializer):
     """
-    Representación resumida de un usuario académico para
-    resultados de búsqueda y autocompletado.
+    Representación pública de una cuenta académica activa.
 
-    El selector correspondiente debe limitar los resultados a
-    usuarios académicos activos.
+    ``id`` y ``autor_id`` corresponden a ``Autor.id``. Si la cuenta todavía
+    no tiene Autor vinculado, ambos valores son ``None`` y
+    ``perfil_disponible`` es falso.
     """
 
-    nombre_completo = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    id = serializers.SerializerMethodField(read_only=True)
+    autor_id = serializers.SerializerMethodField(read_only=True)
 
-    rol_label = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    nombre_completo = serializers.SerializerMethodField(read_only=True)
+    name = serializers.SerializerMethodField(read_only=True)
 
-    carrera_id = serializers.IntegerField(
-        read_only=True,
-    )
+    rol_label = serializers.SerializerMethodField(read_only=True)
+    es_externo = serializers.SerializerMethodField(read_only=True)
 
-    carrera = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    carrera_id = serializers.SerializerMethodField(read_only=True)
+    carrera = serializers.SerializerMethodField(read_only=True)
+    facultad_id = serializers.SerializerMethodField(read_only=True)
+    facultad = serializers.SerializerMethodField(read_only=True)
 
-    facultad_id = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    org = serializers.SerializerMethodField(read_only=True)
+    tags = serializers.SerializerMethodField(read_only=True)
 
-    facultad = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    avatar_url = serializers.SerializerMethodField(read_only=True)
+    avatar = serializers.SerializerMethodField(read_only=True)
 
-    avatar_url = serializers.SerializerMethodField(
-        read_only=True,
-    )
+    publicaciones_count = serializers.SerializerMethodField(read_only=True)
+    publications = serializers.SerializerMethodField(read_only=True)
+
+    verified = serializers.SerializerMethodField(read_only=True)
+    usuario_activo = serializers.SerializerMethodField(read_only=True)
+    usuario_pendiente = serializers.SerializerMethodField(read_only=True)
+    usuario_estado = serializers.SerializerMethodField(read_only=True)
+    perfil_disponible = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Usuario
 
         fields = [
             "id",
+            "autor_id",
             "nombres",
             "apellidos",
             "nombre_completo",
-            "email",
-            "rol",
+            "name",
             "rol_label",
-            "auth_source",
+            "es_externo",
             "carrera_id",
             "carrera",
             "facultad_id",
             "facultad",
-            "perfil_completo",
+            "org",
+            "tags",
             "avatar_url",
+            "avatar",
+            "publicaciones_count",
+            "publications",
+            "verified",
+            "usuario_activo",
+            "usuario_pendiente",
+            "usuario_estado",
+            "perfil_disponible",
         ]
 
         read_only_fields = fields
 
     # ========================================================
-    # NOMBRE
+    # IDENTIFICADOR CANÓNICO
     # ========================================================
 
-    def get_nombre_completo(
-        self,
-        obj,
-    ):
-        """
-        Devuelve el nombre completo normalizado.
-        """
-        return _build_full_name(
-            obj
-        )
+    def get_id(self, obj):
+        author = _safe_author(obj)
+        return getattr(author, "pk", None) if author is not None else None
+
+    def get_autor_id(self, obj):
+        return self.get_id(obj)
 
     # ========================================================
-    # ROL
+    # NOMBRE Y ROL
     # ========================================================
 
-    def get_rol_label(
-        self,
-        obj,
-    ):
-        """
-        Devuelve la etiqueta legible del rol.
+    def get_nombre_completo(self, obj):
+        return _build_full_name(obj) or "Investigador"
 
-        Ejemplos:
+    def get_name(self, obj):
+        return self.get_nombre_completo(obj)
 
-        - Autor
-        - Autor externo
-        """
-        get_role_display = getattr(
-            obj,
-            "get_rol_display",
-            None,
-        )
+    def get_rol_label(self, obj):
+        get_role_display = getattr(obj, "get_rol_display", None)
 
         if callable(get_role_display):
-            role_label = _optional_text(
-                get_role_display()
-            )
-
+            role_label = _optional_text(get_role_display())
             if role_label:
                 return role_label
 
-        return _optional_text(
-            getattr(
-                obj,
-                "rol",
-                None,
+        return _optional_text(getattr(obj, "rol", None))
+
+    def get_es_externo(self, obj):
+        role = str(getattr(obj, "rol", "") or "").strip().lower()
+        external_role = str(
+            getattr(getattr(Usuario, "Rol", None), "AUTOR_EXTERNO", "autor_externo")
+        ).strip().lower()
+
+        author = _safe_author(obj)
+
+        return bool(
+            role == external_role
+            or (
+                author is not None
+                and getattr(author, "es_externo", False)
             )
         )
 
     # ========================================================
-    # CARRERA
+    # CARRERA Y FACULTAD
     # ========================================================
 
-    def get_carrera(
-        self,
-        obj,
-    ):
-        """
-        Devuelve el nombre de la carrera relacionada.
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
+    def get_carrera_id(self, obj):
+        career = _career(obj)
+        return getattr(career, "pk", None) if career is not None else None
+
+    def get_carrera(self, obj):
+        career = _career(obj)
+        return _optional_text(getattr(career, "nombre", None))
+
+    def get_facultad_id(self, obj):
+        faculty = _faculty(obj)
+        return getattr(faculty, "pk", None) if faculty is not None else None
+
+    def get_facultad(self, obj):
+        faculty = _faculty(obj)
+        return _optional_text(getattr(faculty, "nombre", None))
+
+    def get_org(self, obj):
+        author = _safe_author(obj)
+        institution = _optional_text(getattr(author, "institucion", None))
+
+        if institution:
+            return institution
+
+        values = _unique_text_list(
+            [
+                self.get_facultad(obj),
+                self.get_carrera(obj),
+            ]
         )
 
-        if career is None:
-            return None
+        return " · ".join(values) if values else None
 
-        return _optional_text(
-            getattr(
-                career,
-                "nombre",
-                None,
-            )
-        )
-
-    # ========================================================
-    # FACULTAD
-    # ========================================================
-
-    def get_facultad_id(
-        self,
-        obj,
-    ):
-        """
-        Obtiene el identificador de la facultad desde la carrera.
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
-        )
-
-        if career is None:
-            return None
-
-        return getattr(
-            career,
-            "facultad_id",
-            None,
-        )
-
-    def get_facultad(
-        self,
-        obj,
-    ):
-        """
-        Obtiene el nombre de la facultad desde:
-
-            usuario.carrera.facultad
-        """
-        career = getattr(
-            obj,
-            "carrera",
-            None,
-        )
-
-        if career is None:
-            return None
-
-        faculty = getattr(
-            career,
-            "facultad",
-            None,
-        )
-
-        if faculty is None:
-            return None
-
-        return _optional_text(
-            getattr(
-                faculty,
-                "nombre",
-                None,
-            )
+    def get_tags(self, obj):
+        return _unique_text_list(
+            [
+                self.get_facultad(obj),
+                self.get_carrera(obj),
+            ]
         )
 
     # ========================================================
     # AVATAR
     # ========================================================
 
-    def get_avatar_url(
-        self,
-        obj,
-    ):
-        """
-        Devuelve la URL absoluta del avatar cuando existe.
-        """
+    def get_avatar_url(self, obj):
         return _safe_file_url(
-            getattr(
-                obj,
-                "avatar",
-                None,
-            ),
-            request=self.context.get(
-                "request"
-            ),
+            getattr(obj, "avatar", None),
+            request=self.context.get("request"),
         )
+
+    def get_avatar(self, obj):
+        return self.get_avatar_url(obj)
+
+    # ========================================================
+    # PRODUCCIÓN CIENTÍFICA
+    # ========================================================
+
+    def get_publicaciones_count(self, obj):
+        return _publications_count(_safe_author(obj))
+
+    def get_publications(self, obj):
+        return self.get_publicaciones_count(obj)
+
+    # ========================================================
+    # ESTADO PÚBLICO DEL PERFIL
+    # ========================================================
+
+    def get_verified(self, obj):
+        return bool(
+            getattr(obj, "is_active", False)
+            and getattr(obj, "perfil_completo", False)
+        )
+
+    def get_usuario_activo(self, obj):
+        return bool(getattr(obj, "is_active", False))
+
+    def get_usuario_pendiente(self, obj):
+        # Este serializer se utiliza con buscar_usuarios(), que devuelve
+        # únicamente cuentas activas. Se conserva el campo para mantener un
+        # contrato estable con los resultados de AutorBusquedaSerializer.
+        return False
+
+    def get_usuario_estado(self, obj):
+        return "activo" if getattr(obj, "is_active", False) else "inactivo"
+
+    def get_perfil_disponible(self, obj):
+        return _safe_author(obj) is not None

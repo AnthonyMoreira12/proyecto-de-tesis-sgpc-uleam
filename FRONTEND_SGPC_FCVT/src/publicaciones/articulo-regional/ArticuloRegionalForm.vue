@@ -256,6 +256,10 @@
                     <option value="doctoral">
                       Tesis doctoral
                     </option>
+
+                    <option value="otro">
+                      Otro
+                    </option>
                   </select>
 
                   <p
@@ -273,10 +277,14 @@
                     class="sgpc-label"
                     for="ar-origen_grado"
                   >
-                    Grado / programa
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Especifique el origen"
+                        : "Grado / programa"
+                    }}
 
                     <span
-                      v-if="form.origen_tipo === 'tic'"
+                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                       aria-hidden="true"
                     >
@@ -290,20 +298,29 @@
                     class="sgpc-input"
                     type="text"
                     maxlength="120"
-                    :disabled="form.origen_tipo !== 'tic'"
-                    :required="form.origen_tipo === 'tic'"
+                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
+                    :required="['tic', 'otro'].includes(form.origen_tipo)"
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="
                       fieldErrors.origen_grado
                         ? 'ar-origen-grado-error'
                         : undefined
                     "
-                    placeholder="Ej. Ingeniería de Software / ..."
+                    :placeholder="
+                      form.origen_tipo === 'otro'
+                        ? 'Ej. Proyecto de investigación institucional'
+                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                    "
                   />
 
                   <p class="sgpc-hint">
-                    Se habilita únicamente cuando el origen es “Trabajo de
-                    integración curricular”.
+                    {{
+                      form.origen_tipo === "otro"
+                        ? "Escriba el origen específico de la publicación."
+                        : form.origen_tipo === "tic"
+                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
+                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                    }}
                   </p>
 
                   <p
@@ -1253,17 +1270,27 @@ const REGIONAL_DATABASES = new Set([
 
 
 const ERROR_KEY_ALIASES = Object.freeze({
+  usuario_objetivo_id: "admin_context",
+  usuario_id: "admin_context",
+  autor_objetivo_id: "admin_context",
+  autor_id: "admin_context",
+  usuario_creador: "admin_context",
+
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
   archivos: "archivos",
+  adjuntos: "archivos",
+  archivo: "archivos",
   archivo_pdf: "archivos",
-  non_field_errors: "admin_context",
+
+  non_field_errors: "general",
 });
 
 
 const FIELD_LABELS = Object.freeze({
   admin_context: "Usuario objetivo",
+  general: "Validación general",
   facultad: "Facultad",
   carrera: "Carrera",
   proyecto: "Proyecto de investigación",
@@ -1271,7 +1298,7 @@ const FIELD_LABELS = Object.freeze({
   subarea: "Subárea del conocimiento (UNESCO)",
   tipo_codigo: "Tipo de artículo",
   origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa",
+  origen_grado: "Grado / programa u otro origen",
   nombre_articulo: "Título del artículo",
   base_datos_indexada: "Base de datos / indexación",
   base_datos_otra: "Base de datos (otra)",
@@ -1309,6 +1336,7 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "link_publicacion",
   "autores",
   "archivos",
+  "general",
 ]);
 
 
@@ -1459,6 +1487,11 @@ function normalizeDrfErrors(data) {
         message =
           fields.admin_context;
       } else if (
+        fields.general
+      ) {
+        message =
+          fields.general;
+      } else if (
         fields.autores
       ) {
         message =
@@ -1603,34 +1636,16 @@ let draftEnabled = true;
 ========================================================= */
 
 const isAdminDelegado = computed(() => {
-  const path =
-    String(
-      route.path || ""
-    );
-
-  const query =
-    route.query || {};
-
-  const params =
-    route.params || {};
+  const path = String(
+    route.path || ""
+  );
 
   return Boolean(
     route.meta?.delegatedPublication ||
 
     path.startsWith(
       "/admin/publicaciones/usuario/"
-    ) ||
-
-    params.usuarioId ||
-
-    query.modo ===
-      "delegado" ||
-
-    query.delegado ===
-      "1" ||
-
-    query.admin ===
-      "1"
+    )
   );
 });
 
@@ -1828,9 +1843,8 @@ const hasRequiredOrigin =
     }
 
     if (
-      form.value
-        .origen_tipo ===
-      "tic"
+      ["tic", "otro"].includes(form.value
+        .origen_tipo)
     ) {
       return Boolean(
         String(
@@ -2663,9 +2677,8 @@ function validateFront() {
   }
 
   if (
-    form.value
-      .origen_tipo ===
-      "tic" &&
+    ["tic", "otro"].includes(form.value
+      .origen_tipo) &&
 
     !String(
       form.value
@@ -2686,7 +2699,7 @@ function validateFront() {
     )
   ) {
     errors.origen_grado =
-      `El grado / programa no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+      `El grado, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
   }
 
   // -------------------------------------------------------
@@ -3167,9 +3180,8 @@ async function registrarArticuloRegional() {
     );
 
     if (
-      form.value
-        .origen_tipo ===
-      "tic"
+      ["tic", "otro"].includes(form.value
+        .origen_tipo)
     ) {
       appendFormValue(
         formData,
@@ -3505,7 +3517,7 @@ watch(
 
   (value) => {
     if (
-      value !== "tic"
+      !["tic", "otro"].includes(value)
     ) {
       form.value.origen_grado =
         "";

@@ -21,6 +21,8 @@ todavía no existen, para evitar que el frontend falle durante
 despliegues o migraciones pendientes.
 """
 
+import hashlib
+import json
 import logging
 
 from django.core.exceptions import (
@@ -31,7 +33,6 @@ from django.db import (
     IntegrityError,
     transaction,
 )
-from django.db.models import Max
 from django.db.models.deletion import ProtectedError
 from django.db.utils import (
     OperationalError,
@@ -106,6 +107,54 @@ def _django_validation_payload(exc):
 
     return {
         "detail": str(exc),
+    }
+
+
+def _datetime_to_iso(value):
+    """
+    Convierte una fecha en una cadena estable para versiones.
+    """
+    if value is None:
+        return ""
+
+    isoformat = getattr(
+        value,
+        "isoformat",
+        None,
+    )
+
+    if callable(isoformat):
+        return isoformat()
+
+    return str(value)
+
+
+def _hash_version_payload(payload):
+    """
+    Construye una versión determinista sin exponer el contenido.
+    """
+    serialized = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+
+    return hashlib.sha256(
+        serialized.encode("utf-8")
+    ).hexdigest()
+
+
+def _empty_status_payload():
+    """
+    Respuesta estable cuando no existen banners disponibles.
+    """
+    return {
+        "has_items": False,
+        "total": 0,
+        "version": "",
+        "notify_version": "",
     }
 
 
@@ -482,15 +531,15 @@ class BannerViewSet(viewsets.ModelViewSet):
         if not self._banner_table_ready():
             return self._tables_unavailable_response()
 
-        serializer = self.get_serializer(
-            data=request.data
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
         try:
+            serializer = self.get_serializer(
+                data=request.data
+            )
+
+            serializer.is_valid(
+                raise_exception=True
+            )
+
             with transaction.atomic():
                 banner = serializer.save()
 
@@ -530,6 +579,24 @@ class BannerViewSet(viewsets.ModelViewSet):
                         "No fue posible almacenar la imagen "
                         "del banner. Revise el almacenamiento "
                         "de archivos."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        except DatabaseError:
+            logger.exception(
+                "Error de base de datos al crear un banner."
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible crear el banner "
+                        "debido a un error temporal de la "
+                        "base de datos."
                     )
                 },
                 status=(
@@ -619,6 +686,24 @@ class BannerViewSet(viewsets.ModelViewSet):
                     "detail": (
                         "No fue posible almacenar la nueva "
                         "imagen del banner."
+                    )
+                },
+                status=(
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                ),
+            )
+
+        except DatabaseError:
+            logger.exception(
+                "Error de base de datos al actualizar un banner."
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "No fue posible actualizar el banner "
+                        "debido a un error temporal de la "
+                        "base de datos."
                     )
                 },
                 status=(
@@ -765,16 +850,21 @@ class BannerViewSet(viewsets.ModelViewSet):
         request,
     ):
         """
-        Devuelve un identificador de versión para que el frontend
-        detecte cambios en banners o configuración.
+        Devuelve dos versiones independientes:
+
+        - version:
+          Cambia por contenido, imágenes o diseño.
+
+        - notify_version:
+          Cambia únicamente cuando se modifica información que
+          debe volver a mostrarse como aviso a los usuarios.
+
+        De este modo, cambiar solo el tamaño o la distribución
+        no reabre el overlay institucional para todos.
         """
         if not self._banner_table_ready():
             return Response(
-                {
-                    "has_items": False,
-                    "total": 0,
-                    "version": "",
-                },
+                _empty_status_payload(),
                 status=status.HTTP_200_OK,
             )
 
@@ -782,26 +872,55 @@ class BannerViewSet(viewsets.ModelViewSet):
             queryset = (
                 Banner.objects
                 .all()
+                .order_by("pk")
             )
 
-            banner_summary = (
-                queryset.aggregate(
-                    total=Max("pk"),
-                    last_updated=Max(
-                        "updated_at"
-                    ),
+            banner_rows = list(
+                queryset.values(
+                    "pk",
+                    "title",
+                    "eyebrow",
+                    "text",
+                    "recent_label",
+                    "image",
+                    "created_at",
+                    "updated_at",
                 )
             )
 
-            total = queryset.count()
+            total = len(banner_rows)
 
-            last_banner_updated = (
-                banner_summary.get(
-                    "last_updated"
+            normalized_banners = []
+
+            for row in banner_rows:
+                normalized_banners.append(
+                    {
+                        "id": row.get("pk"),
+                        "title": str(
+                            row.get("title") or ""
+                        ),
+                        "eyebrow": str(
+                            row.get("eyebrow") or ""
+                        ),
+                        "text": str(
+                            row.get("text") or ""
+                        ),
+                        "recent_label": str(
+                            row.get("recent_label") or ""
+                        ),
+                        "image": str(
+                            row.get("image") or ""
+                        ),
+                        "created_at": _datetime_to_iso(
+                            row.get("created_at")
+                        ),
+                        "updated_at": _datetime_to_iso(
+                            row.get("updated_at")
+                        ),
+                    }
                 )
-            )
 
-            config_updated = None
+            configuration = None
 
             if self._config_table_ready():
                 configuration = (
@@ -810,34 +929,102 @@ class BannerViewSet(viewsets.ModelViewSet):
                     .first()
                 )
 
-                if configuration is not None:
-                    config_updated = getattr(
+            global_content = {
+                "eyebrow": str(
+                    getattr(
                         configuration,
-                        "updated_at",
-                        None,
+                        "eyebrow",
+                        DEFAULT_BANNER_EYEBROW,
                     )
+                    or ""
+                ),
+                "title": str(
+                    getattr(
+                        configuration,
+                        "title",
+                        DEFAULT_BANNER_TITLE,
+                    )
+                    or ""
+                ),
+                "text": str(
+                    getattr(
+                        configuration,
+                        "text",
+                        DEFAULT_BANNER_TEXT,
+                    )
+                    or ""
+                ),
+                "recent_label": str(
+                    getattr(
+                        configuration,
+                        "recent_label",
+                        DEFAULT_BANNER_RECENT_LABEL,
+                    )
+                    or ""
+                ),
+            }
 
-            version_parts = [
-                str(total),
-            ]
+            layout = {
+                "stage_width": int(
+                    getattr(
+                        configuration,
+                        "stage_width",
+                        STAGE_WIDTH_DEFAULT,
+                    )
+                ),
+                "stage_height": int(
+                    getattr(
+                        configuration,
+                        "stage_height",
+                        STAGE_HEIGHT_DEFAULT,
+                    )
+                ),
+                "media_pane_width": int(
+                    getattr(
+                        configuration,
+                        "media_pane_width",
+                        MEDIA_PANE_WIDTH_DEFAULT,
+                    )
+                ),
+                "display_mode": str(
+                    getattr(
+                        configuration,
+                        "display_mode",
+                        DISPLAY_MODE_DEFAULT,
+                    )
+                    or DISPLAY_MODE_DEFAULT
+                ),
+            }
 
-            if last_banner_updated:
-                version_parts.append(
-                    last_banner_updated.isoformat()
-                )
+            notify_version = _hash_version_payload(
+                {
+                    "banners": normalized_banners,
+                    "global_content": global_content,
+                }
+            )
 
-            if config_updated:
-                version_parts.append(
-                    config_updated.isoformat()
-                )
+            general_version = _hash_version_payload(
+                {
+                    "notify_version": notify_version,
+                    "layout": layout,
+                    "configuration_updated_at": (
+                        _datetime_to_iso(
+                            getattr(
+                                configuration,
+                                "updated_at",
+                                None,
+                            )
+                        )
+                    ),
+                }
+            )
 
             return Response(
                 {
                     "has_items": total > 0,
                     "total": total,
-                    "version": "|".join(
-                        version_parts
-                    ),
+                    "version": general_version,
+                    "notify_version": notify_version,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -847,11 +1034,7 @@ class BannerViewSet(viewsets.ModelViewSet):
             OperationalError,
         ):
             return Response(
-                {
-                    "has_items": False,
-                    "total": 0,
-                    "version": "",
-                },
+                _empty_status_payload(),
                 status=status.HTTP_200_OK,
             )
 
@@ -864,11 +1047,7 @@ class BannerViewSet(viewsets.ModelViewSet):
             )
 
             return Response(
-                {
-                    "has_items": False,
-                    "total": 0,
-                    "version": "",
-                },
+                _empty_status_payload(),
                 status=status.HTTP_200_OK,
             )
 

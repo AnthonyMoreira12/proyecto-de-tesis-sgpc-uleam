@@ -201,11 +201,11 @@
 
               <div class="as-row-sub">
                 <span v-if="principalAutor.identificacion">
-                  CI: {{ principalAutor.identificacion }}
+                  Cédula: {{ principalAutor.identificacion }}
                 </span>
 
                 <span v-else>
-                  Sin identificación
+                  Sin cédula
                 </span>
 
                 <span v-if="principalAutor.correo_resuelto">
@@ -348,11 +348,11 @@
 
                 <div class="as-row-sub">
                   <span v-if="autor.identificacion">
-                    CI: {{ autor.identificacion }}
+                    Cédula: {{ autor.identificacion }}
                   </span>
 
                   <span v-else>
-                    Sin identificación
+                    Sin cédula
                   </span>
 
                   <span v-if="autor.correo_resuelto">
@@ -487,7 +487,7 @@
                   id="as-picker-sub"
                   class="as-modal-sub"
                 >
-                  Busque por nombre, correo, identificación o institución.
+                  Busque por nombre, correo, cédula o institución.
                 </p>
               </div>
 
@@ -524,7 +524,7 @@
                     v-model.trim="search"
                     class="as-input as-input-search"
                     type="text"
-                    placeholder="Buscar por nombre, correo, identificación o institución..."
+                    placeholder="Buscar por nombre, correo, cédula o institución..."
                     autocomplete="off"
                     inputmode="search"
                   />
@@ -653,11 +653,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              CI: {{ a.identificacion }}
+                              Cédula: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin identificación
+                              Sin cédula
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -744,11 +744,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              CI: {{ a.identificacion }}
+                              Cédula: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin identificación
+                              Sin cédula
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -832,11 +832,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              CI: {{ a.identificacion }}
+                              Cédula: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin identificación
+                              Sin cédula
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -941,8 +941,9 @@
                   class="as-modal-sub"
                 >
                   Complete los datos para registrar un autor externo.
-                  Al guardar, también se registrará como
-                  <b>pendiente</b> en el sistema.
+                  Al guardar, se creará y vinculará una cuenta local
+                  <b>pendiente</b>. El autor podrá participar en publicaciones
+                  aunque todavía no tenga acceso al sistema.
                 </p>
               </div>
 
@@ -971,24 +972,25 @@
                 </p>
 
                 <!-- ===========================================
-                     AUTOR DUPLICADO
+                     COINCIDENCIAS DE AUTOR
                 ============================================ -->
 
                 <div
                   v-if="duplicateExists && duplicateAutor"
-                  class="as-alert as-alert-warning"
+                  class="as-alert"
+                  :class="duplicateAlertClass"
                   role="alert"
                 >
                   <div class="as-alert-stack">
                     <span>
-                      Ya existe un autor registrado con esos datos:
+                      {{ duplicateMessage }}
                       <b>
                         {{ duplicateAutor.nombre_completo }}
                       </b>.
                     </span>
 
                     <span class="as-alert-sub">
-                      Use el registro existente para evitar duplicados.
+                      {{ duplicateHelperMessage }}
                     </span>
 
                     <div class="as-inline-actions">
@@ -997,7 +999,7 @@
                         class="as-btn as-btn-sm as-btn-secondary"
                         @click="useDuplicateAutor()"
                       >
-                        Usar autor existente
+                        {{ duplicateActionLabel }}
                       </button>
                     </div>
                   </div>
@@ -1016,7 +1018,7 @@
                 ============================================ -->
 
                 <div class="as-grid">
-                  <!-- Identificación -->
+                  <!-- Número de cédula -->
 
                   <div
                     class="as-field"
@@ -1029,7 +1031,7 @@
                       class="as-field-label"
                       for="nuevo-identificacion"
                     >
-                      Identificación
+                      Número de cédula
                       <span
                         class="req"
                         aria-hidden="true"
@@ -1067,7 +1069,7 @@
                       id="nuevo-identificacion-help"
                       class="as-hint"
                     >
-                      Ingrese una identificación de 10 dígitos.
+                      Ingrese exactamente 10 dígitos numéricos.
                     </p>
 
                     <p
@@ -1418,6 +1420,10 @@ const checkingDuplicate = ref(false);
 const duplicateResult = ref({
   exists: false,
   match_type: null,
+  blocking: false,
+  warning_only: false,
+  input_incomplete: false,
+  message: null,
   autor: null,
 });
 
@@ -2649,7 +2655,7 @@ const clearSearch =
 
 
 /* =========================================================
-   DUPLICADOS
+   COINCIDENCIAS Y DUPLICADOS
 ========================================================= */
 
 const duplicateAutor =
@@ -2668,6 +2674,133 @@ const duplicateExists =
         duplicateResult.value
           ?.exists
       )
+  );
+
+
+const duplicateMatchType =
+  computed(() =>
+    String(
+      duplicateResult.value
+        ?.match_type ||
+      ""
+    )
+      .trim()
+      .toLowerCase()
+  );
+
+
+const duplicateBlocking =
+  computed(() => {
+    const explicitValue =
+      duplicateResult.value
+        ?.blocking;
+
+    if (
+      typeof explicitValue ===
+      "boolean"
+    ) {
+      return explicitValue;
+    }
+
+    return [
+      "identificacion",
+      "correo",
+    ].includes(
+      duplicateMatchType.value
+    );
+  });
+
+
+const duplicateWarningOnly =
+  computed(() => {
+    const explicitValue =
+      duplicateResult.value
+        ?.warning_only;
+
+    if (
+      typeof explicitValue ===
+      "boolean"
+    ) {
+      return explicitValue;
+    }
+
+    return (
+      duplicateMatchType.value ===
+      "nombre_apellido"
+    );
+  });
+
+
+const duplicateAlertClass =
+  computed(() =>
+    duplicateBlocking.value
+      ? "as-alert-error"
+      : "as-alert-warning"
+  );
+
+
+const duplicateMessage =
+  computed(() => {
+    const backendMessage =
+      String(
+        duplicateResult.value
+          ?.message ||
+        ""
+      ).trim();
+
+    if (backendMessage) {
+      return backendMessage;
+    }
+
+    if (
+      duplicateMatchType.value ===
+      "identificacion"
+    ) {
+      return (
+        "Ya existe un autor registrado con esta cédula:"
+      );
+    }
+
+    if (
+      duplicateMatchType.value ===
+      "correo"
+    ) {
+      return (
+        "Ya existe un autor registrado con este correo:"
+      );
+    }
+
+    return (
+      "Existe un autor con los mismos nombres y apellidos:"
+    );
+  });
+
+
+const duplicateHelperMessage =
+  computed(() => {
+    if (duplicateBlocking.value) {
+      return (
+        "Debe usar el registro existente para evitar duplicar la misma persona."
+      );
+    }
+
+    if (duplicateWarningOnly.value) {
+      return (
+        "Esta coincidencia es solo informativa. Puede usar el registro existente o continuar si se trata de otra persona."
+      );
+    }
+
+    return (
+      "Revise la coincidencia antes de continuar."
+    );
+  });
+
+
+const duplicateActionLabel =
+  computed(() =>
+    duplicateBlocking.value
+      ? "Usar autor existente"
+      : "Usar esta coincidencia"
   );
 
 
@@ -2696,6 +2829,10 @@ const resetDuplicateState =
     duplicateResult.value = {
       exists: false,
       match_type: null,
+      blocking: false,
+      warning_only: false,
+      input_incomplete: false,
+      message: null,
       autor: null,
     };
   };
@@ -2818,6 +2955,50 @@ const runDuplicateCheck =
         match_type:
           responseData
             ?.match_type ||
+          null,
+
+        blocking:
+          typeof responseData
+            ?.blocking ===
+          "boolean"
+            ? responseData.blocking
+            : [
+                "identificacion",
+                "correo",
+              ].includes(
+                String(
+                  responseData
+                    ?.match_type ||
+                  ""
+                )
+                  .trim()
+                  .toLowerCase()
+              ),
+
+        warning_only:
+          typeof responseData
+            ?.warning_only ===
+          "boolean"
+            ? responseData
+                .warning_only
+            : String(
+                responseData
+                  ?.match_type ||
+                ""
+              )
+                .trim()
+                .toLowerCase() ===
+              "nombre_apellido",
+
+        input_incomplete:
+          Boolean(
+            responseData
+              ?.input_incomplete
+          ),
+
+        message:
+          responseData
+            ?.message ||
           null,
 
         autor:
@@ -2944,7 +3125,7 @@ const validateCreateField = (
     case "identificacion":
       if (!identificacion) {
         return (
-          "La identificación es obligatoria."
+          "El número de cédula es obligatorio."
         );
       }
 
@@ -2954,7 +3135,7 @@ const validateCreateField = (
           .identificacion
       ) {
         return (
-          "La identificación debe contener exactamente 10 dígitos."
+          "La cédula debe contener exactamente 10 dígitos numéricos."
         );
       }
 
@@ -3133,10 +3314,10 @@ const validateCreateForm =
     }
 
     if (
-      duplicateExists.value
+      duplicateBlocking.value
     ) {
       createError.value =
-        "Ese autor ya existe en la base de datos. Use el registro existente.";
+        "La cédula o el correo ya pertenecen a un autor registrado. Use el registro existente.";
 
       return false;
     }
@@ -4032,7 +4213,7 @@ const createDisabled =
     return (
       creating.value ||
       checkingDuplicate.value ||
-      duplicateExists.value
+      duplicateBlocking.value
     );
   });
 
@@ -4208,11 +4389,11 @@ const createAutor =
       );
 
       notifyAuthorAction(
-        `Autor creado y agregado: ${
+        `Autor externo creado y agregado: ${
           inserted
             .nombre_completo ||
           "Autor"
-        }.`
+        }. También quedó vinculado a una cuenta pendiente para una posible activación futura.`
       );
     } catch (error) {
       const data =
