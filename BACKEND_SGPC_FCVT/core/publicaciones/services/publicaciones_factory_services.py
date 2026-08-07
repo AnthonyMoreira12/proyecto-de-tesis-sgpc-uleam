@@ -1,5 +1,6 @@
 from rest_framework.exceptions import ValidationError
 
+
 from core.models import Publicacion, TipoPublicacion
 
 
@@ -166,7 +167,8 @@ def crear_publicacion_base(
     ciudad=None,
     origen_tipo="ninguno",
     origen_grado=None,
-    fecha_publicacion=None,
+    anio_publicacion,
+    mes_publicacion=None,
     archivo_pdf=None,
     registrado_por_admin=False,
     admin_registrador=None,
@@ -218,6 +220,68 @@ def crear_publicacion_base(
                 ]
             }
         )
+
+    # =========================================================
+    # PERÍODO DE PUBLICACIÓN
+    # =========================================================
+
+    try:
+        anio_publicacion = int(
+            anio_publicacion
+        )
+    except (
+        TypeError,
+        ValueError,
+    ):
+        raise ValidationError(
+            {
+                "anio_publicacion": [
+                    "El año de publicación debe ser numérico."
+                ]
+            }
+        )
+
+    if anio_publicacion < 1900:
+        raise ValidationError(
+            {
+                "anio_publicacion": [
+                    "El año de publicación debe ser mayor "
+                    "o igual a 1900."
+                ]
+            }
+        )
+
+    if mes_publicacion in (
+        None,
+        "",
+    ):
+        mes_publicacion = None
+    else:
+        try:
+            mes_publicacion = int(
+                mes_publicacion
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            raise ValidationError(
+                {
+                    "mes_publicacion": [
+                        "El mes de publicación debe ser numérico."
+                    ]
+                }
+            )
+
+        if not 1 <= mes_publicacion <= 12:
+            raise ValidationError(
+                {
+                    "mes_publicacion": [
+                        "El mes de publicación debe estar "
+                        "entre 1 y 12."
+                    ]
+                }
+            )
 
     # =========================================================
     # CARRERA -> FACULTAD
@@ -509,7 +573,8 @@ def crear_publicacion_base(
         ciudad=ciudad,
         origen_tipo=origen_tipo,
         origen_grado=origen_grado,
-        fecha_publicacion=fecha_publicacion,
+        anio_publicacion=anio_publicacion,
+        mes_publicacion=mes_publicacion,
         archivo_pdf=archivo_pdf,
         registrado_por_admin=bool(
             registrado_por_admin

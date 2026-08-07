@@ -28,6 +28,21 @@ AUTH_SOURCE_LOCAL = User.AuthSource.LOCAL
 AUTH_SOURCE_MICROSOFT = User.AuthSource.MICROSOFT
 ROLE_EXTERNAL_AUTHOR = User.Rol.AUTOR_EXTERNO
 CEDULA_PATTERN = re.compile(r"^\d{10}$")
+ORCID_PATTERN = re.compile(
+    r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$"
+)
+
+try:
+    AUTHOR_IDENTIFICATION_MAX_LENGTH = int(
+        getattr(
+            Autor._meta.get_field("identificacion"),
+            "max_length",
+            50,
+        )
+        or 50
+    )
+except Exception:
+    AUTHOR_IDENTIFICATION_MAX_LENGTH = 50
 
 
 class AutorUsuarioSyncError(Exception):
@@ -69,6 +84,16 @@ def _normalize_email(value):
     )
 
 
+def _normalize_orcid(value):
+    normalized = _normalize_optional_text(value)
+
+    return (
+        normalized.upper()
+        if normalized
+        else None
+    )
+
+
 def _normalize_account_value(value):
     return str(value or "").strip().lower()
 
@@ -85,27 +110,46 @@ def _unique_fields(fields):
     return list(dict.fromkeys(field for field in fields if field))
 
 
-def _validate_cedula(value, *, required=True):
+def _validate_external_identification(value):
+    """
+    Valida el documento del Autor externo.
+
+    La Cédula/DNI es opcional. Si se informa, puede ser un
+    documento extranjero y por ello no se restringe a diez
+    dígitos.
+    """
     normalized = _normalize_identification(value)
 
     if normalized is None:
-        if required:
-            raise AutorUsuarioSyncError(
-                {"identificacion": "El número de cédula es obligatorio."}
-            )
         return None
 
-    if not CEDULA_PATTERN.fullmatch(normalized):
+    if len(normalized) > AUTHOR_IDENTIFICATION_MAX_LENGTH:
         raise AutorUsuarioSyncError(
             {
                 "identificacion": (
-                    "La cédula debe contener exactamente "
-                    "10 dígitos numéricos."
+                    "La Cédula / DNI no puede superar "
+                    f"los {AUTHOR_IDENTIFICATION_MAX_LENGTH} caracteres."
                 )
             }
         )
 
     return normalized
+
+
+def _user_cedula_from_external_identification(value):
+    """
+    Usuario.identificacion conserva la regla de cédula ecuatoriana
+    de 10 dígitos. Un DNI extranjero permanece únicamente en Autor.
+    """
+    normalized = _normalize_identification(value)
+
+    if (
+        normalized is not None
+        and CEDULA_PATTERN.fullmatch(normalized)
+    ):
+        return normalized
+
+    return None
 
 
 def _has_usable_password(user):
@@ -156,17 +200,19 @@ def buscar_autor_existente(
     *,
     identificacion=None,
     correo=None,
+    orcid=None,
     nombres="",
     apellidos="",
     exclude_autor_id=None,
 ):
     """
-    Busca primero por cédula, luego por correo y finalmente por
-    nombres y apellidos. La coincidencia por nombre es solo una
+    Busca primero por ORCID, luego por Cédula/DNI, correo y finalmente
+    por nombres y apellidos. La coincidencia por nombre es solo una
     advertencia; no debe bloquear por sí sola la creación.
     """
     identification = _normalize_identification(identificacion)
     email = _normalize_email(correo)
+    academic_orcid = _normalize_orcid(orcid)
     names = _normalize_text(nombres)
     surnames = _normalize_text(apellidos)
 
@@ -175,10 +221,21 @@ def buscar_autor_existente(
     if exclude_autor_id:
         queryset = queryset.exclude(pk=exclude_autor_id)
 
+    if academic_orcid:
+        author = queryset.filter(
+            orcid__iexact=academic_orcid
+        ).first()
+        if author is not None:
+            return {
+                "exists": True,
+                "match_type": "orcid",
+                "autor": author,
+            }
+
     if identification:
         author = queryset.filter(
-            Q(identificacion=identification)
-            | Q(usuario__identificacion=identification)
+            Q(identificacion__iexact=identification)
+            | Q(usuario__identificacion__iexact=identification)
         ).first()
         if author is not None:
             return {
@@ -242,15 +299,22 @@ def serializar_autor_match(autor, match_type=None):
         if part
     )
 
-    blocking = match_type in {"identificacion", "correo"}
+    blocking = match_type in {
+        "identificacion",
+        "correo",
+        "orcid",
+    }
     warning_only = match_type == "nombre_apellido"
 
     messages = {
         "identificacion": (
-            "Ya existe un autor registrado con este número de cédula."
+            "Ya existe un autor registrado con esta Cédula / DNI."
         ),
         "correo": (
             "Ya existe un autor registrado con este correo electrónico."
+        ),
+        "orcid": (
+            "Ya existe un autor registrado con este ORCID."
         ),
         "nombre_apellido": (
             "Existe un autor con los mismos nombres y apellidos. "
@@ -274,6 +338,22 @@ def serializar_autor_match(autor, match_type=None):
             "correo": autor.correo,
             "correo_resuelto": resolved_email,
             "institucion": autor.institucion,
+            "orcid": getattr(autor, "orcid", None),
+            "registro_senescyt": getattr(
+                autor,
+                "registro_senescyt",
+                None,
+            ),
+            "google_scholar": getattr(
+                autor,
+                "google_scholar",
+                None,
+            ),
+            "scopus_id": getattr(
+                autor,
+                "scopus_id",
+                None,
+            ),
             "es_externo": bool(autor.es_externo),
             "usuario_id": autor.usuario_id,
             "usuario_activo": bool(
@@ -302,7 +382,7 @@ def _find_matching_locked_user(*, author, identification, email):
     query = Q()
 
     if identification:
-        query |= Q(identificacion=identification)
+        query |= Q(identificacion__iexact=identification)
     if email:
         query |= Q(email__iexact=email)
     if author.usuario_id:
@@ -369,7 +449,7 @@ def _find_matching_locked_user(*, author, identification, email):
         raise AutorUsuarioSyncError(
             {
                 "detail": (
-                    "La cédula, el correo y el Usuario vinculado "
+                    "La identificación, el correo y el Usuario vinculado "
                     "corresponden a cuentas diferentes."
                 )
             },
@@ -389,8 +469,8 @@ def _validate_existing_user(*, user, author, identification, email):
         raise AutorUsuarioSyncError(
             {
                 "detail": (
-                    "Ya existe un usuario institucional con esta "
-                    "cédula o correo. No puede vincularse como autor "
+                    "Ya existe un usuario institucional con este "
+                    "correo o identificación. No puede vincularse como autor "
                     "externo."
                 )
             },
@@ -431,11 +511,16 @@ def _validate_existing_user(*, user, author, identification, email):
     )
     user_email = _normalize_email(getattr(user, "email", None))
 
-    if user_identification and user_identification != identification:
+    if (
+        identification
+        and user_identification
+        and user_identification != identification
+    ):
         raise AutorUsuarioSyncError(
             {
                 "identificacion": (
-                    "La cédula no coincide con el usuario externo existente."
+                    "La cédula ecuatoriana no coincide con el "
+                    "usuario externo existente."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,
@@ -477,7 +562,11 @@ def _update_pending_user(
     if user.email != email:
         user.email = email
         changed.append("email")
-    if _normalize_identification(user.identificacion) != identification:
+    if (
+        identification is not None
+        and _normalize_identification(user.identificacion)
+        != identification
+    ):
         user.identificacion = identification
         changed.append("identificacion")
     if user.nombres != names:
@@ -494,15 +583,15 @@ def _update_pending_user(
 
 
 def _link_author_to_user(
-    *, author, user, email, identification, names, surnames
+    *, author, user, email, author_identification, names, surnames
 ):
     changed = []
 
     if author.usuario_id != user.pk:
         author.usuario = user
         changed.append("usuario")
-    if author.identificacion != identification:
-        author.identificacion = identification
+    if author.identificacion != author_identification:
+        author.identificacion = author_identification
         changed.append("identificacion")
     if author.correo != email:
         author.correo = email
@@ -561,9 +650,15 @@ def asegurar_usuario_pendiente_para_autor(autor):
                 Autor.objects.select_for_update().get(pk=autor.pk)
             )
 
-            identification = _validate_cedula(
-                locked_author.identificacion,
-                required=True,
+            author_identification = (
+                _validate_external_identification(
+                    locked_author.identificacion
+                )
+            )
+            user_identification = (
+                _user_cedula_from_external_identification(
+                    author_identification
+                )
             )
             email = _normalize_email(locked_author.correo)
             names = _normalize_text(locked_author.nombres)
@@ -584,14 +679,14 @@ def asegurar_usuario_pendiente_para_autor(autor):
 
             user = _find_matching_locked_user(
                 author=locked_author,
-                identification=identification,
+                identification=user_identification,
                 email=email,
             )
 
             if user is None:
                 user = _create_pending_user(
                     email=email,
-                    identification=identification,
+                    identification=user_identification,
                     names=names,
                     surnames=surnames,
                 )
@@ -599,7 +694,7 @@ def asegurar_usuario_pendiente_para_autor(autor):
                 state = _validate_existing_user(
                     user=user,
                     author=locked_author,
-                    identification=identification,
+                    identification=user_identification,
                     email=email,
                 )
 
@@ -607,7 +702,7 @@ def asegurar_usuario_pendiente_para_autor(autor):
                     user = _update_pending_user(
                         user=user,
                         email=email,
-                        identification=identification,
+                        identification=user_identification,
                         names=names,
                         surnames=surnames,
                     )
@@ -615,9 +710,11 @@ def asegurar_usuario_pendiente_para_autor(autor):
                     # Usuario activo o previamente activado: se
                     # conservan su estado y contraseña.
                     email = _normalize_email(user.email) or email
-                    identification = (
-                        _normalize_identification(user.identificacion)
-                        or identification
+                    user_identification = (
+                        _normalize_identification(
+                            user.identificacion
+                        )
+                        or user_identification
                     )
                     names = _normalize_text(user.nombres) or names
                     surnames = _normalize_text(user.apellidos) or surnames
@@ -626,7 +723,7 @@ def asegurar_usuario_pendiente_para_autor(autor):
                 author=locked_author,
                 user=user,
                 email=email,
-                identification=identification,
+                author_identification=author_identification,
                 names=names,
                 surnames=surnames,
             )
@@ -650,7 +747,7 @@ def asegurar_usuario_pendiente_para_autor(autor):
             {
                 "detail": (
                     "No fue posible vincular el autor y el usuario "
-                    "por un conflicto de cédula, correo o vínculo."
+                    "por un conflicto de identificación, correo o vínculo."
                 )
             },
             status_code=status.HTTP_409_CONFLICT,

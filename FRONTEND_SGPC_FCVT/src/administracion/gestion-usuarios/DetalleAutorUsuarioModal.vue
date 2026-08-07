@@ -292,8 +292,8 @@
               </h3>
 
               <p class="authordetail-sectionsub">
-                Registros donde el autor participa como autor
-                principal o coautor.
+                Registros donde el autor participa, respetando
+                su orden bibliográfico en cada publicación.
               </p>
             </div>
 
@@ -364,23 +364,9 @@
                   <span aria-hidden="true">·</span>
 
                   <span>
-                    Año:
-                    {{ publicationYear(publication) }}
+                    Período:
+                    {{ publicationPeriod(publication) }}
                   </span>
-
-                  <template
-                    v-if="
-                      publication.orden !== null &&
-                      publication.orden !== undefined
-                    "
-                  >
-                    <span aria-hidden="true">·</span>
-
-                    <span>
-                      Orden:
-                      {{ publication.orden }}
-                    </span>
-                  </template>
 
                   <template
                     v-if="publication.numero"
@@ -394,8 +380,12 @@
                 </div>
               </div>
 
-              <span class="authordetail-pill">
-                {{ publicationRole(publication) }}
+              <span
+                v-if="publicationOrder(publication)"
+                class="authordetail-pill"
+              >
+                Orden bibliográfico
+                {{ publicationOrder(publication) }}
               </span>
             </article>
           </div>
@@ -746,40 +736,84 @@ const publicationType = (publication) => {
 };
 
 
-const publicationYear = (publication) => {
-  return (
-    publication?.anio_publicacion ||
-    publication?.anio ||
-    "—"
+const MONTH_LABELS = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
+
+
+const publicationPeriod = (publication) => {
+  const rawYear =
+    publication?.anio_publicacion ??
+    publication?.anio ??
+    null;
+
+  const rawMonth =
+    publication?.mes_publicacion ??
+    publication?.mes ??
+    null;
+
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+
+  const backendMonthLabel = normalizeText(
+    publication?.mes_publicacion_label
   );
+
+  const monthLabel =
+    backendMonthLabel ||
+    (
+      Number.isInteger(month) &&
+      month >= 1 &&
+      month <= 12
+        ? MONTH_LABELS[month]
+        : ""
+    );
+
+  const hasYear =
+    Number.isInteger(year) &&
+    year > 0;
+
+  if (
+    hasYear &&
+    monthLabel
+  ) {
+    return `${monthLabel} de ${year}`;
+  }
+
+  if (hasYear) {
+    return String(year);
+  }
+
+  if (monthLabel) {
+    return monthLabel;
+  }
+
+  return "—";
 };
 
 
-const publicationRole = (publication) => {
-  const roleLabel = normalizeText(
-    publication?.rol_label
+const publicationOrder = (publication) => {
+  const value = Number(
+    publication?.orden
   );
 
-  if (roleLabel) {
-    return roleLabel;
-  }
-
-  const role = normalizeText(
-    publication?.rol_autoria
-  ).toLowerCase();
-
-  if (
-    role === "principal" ||
-    publication?.orden === 1
-  ) {
-    return "Principal";
-  }
-
-  if (publication?.orden) {
-    return `Coautor #${publication.orden}`;
-  }
-
-  return "Coautor";
+  return (
+    Number.isInteger(value) &&
+    value > 0
+  )
+    ? value
+    : null;
 };
 
 
@@ -792,7 +826,8 @@ const publicationKey = (
     publication?.id,
     publication?.numero,
     publication?.orden,
-    publication?.rol_autoria,
+    publication?.anio_publicacion,
+    publication?.mes_publicacion,
     index,
   ]
     .filter((value) => {

@@ -1878,7 +1878,7 @@
 
   grid-template-areas:
     "facultades-rank carreras-rank"
-    "autores-rank coautores-rank"
+    "autores-rank autores-rank"
     "revistas proyectos";
 
   gap: 11px;
@@ -1896,9 +1896,6 @@
   grid-area: autores-rank;
 }
 
-.ivbi-card--coautores-rank {
-  grid-area: coautores-rank;
-}
 
 .ivbi-card--revistas {
   grid-area: revistas;
@@ -3421,7 +3418,6 @@ button.ivbi-vbars__col {
       "facultades-rank"
       "carreras-rank"
       "autores-rank"
-      "coautores-rank"
       "revistas"
       "proyectos";
   }

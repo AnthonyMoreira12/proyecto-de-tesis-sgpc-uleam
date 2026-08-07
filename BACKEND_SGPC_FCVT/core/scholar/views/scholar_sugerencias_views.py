@@ -1,6 +1,22 @@
 """
-View pública de sugerencias rápidas para la
-búsqueda de investigadores tipo Scholar.
+View pública de sugerencias rápidas para la búsqueda
+de investigadores tipo Scholar.
+
+Permite localizar autores mediante:
+
+- nombres y apellidos;
+- correo;
+- identificación;
+- institución;
+- ORCID;
+- Registro SENESCYT;
+- Google Scholar;
+- Scopus ID.
+
+La respuesta conserva los aliases históricos:
+
+- suggestions;
+- results.
 """
 
 from django.db.models import (
@@ -22,6 +38,13 @@ from core.models import Autor
 class ScholarSuggestAPIView(
     APIView
 ):
+    """
+    Sugerencias rápidas de perfiles Scholar.
+
+    Este endpoint es público y devuelve como máximo
+    MAX_RESULTS coincidencias.
+    """
+
     authentication_classes = []
 
     permission_classes = [
@@ -43,8 +66,8 @@ class ScholarSuggestAPIView(
             .strip()
         )
 
-        # Evitamos consultas innecesarias con
-        # términos demasiado cortos.
+        # Evitamos consultas innecesarias con términos
+        # demasiado cortos.
         if len(q) < 2:
             return Response(
                 {
@@ -78,7 +101,26 @@ class ScholarSuggestAPIView(
                 | Q(
                     correo__icontains=q
                 )
+                | Q(
+                    identificacion__icontains=q
+                )
+                | Q(
+                    institucion__icontains=q
+                )
+                | Q(
+                    orcid__icontains=q
+                )
+                | Q(
+                    registro_senescyt__icontains=q
+                )
+                | Q(
+                    google_scholar__icontains=q
+                )
+                | Q(
+                    scopus_id__icontains=q
+                )
             )
+            .distinct()
             .order_by(
                 "apellidos",
                 "nombres",
@@ -99,15 +141,21 @@ class ScholarSuggestAPIView(
                         "",
                     )
                     or ""
-                ).strip()
+                )
+                .strip()
             )
 
             if not label:
                 label = (
                     str(
-                        author.correo
+                        getattr(
+                            author,
+                            "correo",
+                            "",
+                        )
                         or ""
-                    ).strip()
+                    )
+                    .strip()
                     or "Autor"
                 )
 
@@ -119,8 +167,8 @@ class ScholarSuggestAPIView(
                 }
             )
 
-        # Conservamos ambos aliases porque el frontend
-        # puede utilizar suggestions o results.
+        # Se mantienen ambos aliases para no romper
+        # las interfaces existentes.
         return Response(
             {
                 "suggestions": (

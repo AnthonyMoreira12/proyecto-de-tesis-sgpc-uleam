@@ -148,10 +148,10 @@
                 aria-label="Información resumida"
               >
                 <span
-                  v-if="detalleNormalizado.fechaTexto"
+                  v-if="detalleNormalizado.periodoTexto"
                   class="pdet-chip"
                 >
-                  {{ detalleNormalizado.fechaTexto }}
+                  {{ detalleNormalizado.periodoTexto }}
                 </span>
 
                 <span
@@ -358,7 +358,7 @@
                 </div>
 
                 <p class="pdet-sectionText">
-                  Autor principal y coautores vinculados a la publicación.
+                  Autores vinculados a la publicación en su orden bibliográfico.
                 </p>
               </header>
 
@@ -384,7 +384,7 @@
                     </h3>
 
                     <p class="pdet-authorMeta">
-                      {{ autor.rol }}
+                      Orden bibliográfico {{ autor.orden }}
                     </p>
                   </div>
                 </article>
@@ -790,7 +790,7 @@ const currentEmails = computed(() => {
 });
 
 /* ============================================================
-  NORMALIZACIÓN DE TIPO Y FECHA
+  NORMALIZACIÓN DE TIPO Y PERÍODO
 ============================================================ */
 
 const normalizeTipo = (tipo) => {
@@ -815,52 +815,50 @@ const normalizeTipo = (tipo) => {
   return "general";
 };
 
-const formatFecha = (fecha) => {
-  const value = toStr(fecha);
+const MONTH_NAMES_ES = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
 
-  if (!value) {
+const formatPublicationPeriod = (
+  yearValue,
+  monthValue,
+  monthLabelValue = ""
+) => {
+  const year = toPositiveInt(yearValue);
+
+  if (!year) {
     return "";
   }
 
-  try {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const [year, month, day] = value
-        .split("-")
-        .map(Number);
+  const month = toPositiveInt(monthValue);
 
-      const localDate = new Date(
-        year,
-        month - 1,
-        day
-      );
+  if (
+    month &&
+    month >= 1 &&
+    month <= 12
+  ) {
+    const label =
+      firstFilled(
+        monthLabelValue,
+        MONTH_NAMES_ES[month]
+      ) ||
+      MONTH_NAMES_ES[month];
 
-      return localDate.toLocaleDateString(
-        "es-EC",
-        {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }
-      );
-    }
-
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return value;
-    }
-
-    return parsed.toLocaleDateString(
-      "es-EC",
-      {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }
-    );
-  } catch {
-    return value;
+    return `${label} de ${year}`;
   }
+
+  return String(year);
 };
 
 /* ============================================================
@@ -1016,28 +1014,6 @@ const normalizeAuthors = (authors) => {
 
   return authors
     .map((autor, index) => {
-      const rawRole = firstFilled(
-        autor?.rol_autoria,
-        autor?.tipo_participacion,
-        autor?.rol
-      );
-
-      const normalizedRole = stripAccents(
-        rawRole
-      ).toLowerCase();
-
-      let role = "Autor";
-
-      if (normalizedRole.includes("principal")) {
-        role = "Autor principal";
-      } else if (
-        normalizedRole.includes("coautor")
-      ) {
-        role = "Coautor";
-      } else if (rawRole) {
-        role = rawRole;
-      }
-
       const authorIds = uniqueNumbers([
         autor?.autor_id,
         autor?.autorId,
@@ -1063,10 +1039,24 @@ const normalizeAuthors = (authors) => {
         normalizeEmail(autor?.usuario?.correo),
       ]);
 
+      const rawOrder =
+        Number(
+          autor?.orden ??
+          autor?.order ??
+          index + 1
+        );
+
+      const orden = (
+        Number.isInteger(rawOrder) &&
+        rawOrder > 0
+      )
+        ? rawOrder
+        : index + 1;
+
       return {
         id:
-          autor?.id ??
           autor?.autor_id ??
+          autor?.id ??
           autor?.pk ??
           `${index}-${firstFilled(
             autor?.nombre,
@@ -1080,13 +1070,26 @@ const normalizeAuthors = (authors) => {
           "Autor"
         ),
 
-        rol: role,
+        orden,
         authorIds,
         userIds,
         emails,
       };
     })
-    .filter((autor) => autor.nombre);
+    .filter((autor) => autor.nombre)
+    .sort((a, b) => {
+      if (a.orden !== b.orden) {
+        return a.orden - b.orden;
+      }
+
+      return a.nombre.localeCompare(
+        b.nombre,
+        "es",
+        {
+          sensitivity: "base",
+        }
+      );
+    });
 };
 
 /* ============================================================
@@ -1123,9 +1126,24 @@ const detalleNormalizado = computed(() => {
     data.nombre_proyecto
   );
 
-  const fechaTexto = formatFecha(
-    data.fecha_publicacion
-  );
+  const periodoTexto =
+    formatPublicationPeriod(
+      firstFilled(
+        data.anio_publicacion,
+        data.year,
+        data.anio
+      ),
+      firstFilled(
+        data.mes_publicacion,
+        data.month,
+        data.mes
+      ),
+      firstFilled(
+        data.mes_publicacion_label,
+        data.month_label,
+        data.mes_label
+      )
+    );
 
   const pais = firstFilled(
     data.pais,
@@ -1164,7 +1182,7 @@ const detalleNormalizado = computed(() => {
         ? proyecto
         : "",
 
-    fechaTexto,
+    periodoTexto,
 
     facultad: firstFilled(
       data.facultad,
@@ -1411,8 +1429,8 @@ const heroResumen = computed(() => {
     ),
 
     buildField(
-      "Fecha",
-      normalized.fechaTexto
+      "Período",
+      normalized.periodoTexto
     ),
 
     buildField(
@@ -1443,6 +1461,9 @@ const clasificacionInstitucional = computed(() => {
   const normalized =
     detalleNormalizado.value;
 
+  const data =
+    detalle.value || {};
+
   return visibleFields([
     buildField(
       "Facultad",
@@ -1453,6 +1474,21 @@ const clasificacionInstitucional = computed(() => {
     buildField(
       "Carrera",
       normalized.carrera,
+      { span: 4 }
+    ),
+
+    buildField(
+      "Origen",
+      firstFilled(
+        data.origen_tipo_label,
+        data.origen_tipo
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Grado / programa",
+      data.origen_grado,
       { span: 4 }
     ),
 
@@ -1521,15 +1557,23 @@ const bloquePrincipal = computed(() => {
         : null,
 
       buildField(
-        "Fecha de presentación",
-        formatFecha(data.fecha_publicacion),
+        "Período de presentación",
+        detalleNormalizado.value.periodoTexto,
         { span: 4 }
       ),
 
       buildField(
         "Tipo de presentación",
-        firstFilled(
-          data.tipo_presentacion
+        (
+          data.tipo_presentacion === "otro"
+            ? firstFilled(
+                data.tipo_presentacion_otro,
+                "Otro"
+              )
+            : firstFilled(
+                data.tipo_presentacion_label,
+                data.tipo_presentacion
+              )
         ),
         { span: 4 }
       ),
@@ -1574,10 +1618,18 @@ const bloquePrincipal = computed(() => {
 
       buildField(
         "Base de datos indexada",
-        firstFilled(
-          data.base_datos_indexada,
-          data.base_datos,
-          data.indexacion
+        (
+          data.base_datos_indexada === "otra"
+            ? firstFilled(
+                data.base_datos_otra,
+                "Otra"
+              )
+            : firstFilled(
+                data.base_datos_indexada_label,
+                data.base_datos_indexada,
+                data.base_datos,
+                data.indexacion
+              )
         ),
         { span: 6 }
       ),
@@ -1635,7 +1687,19 @@ const bloquePrincipal = computed(() => {
           data.editor,
           data.compilador
         ),
-        { span: 6 }
+        { span: 4 }
+      ),
+
+      buildField(
+        "Revisor par / arbitraje",
+        data.revisor_par_arbitraje,
+        { span: 4 }
+      ),
+
+      buildField(
+        "Período de publicación",
+        detalleNormalizado.value.periodoTexto,
+        { span: 4 }
       ),
 
       buildField(
@@ -1668,25 +1732,23 @@ const bloquePrincipal = computed(() => {
         : null,
 
       buildField(
-        "Editorial",
+        "Editorial / Compilador",
         firstFilled(
-          data.editorial,
-          data.editorial_compilador
+          data.editorial_compilador,
+          data.editorial
         ),
         { span: 4 }
       ),
 
       buildField(
-        "Edición",
-        firstFilled(data.edicion),
+        "Revisor par / arbitraje",
+        data.revisor_par_arbitraje,
         { span: 4 }
       ),
 
       buildField(
-        "Fecha de publicación",
-        formatFecha(
-          data.fecha_publicacion
-        ),
+        "Período de publicación",
+        detalleNormalizado.value.periodoTexto,
         { span: 4 }
       ),
 
@@ -1705,10 +1767,8 @@ const bloquePrincipal = computed(() => {
 
   return visibleFields([
     buildField(
-      "Fecha de publicación",
-      formatFecha(
-        data.fecha_publicacion
-      ),
+      "Período de publicación",
+      detalleNormalizado.value.periodoTexto,
       { span: 4 }
     ),
 
@@ -1764,6 +1824,21 @@ const identificadoresAcademicos = computed(() => {
       "Código ISSN o ISBN",
       firstFilled(
         data.codigo_issn_isbn
+      ),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Número de revista",
+      firstFilled(data.numero_revista),
+      { span: 4 }
+    ),
+
+    buildField(
+      "Factor de impacto",
+      firstFilled(
+        data.factor_impacto_label,
+        data.factor_impacto
       ),
       { span: 4 }
     ),

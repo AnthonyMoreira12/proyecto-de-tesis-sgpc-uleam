@@ -60,8 +60,103 @@
         <DatosGenerales
           v-model="form.datos_generales"
           :hideUbicacion="!isPonencia"
-          :proyectoOpcional="isArticulo || isPonencia"
+          :proyectoOpcional="true"
         />
+      </div>
+    </section>
+
+    <!-- =====================================================
+      ORIGEN
+    ====================================================== -->
+    <section class="pedit-section">
+      <header class="pedit-section__head">
+        <div class="pedit-section__copy">
+          <span class="pedit-section__eyebrow">
+            Contexto académico
+          </span>
+
+          <h2 class="pedit-section__title">
+            Origen de la publicación
+          </h2>
+
+          <p class="pedit-section__text">
+            Mantenga la relación académica registrada para esta publicación.
+          </p>
+        </div>
+      </header>
+
+      <div class="pedit-formGrid">
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-origen-tipo"
+          >
+            Origen
+            <span class="pedit-required">*</span>
+          </label>
+
+          <select
+            id="pedit-origen-tipo"
+            v-model="form.origen_tipo"
+            class="pedit-input"
+            required
+            :disabled="savingLocal || removingPdf"
+          >
+            <option value="ninguno">
+              Ninguno
+            </option>
+
+            <option value="tic">
+              Trabajo de integración curricular
+            </option>
+
+            <option value="maestria">
+              Tesis de maestría
+            </option>
+
+            <option value="doctoral">
+              Tesis doctoral
+            </option>
+
+            <option value="otro">
+              Otro
+            </option>
+          </select>
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-origen-grado"
+          >
+            {{
+              form.origen_tipo === "otro"
+                ? "Especifique el origen"
+                : "Grado / programa"
+            }}
+
+            <span
+              v-if="['tic', 'otro'].includes(form.origen_tipo)"
+              class="pedit-required"
+            >
+              *
+            </span>
+          </label>
+
+          <input
+            id="pedit-origen-grado"
+            v-model.trim="form.origen_grado"
+            class="pedit-input"
+            type="text"
+            maxlength="120"
+            :disabled="
+              savingLocal ||
+              removingPdf ||
+              !['tic', 'otro'].includes(form.origen_tipo)
+            "
+            :required="['tic', 'otro'].includes(form.origen_tipo)"
+          />
+        </div>
       </div>
     </section>
 
@@ -76,40 +171,76 @@
           </span>
 
           <h2 class="pedit-section__title">
-            Información general
+            Período de publicación
           </h2>
 
           <p class="pedit-section__text">
-            Registre la fecha oficial asociada a la publicación.
+            Registre el año de la publicación. El mes es opcional cuando no
+            consta en la fuente bibliográfica.
           </p>
         </div>
       </header>
 
       <div class="pedit-formGrid">
-        <div class="pedit-field">
+        <div class="pedit-field pedit-field--period">
           <label
             class="pedit-label"
-            for="pedit-fecha-publicacion"
+            for="pedit-anio-publicacion"
           >
-            Fecha de publicación
+            Año de publicación
             <span class="pedit-required">*</span>
           </label>
 
           <input
-            id="pedit-fecha-publicacion"
-            v-model="form.fecha_publicacion"
+            id="pedit-anio-publicacion"
+            v-model.number="form.anio_publicacion"
             class="pedit-input"
-            type="date"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="Ej. 2026"
             required
             :disabled="savingLocal || removingPdf"
           />
+        </div>
+
+        <div class="pedit-field pedit-field--period">
+          <label
+            class="pedit-label"
+            for="pedit-mes-publicacion"
+          >
+            Mes de publicación
+            <span class="pedit-optional">
+              (opcional)
+            </span>
+          </label>
+
+          <select
+            id="pedit-mes-publicacion"
+            v-model.number="form.mes_publicacion"
+            class="pedit-input"
+            :disabled="savingLocal || removingPdf"
+          >
+            <option value="">
+              Sin mes especificado
+            </option>
+
+            <option
+              v-for="month in publicationMonths"
+              :key="month.value"
+              :value="month.value"
+            >
+              {{ month.label }}
+            </option>
+          </select>
 
           <p
-            v-if="form.fecha_publicacion"
+            v-if="periodPreview"
             class="pedit-help"
           >
-            Fecha seleccionada:
-            <strong>{{ formatFecha(form.fecha_publicacion) }}</strong>
+            Período:
+            <strong>{{ periodPreview }}</strong>
           </p>
         </div>
       </div>
@@ -184,7 +315,7 @@
           />
         </div>
 
-        <div class="pedit-field pedit-field--full">
+        <div class="pedit-field">
           <label
             class="pedit-label"
             for="pedit-issn-isbn"
@@ -197,6 +328,83 @@
             v-model.trim="form.codigo_issn_isbn"
             class="pedit-input"
             type="text"
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-tipo-presentacion"
+          >
+            Tipo de presentación
+          </label>
+
+          <select
+            id="pedit-tipo-presentacion"
+            v-model="form.tipo_presentacion"
+            class="pedit-input"
+            :disabled="savingLocal || removingPdf"
+          >
+            <option value="">
+              No especificado
+            </option>
+
+            <option value="magistral">
+              Magistral
+            </option>
+
+            <option value="oral">
+              Oral
+            </option>
+
+            <option value="poster">
+              Póster
+            </option>
+
+            <option value="otro">
+              Otro
+            </option>
+          </select>
+        </div>
+
+        <div
+          v-if="form.tipo_presentacion === 'otro'"
+          class="pedit-field"
+        >
+          <label
+            class="pedit-label"
+            for="pedit-tipo-presentacion-otro"
+          >
+            Especifique el tipo
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-tipo-presentacion-otro"
+            v-model.trim="form.tipo_presentacion_otro"
+            class="pedit-input"
+            type="text"
+            maxlength="150"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-link-evento"
+          >
+            Enlace del evento
+          </label>
+
+          <input
+            id="pedit-link-evento"
+            v-model.trim="form.link_evento"
+            class="pedit-input"
+            type="url"
+            placeholder="https://..."
             :disabled="savingLocal || removingPdf"
           />
         </div>
@@ -229,25 +437,6 @@
         <div class="pedit-field">
           <label
             class="pedit-label"
-            for="pedit-indexacion"
-          >
-            Base de datos o indexación
-            <span class="pedit-required">*</span>
-          </label>
-
-          <input
-            id="pedit-indexacion"
-            v-model.trim="form.base_datos_indexada"
-            class="pedit-input"
-            type="text"
-            required
-            :disabled="savingLocal || removingPdf"
-          />
-        </div>
-
-        <div class="pedit-field">
-          <label
-            class="pedit-label"
             for="pedit-revista"
           >
             Nombre de la revista
@@ -257,25 +446,6 @@
           <input
             id="pedit-revista"
             v-model.trim="form.nombre_revista"
-            class="pedit-input"
-            type="text"
-            required
-            :disabled="savingLocal || removingPdf"
-          />
-        </div>
-
-        <div class="pedit-field">
-          <label
-            class="pedit-label"
-            for="pedit-doi"
-          >
-            DOI
-            <span class="pedit-required">*</span>
-          </label>
-
-          <input
-            id="pedit-doi"
-            v-model.trim="form.codigo_doi"
             class="pedit-input"
             type="text"
             required
@@ -302,6 +472,222 @@
           />
         </div>
 
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-doi"
+          >
+            DOI
+            <span class="pedit-optional">
+              (opcional)
+            </span>
+          </label>
+
+          <input
+            id="pedit-doi"
+            v-model.trim="form.codigo_doi"
+            class="pedit-input"
+            type="text"
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-numero-revista"
+          >
+            Número de revista
+            <span class="pedit-optional">
+              (opcional)
+            </span>
+          </label>
+
+          <input
+            id="pedit-numero-revista"
+            v-model="form.numero_revista"
+            class="pedit-input"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div
+          v-if="isArticuloRegional"
+          class="pedit-field"
+        >
+          <label
+            class="pedit-label"
+            for="pedit-indexacion"
+          >
+            Base de datos o indexación
+            <span class="pedit-required">*</span>
+          </label>
+
+          <select
+            id="pedit-indexacion"
+            v-model="form.base_datos_indexada"
+            class="pedit-input"
+            required
+            :disabled="savingLocal || removingPdf"
+          >
+            <option value="">
+              Seleccione...
+            </option>
+
+            <option value="latindex">
+              Latindex
+            </option>
+
+            <option value="scielo">
+              SciELO
+            </option>
+
+            <option value="redalyc">
+              Redalyc
+            </option>
+
+            <option value="dialnet">
+              Dialnet
+            </option>
+
+            <option value="google_scholar">
+              Google Scholar
+            </option>
+
+            <option value="otra">
+              Otra
+            </option>
+          </select>
+        </div>
+
+        <div
+          v-if="
+            isArticuloRegional &&
+            form.base_datos_indexada === 'otra'
+          "
+          class="pedit-field"
+        >
+          <label
+            class="pedit-label"
+            for="pedit-indexacion-otra"
+          >
+            Especifique la base de datos
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-indexacion-otra"
+            v-model.trim="form.base_datos_otra"
+            class="pedit-input"
+            type="text"
+            maxlength="150"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <template v-if="!isArticuloRegional">
+          <div class="pedit-field">
+            <label
+              class="pedit-label"
+              for="pedit-factor-impacto"
+            >
+              Factor de impacto
+              <span class="pedit-optional">
+                (opcional)
+              </span>
+            </label>
+
+            <select
+              id="pedit-factor-impacto"
+              v-model="form.factor_impacto"
+              class="pedit-input"
+              :disabled="savingLocal || removingPdf"
+            >
+              <option value="">
+                No aplica / no disponible
+              </option>
+
+              <option value="sjr">
+                SJR
+              </option>
+
+              <option value="jcr">
+                JCR
+              </option>
+            </select>
+          </div>
+
+          <div class="pedit-field">
+            <label
+              class="pedit-label"
+              for="pedit-cuartil"
+            >
+              Cuartil
+              <span class="pedit-optional">
+                (opcional)
+              </span>
+            </label>
+
+            <select
+              id="pedit-cuartil"
+              v-model="form.cuartil"
+              class="pedit-input"
+              :disabled="savingLocal || removingPdf"
+            >
+              <option value="">
+                Sin especificar
+              </option>
+
+              <option value="q1">
+                Q1
+              </option>
+
+              <option value="q2">
+                Q2
+              </option>
+
+              <option value="q3">
+                Q3
+              </option>
+
+              <option value="q4">
+                Q4
+              </option>
+
+              <option value="sin_cuartil">
+                Sin cuartil
+              </option>
+            </select>
+          </div>
+
+          <div
+            v-if="form.factor_impacto === 'sjr'"
+            class="pedit-field"
+          >
+            <label
+              class="pedit-label"
+              for="pedit-sjr"
+            >
+              SJR
+              <span class="pedit-required">*</span>
+            </label>
+
+            <input
+              id="pedit-sjr"
+              v-model.trim="form.sjr"
+              class="pedit-input"
+              type="text"
+              required
+              :disabled="savingLocal || removingPdf"
+            />
+          </div>
+        </template>
+
         <div class="pedit-field pedit-field--full">
           <label
             class="pedit-label"
@@ -320,103 +706,22 @@
           />
         </div>
 
-        <template v-if="!isArticuloRegional">
-          <div class="pedit-field pedit-field--full">
-            <label
-              class="pedit-label"
-              for="pedit-link-revista"
-            >
-              Enlace de la revista
-            </label>
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-link-revista"
+          >
+            Enlace de la revista
+          </label>
 
-            <input
-              id="pedit-link-revista"
-              v-model.trim="form.link_revista"
-              class="pedit-input"
-              type="url"
-              placeholder="https://..."
-              :disabled="savingLocal || removingPdf"
-            />
-          </div>
-
-          <template v-if="isAdmin">
-            <div class="pedit-field">
-              <label
-                class="pedit-label"
-                for="pedit-factor-impacto"
-              >
-                Factor de impacto
-              </label>
-
-              <input
-                id="pedit-factor-impacto"
-                v-model.trim="form.factor_impacto"
-                class="pedit-input"
-                type="text"
-                :disabled="savingLocal || removingPdf"
-              />
-            </div>
-
-            <div class="pedit-field">
-              <label
-                class="pedit-label"
-                for="pedit-cuartil"
-              >
-                Cuartil
-              </label>
-
-              <input
-                id="pedit-cuartil"
-                v-model.trim="form.cuartil"
-                class="pedit-input"
-                type="text"
-                placeholder="Ejemplo: Q1 o Q2"
-                :disabled="savingLocal || removingPdf"
-              />
-            </div>
-
-            <div class="pedit-field">
-              <label
-                class="pedit-label"
-                for="pedit-sjr"
-              >
-                SJR
-              </label>
-
-              <input
-                id="pedit-sjr"
-                v-model.trim="form.sjr"
-                class="pedit-input"
-                type="text"
-                :disabled="savingLocal || removingPdf"
-              />
-            </div>
-
-            <div class="pedit-field">
-              <label
-                class="pedit-label"
-                for="pedit-numero-revista"
-              >
-                Número de revista
-              </label>
-
-              <input
-                id="pedit-numero-revista"
-                v-model.trim="form.numero_revista"
-                class="pedit-input"
-                type="text"
-                :disabled="savingLocal || removingPdf"
-              />
-            </div>
-          </template>
-        </template>
-
-        <div
-          v-if="isArticuloRegional"
-          class="pedit-inlineNote"
-        >
-          Los indicadores avanzados de impacto, cuartil, SJR y número de revista
-          no se aplican a los artículos regionales.
+          <input
+            id="pedit-link-revista"
+            v-model.trim="form.link_revista"
+            class="pedit-input"
+            type="url"
+            placeholder="https://..."
+            :disabled="savingLocal || removingPdf"
+          />
         </div>
       </div>
 
@@ -488,6 +793,7 @@
             for="pedit-editor"
           >
             Editor o compilador
+            <span class="pedit-required">*</span>
           </label>
 
           <input
@@ -495,6 +801,26 @@
             v-model.trim="form.editor_compilador"
             class="pedit-input"
             type="text"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-capitulo-revisor"
+          >
+            Revisor par / arbitraje
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-capitulo-revisor"
+            v-model.trim="form.revisor_par_arbitraje"
+            class="pedit-input"
+            type="text"
+            required
             :disabled="savingLocal || removingPdf"
           />
         </div>
@@ -505,6 +831,7 @@
             for="pedit-link-capitulo"
           >
             Enlace del capítulo
+            <span class="pedit-required">*</span>
           </label>
 
           <input
@@ -513,6 +840,109 @@
             class="pedit-input"
             type="url"
             placeholder="https://..."
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+      </div>
+
+      <!-- Libro -->
+      <div
+        v-else-if="isLibro"
+        class="pedit-formGrid"
+      >
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-libro-nombre"
+          >
+            Nombre del libro
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-libro-nombre"
+            v-model.trim="form.nombre_libro"
+            class="pedit-input"
+            type="text"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-libro-isbn"
+          >
+            ISBN
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-libro-isbn"
+            v-model.trim="form.codigo_isbn"
+            class="pedit-input"
+            type="text"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-libro-editorial"
+          >
+            Editorial / Compilador
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-libro-editorial"
+            v-model.trim="form.editorial_compilador"
+            class="pedit-input"
+            type="text"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field">
+          <label
+            class="pedit-label"
+            for="pedit-libro-revisor"
+          >
+            Revisor par / arbitraje
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-libro-revisor"
+            v-model.trim="form.revisor_par_arbitraje"
+            class="pedit-input"
+            type="text"
+            required
+            :disabled="savingLocal || removingPdf"
+          />
+        </div>
+
+        <div class="pedit-field pedit-field--full">
+          <label
+            class="pedit-label"
+            for="pedit-libro-link"
+          >
+            Enlace del libro
+            <span class="pedit-required">*</span>
+          </label>
+
+          <input
+            id="pedit-libro-link"
+            v-model.trim="form.link_libro"
+            class="pedit-input"
+            type="url"
+            placeholder="https://..."
+            required
             :disabled="savingLocal || removingPdf"
           />
         </div>
@@ -541,7 +971,7 @@
           </h2>
 
           <p class="pedit-section__text">
-            Organice el autor principal y los coautores vinculados al registro.
+            Organice los autores según su orden bibliográfico.
           </p>
         </div>
 
@@ -874,6 +1304,21 @@ const normalizeText = (value) => {
     .trim();
 };
 
+const PUBLICATION_MONTHS = Object.freeze([
+  { value: 1, label: "Enero" },
+  { value: 2, label: "Febrero" },
+  { value: 3, label: "Marzo" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Mayo" },
+  { value: 6, label: "Junio" },
+  { value: 7, label: "Julio" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Septiembre" },
+  { value: 10, label: "Octubre" },
+  { value: 11, label: "Noviembre" },
+  { value: 12, label: "Diciembre" },
+]);
+
 const currentId = computed(() => {
   return firstFilled(
     route.params.id,
@@ -924,6 +1369,13 @@ const isCapitulo = computed(() => {
   return tipoNormalized.value.includes("capitulo");
 });
 
+const isLibro = computed(() => {
+  return (
+    !isCapitulo.value &&
+    tipoNormalized.value.includes("libro")
+  );
+});
+
 const isArticuloRegional = computed(() => {
   const normalizedCode = normalizeText(
     tipoCodigo.value
@@ -941,56 +1393,52 @@ const isArticuloRegional = computed(() => {
 });
 
 /* ============================================================
-  FECHA
+  PERÍODO DE PUBLICACIÓN
 ============================================================ */
 
-const formatFecha = (value) => {
-  const fecha = String(value || "").trim();
+const publicationMonths = computed(() => {
+  return PUBLICATION_MONTHS;
+});
 
-  if (!fecha) {
+const formatPublicationPeriod = (
+  yearValue,
+  monthValue
+) => {
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+
+  if (
+    !Number.isInteger(year) ||
+    year <= 0
+  ) {
     return "";
   }
 
-  try {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      const [year, month, day] = fecha
-        .split("-")
-        .map(Number);
+  if (
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  ) {
+    const label =
+      PUBLICATION_MONTHS.find(
+        (item) =>
+          item.value === month
+      )?.label || "";
 
-      const localDate = new Date(
-        year,
-        month - 1,
-        day
-      );
-
-      return localDate.toLocaleDateString(
-        "es-EC",
-        {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }
-      );
-    }
-
-    const parsed = new Date(fecha);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return fecha;
-    }
-
-    return parsed.toLocaleDateString(
-      "es-EC",
-      {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }
-    );
-  } catch {
-    return fecha;
+    return label
+      ? `${label} de ${year}`
+      : String(year);
   }
+
+  return String(year);
 };
+
+const periodPreview = computed(() => {
+  return formatPublicationPeriod(
+    form.anio_publicacion,
+    form.mes_publicacion
+  );
+});
 
 /* ============================================================
   ARCHIVO PDF ACTUAL
@@ -1163,7 +1611,8 @@ const selectedPdfItem = computed(() => {
 
 const form = reactive({
   tipo: "",
-  fecha_publicacion: "",
+  anio_publicacion: null,
+  mes_publicacion: "",
 
   datos_generales: {
     facultad: null,
@@ -1175,8 +1624,12 @@ const form = reactive({
     ciudad: null,
   },
 
+  origen_tipo: "ninguno",
+  origen_grado: "",
+
   nombre_articulo: "",
   base_datos_indexada: "",
+  base_datos_otra: "",
   codigo_doi: "",
   codigo_issn: "",
   nombre_revista: "",
@@ -1190,12 +1643,19 @@ const form = reactive({
   nombre_evento: "",
   nombre_ponencia: "",
   codigo_issn_isbn: "",
+  tipo_presentacion: "",
+  tipo_presentacion_otro: "",
+  link_evento: "",
 
   nombre_capitulo: "",
   nombre_libro: "",
   codigo_isbn: "",
   editor_compilador: "",
   link_capitulo: "",
+
+  editorial_compilador: "",
+  revisor_par_arbitraje: "",
+  link_libro: "",
 
   autores: [],
 });
@@ -1217,22 +1677,30 @@ const normalizeAutoresForSelector = (authors) => {
         autor?.autor?.id ??
         null;
 
-      if (!autorId) {
+      const numericId = Number(autorId);
+
+      if (
+        !Number.isFinite(numericId) ||
+        numericId <= 0
+      ) {
         return null;
       }
 
+      const rawOrder = Number(
+        autor?.orden ??
+        autor?.order ??
+        index + 1
+      );
+
       return {
-        autor_id: Number(autorId),
+        autor_id: numericId,
 
-        orden:
-          autor?.orden ??
-          index + 1,
-
-        rol_autoria:
-          autor?.rol_autoria ??
-          (index === 0
-            ? "principal"
-            : "coautor"),
+        orden: (
+          Number.isInteger(rawOrder) &&
+          rawOrder > 0
+        )
+          ? rawOrder
+          : index + 1,
 
         nombre_completo:
           autor?.nombre_completo ||
@@ -1241,15 +1709,12 @@ const normalizeAutoresForSelector = (authors) => {
       };
     })
     .filter(Boolean)
+    .sort((a, b) => {
+      return a.orden - b.orden;
+    })
     .map((item, index) => ({
       ...item,
-
       orden: index + 1,
-
-      rol_autoria:
-        index === 0
-          ? "principal"
-          : "coautor",
     }));
 };
 
@@ -1262,9 +1727,28 @@ const mapDetalleToForm = (detalle) => {
     detalle?.tipo ||
     "";
 
-  form.fecha_publicacion = String(
-    detalle?.fecha_publicacion || ""
-  ).substring(0, 10);
+  const year = Number(
+    detalle?.anio_publicacion
+  );
+
+  const month = Number(
+    detalle?.mes_publicacion
+  );
+
+  form.anio_publicacion = (
+    Number.isInteger(year) &&
+    year > 0
+  )
+    ? year
+    : null;
+
+  form.mes_publicacion = (
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  )
+    ? month
+    : "";
 
   form.datos_generales = {
     facultad:
@@ -1296,6 +1780,14 @@ const mapDetalleToForm = (detalle) => {
       null,
   };
 
+  form.origen_tipo =
+    detalle?.origen_tipo ||
+    "ninguno";
+
+  form.origen_grado =
+    detalle?.origen_grado ||
+    "";
+
   form.autores =
     normalizeAutoresForSelector(
       detalle?.autores
@@ -1310,11 +1802,23 @@ const mapDetalleToForm = (detalle) => {
   form.codigo_issn_isbn =
     detalle?.codigo_issn_isbn || "";
 
+  form.tipo_presentacion =
+    detalle?.tipo_presentacion || "";
+
+  form.tipo_presentacion_otro =
+    detalle?.tipo_presentacion_otro || "";
+
+  form.link_evento =
+    detalle?.link_evento || "";
+
   form.nombre_articulo =
     detalle?.nombre_articulo || "";
 
   form.base_datos_indexada =
     detalle?.base_datos_indexada || "";
+
+  form.base_datos_otra =
+    detalle?.base_datos_otra || "";
 
   form.codigo_doi =
     detalle?.codigo_doi || "";
@@ -1355,8 +1859,24 @@ const mapDetalleToForm = (detalle) => {
   form.editor_compilador =
     detalle?.editor_compilador || "";
 
+  form.revisor_par_arbitraje =
+    detalle?.revisor_par_arbitraje || "";
+
   form.link_capitulo =
     detalle?.link_capitulo || "";
+
+  form.editorial_compilador =
+    detalle?.editorial_compilador ||
+    detalle?.editorial ||
+    "";
+
+  form.revisor_par_arbitraje =
+    detalle?.revisor_par_arbitraje ||
+    "";
+
+  form.link_libro =
+    detalle?.link_libro ||
+    "";
 
   if (isArticuloRegional.value) {
     form.factor_impacto = "";
@@ -1454,11 +1974,6 @@ const buildAutoresPayload = () => {
       return {
         autor_id: numericId,
         orden,
-
-        rol_autoria:
-          orden === 1
-            ? "principal"
-            : "coautor",
       };
     })
     .filter(Boolean);
@@ -1474,6 +1989,9 @@ const allowedSpecificFields = computed(() => {
       "nombre_evento",
       "nombre_ponencia",
       "codigo_issn_isbn",
+      "tipo_presentacion",
+      "tipo_presentacion_otro",
+      "link_evento",
     ];
   }
 
@@ -1483,40 +2001,35 @@ const allowedSpecificFields = computed(() => {
       "nombre_libro",
       "codigo_isbn",
       "editor_compilador",
+      "revisor_par_arbitraje",
       "link_capitulo",
     ];
   }
 
+  if (isLibro.value) {
+    return [
+      "nombre_libro",
+      "codigo_isbn",
+      "editorial_compilador",
+      "revisor_par_arbitraje",
+      "link_libro",
+    ];
+  }
+
   if (isArticulo.value) {
-    const base = [
+    return [
       "nombre_articulo",
       "base_datos_indexada",
+      "base_datos_otra",
       "codigo_doi",
       "codigo_issn",
       "nombre_revista",
+      "numero_revista",
       "link_publicacion",
-    ];
-
-    if (isArticuloRegional.value) {
-      return base;
-    }
-
-    const extras = [
       "link_revista",
-    ];
-
-    if (isAdmin.value) {
-      extras.push(
-        "numero_revista",
-        "factor_impacto",
-        "cuartil",
-        "sjr"
-      );
-    }
-
-    return [
-      ...base,
-      ...extras,
+      "factor_impacto",
+      "cuartil",
+      "sjr",
     ];
   }
 
@@ -1562,10 +2075,55 @@ const buildFormDataPayload = () => {
     }
   });
 
-  if (form.fecha_publicacion) {
+  formData.append(
+    "origen_tipo",
+    form.origen_tipo || "ninguno"
+  );
+
+  if (
+    ["tic", "otro"].includes(
+      form.origen_tipo
+    ) &&
+    form.origen_grado
+  ) {
     formData.append(
-      "fecha_publicacion",
-      form.fecha_publicacion
+      "origen_grado",
+      form.origen_grado
+    );
+  }
+
+  if (
+    Number.isInteger(
+      Number(
+        form.anio_publicacion
+      )
+    ) &&
+    Number(
+      form.anio_publicacion
+    ) > 0
+  ) {
+    formData.append(
+      "anio_publicacion",
+      String(
+        Number(
+          form.anio_publicacion
+        )
+      )
+    );
+  }
+
+  if (
+    form.mes_publicacion !== "" &&
+    form.mes_publicacion !== null &&
+    form.mes_publicacion !== undefined
+  ) {
+    formData.append(
+      "mes_publicacion",
+      String(
+        Number(
+          form.mes_publicacion
+        )
+      )
     );
   }
 
@@ -1617,16 +2175,7 @@ const validarEdicion = () => {
   const requiredFields = [
     "facultad",
     "carrera",
-    "area",
-    "subarea",
   ];
-
-  if (
-    !isArticulo.value &&
-    !isPonencia.value
-  ) {
-    requiredFields.push("proyecto");
-  }
 
   const missingFields =
     requiredFields.filter((key) => {
@@ -1643,6 +2192,25 @@ const validarEdicion = () => {
     );
   }
 
+  if (!form.origen_tipo) {
+    return (
+      "Seleccione el origen de la publicación."
+    );
+  }
+
+  if (
+    ["tic", "otro"].includes(
+      form.origen_tipo
+    ) &&
+    !String(
+      form.origen_grado || ""
+    ).trim()
+  ) {
+    return (
+      "Debe especificar el grado, programa u origen correspondiente."
+    );
+  }
+
   if (
     isPonencia.value &&
     (
@@ -1656,10 +2224,41 @@ const validarEdicion = () => {
     );
   }
 
-  if (!form.fecha_publicacion) {
-    return (
-      "La fecha de publicación es obligatoria."
+  const publicationYear =
+    Number(
+      form.anio_publicacion
     );
+
+  if (
+    !Number.isInteger(
+      publicationYear
+    ) ||
+    publicationYear <= 0
+  ) {
+    return (
+      "El año de publicación es obligatorio."
+    );
+  }
+
+  if (
+    form.mes_publicacion !== ""
+  ) {
+    const publicationMonth =
+      Number(
+        form.mes_publicacion
+      );
+
+    if (
+      !Number.isInteger(
+        publicationMonth
+      ) ||
+      publicationMonth < 1 ||
+      publicationMonth > 12
+    ) {
+      return (
+        "Seleccione un mes de publicación válido."
+      );
+    }
   }
 
   if (isArticulo.value) {
@@ -1669,24 +2268,45 @@ const validarEdicion = () => {
       );
     }
 
-    if (!form.base_datos_indexada) {
-      return (
-        "La base de datos o indexación es obligatoria."
-      );
-    }
-
     if (!form.nombre_revista) {
       return (
         "El nombre de la revista es obligatorio."
       );
     }
 
-    if (!form.codigo_doi) {
-      return "El DOI es obligatorio.";
-    }
-
     if (!form.codigo_issn) {
       return "El ISSN es obligatorio.";
+    }
+
+    if (isArticuloRegional.value) {
+      if (!form.base_datos_indexada) {
+        return (
+          "La base de datos o indexación es obligatoria."
+        );
+      }
+
+      if (
+        form.base_datos_indexada === "otra" &&
+        !String(
+          form.base_datos_otra || ""
+        ).trim()
+      ) {
+        return (
+          "Especifique la base de datos seleccionada."
+        );
+      }
+    }
+
+    if (
+      !isArticuloRegional.value &&
+      form.factor_impacto === "sjr" &&
+      !String(
+        form.sjr || ""
+      ).trim()
+    ) {
+      return (
+        "Debe ingresar el valor SJR."
+      );
     }
   }
 
@@ -1702,23 +2322,49 @@ const validarEdicion = () => {
         "El nombre de la ponencia es obligatorio."
       );
     }
+
+    if (
+      form.tipo_presentacion === "otro" &&
+      !String(
+        form.tipo_presentacion_otro || ""
+      ).trim()
+    ) {
+      return (
+        "Especifique el tipo de presentación."
+      );
+    }
   }
 
   if (isCapitulo.value) {
-    if (!form.nombre_capitulo) {
-      return (
-        "El nombre del capítulo es obligatorio."
-      );
-    }
+    const requiredCapitulo = [
+      ["nombre_capitulo", "El nombre del capítulo es obligatorio."],
+      ["nombre_libro", "El nombre del libro es obligatorio."],
+      ["codigo_isbn", "El ISBN es obligatorio."],
+      ["editor_compilador", "El editor o compilador es obligatorio."],
+      ["revisor_par_arbitraje", "El revisor par o arbitraje es obligatorio."],
+      ["link_capitulo", "El enlace del capítulo es obligatorio."],
+    ];
 
-    if (!form.nombre_libro) {
-      return (
-        "El nombre del libro es obligatorio."
-      );
+    for (const [key, message] of requiredCapitulo) {
+      if (!String(form[key] || "").trim()) {
+        return message;
+      }
     }
+  }
 
-    if (!form.codigo_isbn) {
-      return "El ISBN es obligatorio.";
+  if (isLibro.value) {
+    const requiredLibro = [
+      ["nombre_libro", "El nombre del libro es obligatorio."],
+      ["codigo_isbn", "El ISBN es obligatorio."],
+      ["editorial_compilador", "La editorial o compilador es obligatoria."],
+      ["revisor_par_arbitraje", "El revisor par o arbitraje es obligatorio."],
+      ["link_libro", "El enlace del libro es obligatorio."],
+    ];
+
+    for (const [key, message] of requiredLibro) {
+      if (!String(form[key] || "").trim()) {
+        return message;
+      }
     }
   }
 

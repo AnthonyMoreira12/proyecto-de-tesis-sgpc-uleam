@@ -1124,10 +1124,10 @@
 
   grid-template-columns:
     repeat(
-      3,
-      minmax(170px, 1fr)
+      4,
+      minmax(145px, 1fr)
     )
-    minmax(190px, 0.8fr);
+    minmax(190px, 0.9fr);
 
   gap: 11px;
 
@@ -1946,31 +1946,29 @@
 }
 
 .sch-publication-card__year {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-.sch-publication-card__year span {
   min-width:
-    56px;
+    64px;
 
   min-height:
-    33px;
+    52px;
 
   display: inline-flex;
+  flex-direction: column;
+
   align-items: center;
   justify-content: center;
 
+  gap: 2px;
+
   padding:
-    0 9px;
+    7px 9px;
 
   border:
     1px solid
     var(--sch-line);
 
   border-radius:
-    11px;
+    12px;
 
   background:
     var(--sch-soft);
@@ -1978,11 +1976,38 @@
   color:
     var(--sch-muted);
 
+  text-align: center;
+}
+
+.sch-publication-card__month {
+  color:
+    var(--sch-primary);
+
+  font-size:
+    0.62rem;
+
+  line-height:
+    1;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.07em;
+}
+
+.sch-publication-card__year-value {
+  color:
+    var(--sch-text);
+
   font-size:
     0.78rem;
 
+  line-height:
+    1.1;
+
   font-weight:
-    700;
+    800;
 }
 
 .sch-publication-card__content {
@@ -2847,11 +2872,11 @@ button:hover {
 }
 
 .sch-loading-card__year {
-  width: 56px;
-  height: 33px;
+  width: 64px;
+  height: 52px;
 
   border-radius:
-    11px;
+    12px;
 }
 
 .sch-loading-card__body {
@@ -3035,8 +3060,11 @@ button:hover {
   }
 
   .sch-publication-card__year {
+    width:
+      fit-content;
+
     justify-content:
-      flex-start;
+      center;
   }
 
   .sch-authorstrip {
@@ -3569,7 +3597,8 @@ button:hover {
 .sch-segment__btn,
 .sch-btn,
 .sch-clear-filters,
-.sch-publication-card__year span,
+.sch-publication-card__year-value,
+.sch-publication-card__month,
 .sch-pill,
 .sch-action-link,
 .sch-profile-card__type {
@@ -4142,7 +4171,7 @@ button:hover {
     var(--sch-success);
 }
 
-.sch-publication-card__year span {
+.sch-publication-card__year {
   background:
     var(--surface-2, var(--sch-soft));
 

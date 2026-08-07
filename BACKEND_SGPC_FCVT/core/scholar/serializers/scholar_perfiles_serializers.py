@@ -9,6 +9,8 @@ Expone:
 - total de publicaciones.
 """
 
+import re
+
 from rest_framework import serializers
 
 from core.models import Autor
@@ -266,3 +268,172 @@ class PerfilAutorListSerializer(
             )
         except Exception:
             return 0
+
+# =============================================================
+# IDENTIFICADORES ACADÉMICOS
+# =============================================================
+
+ORCID_PATTERN = re.compile(
+    r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$"
+)
+
+
+def _normalize_optional_text(value):
+    if value is None:
+        return None
+
+    value = str(value).strip()
+    return value or None
+
+
+def _normalize_orcid(value):
+    value = _normalize_optional_text(value)
+
+    if not value:
+        return None
+
+    value = value.upper()
+
+    for prefix in (
+        "https://orcid.org/",
+        "http://orcid.org/",
+        "orcid.org/",
+    ):
+        if value.lower().startswith(prefix):
+            value = value[len(prefix):]
+            break
+
+    return value.strip().upper() or None
+
+
+def _is_valid_orcid_checksum(orcid):
+    """
+    Valida el dígito de control ORCID mediante
+    ISO 7064 MOD 11-2.
+    """
+
+    compact = orcid.replace("-", "")
+
+    if len(compact) != 16:
+        return False
+
+    total = 0
+
+    for char in compact[:15]:
+        if not char.isdigit():
+            return False
+
+        total = (total + int(char)) * 2
+
+    remainder = total % 11
+    result = (12 - remainder) % 11
+
+    expected = (
+        "X"
+        if result == 10
+        else str(result)
+    )
+
+    return compact[-1] == expected
+
+
+class PerfilAcademicoAutorSerializer(
+    serializers.ModelSerializer
+):
+    """
+    Serializer de los identificadores académicos del Autor.
+
+    Todos los campos son opcionales y pertenecen a Autor.
+    No intervienen en autenticación, permisos ni completitud
+    del perfil de Usuario.
+    """
+
+    orcid = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=50,
+    )
+
+    registro_senescyt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=100,
+    )
+
+    google_scholar = serializers.URLField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=500,
+    )
+
+    scopus_id = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        max_length=100,
+    )
+
+    class Meta:
+        model = Autor
+        fields = [
+            "orcid",
+            "registro_senescyt",
+            "google_scholar",
+            "scopus_id",
+        ]
+
+    def validate_orcid(self, value):
+        value = _normalize_orcid(value)
+
+        if not value:
+            return None
+
+        if not ORCID_PATTERN.fullmatch(value):
+            raise serializers.ValidationError(
+                "El ORCID debe tener el formato "
+                "0000-0000-0000-0000."
+            )
+
+        if not _is_valid_orcid_checksum(value):
+            raise serializers.ValidationError(
+                "El ORCID indicado no posee "
+                "un dígito de control válido."
+            )
+
+        queryset = Autor.objects.filter(orcid=value)
+
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        if queryset.exists():
+            raise serializers.ValidationError(
+                "Este ORCID ya está asociado "
+                "a otro autor."
+            )
+
+        return value
+
+    def validate_registro_senescyt(self, value):
+        return _normalize_optional_text(value)
+
+    def validate_google_scholar(self, value):
+        return _normalize_optional_text(value)
+
+    def validate_scopus_id(self, value):
+        return _normalize_optional_text(value)
+
+    def update(self, instance, validated_data):
+        for field in (
+            "orcid",
+            "registro_senescyt",
+            "google_scholar",
+            "scopus_id",
+        ):
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+
+        instance.save()
+        return instance

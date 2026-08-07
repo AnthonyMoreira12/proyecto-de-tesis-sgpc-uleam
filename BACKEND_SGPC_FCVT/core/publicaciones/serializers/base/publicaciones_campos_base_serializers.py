@@ -7,12 +7,13 @@ Centraliza:
 - origen de la publicación;
 - grado o programa asociado al TIC;
 - origen escrito manualmente cuando se selecciona Otro;
-- fecha de publicación;
+- año de publicación obligatorio;
+- mes de publicación opcional;
 - PDF principal.
 
-La validación específica del PDF se mantiene en los
-serializers que la necesitan, mientras este mixin define
-el campo común.
+La fecha diaria dejó de formar parte del registro de
+publicaciones. El periodo se representa mediante año y,
+cuando esté disponible, mes.
 """
 
 from rest_framework import serializers
@@ -72,13 +73,40 @@ class PublicacionCamposBaseMixin(
         trim_whitespace=True,
     )
 
-    fecha_publicacion = serializers.DateField(
+    anio_publicacion = serializers.IntegerField(
+        required=True,
+        min_value=1900,
+        write_only=True,
+        error_messages={
+            "required": (
+                "Debe ingresar el año de publicación."
+            ),
+            "invalid": (
+                "El año de publicación debe ser un número entero válido."
+            ),
+            "min_value": (
+                "El año de publicación no puede ser anterior a 1900."
+            ),
+        },
+    )
+
+    mes_publicacion = serializers.IntegerField(
         required=False,
         allow_null=True,
-        input_formats=(
-            "%Y-%m-%d",
-            "%d/%m/%Y",
-        ),
+        min_value=1,
+        max_value=12,
+        write_only=True,
+        error_messages={
+            "invalid": (
+                "El mes de publicación debe ser un número entero válido."
+            ),
+            "min_value": (
+                "El mes de publicación debe estar entre 1 y 12."
+            ),
+            "max_value": (
+                "El mes de publicación debe estar entre 1 y 12."
+            ),
+        },
     )
 
     archivo_pdf = serializers.FileField(

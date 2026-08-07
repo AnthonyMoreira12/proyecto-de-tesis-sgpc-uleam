@@ -28,10 +28,13 @@ MAX_PRIMARY_PDF_BYTES = 5 * 1024 * 1024
 
 class AutorActualizacionItemSerializer(serializers.Serializer):
     autor_id = serializers.IntegerField(min_value=1)
-    orden = serializers.IntegerField(required=False, min_value=1)
-    rol_autoria = serializers.ChoiceField(
-        choices=["principal", "coautor"],
+    orden = serializers.IntegerField(
         required=False,
+        min_value=1,
+        help_text=(
+            "Se acepta por compatibilidad. El orden final se normaliza "
+            "según la posición del autor en la lista recibida."
+        ),
     )
 
 
@@ -73,10 +76,15 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
         allow_null=True,
     )
 
-    fecha_publicacion = serializers.DateField(
+    anio_publicacion = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=2100,
+    )
+    mes_publicacion = serializers.ChoiceField(
+        choices=[(month, month) for month in range(1, 13)],
         required=False,
         allow_null=True,
-        input_formats=["%Y-%m-%d", "%d/%m/%Y"],
     )
     origen_tipo = serializers.ChoiceField(
         choices=[
@@ -212,7 +220,8 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
         "subarea",
         "pais",
         "ciudad",
-        "fecha_publicacion",
+        "anio_publicacion",
+        "mes_publicacion",
         "origen_tipo",
         "origen_grado",
         "archivo_pdf",
@@ -458,13 +467,12 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
                     }
                 )
 
+            # La posición en la lista recibida define únicamente el
+            # orden bibliográfico. No existe jerarquía entre autores.
             attrs["autores"] = [
                 {
                     "autor_id": item["autor_id"],
                     "orden": index,
-                    "rol_autoria": (
-                        "principal" if index == 1 else "coautor"
-                    ),
                 }
                 for index, item in enumerate(authors, start=1)
             ]
@@ -509,7 +517,6 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
                 publicacion=instance,
                 autor_id=item["autor_id"],
                 orden=item["orden"],
-                rol_autoria=item["rol_autoria"],
             )
             relation.full_clean()
             relation.save()

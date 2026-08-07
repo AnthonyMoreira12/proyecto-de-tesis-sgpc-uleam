@@ -78,7 +78,7 @@
         class="sgpc-form sgpc-form--with-aside"
         aria-label="Formulario para registrar una ponencia"
         enctype="multipart/form-data"
-        @submit.prevent="registrarPonencia"
+        @submit.prevent="handleSubmitIntent"
       >
         <main class="sgpc-form-main page-stage page-main">
           <!-- =================================================
@@ -181,6 +181,13 @@
                   geográfica del evento.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredContext, optionalContextMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredContext, optionalContextMissingCount) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -215,6 +222,13 @@
                   no posee un origen de este tipo.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredOrigin, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredOrigin, 0) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -368,6 +382,13 @@
                   modalidad de exposición y enlaces de respaldo.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredEvent, optionalEventMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredEvent, optionalEventMissingCount) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -457,47 +478,75 @@
                 </div>
 
                 <!-- Fecha -->
-                <div class="sgpc-field sgpc-col-span-6">
-                  <label
-                    class="sgpc-label"
-                    for="pn-fecha_publicacion"
-                  >
-                    Fecha de presentación
-
-                    <span
-                      class="req"
-                      aria-hidden="true"
-                    >
-                      *
-                    </span>
+                <!-- Período -->
+                <div class="sgpc-field sgpc-field--period sgpc-col-span-3">
+                  <label class="sgpc-label" for="pn-anio_publicacion">
+                    Año de presentación
+                    <span class="req" aria-hidden="true">*</span>
                   </label>
 
                   <input
-                    id="pn-fecha_publicacion"
-                    v-model="form.fecha_publicacion"
+                    id="pn-anio_publicacion"
+                    v-model.number="form.anio_publicacion"
                     class="sgpc-input"
-                    type="date"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Ej. 2026"
                     required
-                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    :aria-invalid="Boolean(fieldErrors.anio_publicacion)"
                     :aria-describedby="
-                      fieldErrors.fecha_publicacion
-                        ? 'pn-fecha-publicacion-error'
+                      fieldErrors.anio_publicacion
+                        ? 'pn-anio-publicacion-error'
                         : undefined
                     "
                   />
 
-                  <p class="sgpc-hint">
-                    Corresponde a la fecha en la que se presentó o expuso el
-                    trabajo.
-                  </p>
-
                   <p
-                    v-if="fieldErrors.fecha_publicacion"
-                    id="pn-fecha-publicacion-error"
+                    v-if="fieldErrors.anio_publicacion"
+                    id="pn-anio-publicacion-error"
                     class="sgpc-hint sgpc-hint-error"
                     role="alert"
                   >
-                    {{ fieldErrors.fecha_publicacion }}
+                    {{ fieldErrors.anio_publicacion }}
+                  </p>
+                </div>
+
+                <div class="sgpc-field sgpc-field--period sgpc-col-span-3">
+                  <label class="sgpc-label" for="pn-mes_publicacion">
+                    Mes de presentación
+                    <span class="sgpc-label-optional">(opcional)</span>
+                  </label>
+
+                  <select
+                    id="pn-mes_publicacion"
+                    v-model="form.mes_publicacion"
+                    class="sgpc-input"
+                    :aria-invalid="Boolean(fieldErrors.mes_publicacion)"
+                    :aria-describedby="monthDescriptionIds"
+                  >
+                    <option value="">Sin mes especificado</option>
+                    <option
+                      v-for="month in publicationMonths"
+                      :key="month.value"
+                      :value="month.value"
+                    >
+                      {{ month.label }}
+                    </option>
+                  </select>
+
+                  <p id="pn-mes-publicacion-help" class="sgpc-hint">
+                    Puede dejar el mes vacío si no consta en la fuente bibliográfica.
+                  </p>
+
+                  <p
+                    v-if="fieldErrors.mes_publicacion"
+                    id="pn-mes-publicacion-error"
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
+                    {{ fieldErrors.mes_publicacion }}
                   </p>
                 </div>
 
@@ -708,6 +757,13 @@
                   ponencia.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredAuthors, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredAuthors, 0) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -743,6 +799,13 @@
                   complementarios disponibles.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="hasAdjuntos ? 'is-complete' : 'is-optional'"
+              >
+                {{ hasAdjuntos ? "Completado" : "Opcional" }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -817,7 +880,10 @@
               </div>
             </div>
 
-            <div class="sgpc-progress">
+            <div
+              class="sgpc-progress"
+              :class="{ 'is-complete': canSubmit }"
+            >
               <div class="sgpc-progress-row">
                 <span>
                   Completitud
@@ -848,6 +914,52 @@
                 {{ totalRequiredCount }}
                 secciones obligatorias completas
               </p>
+            </div>
+
+            <div class="sgpc-optional-summary">
+              <div class="sgpc-optional-summary__head">
+                <span>Información complementaria</span>
+                <strong>{{ optionalCompletedCount }}/{{ totalOptionalCount }}</strong>
+              </div>
+
+              <p v-if="optionalMissingCount > 0">
+                <strong>{{ optionalMissingCount }}</strong>
+                {{ optionalMissingCount === 1 ? "dato opcional sin completar" : "datos opcionales sin completar" }}.
+                Puede registrar igualmente, pero conviene revisarlos si dispone de esa información.
+              </p>
+
+              <p v-else class="is-complete">
+                Toda la información complementaria aplicable está completa.
+              </p>
+
+              <button
+                v-if="optionalMissingCount > 0"
+                type="button"
+                class="sgpc-summary-link"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+            </div>
+
+            <div
+              v-if="canSubmit"
+              class="sgpc-ready-notice"
+              :class="{ 'has-optional-gap': optionalMissingCount > 0 }"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>
+                {{ optionalMissingCount > 0 ? "Listo para registrar" : "Registro completo" }}
+              </strong>
+
+              <span v-if="optionalMissingCount > 0">
+                Los datos obligatorios están completos. Quedan opcionales que puede revisar antes de guardar.
+              </span>
+
+              <span v-else>
+                Los datos obligatorios y complementarios están completos.
+              </span>
             </div>
 
             <div class="sgpc-status-list">
@@ -888,6 +1000,7 @@
                 class="sgpc-status-item"
                 :class="{
                   'is-ok': hasRequiredContext,
+                  'has-optional-gap': hasRequiredContext && optionalContextMissingCount > 0,
                 }"
                 @click="goTo('sec-datos-generales')"
               >
@@ -899,8 +1012,8 @@
                   <span>
                     {{
                       hasRequiredContext
-                        ? "Completo"
-                        : "Campos pendientes"
+                        ? sectionStatusText(optionalContextMissingCount)
+                        : "Campos obligatorios pendientes"
                     }}
                   </span>
                 </div>
@@ -950,6 +1063,7 @@
                 class="sgpc-status-item"
                 :class="{
                   'is-ok': hasRequiredEvent,
+                  'has-optional-gap': hasRequiredEvent && optionalEventMissingCount > 0,
                 }"
                 @click="goTo('sec-evento')"
               >
@@ -961,8 +1075,8 @@
                   <span>
                     {{
                       hasRequiredEvent
-                        ? "Completo"
-                        : "Campos pendientes"
+                        ? sectionStatusText(optionalEventMissingCount)
+                        : "Campos obligatorios pendientes"
                     }}
                   </span>
                 </div>
@@ -1012,6 +1126,7 @@
                 class="sgpc-status-item"
                 :class="{
                   'is-ok': hasAdjuntos,
+                  'is-optional-empty': !hasAdjuntos,
                 }"
                 @click="goTo('sec-adjuntos')"
               >
@@ -1023,8 +1138,8 @@
                   <span>
                     {{
                       hasAdjuntos
-                        ? `${form.archivos.length} archivo(s)`
-                        : "Opcional"
+                        ? `${form.archivos.length} archivo(s) adjunto(s)`
+                        : "Sin archivos adjuntos"
                     }}
                   </span>
                 </div>
@@ -1087,6 +1202,77 @@
           </div>
         </aside>
       </form>
+
+      <div
+        v-if="showOptionalReviewDialog"
+        class="sgpc-review-modal"
+        role="presentation"
+        @mousedown.self="closeOptionalReviewDialog"
+      >
+        <section
+          ref="optionalReviewDialog"
+          class="sgpc-review-modal__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pn-optional-review-title"
+          aria-describedby="pn-optional-review-description"
+          tabindex="-1"
+          @keydown.esc="closeOptionalReviewDialog"
+        >
+          <div class="sgpc-review-modal__icon" aria-hidden="true">!</div>
+
+          <div class="sgpc-review-modal__content">
+            <p class="sgpc-review-modal__kicker">Revisión final</p>
+
+            <h2 id="pn-optional-review-title">
+              La ponencia está lista para registrarse
+            </h2>
+
+            <p id="pn-optional-review-description">
+              Todos los campos obligatorios están completos, pero quedan
+              {{ optionalMissingCount }}
+              {{ optionalMissingCount === 1 ? "dato opcional vacío" : "datos opcionales vacíos" }}.
+              Esto no impide guardar el registro.
+            </p>
+
+            <ul class="sgpc-review-modal__list">
+              <li
+                v-for="item in optionalMissingItems"
+                :key="item.key"
+              >
+                <span>{{ item.label }}</span>
+                <small>{{ item.sectionLabel }}</small>
+              </li>
+            </ul>
+
+            <div class="sgpc-review-modal__actions">
+              <button
+                type="button"
+                class="sgpc-btn-primary"
+                @click="confirmOptionalRegistration"
+              >
+                Registrar de todas formas
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-btn"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-review-modal__cancel"
+                @click="closeOptionalReviewDialog"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -1142,6 +1328,22 @@ const VALID_PRESENTATION_TYPES =
    ERRORES
 ============================================================ */
 
+const PUBLICATION_MONTHS = Object.freeze([
+  { value: 1, label: "Enero" },
+  { value: 2, label: "Febrero" },
+  { value: 3, label: "Marzo" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Mayo" },
+  { value: 6, label: "Junio" },
+  { value: 7, label: "Julio" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Septiembre" },
+  { value: 10, label: "Octubre" },
+  { value: 11, label: "Noviembre" },
+  { value: 12, label: "Diciembre" },
+]);
+
+
 const ERROR_KEY_ALIASES = Object.freeze({
   usuario_objetivo_id: "admin_context",
   usuario_id: "admin_context",
@@ -1174,7 +1376,8 @@ const FIELD_LABELS = Object.freeze({
   origen_grado: "Grado / programa u otro origen",
   nombre_evento: "Nombre del evento",
   nombre_ponencia: "Nombre de la ponencia",
-  fecha_publicacion: "Fecha de presentación",
+  anio_publicacion: "Año de presentación",
+  mes_publicacion: "Mes de presentación",
   codigo_issn_isbn: "Código ISSN / ISBN",
   tipo_presentacion: "Tipo de presentación",
   tipo_presentacion_otro: "Otro tipo de presentación",
@@ -1197,7 +1400,8 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "origen_grado",
   "nombre_evento",
   "nombre_ponencia",
-  "fecha_publicacion",
+  "anio_publicacion",
+  "mes_publicacion",
   "codigo_issn_isbn",
   "tipo_presentacion",
   "tipo_presentacion_otro",
@@ -1232,7 +1436,8 @@ function createDefaultForm() {
 
     nombre_evento: "",
     nombre_ponencia: "",
-    fecha_publicacion: "",
+    anio_publicacion: null,
+    mes_publicacion: "",
     codigo_issn_isbn: "",
     tipo_presentacion: "",
     tipo_presentacion_otro: "",
@@ -1459,6 +1664,47 @@ function extractPublicacionId(data) {
    COMPONENTE
 ============================================================ */
 
+function normalizeRecoveredPeriod(recovered) {
+  const rawYear = Number(recovered?.anio_publicacion);
+  let year = Number.isInteger(rawYear) && rawYear > 0 ? rawYear : null;
+
+  const rawMonth = Number(recovered?.mes_publicacion);
+  let month =
+    Number.isInteger(rawMonth) && rawMonth >= 1 && rawMonth <= 12
+      ? rawMonth
+      : "";
+
+  const legacyKey = ["fecha", "publicacion"].join("_");
+  const legacyValue = String(recovered?.[legacyKey] || "").trim();
+  const legacyMatch = legacyValue.match(/^(\d{4})-(\d{2})/);
+
+  if (legacyMatch) {
+    if (!year) {
+      const parsedYear = Number(legacyMatch[1]);
+      if (Number.isInteger(parsedYear) && parsedYear > 0) {
+        year = parsedYear;
+      }
+    }
+
+    if (!month) {
+      const parsedMonth = Number(legacyMatch[2]);
+      if (
+        Number.isInteger(parsedMonth) &&
+        parsedMonth >= 1 &&
+        parsedMonth <= 12
+      ) {
+        month = parsedMonth;
+      }
+    }
+  }
+
+  return {
+    anio_publicacion: year,
+    mes_publicacion: month,
+  };
+}
+
+
 export default {
   name: "PonenciaRegistro",
 
@@ -1477,6 +1723,7 @@ export default {
 
       fieldErrors: {},
       draftInfo: "",
+      showOptionalReviewDialog: false,
 
       draftTimer: null,
       draftSuspended: false,
@@ -1498,6 +1745,19 @@ export default {
   ========================================================== */
 
   computed: {
+    publicationMonths() {
+      return PUBLICATION_MONTHS;
+    },
+
+    monthDescriptionIds() {
+      const ids = ["pn-mes-publicacion-help"];
+      if (this.fieldErrors.mes_publicacion) {
+        ids.push("pn-mes-publicacion-error");
+      }
+      return ids.join(" ");
+    },
+
+
     isAdminDelegado() {
       const path =
         String(
@@ -1664,8 +1924,6 @@ export default {
       return Boolean(
         general.facultad &&
         general.carrera &&
-        general.area &&
-        general.subarea &&
         general.pais &&
         general.ciudad
       );
@@ -1710,8 +1968,17 @@ export default {
             ""
           ).trim() &&
 
-          this.form
-            .fecha_publicacion
+          Number.isInteger(
+            Number(
+              this.form
+                .anio_publicacion
+            )
+          ) &&
+
+          Number(
+            this.form
+              .anio_publicacion
+          ) > 0
         );
 
       if (!basic) {
@@ -1754,6 +2021,136 @@ export default {
 
         this.form.archivos
           .length > 0
+      );
+    },
+
+    optionalMissingItems() {
+      const general =
+        this.form.datos_generales || {};
+
+      const hasValue = (value) =>
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== "";
+
+      const items = [];
+
+      if (!hasValue(general.proyecto)) {
+        items.push({
+          key: "proyecto",
+          label: "Proyecto de investigación",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      }
+
+      if (!hasValue(general.area)) {
+        items.push({
+          key: "area",
+          label: "Área del conocimiento (UNESCO)",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      } else if (!hasValue(general.subarea)) {
+        items.push({
+          key: "subarea",
+          label: "Subárea del conocimiento (UNESCO)",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      }
+
+      if (!hasValue(this.form.mes_publicacion)) {
+        items.push({
+          key: "mes_publicacion",
+          label: "Mes de presentación",
+          section: "evento",
+          sectionLabel: "Evento y ponencia",
+        });
+      }
+
+      if (!hasValue(this.form.codigo_issn_isbn)) {
+        items.push({
+          key: "codigo_issn_isbn",
+          label: "Código ISSN / ISBN",
+          section: "evento",
+          sectionLabel: "Evento y ponencia",
+        });
+      }
+
+      if (!hasValue(this.form.tipo_presentacion)) {
+        items.push({
+          key: "tipo_presentacion",
+          label: "Tipo de presentación",
+          section: "evento",
+          sectionLabel: "Evento y ponencia",
+        });
+      }
+
+      if (!hasValue(this.form.link_evento)) {
+        items.push({
+          key: "link_evento",
+          label: "Link del evento",
+          section: "evento",
+          sectionLabel: "Evento y ponencia",
+        });
+      }
+
+      if (!this.hasAdjuntos) {
+        items.push({
+          key: "archivos",
+          label: "Archivos PDF",
+          section: "adjuntos",
+          sectionLabel: "Archivos PDF",
+        });
+      }
+
+      return items;
+    },
+
+    optionalMissingCount() {
+      return this.optionalMissingItems.length;
+    },
+
+    totalOptionalCount() {
+      const general =
+        this.form.datos_generales || {};
+
+      const hasArea =
+        general.area !== null &&
+        general.area !== undefined &&
+        String(general.area).trim() !== "";
+
+      // Proyecto, área, mes, ISSN/ISBN, tipo de presentación,
+      // link y archivos. La subárea solo aplica cuando existe área.
+      return 7 + (hasArea ? 1 : 0);
+    },
+
+    optionalCompletedCount() {
+      return Math.max(
+        0,
+        this.totalOptionalCount -
+          this.optionalMissingCount
+      );
+    },
+
+    optionalContextMissingCount() {
+      return this.optionalMissingItems
+        .filter((item) => item.section === "datos")
+        .length;
+    },
+
+    optionalEventMissingCount() {
+      return this.optionalMissingItems
+        .filter((item) => item.section === "evento")
+        .length;
+    },
+
+    canSubmit() {
+      return Boolean(
+        this.totalRequiredCount > 0 &&
+        this.completedRequiredCount ===
+          this.totalRequiredCount
       );
     },
 
@@ -1894,9 +2291,11 @@ export default {
 
                   nombre_ponencia:
                     value.nombre_ponencia,
+                  anio_publicacion:
+                    value.anio_publicacion,
 
-                  fecha_publicacion:
-                    value.fecha_publicacion,
+                  mes_publicacion:
+                    value.mes_publicacion,
 
                   codigo_issn_isbn:
                     value.codigo_issn_isbn,
@@ -2111,11 +2510,22 @@ export default {
         const empty =
           createDefaultForm();
 
+        const recoveredPeriod =
+          normalizeRecoveredPeriod(
+            incoming
+          );
+
         this.suspendDraftOnce();
 
         this.form = {
           ...empty,
           ...incoming,
+
+          anio_publicacion:
+            recoveredPeriod.anio_publicacion,
+
+          mes_publicacion:
+            recoveredPeriod.mes_publicacion,
 
           datos_generales: {
             ...empty
@@ -2231,6 +2641,114 @@ export default {
     },
 
     /* ========================================================
+       RESUMEN / OPCIONALES
+    ======================================================== */
+
+    sectionStatusText(optionalMissing = 0) {
+      if (optionalMissing > 0) {
+        return `${optionalMissing} ${
+          optionalMissing === 1
+            ? "opcional sin completar"
+            : "opcionales sin completar"
+        }`;
+      }
+
+      return "Información completa";
+    },
+
+    sectionStateLabel(requiredDone, optionalMissing = 0) {
+      if (!requiredDone) {
+        return "Pendiente";
+      }
+
+      return optionalMissing > 0
+        ? "Completo · revisar opcionales"
+        : "Completo";
+    },
+
+    sectionStateClass(requiredDone, optionalMissing = 0) {
+      if (!requiredDone) {
+        return "is-pending";
+      }
+
+      return optionalMissing > 0
+        ? "is-complete has-optional-gap"
+        : "is-complete";
+    },
+
+    focusOptionalItem(item) {
+      if (!item) {
+        return;
+      }
+
+      if (item.key === "archivos") {
+        this.goTo("sec-adjuntos");
+        return;
+      }
+
+      this.focusField(item.key);
+    },
+
+    reviewOptionalFields() {
+      const first =
+        this.optionalMissingItems[0];
+
+      this.closeOptionalReviewDialog();
+
+      if (!first) {
+        return;
+      }
+
+      this.$nextTick(() => {
+        this.focusOptionalItem(first);
+      });
+    },
+
+    openOptionalReviewDialog() {
+      this.showOptionalReviewDialog =
+        true;
+
+      this.$nextTick(() => {
+        this.$refs.optionalReviewDialog
+          ?.focus?.();
+      });
+    },
+
+    closeOptionalReviewDialog() {
+      this.showOptionalReviewDialog =
+        false;
+    },
+
+    async confirmOptionalRegistration() {
+      this.closeOptionalReviewDialog();
+
+      await this.registrarPonencia({
+        skipFrontValidation: true,
+      });
+    },
+
+    async handleSubmitIntent() {
+      if (this.loading) {
+        return;
+      }
+
+      this.clearErrors();
+
+      if (!this.validateFront()) {
+        return;
+      }
+
+      if (this.optionalMissingCount > 0) {
+        this.openOptionalReviewDialog();
+        return;
+      }
+
+      await this.registrarPonencia({
+        skipFrontValidation: true,
+      });
+    },
+
+    /* ========================================================
        NAVEGACIÓN / ERRORES
     ======================================================== */
 
@@ -2279,8 +2797,11 @@ export default {
         nombre_ponencia:
           "pn-nombre_ponencia",
 
-        fecha_publicacion:
-          "pn-fecha_publicacion",
+        anio_publicacion:
+          "pn-anio_publicacion",
+
+        mes_publicacion:
+          "pn-mes_publicacion",
 
         codigo_issn_isbn:
           "pn-codigo_issn_isbn",
@@ -2392,12 +2913,6 @@ export default {
                 id,
 
               orden,
-
-              rol_autoria:
-                orden ===
-                1
-                  ? "principal"
-                  : "coautor",
             };
           }
         )
@@ -2482,24 +2997,7 @@ export default {
         errors.carrera =
           "Seleccione una carrera.";
       }
-
-      if (
-        !general
-          .area
-      ) {
-        errors.area =
-          "Seleccione un área del conocimiento.";
-      }
-
-      if (
-        !general
-          .subarea
-      ) {
-        errors.subarea =
-          "Seleccione una subárea del conocimiento.";
-      }
-
-      if (
+if (
         !general
           .pais
       ) {
@@ -2604,16 +3102,26 @@ export default {
         errors.nombre_ponencia =
           `El nombre de la ponencia no puede superar ${FIELD_LIMITS.nombre_ponencia} caracteres.`;
       }
+      const publicationYear = Number(this.form.anio_publicacion);
 
-      if (
-        !this.form
-          .fecha_publicacion
-      ) {
-        errors.fecha_publicacion =
-          "Campo obligatorio.";
+      if (!Number.isInteger(publicationYear) || publicationYear <= 0) {
+        errors.anio_publicacion =
+          "Ingrese un año válido.";
       }
 
-      if (
+      if (this.form.mes_publicacion !== "") {
+        const publicationMonth = Number(this.form.mes_publicacion);
+
+        if (
+          !Number.isInteger(publicationMonth) ||
+          publicationMonth < 1 ||
+          publicationMonth > 12
+        ) {
+          errors.mes_publicacion =
+            "Seleccione un mes válido.";
+        }
+      }
+if (
         exceedsLength(
           this.form
             .codigo_issn_isbn,
@@ -2826,7 +3334,8 @@ export default {
       [
         "nombre_evento",
         "nombre_ponencia",
-        "fecha_publicacion",
+        "anio_publicacion",
+        "mes_publicacion",
         "codigo_issn_isbn",
         "tipo_presentacion",
         "link_evento",
@@ -3110,7 +3619,7 @@ export default {
        REGISTRO
     ======================================================== */
 
-    async registrarPonencia() {
+    async registrarPonencia({ skipFrontValidation = false } = {}) {
       if (
         this.loading
       ) {
@@ -3120,7 +3629,9 @@ export default {
       this.loading =
         true;
 
-      this.clearErrors();
+      if (!skipFrontValidation) {
+        this.clearErrors();
+      }
 
       try {
         /* --------------------------------------------------
@@ -3128,6 +3639,7 @@ export default {
         -------------------------------------------------- */
 
         if (
+          !skipFrontValidation &&
           !this.validateFront()
         ) {
           return;
@@ -3377,6 +3889,9 @@ export default {
       this.draftInfo =
         "";
 
+      this.showOptionalReviewDialog =
+        false;
+
       this.form =
         createDefaultForm();
     },
@@ -3385,4 +3900,3 @@ export default {
 </script>
 
 <style src="../componentes/sgpc-fcvt.css"></style>
-<style src="./ponencia-registro.css"></style>

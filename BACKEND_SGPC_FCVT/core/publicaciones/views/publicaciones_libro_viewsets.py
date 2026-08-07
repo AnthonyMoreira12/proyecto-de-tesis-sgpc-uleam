@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import (
     permissions,
     status,
@@ -46,6 +46,17 @@ class LibroViewSet(
     ]
 
     def get_queryset(self):
+        """
+        Devuelve libros ordenados por período de publicación.
+
+        Reglas:
+        - año más reciente primero;
+        - dentro del mismo año, mes más reciente primero;
+        - publicaciones sin mes se ubican después de las que sí
+          tienen mes dentro del mismo año;
+        - id descendente como criterio final estable.
+        """
+
         queryset = (
             Libro.objects
             .select_related(
@@ -60,7 +71,16 @@ class LibroViewSet(
                 "publicacion__tipo",
             )
             .order_by(
-                "-publicacion__fecha_publicacion",
+                F(
+                    "publicacion__anio_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
+                F(
+                    "publicacion__mes_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
                 "-id",
             )
         )
@@ -107,6 +127,7 @@ class LibroViewSet(
         )
 
         libro = serializer.save()
+        publicacion = libro.publicacion
 
         return Response(
             {
@@ -118,10 +139,13 @@ class LibroViewSet(
                     libro.publicacion_id
                 ),
                 "numero_publicacion": (
-                    libro.publicacion.numero
+                    publicacion.numero
                 ),
                 "anio_publicacion": (
-                    libro.publicacion.anio_publicacion
+                    publicacion.anio_publicacion
+                ),
+                "mes_publicacion": (
+                    publicacion.mes_publicacion
                 ),
             },
             status=status.HTTP_201_CREATED,

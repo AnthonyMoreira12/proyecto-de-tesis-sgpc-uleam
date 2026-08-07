@@ -1,9 +1,0 @@
-/* ============================================================
-   SGPC ULEAM
-   Registro de Libro
-   Ajustes exclusivos del formulario LIB
-============================================================ */
-
-.sgpc-form-page--libro {
-  --sgpc-primary: var(--color-primary, #315fcb);
-}

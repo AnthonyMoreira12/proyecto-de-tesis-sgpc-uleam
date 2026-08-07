@@ -241,6 +241,21 @@ class Publicacion(models.Model):
         ),
     ]
 
+    MES_PUBLICACION = [
+        (1, "Enero"),
+        (2, "Febrero"),
+        (3, "Marzo"),
+        (4, "Abril"),
+        (5, "Mayo"),
+        (6, "Junio"),
+        (7, "Julio"),
+        (8, "Agosto"),
+        (9, "Septiembre"),
+        (10, "Octubre"),
+        (11, "Noviembre"),
+        (12, "Diciembre"),
+    ]
+
     proyecto = models.ForeignKey(
         "core.Proyecto",
         on_delete=models.SET_NULL,
@@ -349,15 +364,14 @@ class Publicacion(models.Model):
         blank=True,
     )
 
-    fecha_publicacion = models.DateField(
-        null=True,
-        blank=True,
+    anio_publicacion = models.PositiveIntegerField(
+        db_index=True,
     )
 
-    anio_publicacion = models.PositiveIntegerField(
+    mes_publicacion = models.PositiveSmallIntegerField(
+        choices=MES_PUBLICACION,
         null=True,
         blank=True,
-        db_index=True,
     )
 
     numero = models.PositiveIntegerField(
@@ -394,6 +408,12 @@ class Publicacion(models.Model):
             models.Index(
                 fields=[
                     "anio_publicacion",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "anio_publicacion",
+                    "mes_publicacion",
                 ],
             ),
             models.Index(
@@ -534,24 +554,23 @@ class Publicacion(models.Model):
                 "El número debe ser mayor o igual a 1."
             )
 
-        if self.fecha_publicacion:
-            expected_year = (
-                self.fecha_publicacion.year
+        if (
+            self.anio_publicacion is None
+            or self.anio_publicacion < 1
+        ):
+            errors["anio_publicacion"] = (
+                "El año de publicación es obligatorio "
+                "y debe ser mayor o igual a 1."
             )
 
-            if (
-                self.anio_publicacion
-                and self.anio_publicacion
-                != expected_year
-            ):
-                errors["anio_publicacion"] = (
-                    "El año de publicación no coincide "
-                    "con la fecha de publicación."
-                )
-            else:
-                self.anio_publicacion = (
-                    expected_year
-                )
+        if (
+            self.mes_publicacion is not None
+            and self.mes_publicacion not in range(1, 13)
+        ):
+            errors["mes_publicacion"] = (
+                "El mes de publicación debe estar "
+                "entre 1 y 12."
+            )
 
         if (
             self.area_id
@@ -753,14 +772,6 @@ class Publicacion(models.Model):
                 )
             except Publicacion.DoesNotExist:
                 old_pdf = None
-
-        if (
-            self.fecha_publicacion
-            and not self.anio_publicacion
-        ):
-            self.anio_publicacion = (
-                self.fecha_publicacion.year
-            )
 
         if (
             self.numero is None

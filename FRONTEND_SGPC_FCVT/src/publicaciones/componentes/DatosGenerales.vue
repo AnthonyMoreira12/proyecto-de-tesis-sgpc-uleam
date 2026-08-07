@@ -156,6 +156,9 @@
             for="dg-proyecto"
           >
             {{ proyectoLabelComputed }}
+            <span v-if="props.proyectoOpcional">
+              (opcional)
+            </span>
 
             <span
               v-if="!props.proyectoOpcional"
@@ -248,7 +251,7 @@
             for="dg-area"
           >
             {{ areaLabelComputed }}
-            <span class="req" aria-hidden="true">*</span>
+            <span>(opcional)</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -257,19 +260,11 @@
               class="dg-input"
               :value="local.area"
               :aria-invalid="Boolean(props.errors?.area)"
-              :aria-describedby="
-                props.errors?.area
-                  ? 'dg-area-error'
-                  : undefined
-              "
-              required
+              :aria-describedby="areaDescriptionIds"
               @change="setField('area', $event.target.value)"
             >
-              <option
-                value=""
-                disabled
-              >
-                Seleccione...
+              <option value="">
+                Sin área seleccionada
               </option>
 
               <option
@@ -280,6 +275,14 @@
                 {{ area.nombre }}
               </option>
             </select>
+
+            <p
+              v-if="!local.area"
+              id="dg-area-help"
+              class="dg-hint"
+            >
+              Opcional. Seleccione un área únicamente si corresponde a la publicación.
+            </p>
 
             <p
               v-if="props.errors?.area"
@@ -299,7 +302,7 @@
             for="dg-subarea"
           >
             {{ subareaLabelComputed }}
-            <span class="req" aria-hidden="true">*</span>
+            <span>(opcional)</span>
           </label>
 
           <div class="dg-control dg-control--select">
@@ -311,21 +314,15 @@
               :aria-busy="loadingSubareas ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.subarea)"
               :aria-describedby="subareaDescriptionIds"
-              required
               @change="setField('subarea', $event.target.value)"
             >
-              <option
-                value=""
-                disabled
-              >
+              <option value="">
                 {{
                   !local.area
-                    ? "Seleccione área..."
+                    ? "Seleccione un área..."
                     : loadingSubareas
                       ? "Cargando..."
-                      : subareas.length
-                        ? "Seleccione..."
-                        : "Sin subáreas disponibles"
+                      : "Sin subárea seleccionada"
                 }}
               </option>
 
@@ -343,7 +340,7 @@
               id="dg-subarea-help"
               class="dg-hint"
             >
-              Seleccione un área para habilitar las subáreas.
+              La subárea es opcional. Seleccione primero un área si desea registrarla.
             </p>
 
             <p
@@ -355,6 +352,17 @@
               class="dg-hint dg-hint-warn"
             >
               No hay subáreas disponibles para el área seleccionada.
+            </p>
+
+            <p
+              v-else-if="
+                local.area &&
+                !loadingSubareas
+              "
+              id="dg-subarea-optional"
+              class="dg-hint"
+            >
+              Opcional. Puede dejar este campo sin seleccionar.
             </p>
 
             <p
@@ -571,7 +579,7 @@ const props = defineProps({
 
   proyectoOpcional: {
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   proyectoLabel: {
@@ -915,6 +923,23 @@ const carreraDescriptionIds = computed(() => {
     : undefined;
 });
 
+const areaDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.area) {
+    ids.push("dg-area-help");
+  }
+
+  if (props.errors?.area) {
+    ids.push("dg-area-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
+
 const proyectoDescriptionIds = computed(() => {
   const ids = [];
 
@@ -952,6 +977,14 @@ const subareaDescriptionIds = computed(() => {
     subareas.value.length === 0
   ) {
     ids.push("dg-subarea-empty");
+  }
+
+  if (
+    local.area &&
+    !loadingSubareas.value &&
+    subareas.value.length > 0
+  ) {
+    ids.push("dg-subarea-optional");
   }
 
   if (props.errors?.subarea) {

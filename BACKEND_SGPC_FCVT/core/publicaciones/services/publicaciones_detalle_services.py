@@ -153,17 +153,31 @@ def _get_origen_payload(
     }
 
 
-def _fecha_a_str(value):
-    if not value:
+def _get_mes_publicacion_label(
+    publicacion,
+):
+    mes = getattr(
+        publicacion,
+        "mes_publicacion",
+        None,
+    )
+
+    if mes in (
+        None,
+        "",
+    ):
         return None
 
     try:
-        return value.isoformat()
+        return (
+            publicacion
+            .get_mes_publicacion_display()
+        )
     except (
         AttributeError,
         ValueError,
     ):
-        return str(value)
+        return None
 
 
 def _safe_related(
@@ -347,9 +361,6 @@ def _get_autores_payload(
                 "nombre": nombre_completo,
                 "autor_nombre": nombre_completo,
                 "nombre_completo": nombre_completo,
-                "rol_autoria": (
-                    participacion.rol_autoria
-                ),
                 "orden": (
                     participacion.orden
                 ),
@@ -851,16 +862,19 @@ def construir_detalle_publicacion(
         ),
 
         # -----------------------------------------------------
-        # Fecha
+        # Periodo de publicación
         # -----------------------------------------------------
 
-        "fecha_publicacion": (
-            _fecha_a_str(
-                publicacion.fecha_publicacion
-            )
-        ),
         "anio_publicacion": (
             publicacion.anio_publicacion
+        ),
+        "mes_publicacion": (
+            publicacion.mes_publicacion
+        ),
+        "mes_publicacion_label": (
+            _get_mes_publicacion_label(
+                publicacion
+            )
         ),
 
         # -----------------------------------------------------

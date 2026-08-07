@@ -2,13 +2,17 @@
 Servicio para registrar autores asociados a una publicación.
 
 Reglas:
-- Debe existir al menos un autor.
-- No puede repetirse un autor.
-- No puede repetirse un orden.
-- Los órdenes deben ser consecutivos: 1, 2, 3...
-- Debe existir exactamente un autor principal.
-- El autor principal debe ocupar el orden 1.
-- Todo autor con orden superior a 1 es coautor.
+
+- debe existir al menos un autor;
+- todos los participantes se consideran autores;
+- no existe autor principal ni coautor;
+- no puede repetirse un autor;
+- no puede repetirse un orden;
+- los órdenes deben ser consecutivos: 1, 2, 3...;
+- el orden representa únicamente la posición bibliográfica
+  de los autores;
+- se conserva exactamente ese orden en detalles, listados,
+  perfiles, reportes y exportaciones.
 """
 
 from django.db import transaction
@@ -21,21 +25,25 @@ from core.models import (
 )
 
 
-def _resolve_autor_id(item):
+def _resolve_autor_id(
+    item,
+):
     """
-    Acepta payload normalizado de cualquiera de estas formas:
+    Obtiene el identificador del Autor.
 
-    {
-        "autor": <Autor instance>
-    }
+    Acepta cualquiera de estas representaciones:
 
-    {
-        "autor": 12
-    }
+        {
+            "autor": <Autor instance>
+        }
 
-    {
-        "autor_id": 12
-    }
+        {
+            "autor": 12
+        }
+
+        {
+            "autor_id": 12
+        }
     """
 
     autor_value = item.get(
@@ -58,7 +66,10 @@ def _resolve_autor_id(item):
             autor_value,
         )
 
-    if autor_id is None:
+    if autor_id in (
+        None,
+        "",
+    ):
         raise ValidationError(
             {
                 "autores": [
@@ -72,6 +83,7 @@ def _resolve_autor_id(item):
         autor_id = int(
             autor_id
         )
+
     except (
         TypeError,
         ValueError,
@@ -103,6 +115,13 @@ def _resolve_orden(
     *,
     index,
 ):
+    """
+    Obtiene y valida el orden bibliográfico del autor.
+
+    El orden comienza en 1 y no representa ninguna jerarquía
+    ni nivel de contribución.
+    """
+
     orden = item.get(
         "orden",
         None,
@@ -125,6 +144,7 @@ def _resolve_orden(
         orden = int(
             orden
         )
+
     except (
         TypeError,
         ValueError,
@@ -154,6 +174,25 @@ def _resolve_orden(
 def _normalizar_autores(
     autores_data,
 ):
+    """
+    Normaliza y valida el conjunto completo de autores.
+
+    Resultado:
+
+        [
+            {
+                "autor_id": 10,
+                "orden": 1,
+            },
+            {
+                "autor_id": 15,
+                "orden": 2,
+            },
+        ]
+
+    Nunca genera ni interpreta roles de autoría.
+    """
+
     if not isinstance(
         autores_data,
         (list, tuple),
@@ -222,9 +261,9 @@ def _normalizar_autores(
         for item in normalized
     ]
 
-    # ---------------------------------------------------------
-    # Duplicados
-    # ---------------------------------------------------------
+    # =========================================================
+    # AUTORES DUPLICADOS
+    # =========================================================
 
     if (
         len(autor_ids)
@@ -239,6 +278,10 @@ def _normalizar_autores(
             }
         )
 
+    # =========================================================
+    # ÓRDENES DUPLICADOS
+    # =========================================================
+
     if (
         len(ordenes)
         != len(set(ordenes))
@@ -252,9 +295,9 @@ def _normalizar_autores(
             }
         )
 
-    # ---------------------------------------------------------
-    # Órdenes consecutivos
-    # ---------------------------------------------------------
+    # =========================================================
+    # ÓRDENES CONSECUTIVOS
+    # =========================================================
 
     expected_orders = list(
         range(
@@ -270,27 +313,17 @@ def _normalizar_autores(
         raise ValidationError(
             {
                 "autores": [
-                    "Los órdenes deben ser "
-                    "consecutivos: "
+                    "Los órdenes de los autores "
+                    "deben ser consecutivos: "
                     f"{expected_orders}."
                 ]
             }
         )
 
+    # El orden únicamente representa posición bibliográfica.
     normalized.sort(
         key=lambda item: item["orden"]
     )
-
-    # ---------------------------------------------------------
-    # Rol derivado del orden
-    # ---------------------------------------------------------
-
-    for item in normalized:
-        item["rol_autoria"] = (
-            "principal"
-            if item["orden"] == 1
-            else "coautor"
-        )
 
     return normalized
 
@@ -302,10 +335,15 @@ def registrar_autores_publicacion(
     autores_data,
 ):
     """
-    Registra las relaciones PublicacionAutor.
+    Registra las relaciones entre Publicacion y Autor.
 
-    Está pensado para utilizarse durante la creación
-    de una publicación.
+    Todos los registros creados poseen únicamente:
+
+        publicacion
+        autor
+        orden
+
+    No se asignan roles de autoría.
     """
 
     if not isinstance(
@@ -331,15 +369,13 @@ def registrar_autores_publicacion(
             }
         )
 
-    normalized = (
-        _normalizar_autores(
-            autores_data
-        )
+    normalized = _normalizar_autores(
+        autores_data
     )
 
-    # ---------------------------------------------------------
-    # Comprobar existencia de autores
-    # ---------------------------------------------------------
+    # =========================================================
+    # COMPROBAR EXISTENCIA DE LOS AUTORES
+    # =========================================================
 
     autor_ids = [
         item["autor_id"]
@@ -366,10 +402,15 @@ def registrar_autores_publicacion(
             }
         )
 
-    # ---------------------------------------------------------
-    # Este servicio corresponde a creación.
-    # Evitamos registrar dos veces la misma autoría.
-    # ---------------------------------------------------------
+    # =========================================================
+    # EVITAR REGISTRO DUPLICADO
+    # =========================================================
+    #
+    # Este servicio se utiliza durante la creación de una
+    # publicación. Si ya existen autores asociados, algo en
+    # el flujo de creación está intentando registrar dos veces
+    # las relaciones.
+    # =========================================================
 
     if (
         PublicacionAutor.objects
@@ -389,12 +430,14 @@ def registrar_autores_publicacion(
 
     created = []
 
-    # ---------------------------------------------------------
-    # Usamos .create() en lugar de bulk_create().
+    # =========================================================
+    # CREACIÓN
+    # =========================================================
     #
-    # PublicacionAutor.save() ejecuta full_clean(), por lo
-    # que mantenemos activas las reglas del modelo.
-    # ---------------------------------------------------------
+    # Se utiliza .create() en lugar de bulk_create() para
+    # conservar las validaciones definidas por el modelo
+    # PublicacionAutor.
+    # =========================================================
 
     for item in normalized:
         relacion = (
@@ -404,11 +447,6 @@ def registrar_autores_publicacion(
                 autor=autores_map[
                     item["autor_id"]
                 ],
-                rol_autoria=(
-                    item[
-                        "rol_autoria"
-                    ]
-                ),
                 orden=item["orden"],
             )
         )

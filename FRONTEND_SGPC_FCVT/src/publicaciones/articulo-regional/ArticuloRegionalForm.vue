@@ -78,7 +78,7 @@
         class="sgpc-form sgpc-form--with-aside"
         aria-label="Formulario para registrar un artículo regional"
         enctype="multipart/form-data"
-        @submit.prevent="registrarArticuloRegional"
+        @submit.prevent="handleSubmitIntent"
       >
         <main class="sgpc-form-main page-stage page-main">
           <!-- =================================================
@@ -169,6 +169,13 @@
                   Información institucional para la clasificación del registro.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredContext, optionalContextMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredContext, optionalContextMissingCount) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -204,6 +211,13 @@
                   no aplica.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredOrigin, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredOrigin, 0) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -355,16 +369,23 @@
                   Información base del artículo y su indexación regional.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredMain, optionalMainMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredMain, optionalMainMissingCount) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
-                <div class="sgpc-field sgpc-col-span-6">
+                <div class="sgpc-field sgpc-col-span-3">
                   <label
                     class="sgpc-label"
-                    for="ar-fecha_publicacion"
+                    for="ar-anio_publicacion"
                   >
-                    Fecha de publicación
+                    Año de publicación
                     <span
                       class="req"
                       aria-hidden="true"
@@ -374,26 +395,78 @@
                   </label>
 
                   <input
-                    id="ar-fecha_publicacion"
-                    v-model="form.fecha_publicacion"
+                    id="ar-anio_publicacion"
+                    v-model.number="form.anio_publicacion"
                     class="sgpc-input"
-                    type="date"
-                    :aria-invalid="Boolean(fieldErrors.fecha_publicacion)"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Ej. 2026"
+                    :aria-invalid="Boolean(fieldErrors.anio_publicacion)"
                     :aria-describedby="
-                      fieldErrors.fecha_publicacion
-                        ? 'ar-fecha-publicacion-error'
+                      fieldErrors.anio_publicacion
+                        ? 'ar-anio-publicacion-error'
                         : undefined
                     "
                     required
                   />
 
                   <p
-                    v-if="fieldErrors.fecha_publicacion"
-                    id="ar-fecha-publicacion-error"
+                    v-if="fieldErrors.anio_publicacion"
+                    id="ar-anio-publicacion-error"
                     class="sgpc-hint sgpc-hint-error"
                     role="alert"
                   >
-                    {{ fieldErrors.fecha_publicacion }}
+                    {{ fieldErrors.anio_publicacion }}
+                  </p>
+                </div>
+
+                <div class="sgpc-field sgpc-col-span-3">
+                  <label
+                    class="sgpc-label"
+                    for="ar-mes_publicacion"
+                  >
+                    Mes de publicación
+                    <span class="sgpc-label-optional">
+                      (opcional)
+                    </span>
+                  </label>
+
+                  <select
+                    id="ar-mes_publicacion"
+                    v-model="form.mes_publicacion"
+                    class="sgpc-input"
+                    :aria-invalid="Boolean(fieldErrors.mes_publicacion)"
+                    :aria-describedby="monthDescriptionIds"
+                  >
+                    <option value="">
+                      Sin mes especificado
+                    </option>
+
+                    <option
+                      v-for="month in publicationMonths"
+                      :key="month.value"
+                      :value="month.value"
+                    >
+                      {{ month.label }}
+                    </option>
+                  </select>
+
+                  <p
+                    id="ar-mes-publicacion-help"
+                    class="sgpc-hint"
+                  >
+                    Puede dejar el mes vacío si no consta en la fuente bibliográfica.
+                  </p>
+
+                  <p
+                    v-if="fieldErrors.mes_publicacion"
+                    id="ar-mes-publicacion-error"
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
+                    {{ fieldErrors.mes_publicacion }}
                   </p>
                 </div>
 
@@ -588,6 +661,13 @@
                   indicadores de impacto no aplican a artículos regionales.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredJournal, optionalJournalMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredJournal, optionalJournalMissingCount) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -830,6 +910,13 @@
                   Seleccione autores, participación y orden de firma.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredAuthors, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredAuthors, 0) }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -865,6 +952,13 @@
                   archivo cuando sea necesario.
                 </p>
               </div>
+
+              <span
+                class="sgpc-section-state"
+                :class="hasAdjuntos ? 'is-complete' : 'is-optional'"
+              >
+                {{ hasAdjuntos ? "Completado" : "Opcional" }}
+              </span>
             </div>
 
             <div class="sgpc-card-body">
@@ -940,7 +1034,10 @@
               </div>
             </div>
 
-            <div class="sgpc-progress">
+            <div
+              class="sgpc-progress"
+              :class="{ 'is-complete': canSubmit }"
+            >
               <div class="sgpc-progress-row">
                 <span>
                   Completitud
@@ -973,179 +1070,71 @@
               </p>
             </div>
 
+            <div class="sgpc-optional-summary">
+              <div class="sgpc-optional-summary__head">
+                <span>Información complementaria</span>
+                <strong>{{ optionalCompletedCount }}/{{ totalOptionalCount }}</strong>
+              </div>
+
+              <p v-if="optionalMissingCount > 0">
+                <strong>{{ optionalMissingCount }}</strong>
+                {{ optionalMissingCount === 1 ? "dato opcional sin completar" : "datos opcionales sin completar" }}.
+                Puede registrar igualmente, pero conviene revisarlos si dispone de esa información.
+              </p>
+
+              <p v-else class="is-complete">
+                Toda la información complementaria aplicable está completa.
+              </p>
+
+              <button
+                v-if="optionalMissingCount > 0"
+                type="button"
+                class="sgpc-summary-link"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+            </div>
+
+            <div
+              v-if="canSubmit"
+              class="sgpc-ready-notice"
+              :class="{ 'has-optional-gap': optionalMissingCount > 0 }"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>
+                {{ optionalMissingCount > 0 ? "Listo para registrar" : "Registro completo" }}
+              </strong>
+
+              <span v-if="optionalMissingCount > 0">
+                Los datos obligatorios están completos. Quedan opcionales que puede revisar antes de guardar.
+              </span>
+
+              <span v-else>
+                Los datos obligatorios y complementarios están completos.
+              </span>
+            </div>
+
             <div class="sgpc-status-list">
               <button
+                v-for="item in summarySections"
+                :key="item.key"
                 type="button"
                 class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredContext }"
-                @click="goTo('sec-datos-generales')"
+                :class="{
+                  'is-ok': item.done,
+                  'has-optional-gap': item.done && item.optionalMissing > 0,
+                  'is-optional-empty': !item.required && !item.done,
+                }"
+                @click="goTo(item.target)"
               >
                 <div>
-                  <strong>
-                    Datos generales
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredContext
-                        ? "Completo"
-                        : "Campos pendientes"
-                    }}
-                  </span>
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.detail }}</span>
                 </div>
 
-                <em>
-                  {{
-                    hasRequiredContext
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredOrigin }"
-                @click="goTo('sec-origen')"
-              >
-                <div>
-                  <strong>
-                    Origen
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredOrigin
-                        ? "Completo"
-                        : "Campos pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredOrigin
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredMain }"
-                @click="goTo('sec-principales')"
-              >
-                <div>
-                  <strong>
-                    Datos principales
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredMain
-                        ? "Completo"
-                        : "Campos pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredMain
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredJournal }"
-                @click="goTo('sec-revista')"
-              >
-                <div>
-                  <strong>
-                    Revista y enlaces
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredJournal
-                        ? "Completo"
-                        : "Campos pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredJournal
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{ 'is-ok': hasRequiredAuthors }"
-                @click="goTo('sec-autores')"
-              >
-                <div>
-                  <strong>
-                    Autores
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredAuthors
-                        ? `${form.autores.length} autor(es)`
-                        : "Sin autores"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredAuthors
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{ 'is-ok': hasAdjuntos }"
-                @click="goTo('sec-adjuntos')"
-              >
-                <div>
-                  <strong>
-                    Adjuntos
-                  </strong>
-
-                  <span>
-                    {{
-                      hasAdjuntos
-                        ? `${form.archivos.length} archivo(s)`
-                        : "Opcional"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasAdjuntos
-                      ? "Completo"
-                      : "Opcional"
-                  }}
-                </em>
+                <em>{{ item.status }}</em>
               </button>
             </div>
 
@@ -1197,6 +1186,77 @@
           </div>
         </aside>
       </form>
+
+      <div
+        v-if="showOptionalReviewDialog"
+        class="sgpc-review-modal"
+        role="presentation"
+        @mousedown.self="closeOptionalReviewDialog"
+      >
+        <section
+          ref="optionalReviewDialog"
+          class="sgpc-review-modal__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ar-optional-review-title"
+          aria-describedby="ar-optional-review-description"
+          tabindex="-1"
+          @keydown.esc="closeOptionalReviewDialog"
+        >
+          <div class="sgpc-review-modal__icon" aria-hidden="true">!</div>
+
+          <div class="sgpc-review-modal__content">
+            <p class="sgpc-review-modal__kicker">Revisión final</p>
+
+            <h2 id="ar-optional-review-title">
+              El artículo regional está listo para registrarse
+            </h2>
+
+            <p id="ar-optional-review-description">
+              Todos los campos obligatorios están completos, pero quedan
+              {{ optionalMissingCount }}
+              {{ optionalMissingCount === 1 ? "dato opcional vacío" : "datos opcionales vacíos" }}.
+              Esto no impide guardar el registro.
+            </p>
+
+            <ul class="sgpc-review-modal__list">
+              <li
+                v-for="item in optionalMissingItems"
+                :key="item.key"
+              >
+                <span>{{ item.label }}</span>
+                <small>{{ item.sectionLabel }}</small>
+              </li>
+            </ul>
+
+            <div class="sgpc-review-modal__actions">
+              <button
+                type="button"
+                class="sgpc-btn-primary"
+                @click="confirmOptionalRegistration"
+              >
+                Registrar de todas formas
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-btn"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-review-modal__cancel"
+                @click="closeOptionalReviewDialog"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -1238,7 +1298,7 @@ const route = useRoute();
 ========================================================= */
 
 const BASE_DRAFT_KEY =
-  "sgpc:draft:articulo_regional:v23";
+  "sgpc:draft:articulo_regional:v24";
 
 const STANDARD_CREATE_ENDPOINT =
   "/publicaciones/articulos/crear/";
@@ -1257,6 +1317,22 @@ const FIELD_LIMITS = Object.freeze({
   link_revista: 500,
   link_publicacion: 500,
 });
+
+
+const PUBLICATION_MONTHS = Object.freeze([
+  { value: 1, label: "Enero" },
+  { value: 2, label: "Febrero" },
+  { value: 3, label: "Marzo" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Mayo" },
+  { value: 6, label: "Junio" },
+  { value: 7, label: "Julio" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Septiembre" },
+  { value: 10, label: "Octubre" },
+  { value: 11, label: "Noviembre" },
+  { value: 12, label: "Diciembre" },
+]);
 
 
 const REGIONAL_DATABASES = new Set([
@@ -1302,7 +1378,8 @@ const FIELD_LABELS = Object.freeze({
   nombre_articulo: "Título del artículo",
   base_datos_indexada: "Base de datos / indexación",
   base_datos_otra: "Base de datos (otra)",
-  fecha_publicacion: "Fecha de publicación",
+  anio_publicacion: "Año de publicación",
+  mes_publicacion: "Mes de publicación",
   codigo_issn: "ISSN",
   codigo_doi: "DOI",
   nombre_revista: "Nombre de la revista",
@@ -1324,7 +1401,8 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "subarea",
   "origen_tipo",
   "origen_grado",
-  "fecha_publicacion",
+  "anio_publicacion",
+  "mes_publicacion",
   "nombre_articulo",
   "base_datos_indexada",
   "base_datos_otra",
@@ -1365,7 +1443,8 @@ function createDefaultForm() {
     nombre_articulo: "",
     base_datos_indexada: "",
     base_datos_otra: "",
-    fecha_publicacion: "",
+    anio_publicacion: null,
+    mes_publicacion: "",
 
     codigo_issn: "",
     codigo_doi: "",
@@ -1626,6 +1705,8 @@ const errorMessage = ref("");
 const fieldErrors = ref({});
 
 const draftInfo = ref("");
+const showOptionalReviewDialog = ref(false);
+const optionalReviewDialog = ref(null);
 
 let draftTimer = null;
 let draftEnabled = true;
@@ -1748,6 +1829,18 @@ const showAutorObjetivo =
   });
 
 
+const adminReady =
+  computed(() => {
+    return (
+      !isAdminDelegado.value ||
+      Boolean(
+        adminContext.value
+          .usuarioId
+      )
+    );
+  });
+
+
 /* =========================================================
    TEXTOS DEL FORMULARIO
 ========================================================= */
@@ -1819,6 +1912,31 @@ const createEndpoint = computed(
    PROGRESO
 ========================================================= */
 
+const publicationMonths =
+  computed(() =>
+    PUBLICATION_MONTHS
+  );
+
+
+const monthDescriptionIds =
+  computed(() => {
+    const ids = [
+      "ar-mes-publicacion-help",
+    ];
+
+    if (
+      fieldErrors.value
+        .mes_publicacion
+    ) {
+      ids.push(
+        "ar-mes-publicacion-error"
+      );
+    }
+
+    return ids.join(" ");
+  });
+
+
 const hasRequiredContext =
   computed(() => {
     const general =
@@ -1826,9 +1944,7 @@ const hasRequiredContext =
 
     return Boolean(
       general.facultad &&
-      general.carrera &&
-      general.area &&
-      general.subarea
+      general.carrera
     );
   });
 
@@ -1861,9 +1977,17 @@ const hasRequiredOrigin =
 
 const hasRequiredMain =
   computed(() => {
+    const publicationYear =
+      Number(
+        form.value
+          .anio_publicacion
+      );
+
     if (
-      !form.value
-        .fecha_publicacion
+      !Number.isInteger(
+        publicationYear
+      ) ||
+      publicationYear <= 0
     ) {
       return false;
     }
@@ -1962,69 +2086,380 @@ const hasAdjuntos =
   });
 
 
-const requiredSections =
+const optionalMissingItems =
   computed(() => {
-    return [
+    const general =
+      formDatos.value || {};
+
+    const hasValue = (value) =>
+      value !== null &&
+      value !== undefined &&
+      String(value).trim() !== "";
+
+    const items = [];
+
+    if (!hasValue(general.proyecto)) {
+      items.push({
+        key: "proyecto",
+        label: "Proyecto de investigación",
+        section: "datos",
+        sectionLabel: "Datos generales",
+      });
+    }
+
+    if (!hasValue(general.area)) {
+      items.push({
+        key: "area",
+        label: "Área del conocimiento (UNESCO)",
+        section: "datos",
+        sectionLabel: "Datos generales",
+      });
+    } else if (!hasValue(general.subarea)) {
+      items.push({
+        key: "subarea",
+        label: "Subárea del conocimiento (UNESCO)",
+        section: "datos",
+        sectionLabel: "Datos generales",
+      });
+    }
+
+    if (!hasValue(form.value.mes_publicacion)) {
+      items.push({
+        key: "mes_publicacion",
+        label: "Mes de publicación",
+        section: "principal",
+        sectionLabel: "Datos principales",
+      });
+    }
+
+    if (!hasValue(form.value.codigo_doi)) {
+      items.push({
+        key: "codigo_doi",
+        label: "Código DOI",
+        section: "revista",
+        sectionLabel: "Revista y enlaces",
+      });
+    }
+
+    if (!hasValue(form.value.numero_revista)) {
+      items.push({
+        key: "numero_revista",
+        label: "Número de la revista",
+        section: "revista",
+        sectionLabel: "Revista y enlaces",
+      });
+    }
+
+    if (!hasValue(form.value.link_revista)) {
+      items.push({
+        key: "link_revista",
+        label: "Link de la revista",
+        section: "revista",
+        sectionLabel: "Revista y enlaces",
+      });
+    }
+
+    if (!hasValue(form.value.link_publicacion)) {
+      items.push({
+        key: "link_publicacion",
+        label: "Link de la publicación",
+        section: "revista",
+        sectionLabel: "Revista y enlaces",
+      });
+    }
+
+    if (!hasAdjuntos.value) {
+      items.push({
+        key: "archivos",
+        label: "Adjuntos PDF",
+        section: "adjuntos",
+        sectionLabel: "Adjuntos",
+      });
+    }
+
+    return items;
+  });
+
+
+const optionalMissingCount =
+  computed(() =>
+    optionalMissingItems.value.length
+  );
+
+
+const totalOptionalCount =
+  computed(() => {
+    const general =
+      formDatos.value || {};
+
+    const hasArea =
+      general.area !== null &&
+      general.area !== undefined &&
+      String(general.area).trim() !== "";
+
+    /*
+     * Proyecto, área, mes, DOI, número de revista,
+     * link de revista, link de publicación y adjuntos.
+     * La subárea solo aplica cuando existe un área elegida.
+     */
+    return 8 +
+      (hasArea ? 1 : 0);
+  });
+
+
+const optionalCompletedCount =
+  computed(() => {
+    return Math.max(
+      0,
+      totalOptionalCount.value -
+        optionalMissingCount.value
+    );
+  });
+
+
+const optionalContextMissingCount =
+  computed(() => {
+    return optionalMissingItems.value
+      .filter(
+        (item) =>
+          item.section === "datos"
+      )
+      .length;
+  });
+
+
+const optionalMainMissingCount =
+  computed(() => {
+    return optionalMissingItems.value
+      .filter(
+        (item) =>
+          item.section === "principal"
+      )
+      .length;
+  });
+
+
+const optionalJournalMissingCount =
+  computed(() => {
+    return optionalMissingItems.value
+      .filter(
+        (item) =>
+          item.section === "revista"
+      )
+      .length;
+  });
+
+
+function sectionStatusText(
+  optionalMissing = 0
+) {
+  if (optionalMissing > 0) {
+    return `${optionalMissing} ${
+      optionalMissing === 1
+        ? "opcional sin completar"
+        : "opcionales sin completar"
+    }`;
+  }
+
+  return "Información completa";
+}
+
+
+function sectionStateLabel(
+  requiredDone,
+  optionalMissing = 0
+) {
+  if (!requiredDone) {
+    return "Pendiente";
+  }
+
+  return optionalMissing > 0
+    ? "Completo · revisar opcionales"
+    : "Completo";
+}
+
+
+function sectionStateClass(
+  requiredDone,
+  optionalMissing = 0
+) {
+  if (!requiredDone) {
+    return "is-pending";
+  }
+
+  return optionalMissing > 0
+    ? "is-complete has-optional-gap"
+    : "is-complete";
+}
+
+
+const summarySections =
+  computed(() => {
+    const sections = [
       {
         key: "datos",
-        done:
-          hasRequiredContext.value,
+        target: "sec-datos-generales",
+        label: "Datos generales",
+        done: hasRequiredContext.value,
+        required: true,
+        optionalMissing:
+          optionalContextMissingCount.value,
+        detail:
+          hasRequiredContext.value
+            ? sectionStatusText(
+                optionalContextMissingCount.value
+              )
+            : "Campos obligatorios pendientes",
+        status:
+          hasRequiredContext.value
+            ? "Completo"
+            : "Pendiente",
       },
-
       {
         key: "origen",
-        done:
-          hasRequiredOrigin.value,
+        target: "sec-origen",
+        label: "Origen",
+        done: hasRequiredOrigin.value,
+        required: true,
+        optionalMissing: 0,
+        detail:
+          hasRequiredOrigin.value
+            ? "Información completa"
+            : "Seleccione el origen",
+        status:
+          hasRequiredOrigin.value
+            ? "Completo"
+            : "Pendiente",
       },
-
       {
         key: "principal",
-        done:
-          hasRequiredMain.value,
+        target: "sec-principales",
+        label: "Datos principales",
+        done: hasRequiredMain.value,
+        required: true,
+        optionalMissing:
+          optionalMainMissingCount.value,
+        detail:
+          hasRequiredMain.value
+            ? sectionStatusText(
+                optionalMainMissingCount.value
+              )
+            : "Artículo, año o indexación pendientes",
+        status:
+          hasRequiredMain.value
+            ? "Completo"
+            : "Pendiente",
       },
-
       {
         key: "revista",
-        done:
-          hasRequiredJournal.value,
+        target: "sec-revista",
+        label: "Revista y enlaces",
+        done: hasRequiredJournal.value,
+        required: true,
+        optionalMissing:
+          optionalJournalMissingCount.value,
+        detail:
+          hasRequiredJournal.value
+            ? sectionStatusText(
+                optionalJournalMissingCount.value
+              )
+            : "Revista o ISSN pendientes",
+        status:
+          hasRequiredJournal.value
+            ? "Completo"
+            : "Pendiente",
       },
-
       {
         key: "autores",
-        done:
-          hasRequiredAuthors.value,
+        target: "sec-autores",
+        label: "Autores",
+        done: hasRequiredAuthors.value,
+        required: true,
+        optionalMissing: 0,
+        detail:
+          hasRequiredAuthors.value
+            ? `${form.value.autores.length} autor(es)`
+            : "Sin autores",
+        status:
+          hasRequiredAuthors.value
+            ? "Completo"
+            : "Pendiente",
+      },
+      {
+        key: "adjuntos",
+        target: "sec-adjuntos",
+        label: "Adjuntos",
+        done: hasAdjuntos.value,
+        required: false,
+        optionalMissing:
+          hasAdjuntos.value ? 0 : 1,
+        detail:
+          hasAdjuntos.value
+            ? `${form.value.archivos.length} archivo(s)`
+            : "Sin archivos adjuntos",
+        status:
+          hasAdjuntos.value
+            ? "Completado"
+            : "Opcional",
       },
     ];
+
+    if (isAdminDelegado.value) {
+      return [
+        {
+          key: "admin",
+          target: "sec-contexto-admin",
+          label: "Contexto administrativo",
+          done: adminReady.value,
+          required: true,
+          optionalMissing: 0,
+          detail:
+            adminReady.value
+              ? "Usuario objetivo válido"
+              : "Falta usuario objetivo",
+          status:
+            adminReady.value
+              ? "Completo"
+              : "Pendiente",
+        },
+        ...sections,
+      ];
+    }
+
+    return sections;
+  });
+
+
+const requiredSections =
+  computed(() => {
+    return summarySections.value
+      .filter(
+        (section) =>
+          section.required
+      );
   });
 
 
 const completedRequiredCount =
   computed(() => {
-    return (
-      requiredSections.value
-        .filter(
-          (section) =>
-            section.done
-        )
-        .length
-    );
+    return requiredSections.value
+      .filter(
+        (section) =>
+          section.done
+      )
+      .length;
   });
 
 
 const totalRequiredCount =
-  computed(() => {
-    return (
-      requiredSections.value
-        .length
-    );
-  });
+  computed(() =>
+    requiredSections.value.length
+  );
 
 
 const progressPercent =
   computed(() => {
-    if (
-      !totalRequiredCount.value
-    ) {
+    if (!totalRequiredCount.value) {
       return 0;
     }
 
@@ -2034,6 +2469,16 @@ const progressPercent =
         totalRequiredCount.value
       ) *
       100
+    );
+  });
+
+
+const canSubmit =
+  computed(() => {
+    return Boolean(
+      totalRequiredCount.value > 0 &&
+      completedRequiredCount.value ===
+        totalRequiredCount.value
     );
   });
 
@@ -2066,8 +2511,11 @@ function focusField(key) {
     origen_grado:
       "ar-origen_grado",
 
-    fecha_publicacion:
-      "ar-fecha_publicacion",
+    anio_publicacion:
+      "ar-anio_publicacion",
+
+    mes_publicacion:
+      "ar-mes_publicacion",
 
     nombre_articulo:
       "ar-nombre_articulo",
@@ -2141,6 +2589,86 @@ function focusField(key) {
       280
     );
   }
+}
+
+
+function focusOptionalItem(item) {
+  if (!item) {
+    return;
+  }
+
+  if (item.key === "archivos") {
+    goTo("sec-adjuntos");
+    return;
+  }
+
+  focusField(item.key);
+}
+
+
+function closeOptionalReviewDialog() {
+  showOptionalReviewDialog.value =
+    false;
+}
+
+
+function reviewOptionalFields() {
+  const first =
+    optionalMissingItems.value[0];
+
+  closeOptionalReviewDialog();
+
+  if (!first) {
+    return;
+  }
+
+  nextTick(() => {
+    focusOptionalItem(first);
+  });
+}
+
+
+function openOptionalReviewDialog() {
+  showOptionalReviewDialog.value =
+    true;
+
+  nextTick(() => {
+    optionalReviewDialog.value
+      ?.focus?.();
+  });
+}
+
+
+async function confirmOptionalRegistration() {
+  closeOptionalReviewDialog();
+
+  await registrarArticuloRegional({
+    skipFrontValidation: true,
+  });
+}
+
+
+async function handleSubmitIntent() {
+  if (loading.value) {
+    return;
+  }
+
+  successMessage.value = "";
+  errorMessage.value = "";
+  fieldErrors.value = {};
+
+  if (!validateFront()) {
+    return;
+  }
+
+  if (optionalMissingCount.value > 0) {
+    openOptionalReviewDialog();
+    return;
+  }
+
+  await registrarArticuloRegional({
+    skipFrontValidation: true,
+  });
 }
 
 
@@ -2229,6 +2757,106 @@ function hydrateAdminContextFromRoute() {
    BORRADOR
 ========================================================= */
 
+function normalizeRecoveredPeriod(
+  recovered
+) {
+  const rawYear =
+    Number(
+      recovered
+        ?.anio_publicacion
+    );
+
+  let year = (
+    Number.isInteger(
+      rawYear
+    ) &&
+    rawYear > 0
+  )
+    ? rawYear
+    : null;
+
+  const rawMonth =
+    Number(
+      recovered
+        ?.mes_publicacion
+    );
+
+  let month = (
+    Number.isInteger(
+      rawMonth
+    ) &&
+    rawMonth >= 1 &&
+    rawMonth <= 12
+  )
+    ? rawMonth
+    : "";
+
+  const legacyKey =
+    [
+      "fecha",
+      "publicacion",
+    ].join("_");
+
+  const legacyValue =
+    String(
+      recovered?.[
+        legacyKey
+      ] ||
+      ""
+    ).trim();
+
+  const legacyMatch =
+    legacyValue.match(
+      /^(\d{4})-(\d{2})/
+    );
+
+  if (legacyMatch) {
+    if (!year) {
+      const parsedYear =
+        Number(
+          legacyMatch[1]
+        );
+
+      if (
+        Number.isInteger(
+          parsedYear
+        ) &&
+        parsedYear > 0
+      ) {
+        year =
+          parsedYear;
+      }
+    }
+
+    if (!month) {
+      const parsedMonth =
+        Number(
+          legacyMatch[2]
+        );
+
+      if (
+        Number.isInteger(
+          parsedMonth
+        ) &&
+        parsedMonth >= 1 &&
+        parsedMonth <= 12
+      ) {
+        month =
+          parsedMonth;
+      }
+    }
+  }
+
+  return {
+    anio_publicacion:
+      year,
+
+    mes_publicacion:
+      month,
+  };
+}
+
+
 function saveDraft() {
   if (
     !draftEnabled
@@ -2273,9 +2901,13 @@ function saveDraft() {
                 form.value
                   .base_datos_otra,
 
-              fecha_publicacion:
+              anio_publicacion:
                 form.value
-                  .fecha_publicacion,
+                  .anio_publicacion,
+
+              mes_publicacion:
+                form.value
+                  .mes_publicacion,
 
               codigo_issn:
                 form.value
@@ -2403,9 +3035,15 @@ function loadDraft() {
           incoming.base_datos_otra ||
           "",
 
-        fecha_publicacion:
-          incoming.fecha_publicacion ||
-          "",
+        anio_publicacion:
+          normalizeRecoveredPeriod(
+            incoming
+          ).anio_publicacion,
+
+        mes_publicacion:
+          normalizeRecoveredPeriod(
+            incoming
+          ).mes_publicacion,
 
         codigo_issn:
           incoming.codigo_issn ||
@@ -2548,13 +3186,7 @@ function buildAutoresPayload() {
 
         return {
           autor_id: id,
-
           orden,
-
-          rol_autoria:
-            orden === 1
-              ? "principal"
-              : "coautor",
         };
       }
     )
@@ -2647,20 +3279,6 @@ function validateFront() {
       "Seleccione una carrera.";
   }
 
-  if (
-    !general.area
-  ) {
-    errors.area =
-      "Seleccione un área del conocimiento (UNESCO).";
-  }
-
-  if (
-    !general.subarea
-  ) {
-    errors.subarea =
-      "Seleccione una subárea del conocimiento (UNESCO).";
-  }
-
   // -------------------------------------------------------
   // Origen
   // -------------------------------------------------------
@@ -2703,15 +3321,45 @@ function validateFront() {
   }
 
   // -------------------------------------------------------
-  // Fecha
+  // Período de publicación
   // -------------------------------------------------------
 
+  const publicationYear =
+    Number(
+      form.value
+        .anio_publicacion
+    );
+
   if (
-    !form.value
-      .fecha_publicacion
+    !Number.isInteger(
+      publicationYear
+    ) ||
+    publicationYear <= 0
   ) {
-    errors.fecha_publicacion =
-      "Campo obligatorio.";
+    errors.anio_publicacion =
+      "Ingrese un año de publicación válido.";
+  }
+
+  if (
+    form.value
+      .mes_publicacion !== ""
+  ) {
+    const publicationMonth =
+      Number(
+        form.value
+          .mes_publicacion
+      );
+
+    if (
+      !Number.isInteger(
+        publicationMonth
+      ) ||
+      publicationMonth < 1 ||
+      publicationMonth > 12
+    ) {
+      errors.mes_publicacion =
+        "Seleccione un mes válido.";
+    }
   }
 
   // -------------------------------------------------------
@@ -2989,6 +3637,9 @@ function resetForm() {
   draftInfo.value =
     "";
 
+  showOptionalReviewDialog.value =
+    false;
+
   formDatos.value =
     createDefaultFormDatos();
 
@@ -3035,7 +3686,7 @@ function handleRouteContextChange() {
    REGISTRO
 ========================================================= */
 
-async function registrarArticuloRegional() {
+async function registrarArticuloRegional({ skipFrontValidation = false } = {}) {
   if (
     loading.value
   ) {
@@ -3060,6 +3711,7 @@ async function registrarArticuloRegional() {
     // -----------------------------------------------------
 
     if (
+      !skipFrontValidation &&
       !validateFront()
     ) {
       return;
@@ -3207,9 +3859,16 @@ async function registrarArticuloRegional() {
 
     appendFormValue(
       formData,
-      "fecha_publicacion",
+      "anio_publicacion",
       form.value
-        .fecha_publicacion
+        .anio_publicacion
+    );
+
+    appendFormValue(
+      formData,
+      "mes_publicacion",
+      form.value
+        .mes_publicacion
     );
 
     appendFormValue(
@@ -3542,4 +4201,3 @@ watch(
 </script>
 
 <style src="../componentes/sgpc-fcvt.css"></style>
-<style src="./articulo-regional-form.css"></style>

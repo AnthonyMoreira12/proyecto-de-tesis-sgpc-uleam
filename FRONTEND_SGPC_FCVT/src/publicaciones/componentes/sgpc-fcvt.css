@@ -871,6 +871,10 @@
   grid-column: span 4;
 }
 
+.sgpc-col-span-3 {
+  grid-column: span 3;
+}
+
 /* =========================================================
    8. CAMPOS
 ========================================================= */
@@ -893,6 +897,23 @@
   font-size: 0.78rem;
   font-weight: 680;
   line-height: 1.4;
+}
+
+.sgpc-label-optional {
+  margin-left: 4px;
+
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.71rem;
+  font-weight: 560;
+}
+
+.sgpc-field--period {
+  align-content: start;
+}
+
+.sgpc-field--period .sgpc-hint {
+  margin-top: -1px;
 }
 
 .sgpc-input,
@@ -2815,6 +2836,7 @@ body.dark
   .sgpc-col-span-8,
   .sgpc-col-span-6,
   .sgpc-col-span-4,
+  .sgpc-col-span-3,
   .sgpc-form-page :where(.dg-field),
   .sgpc-form-page :where(.dg-field--full) {
     grid-column: auto;
@@ -3113,7 +3135,351 @@ body.dark
 }
 
 /* =========================================================
-   24. MOVIMIENTO REDUCIDO
+   24. SEGUIMIENTO INTELIGENTE Y REVISIÓN DE OPCIONALES
+   Compartido por AAI, AR, CAP, LIB y PON
+========================================================= */
+
+.sgpc-form-page .sgpc-card-head {
+  /*
+   * Cabecera de sección = número + contenido + estado.
+   * Antes conservaba las 2 columnas originales y el badge de
+   * estado caía a una segunda fila debajo del número.
+   */
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+
+  align-items: flex-start;
+  column-gap: 14px;
+  row-gap: 8px;
+}
+
+.sgpc-form-page .sgpc-section-state {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  margin-left: auto;
+  padding: 5px 9px;
+  border: 1px solid var(--sgpc-line, rgba(23, 32, 51, 0.12));
+  border-radius: 999px;
+  background: var(--sgpc-surface-2, rgba(23, 32, 51, 0.035));
+  color: var(--sgpc-text-soft, #667085);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.sgpc-form-page .sgpc-section-state::before {
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.sgpc-form-page .sgpc-section-state.is-complete {
+  border-color: color-mix(in srgb, var(--sgpc-success, #2f7d57) 28%, transparent);
+  background: color-mix(in srgb, var(--sgpc-success, #2f7d57) 9%, transparent);
+  color: var(--sgpc-success, #2f7d57);
+}
+
+.sgpc-form-page .sgpc-section-state.is-complete.has-optional-gap {
+  border-color: color-mix(in srgb, var(--sgpc-warning, #a66a18) 30%, transparent);
+  background: color-mix(in srgb, var(--sgpc-warning, #a66a18) 9%, transparent);
+  color: var(--sgpc-warning, #a66a18);
+}
+
+.sgpc-form-page .sgpc-section-state.is-pending {
+  color: var(--sgpc-text-soft, #667085);
+}
+
+.sgpc-form-page .sgpc-section-state.is-optional {
+  border-style: dashed;
+  color: var(--sgpc-text-soft, #667085);
+}
+
+.sgpc-form-page .sgpc-progress.is-complete .sgpc-progress-bar > span {
+  background: var(--sgpc-success, #2f7d57);
+}
+
+.sgpc-form-page .sgpc-progress.is-complete .sgpc-progress-row strong {
+  color: var(--sgpc-success, #2f7d57);
+}
+
+.sgpc-form-page .sgpc-optional-summary {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--sgpc-warning, #a66a18) 22%, var(--sgpc-line, transparent));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sgpc-warning, #a66a18) 5%, var(--sgpc-surface, #fff));
+}
+
+.sgpc-form-page .sgpc-optional-summary__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--sgpc-text, #172033);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sgpc-form-page .sgpc-optional-summary__head strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.sgpc-form-page .sgpc-optional-summary p {
+  margin: 0;
+  color: var(--sgpc-text-soft, #667085);
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.sgpc-form-page .sgpc-optional-summary p:not(.is-complete) strong {
+  color: var(--sgpc-warning, #a66a18);
+}
+
+.sgpc-form-page .sgpc-optional-summary p.is-complete {
+  color: var(--sgpc-success, #2f7d57);
+}
+
+.sgpc-form-page .sgpc-summary-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sgpc-primary, #315fcb);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.sgpc-form-page .sgpc-summary-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sgpc-form-page .sgpc-ready-notice {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--sgpc-success, #2f7d57) 30%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sgpc-success, #2f7d57) 8%, var(--sgpc-surface, #fff));
+  color: var(--sgpc-success, #2f7d57);
+}
+
+.sgpc-form-page .sgpc-ready-notice.has-optional-gap {
+  border-color: color-mix(in srgb, var(--sgpc-warning, #a66a18) 28%, transparent);
+  background: color-mix(in srgb, var(--sgpc-warning, #a66a18) 7%, var(--sgpc-surface, #fff));
+  color: var(--sgpc-warning, #a66a18);
+}
+
+.sgpc-form-page .sgpc-ready-notice strong {
+  font-size: 0.79rem;
+}
+
+.sgpc-form-page .sgpc-ready-notice span {
+  color: var(--sgpc-text-soft, #667085);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.sgpc-form-page .sgpc-status-item.has-optional-gap {
+  border-color: color-mix(in srgb, var(--sgpc-success, #2f7d57) 26%, var(--sgpc-line, transparent));
+  background: color-mix(in srgb, var(--sgpc-success, #2f7d57) 5%, var(--sgpc-surface, #fff));
+}
+
+.sgpc-form-page .sgpc-status-item.has-optional-gap > div > span {
+  color: var(--sgpc-warning, #a66a18);
+  font-weight: 650;
+}
+
+.sgpc-form-page .sgpc-status-item.is-optional-empty {
+  border-style: dashed;
+}
+
+/* ============================================================
+   DIÁLOGO DE REVISIÓN FINAL
+============================================================ */
+
+.sgpc-form-page .sgpc-review-modal {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(5px);
+}
+
+.sgpc-form-page .sgpc-review-modal__dialog {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100dvh - 44px));
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--sgpc-line, rgba(23, 32, 51, 0.12));
+  border-radius: 18px;
+  outline: none;
+  background: var(--sgpc-surface, var(--bg-card, #fff));
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
+}
+
+.sgpc-form-page .sgpc-review-modal__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sgpc-warning, #a66a18) 12%, transparent);
+  color: var(--sgpc-warning, #a66a18);
+  font-size: 1.1rem;
+  font-weight: 850;
+}
+
+.sgpc-form-page .sgpc-review-modal__content {
+  min-width: 0;
+}
+
+.sgpc-form-page .sgpc-review-modal__kicker {
+  margin: 0 0 4px;
+  color: var(--sgpc-warning, #a66a18);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sgpc-form-page .sgpc-review-modal h2 {
+  margin: 0;
+  color: var(--sgpc-text, #172033);
+  font-size: clamp(1.08rem, 2vw, 1.28rem);
+  line-height: 1.25;
+}
+
+.sgpc-form-page .sgpc-review-modal__content > p:not(.sgpc-review-modal__kicker) {
+  margin: 8px 0 0;
+  color: var(--sgpc-text-soft, #667085);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.sgpc-form-page .sgpc-review-modal__list {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sgpc-form-page .sgpc-review-modal__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 10px;
+  border: 1px solid var(--sgpc-line, rgba(23, 32, 51, 0.1));
+  border-radius: 10px;
+  background: var(--sgpc-surface-2, rgba(23, 32, 51, 0.025));
+}
+
+.sgpc-form-page .sgpc-review-modal__list span {
+  color: var(--sgpc-text, #172033);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.sgpc-form-page .sgpc-review-modal__list small {
+  color: var(--sgpc-text-soft, #667085);
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.sgpc-form-page .sgpc-review-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.sgpc-form-page .sgpc-review-modal__cancel {
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--sgpc-text-soft, #667085);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.sgpc-form-page .sgpc-review-modal__cancel:hover {
+  color: var(--sgpc-text, #172033);
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page .sgpc-card-head {
+    /* En pantallas pequeñas el estado baja debajo del título,
+       nunca debajo del número de sección. */
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
+  }
+
+  .sgpc-form-page .sgpc-section-state {
+    grid-column: 2;
+    margin-left: 0;
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .sgpc-review-modal {
+    padding: 12px;
+  }
+
+  .sgpc-review-modal__dialog {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .sgpc-review-modal__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-review-modal__actions .sgpc-btn,
+  .sgpc-review-modal__actions .sgpc-btn-primary,
+  .sgpc-review-modal__cancel {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sgpc-review-modal *,
+  .sgpc-section-state,
+  .sgpc-summary-link {
+    transition: none !important;
+  }
+}
+
+
+/* =========================================================
+   25. MOVIMIENTO REDUCIDO
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {

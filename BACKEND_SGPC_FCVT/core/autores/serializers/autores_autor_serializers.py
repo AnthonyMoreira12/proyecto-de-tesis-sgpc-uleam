@@ -4,8 +4,9 @@ Serializer del modelo Autor.
 Responsabilidades:
 
 - Validar y normalizar la información básica del autor.
-- Admitir únicamente números de cédula de 10 dígitos.
-- Detectar coincidencias por identificación o correo.
+- Permitir Cédula/DNI opcional para autores externos.
+- Detectar coincidencias por identificación, correo u ORCID.
+- Gestionar identificadores académicos opcionales.
 - Exponer el estado de acceso del Usuario relacionado.
 - Proteger los campos usuario y es_externo.
 - Crear los autores manuales como autores externos.
@@ -37,10 +38,8 @@ User = get_user_model()
 # CONFIGURACIÓN
 # ============================================================
 
-CEDULA_LENGTH = 10
-
-CEDULA_PATTERN = re.compile(
-    r"^\d{10}$"
+ORCID_PATTERN = re.compile(
+    r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$"
 )
 
 
@@ -83,7 +82,10 @@ MAX_SURNAMES_LENGTH = _model_field_max_length(
     150,
 )
 
-MAX_IDENTIFICATION_LENGTH = CEDULA_LENGTH
+MAX_IDENTIFICATION_LENGTH = _model_field_max_length(
+    "identificacion",
+    50,
+)
 
 MAX_EMAIL_LENGTH = _model_field_max_length(
     "correo",
@@ -95,6 +97,27 @@ MAX_INSTITUTION_LENGTH = (
         "institucion",
         255,
     )
+)
+
+
+MAX_ORCID_LENGTH = _model_field_max_length(
+    "orcid",
+    19,
+)
+
+MAX_SENESCYT_LENGTH = _model_field_max_length(
+    "registro_senescyt",
+    100,
+)
+
+MAX_GOOGLE_SCHOLAR_LENGTH = _model_field_max_length(
+    "google_scholar",
+    500,
+)
+
+MAX_SCOPUS_ID_LENGTH = _model_field_max_length(
+    "scopus_id",
+    100,
 )
 
 
@@ -163,6 +186,49 @@ def _normalize_email(value):
         .strip()
         .lower()
     )
+
+
+def _normalize_orcid(value):
+    normalized = _normalize_single_line(
+        value
+    ).upper()
+
+    return normalized or None
+
+
+def _is_valid_orcid(value):
+    """
+    Valida formato y dígito de control ORCID
+    (ISO 7064 MOD 11-2).
+    """
+    normalized = _normalize_orcid(value)
+
+    if (
+        not normalized
+        or not ORCID_PATTERN.fullmatch(
+            normalized
+        )
+    ):
+        return False
+
+    digits = normalized.replace("-", "")
+    total = 0
+
+    for character in digits[:-1]:
+        total = (
+            total
+            + int(character)
+        ) * 2
+
+    remainder = total % 11
+    result = (12 - remainder) % 11
+    expected = (
+        "X"
+        if result == 10
+        else str(result)
+    )
+
+    return digits[-1] == expected
 
 
 def _django_validation_payload(exc):
@@ -340,29 +406,15 @@ class AutorSerializer(serializers.ModelSerializer):
     )
 
     identificacion = serializers.CharField(
-        required=True,
-        allow_blank=False,
-        allow_null=False,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
         trim_whitespace=True,
-        min_length=CEDULA_LENGTH,
-        max_length=CEDULA_LENGTH,
+        max_length=MAX_IDENTIFICATION_LENGTH,
         error_messages={
-            "required": (
-                "El número de cédula es obligatorio."
-            ),
-            "blank": (
-                "El número de cédula es obligatorio."
-            ),
-            "null": (
-                "El número de cédula es obligatorio."
-            ),
-            "min_length": (
-                "La cédula debe contener exactamente "
-                "10 dígitos numéricos."
-            ),
             "max_length": (
-                "La cédula debe contener exactamente "
-                "10 dígitos numéricos."
+                "La Cédula / DNI no puede superar "
+                f"los {MAX_IDENTIFICATION_LENGTH} caracteres."
             ),
         },
     )
@@ -403,6 +455,64 @@ class AutorSerializer(serializers.ModelSerializer):
             "max_length": (
                 "La institución no puede superar "
                 f"los {MAX_INSTITUTION_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    orcid = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        trim_whitespace=True,
+        max_length=MAX_ORCID_LENGTH,
+        error_messages={
+            "max_length": (
+                "El ORCID no puede superar "
+                f"los {MAX_ORCID_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    registro_senescyt = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        trim_whitespace=True,
+        max_length=MAX_SENESCYT_LENGTH,
+        error_messages={
+            "max_length": (
+                "El número de registro SENESCYT no puede superar "
+                f"los {MAX_SENESCYT_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    google_scholar = serializers.URLField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=MAX_GOOGLE_SCHOLAR_LENGTH,
+        error_messages={
+            "invalid": (
+                "Ingrese un enlace válido al perfil de Google Scholar."
+            ),
+            "max_length": (
+                "El enlace de Google Scholar no puede superar "
+                f"los {MAX_GOOGLE_SCHOLAR_LENGTH} caracteres."
+            ),
+        },
+    )
+
+    scopus_id = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        trim_whitespace=True,
+        max_length=MAX_SCOPUS_ID_LENGTH,
+        error_messages={
+            "max_length": (
+                "El Scopus ID no puede superar "
+                f"los {MAX_SCOPUS_ID_LENGTH} caracteres."
             ),
         },
     )
@@ -462,6 +572,10 @@ class AutorSerializer(serializers.ModelSerializer):
             "correo",
             "correo_resuelto",
             "institucion",
+            "orcid",
+            "registro_senescyt",
+            "google_scholar",
+            "scopus_id",
             "es_externo",
             "usuario",
             "usuario_id",
@@ -697,18 +811,34 @@ class AutorSerializer(serializers.ModelSerializer):
         value,
     ):
         """
-        Admite exclusivamente números de cédula de 10 dígitos.
-        """
-        normalized_identification = str(
-            value or ""
-        ).strip()
+        La Cédula/DNI es opcional para autores externos.
 
-        if not CEDULA_PATTERN.fullmatch(
-            normalized_identification
+        Si se proporciona, se conserva como documento de
+        identificación del Autor. Puede ser una cédula ecuatoriana,
+        un DNI extranjero u otro identificador equivalente.
+        """
+        if value in (
+            None,
+            "",
+        ):
+            return None
+
+        normalized_identification = (
+            _normalize_single_line(
+                value
+            )
+        )
+
+        if not normalized_identification:
+            return None
+
+        if (
+            len(normalized_identification)
+            > MAX_IDENTIFICATION_LENGTH
         ):
             raise serializers.ValidationError(
-                "La cédula debe contener exactamente "
-                "10 dígitos numéricos."
+                "La Cédula / DNI no puede superar "
+                f"los {MAX_IDENTIFICATION_LENGTH} caracteres."
             )
 
         return normalized_identification
@@ -773,6 +903,74 @@ class AutorSerializer(serializers.ModelSerializer):
 
         return normalized_institution
 
+    def validate_orcid(
+        self,
+        value,
+    ):
+        if value in (
+            None,
+            "",
+        ):
+            return None
+
+        normalized = _normalize_orcid(
+            value
+        )
+
+        if not _is_valid_orcid(
+            normalized
+        ):
+            raise serializers.ValidationError(
+                "El ORCID no tiene un formato o dígito "
+                "de control válido."
+            )
+
+        return normalized
+
+    def validate_registro_senescyt(
+        self,
+        value,
+    ):
+        if value in (
+            None,
+            "",
+        ):
+            return None
+
+        normalized = _normalize_single_line(
+            value
+        )
+
+        return normalized or None
+
+    def validate_google_scholar(
+        self,
+        value,
+    ):
+        if value in (
+            None,
+            "",
+        ):
+            return None
+
+        return str(value).strip() or None
+
+    def validate_scopus_id(
+        self,
+        value,
+    ):
+        if value in (
+            None,
+            "",
+        ):
+            return None
+
+        normalized = _normalize_single_line(
+            value
+        )
+
+        return normalized or None
+
     # ========================================================
     # VALIDACIÓN DE COINCIDENCIAS
     # ========================================================
@@ -822,6 +1020,17 @@ class AutorSerializer(serializers.ModelSerializer):
             else None,
         )
 
+        orcid = attrs.get(
+            "orcid",
+            getattr(
+                instance,
+                "orcid",
+                None,
+            )
+            if instance is not None
+            else None,
+        )
+
         identification_match = (
             buscar_autor_existente(
                 identificacion=identification,
@@ -831,6 +1040,11 @@ class AutorSerializer(serializers.ModelSerializer):
 
         email_match = buscar_autor_existente(
             correo=email,
+            exclude_autor_id=instance_id,
+        )
+
+        orcid_match = buscar_autor_existente(
+            orcid=orcid,
             exclude_autor_id=instance_id,
         )
 
@@ -844,16 +1058,25 @@ class AutorSerializer(serializers.ModelSerializer):
             "autor"
         )
 
-        if (
-            identification_author is not None
-            and email_author is not None
-            and identification_author.pk
-            != email_author.pk
-        ):
+        orcid_author = orcid_match.get(
+            "autor"
+        )
+
+        matched_authors = {
+            author.pk: author
+            for author in (
+                identification_author,
+                email_author,
+                orcid_author,
+            )
+            if author is not None
+        }
+
+        if len(matched_authors) > 1:
             raise serializers.ValidationError(
                 {
                     "detail": (
-                        "La cédula y el correo "
+                        "La Cédula/DNI, el correo y/o el ORCID "
                         "pertenecen a autores diferentes. "
                         "Revise los datos ingresados."
                     )
@@ -865,7 +1088,7 @@ class AutorSerializer(serializers.ModelSerializer):
                 {
                     "identificacion": (
                         "Ya existe un autor registrado "
-                        "con este número de cédula."
+                        "con esta Cédula / DNI."
                     )
                 }
             )
@@ -876,6 +1099,16 @@ class AutorSerializer(serializers.ModelSerializer):
                     "correo": (
                         "Ya existe un autor registrado "
                         "con este correo electrónico."
+                    )
+                }
+            )
+
+        if orcid_author is not None:
+            raise serializers.ValidationError(
+                {
+                    "orcid": (
+                        "Ya existe un autor registrado "
+                        "con este ORCID."
                     )
                 }
             )
@@ -928,7 +1161,7 @@ class AutorSerializer(serializers.ModelSerializer):
                     "detail": (
                         "No fue posible crear el autor "
                         "porque existe un conflicto con "
-                        "la cédula, el correo o "
+                        "la Cédula/DNI, el correo, el ORCID o "
                         "el usuario relacionado."
                     )
                 }
@@ -978,7 +1211,7 @@ class AutorSerializer(serializers.ModelSerializer):
                     "detail": (
                         "No fue posible actualizar el autor "
                         "porque existe un conflicto con "
-                        "la cédula, el correo o "
+                        "la Cédula/DNI, el correo, el ORCID o "
                         "el usuario relacionado."
                     )
                 }

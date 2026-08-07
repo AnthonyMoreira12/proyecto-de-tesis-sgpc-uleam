@@ -39,8 +39,8 @@
           </h3>
 
           <p class="as-subtitle">
-            Seleccione un autor principal, agregue coautores y ordénelos
-            libremente.
+            Seleccione los autores de la publicación y defina su orden
+            bibliográfico.
           </p>
         </div>
       </div>
@@ -153,8 +153,7 @@
             </span>
 
             <span class="as-helper">
-              Debe existir un único autor principal. Los coautores pueden
-              ordenarse libremente.
+              El orden indica la posición bibliográfica de cada autor.
             </span>
           </div>
 
@@ -170,150 +169,46 @@
         </div>
 
         <!-- =================================================
-             AUTOR PRINCIPAL
-        ================================================== -->
-
-        <div class="as-section">
-          <div class="as-section__head">
-            <h4 class="as-section__title">
-              Autor principal
-            </h4>
-
-            <span class="as-section__meta">
-              Orden 1
-            </span>
-          </div>
-
-          <div
-            v-if="principalAutor"
-            class="as-row as-row--principal"
-          >
-            <div class="as-row-main">
-              <div class="as-row-topline">
-                <span class="as-status as-status--primary">
-                  Autor principal
-                </span>
-              </div>
-
-              <div class="as-row-name">
-                {{ principalAutor.nombre_completo || "Autor" }}
-              </div>
-
-              <div class="as-row-sub">
-                <span v-if="principalAutor.identificacion">
-                  Cédula: {{ principalAutor.identificacion }}
-                </span>
-
-                <span v-else>
-                  Sin cédula
-                </span>
-
-                <span v-if="principalAutor.correo_resuelto">
-                  • {{ principalAutor.correo_resuelto }}
-                </span>
-
-                <span v-if="principalAutor.institucion">
-                  • {{ principalAutor.institucion }}
-                </span>
-              </div>
-
-              <div class="as-row-controls">
-                <label
-                  class="as-field-inline"
-                  for="as-principal-select"
-                >
-                  <span class="as-field-inline__label">
-                    Cambiar principal
-                  </span>
-
-                  <select
-                    id="as-principal-select"
-                    class="as-control-select as-control-select--role"
-                    :value="principalAutor.autor_id"
-                    @change="setPrincipalById($event.target.value)"
-                  >
-                    <option
-                      v-for="autor in selectedResolved"
-                      :key="`principal-opt-${autor.autor_id}`"
-                      :value="autor.autor_id"
-                    >
-                      {{ autor.nombre_completo || "Autor" }}
-                    </option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div class="as-row-actions">
-              <button
-                type="button"
-                class="as-icon as-icon-danger"
-                aria-label="Eliminar autor principal"
-                title="Eliminar autor principal"
-                @click="removePrincipal()"
-              >
-                ✖
-              </button>
-            </div>
-          </div>
-
-          <p
-            v-else
-            class="as-alert as-alert-error as-alert-inline"
-            role="alert"
-          >
-            Debe existir un autor principal.
-          </p>
-        </div>
-
-        <!-- =================================================
-             COAUTORES
+             ORDEN BIBLIOGRÁFICO
         ================================================== -->
 
         <div class="as-section">
           <div class="as-section__head">
             <div class="as-section__title-wrap">
               <h4 class="as-section__title">
-                Coautores
+                Orden bibliográfico
               </h4>
 
               <p class="as-section__hint">
-                Puede arrastrarlos para cambiar el orden.
+                Puede arrastrar los autores o utilizar los controles para
+                cambiar su posición.
               </p>
             </div>
 
             <span class="as-section__meta">
-              {{ coautores.length }} coautor(es)
+              {{ selectedResolved.length }} autor(es)
             </span>
           </div>
 
           <div
-            v-if="!coautores.length"
-            class="as-subempty"
-          >
-            No hay coautores agregados.
-          </div>
-
-          <div
-            v-else
             class="as-list-selected"
             role="list"
-            aria-label="Coautores seleccionados"
+            aria-label="Autores seleccionados en orden bibliográfico"
           >
             <div
-              v-for="(autor, index) in coautores"
+              v-for="(autor, index) in selectedResolved"
               :key="autorKey(autor, index)"
               class="as-row as-row--draggable"
               role="listitem"
               :class="{
-                'as-row--dragging': draggedCoautorIndex === index,
+                'as-row--dragging': draggedAuthorIndex === index,
                 'as-row--dragover':
-                  dragOverCoautorIndex === index &&
-                  draggedCoautorIndex !== index,
+                  dragOverAuthorIndex === index &&
+                  draggedAuthorIndex !== index,
               }"
-              @dragover.prevent="onCoautorDragOver(index, $event)"
-              @dragenter.prevent="onCoautorDragEnter(index)"
-              @drop.prevent="onCoautorDrop(index, $event)"
+              @dragover.prevent="onAuthorDragOver(index, $event)"
+              @dragenter.prevent="onAuthorDragEnter(index)"
+              @drop.prevent="onAuthorDrop(index, $event)"
             >
               <div class="as-row-main">
                 <div class="as-row-topline">
@@ -321,12 +216,12 @@
                     type="button"
                     class="as-drag-handle"
                     draggable="true"
-                    :aria-label="`Arrastrar coautor ${
+                    :aria-label="`Arrastrar autor ${
                       autor.nombre_completo || 'Autor'
                     }`"
                     title="Arrastrar para reordenar"
-                    @dragstart="onCoautorDragStart(index, $event)"
-                    @dragend="onCoautorDragEnd()"
+                    @dragstart="onAuthorDragStart(index, $event)"
+                    @dragend="onAuthorDragEnd()"
                   >
                     <span aria-hidden="true">
                       ⋮⋮
@@ -334,11 +229,11 @@
                   </button>
 
                   <span class="as-row-index">
-                    #{{ index + 2 }}
+                    #{{ autor.orden }}
                   </span>
 
                   <span class="as-status as-status--soft">
-                    Coautor
+                    Orden bibliográfico {{ autor.orden }}
                   </span>
                 </div>
 
@@ -348,11 +243,11 @@
 
                 <div class="as-row-sub">
                   <span v-if="autor.identificacion">
-                    Cédula: {{ autor.identificacion }}
+                    Cédula / DNI: {{ autor.identificacion }}
                   </span>
 
                   <span v-else>
-                    Sin cédula
+                    Sin Cédula / DNI
                   </span>
 
                   <span v-if="autor.correo_resuelto">
@@ -370,37 +265,29 @@
                     :for="`as-order-${autor.autor_id}-${index}`"
                   >
                     <span class="as-field-inline__label">
-                      Orden
+                      Posición
                     </span>
 
                     <select
                       :id="`as-order-${autor.autor_id}-${index}`"
                       class="as-control-select as-control-select--order"
-                      :value="index + 2"
+                      :value="autor.orden"
                       @change="
-                        setCoautorOrden(
+                        setAuthorOrder(
                           index,
                           $event.target.value
                         )
                       "
                     >
                       <option
-                        v-for="n in coautorOrdenOptions"
-                        :key="`coorden-${autor.autor_id}-${n}`"
+                        v-for="n in authorOrderOptions"
+                        :key="`author-order-${autor.autor_id}-${n}`"
                         :value="n"
                       >
                         {{ n }}
                       </option>
                     </select>
                   </label>
-
-                  <button
-                    type="button"
-                    class="as-btn as-btn-ghost as-btn-sm"
-                    @click="makePrincipal(autor.autor_id)"
-                  >
-                    Hacer principal
-                  </button>
                 </div>
               </div>
 
@@ -408,10 +295,10 @@
                 <button
                   type="button"
                   class="as-icon"
-                  aria-label="Subir coautor una posición"
+                  aria-label="Subir autor una posición"
                   title="Subir"
                   :disabled="index === 0"
-                  @click="moveCoautorUp(index)"
+                  @click="moveAuthorUp(index)"
                 >
                   ▲
                 </button>
@@ -419,10 +306,10 @@
                 <button
                   type="button"
                   class="as-icon"
-                  aria-label="Bajar coautor una posición"
+                  aria-label="Bajar autor una posición"
                   title="Bajar"
-                  :disabled="index === coautores.length - 1"
-                  @click="moveCoautorDown(index)"
+                  :disabled="index === selectedResolved.length - 1"
+                  @click="moveAuthorDown(index)"
                 >
                   ▼
                 </button>
@@ -430,9 +317,9 @@
                 <button
                   type="button"
                   class="as-icon as-icon-danger"
-                  aria-label="Eliminar coautor"
+                  aria-label="Eliminar autor"
                   title="Eliminar"
-                  @click="removeCoautor(index)"
+                  @click="removeAuthor(index)"
                 >
                   ✖
                 </button>
@@ -440,14 +327,6 @@
             </div>
           </div>
         </div>
-
-        <p
-          v-if="selected.length && principalCount !== 1"
-          class="as-alert as-alert-error as-alert-inline"
-          role="alert"
-        >
-          Debe existir exactamente un autor principal.
-        </p>
       </div>
     </div>
 
@@ -487,7 +366,7 @@
                   id="as-picker-sub"
                   class="as-modal-sub"
                 >
-                  Busque por nombre, correo, cédula o institución.
+                  Busque por nombre, correo, Cédula/DNI, institución, ORCID, SENESCYT, Google Scholar o Scopus.
                 </p>
               </div>
 
@@ -524,7 +403,7 @@
                     v-model.trim="search"
                     class="as-input as-input-search"
                     type="text"
-                    placeholder="Buscar por nombre, correo, cédula o institución..."
+                    placeholder="Nombre, correo, Cédula/DNI, ORCID, SENESCYT, Scholar o Scopus..."
                     autocomplete="off"
                     inputmode="search"
                   />
@@ -653,11 +532,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              Cédula: {{ a.identificacion }}
+                              Cédula / DNI: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin cédula
+                              Sin Cédula / DNI
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -667,6 +546,13 @@
                             <span v-if="a.institucion">
                               • {{ a.institucion }}
                             </span>
+                          </div>
+
+                          <div
+                            v-if="matchedAcademicIdentifier(a)"
+                            class="as-ci-match"
+                          >
+                            {{ matchedAcademicIdentifier(a) }}
                           </div>
                         </div>
                       </button>
@@ -744,11 +630,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              Cédula: {{ a.identificacion }}
+                              Cédula / DNI: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin cédula
+                              Sin Cédula / DNI
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -758,6 +644,13 @@
                             <span v-if="a.institucion">
                               • {{ a.institucion }}
                             </span>
+                          </div>
+
+                          <div
+                            v-if="matchedAcademicIdentifier(a)"
+                            class="as-ci-match"
+                          >
+                            {{ matchedAcademicIdentifier(a) }}
                           </div>
                         </div>
                       </button>
@@ -832,11 +725,11 @@
 
                           <div class="as-ci-sub">
                             <span v-if="a.identificacion">
-                              Cédula: {{ a.identificacion }}
+                              Cédula / DNI: {{ a.identificacion }}
                             </span>
 
                             <span v-else>
-                              Sin cédula
+                              Sin Cédula / DNI
                             </span>
 
                             <span v-if="a.correo_resuelto">
@@ -846,6 +739,13 @@
                             <span v-if="a.institucion">
                               • {{ a.institucion }}
                             </span>
+                          </div>
+
+                          <div
+                            v-if="matchedAcademicIdentifier(a)"
+                            class="as-ci-match"
+                          >
+                            {{ matchedAcademicIdentifier(a) }}
                           </div>
                         </div>
                       </div>
@@ -1018,7 +918,7 @@
                 ============================================ -->
 
                 <div class="as-grid">
-                  <!-- Número de cédula -->
+                  <!-- Cédula / DNI opcional -->
 
                   <div
                     class="as-field"
@@ -1031,25 +931,19 @@
                       class="as-field-label"
                       for="nuevo-identificacion"
                     >
-                      Número de cédula
-                      <span
-                        class="req"
-                        aria-hidden="true"
-                      >
-                        *
+                      Cédula / DNI
+                      <span class="as-field-optional">
+                        (opcional)
                       </span>
                     </label>
 
                     <input
                       id="nuevo-identificacion"
-                      v-model.trim="nuevo.identificacion"
+                      v-model="nuevo.identificacion"
                       class="as-input"
                       type="text"
-                      required
-                      maxlength="10"
-                      pattern="[0-9]{10}"
-                      placeholder="Ej. 1312345678"
-                      inputmode="numeric"
+                      :maxlength="AUTHOR_FIELD_LIMITS.identificacion"
+                      placeholder="Documento de identificación"
                       autocomplete="off"
                       :aria-invalid="
                         createFieldErrors.identificacion
@@ -1069,7 +963,8 @@
                       id="nuevo-identificacion-help"
                       class="as-hint"
                     >
-                      Ingrese exactamente 10 dígitos numéricos.
+                      Opcional para investigadores externos. Puede registrar una
+                      cédula, DNI u otro documento equivalente.
                     </p>
 
                     <p
@@ -1381,6 +1276,8 @@ const emit = defineEmits([
 
 const selected = ref([]);
 const autores = ref([]);
+const remoteSearchAutores = ref([]);
+const remoteSearchTerm = ref("");
 
 const loadingAutores = ref(false);
 const errorAutores = ref("");
@@ -1459,10 +1356,10 @@ const nuevo = ref({
    DRAG & DROP
 ========================================================= */
 
-const draggedCoautorIndex =
+const draggedAuthorIndex =
   ref(null);
 
-const dragOverCoautorIndex =
+const dragOverAuthorIndex =
   ref(null);
 
 
@@ -1477,10 +1374,13 @@ const emailRegex =
 const CATALOG_TTL_MS =
   2 * 60 * 1000;
 
+const AUTHOR_SEARCH_DEBOUNCE_MS = 250;
+const AUTHOR_SEARCH_LIMIT = 100;
+
 
 const AUTHOR_FIELD_LIMITS =
   Object.freeze({
-    identificacion: 10,
+    identificacion: 50,
     nombres: 100,
     apellidos: 100,
     correo: 150,
@@ -1489,8 +1389,10 @@ const AUTHOR_FIELD_LIMITS =
 
 
 let refreshReq = 0;
+let searchReq = 0;
 let duplicateReq = 0;
 
+let searchTimer = null;
 let duplicateTimer = null;
 let announcementTimer = null;
 let confirmationTimer = null;
@@ -1609,23 +1511,37 @@ const cleanEmail = (
     .toLowerCase();
 
 
-const digitsOnly = (
+const cleanExternalIdentification = (
   value
 ) =>
   String(value ?? "")
-    .replace(/\D/g, "");
+    .replace(/[\r\n\t]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 
 const normalizeIdentificationInput =
   () => {
-    nuevo.value.identificacion =
-      digitsOnly(
-        nuevo.value.identificacion
-      ).slice(
-        0,
-        AUTHOR_FIELD_LIMITS
-          .identificacion
-      );
+    const current =
+      String(
+        nuevo.value.identificacion ??
+        ""
+      )
+        .replace(/[\r\n\t]/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .slice(
+          0,
+          AUTHOR_FIELD_LIMITS
+            .identificacion
+        );
+
+    if (
+      current !==
+      nuevo.value.identificacion
+    ) {
+      nuevo.value.identificacion =
+        current;
+    }
   };
 
 
@@ -1986,6 +1902,30 @@ const normalizeAutores = (
             `${nombres} ${apellidos}`.trim()
           ).trim();
 
+        const orcid =
+          String(
+            a?.orcid ??
+            ""
+          ).trim() || null;
+
+        const registroSenescyt =
+          String(
+            a?.registro_senescyt ??
+            ""
+          ).trim() || null;
+
+        const googleScholar =
+          String(
+            a?.google_scholar ??
+            ""
+          ).trim() || null;
+
+        const scopusId =
+          String(
+            a?.scopus_id ??
+            ""
+          ).trim() || null;
+
         const searchBlob =
           normalizeText(
             [
@@ -1996,6 +1936,10 @@ const normalizeAutores = (
               correoResuelto,
               a?.correo,
               institucion,
+              orcid,
+              registroSenescyt,
+              googleScholar,
+              scopusId,
             ].join(" ")
           );
 
@@ -2023,6 +1967,14 @@ const normalizeAutores = (
             null,
 
           institucion,
+
+          orcid,
+          registro_senescyt:
+            registroSenescyt,
+          google_scholar:
+            googleScholar,
+          scopus_id:
+            scopusId,
 
           nombre_completo:
             nombreCompleto ||
@@ -2054,7 +2006,10 @@ const normalizeSelected = (
   const clean =
     base
       .map(
-        (item) => {
+        (
+          item,
+          originalIndex
+        ) => {
           const nestedAutor =
             item?.autor &&
             typeof item.autor ===
@@ -2075,6 +2030,11 @@ const normalizeSelected = (
           ) {
             return null;
           }
+
+          const rawOrder =
+            Number(
+              item?.orden
+            );
 
           const nombreCompleto =
             String(
@@ -2130,16 +2090,14 @@ const normalizeSelected = (
               id,
 
             orden:
-              Number(
-                item?.orden
-              ) ||
-              9999,
-
-            rol_autoria:
-              item?.rol_autoria ===
-              "principal"
-                ? "principal"
-                : "coautor",
+              (
+                Number.isInteger(
+                  rawOrder
+                ) &&
+                rawOrder > 0
+              )
+                ? rawOrder
+                : originalIndex + 1,
 
             nombre_completo:
               nombreCompleto,
@@ -2153,19 +2111,20 @@ const normalizeSelected = (
               correoResuelto,
 
             institucion,
+
+            _originalIndex:
+              originalIndex,
           };
         }
       )
       .filter(Boolean);
 
-  /* -------------------------------------------------------
-     Evitar autores duplicados
-  ------------------------------------------------------- */
-
+  /*
+   * Evita autores duplicados sin perder el primer registro
+   * recibido para cada Autor.
+   */
   const deduped = [];
-
-  const seen =
-    new Set();
+  const seen = new Set();
 
   for (
     const item
@@ -2183,83 +2142,44 @@ const normalizeSelected = (
     }
 
     seen.add(key);
-
-    deduped.push(
-      item
-    );
+    deduped.push(item);
   }
 
-  /* -------------------------------------------------------
-     Resolver principal
-  ------------------------------------------------------- */
-
-  const principal =
-    deduped.find(
-      (item) =>
-        item.rol_autoria ===
-        "principal"
-    ) ||
-    deduped[0] ||
-    null;
-
-  /* -------------------------------------------------------
-     Coautores
-  ------------------------------------------------------- */
-
-  const coautoresList =
-    deduped
-      .filter(
-        (item) =>
-          item.autor_id !==
-          principal?.autor_id
+  /*
+   * Orden es exclusivamente bibliográfico.
+   * Ante empates o valores heredados inválidos se conserva
+   * el orden de entrada y luego se renumera 1..N.
+   */
+  deduped.sort(
+    (a, b) =>
+      (
+        Number(a.orden) -
+        Number(b.orden)
+      ) ||
+      (
+        a._originalIndex -
+        b._originalIndex
       )
-      .sort(
-        (a, b) =>
-          (
-            a.orden ||
-            9999
-          ) -
-          (
-            b.orden ||
-            9999
-          )
-      )
-      .map(
-        (
-          item,
-          index
-        ) => ({
-          ...item,
-
-          rol_autoria:
-            "coautor",
-
-          orden:
-            index + 2,
-        })
-      );
-
-  const normalized =
-    [];
-
-  if (principal) {
-    normalized.push({
-      ...principal,
-
-      rol_autoria:
-        "principal",
-
-      orden: 1,
-    });
-  }
-
-  normalized.push(
-    ...coautoresList
   );
 
-  return normalized;
-};
+  return deduped.map(
+    (
+      item,
+      index
+    ) => {
+      const {
+        _originalIndex,
+        ...cleanItem
+      } = item;
 
+      return {
+        ...cleanItem,
+        orden:
+          index + 1,
+      };
+    }
+  );
+};
 
 const emitNormalized = (
   arr
@@ -2364,41 +2284,8 @@ const selectedResolved =
 
 
 /* =========================================================
-   PRINCIPAL / COAUTORES
+   ORDEN BIBLIOGRÁFICO
 ========================================================= */
-
-const principalAutor =
-  computed(
-    () =>
-      selectedResolved.value.find(
-        (item) =>
-          item.rol_autoria ===
-          "principal"
-      ) ||
-      null
-  );
-
-
-const coautores =
-  computed(() =>
-    selectedResolved.value.filter(
-      (item) =>
-        item.rol_autoria ===
-        "coautor"
-    )
-  );
-
-
-const principalCount =
-  computed(
-    () =>
-      selected.value.filter(
-        (item) =>
-          item.rol_autoria ===
-          "principal"
-      ).length
-  );
-
 
 const selectedIds =
   computed(
@@ -2424,58 +2311,37 @@ const isAlreadySelected = (
   );
 
 
-const coautorOrdenOptions =
+const authorOrderOptions =
   computed(
     () =>
       Array.from(
         {
           length:
-            coautores.value
+            selectedResolved.value
               .length,
         },
 
         (_, index) =>
-          index + 2
+          index + 1
       )
   );
 
 
-const buildNormalizedFromParts = (
-  principal,
-  coautoresList = []
+const emitOrderedAuthors = (
+  items = []
 ) => {
-  const next = [];
-
-  if (principal) {
-    next.push({
-      ...principal,
-
-      rol_autoria:
-        "principal",
-
-      orden: 1,
-    });
-  }
-
-  coautoresList.forEach(
-    (
-      item,
-      index
-    ) => {
-      next.push({
+  emitNormalized(
+    items.map(
+      (
+        item,
+        index
+      ) => ({
         ...item,
 
-        rol_autoria:
-          "coautor",
-
         orden:
-          index + 2,
-      });
-    }
-  );
-
-  emitNormalized(
-    next
+          index + 1,
+      })
+    )
   );
 };
 
@@ -2580,6 +2446,122 @@ const refreshAutores =
    BÚSQUEDA
 ========================================================= */
 
+const searchAutoresRemote =
+  async (rawTerm) => {
+    const query =
+      String(
+        rawTerm ||
+        ""
+      ).trim();
+
+    if (!query) {
+      remoteSearchAutores.value = [];
+      remoteSearchTerm.value = "";
+      return;
+    }
+
+    const reqId =
+      ++searchReq;
+
+    loadingAutores.value = true;
+    errorAutores.value = "";
+
+    try {
+      const response =
+        await api.get(
+          "/selects/autores/",
+          {
+            params: {
+              q: query,
+              limit:
+                AUTHOR_SEARCH_LIMIT,
+            },
+          }
+        );
+
+      if (
+        reqId !==
+        searchReq
+      ) {
+        return;
+      }
+
+      remoteSearchAutores.value =
+        normalizeAutores(
+          asArrayResponse(
+            response.data
+          )
+        );
+
+      remoteSearchTerm.value =
+        normalizeText(query);
+    } catch (error) {
+      if (
+        reqId !==
+        searchReq
+      ) {
+        return;
+      }
+
+      remoteSearchAutores.value = [];
+      remoteSearchTerm.value =
+        normalizeText(query);
+
+      errorAutores.value =
+        "No se pudo completar la búsqueda de autores. Intente nuevamente.";
+
+      console.warn(
+        "Error buscando autores:",
+        error
+      );
+    } finally {
+      if (
+        reqId ===
+        searchReq
+      ) {
+        loadingAutores.value = false;
+      }
+    }
+  };
+
+
+const scheduleAuthorSearch =
+  (value) => {
+    if (searchTimer) {
+      window.clearTimeout(
+        searchTimer
+      );
+
+      searchTimer = null;
+    }
+
+    const query =
+      String(
+        value ||
+        ""
+      ).trim();
+
+    if (!query) {
+      searchReq += 1;
+      remoteSearchAutores.value = [];
+      remoteSearchTerm.value = "";
+      errorAutores.value = "";
+      return;
+    }
+
+    searchTimer =
+      window.setTimeout(
+        () => {
+          searchTimer = null;
+          searchAutoresRemote(
+            query
+          );
+        },
+        AUTHOR_SEARCH_DEBOUNCE_MS
+      );
+  };
+
+
 const filteredAutores =
   computed(() => {
     const term =
@@ -2591,6 +2573,18 @@ const filteredAutores =
       return autores.value;
     }
 
+    /*
+     * Mientras responde el backend se conserva un resultado
+     * local inmediato. Cuando llega la búsqueda remota se usa
+     * el catálogo completo devuelto para esa consulta.
+     */
+    if (
+      remoteSearchTerm.value ===
+      term
+    ) {
+      return remoteSearchAutores.value;
+    }
+
     return autores.value.filter(
       (autor) =>
         autor.search_blob.includes(
@@ -2598,6 +2592,53 @@ const filteredAutores =
         )
     );
   });
+
+
+const matchedAcademicIdentifier =
+  (autor) => {
+    const term =
+      normalizeText(
+        search.value
+      );
+
+    if (!term) {
+      return "";
+    }
+
+    const candidates = [
+      [
+        "ORCID",
+        autor?.orcid,
+      ],
+      [
+        "Registro SENESCYT",
+        autor?.registro_senescyt,
+      ],
+      [
+        "Google Scholar",
+        autor?.google_scholar,
+      ],
+      [
+        "Scopus ID",
+        autor?.scopus_id,
+      ],
+    ];
+
+    const match =
+      candidates.find(
+        ([, value]) =>
+          value &&
+          normalizeText(
+            value
+          ).includes(term)
+      );
+
+    if (!match) {
+      return "";
+    }
+
+    return `${match[0]}: ${match[1]}`;
+  };
 
 
 const alreadyAddedAutores =
@@ -2647,6 +2688,9 @@ const nonFavoriteAvailableAutores =
 const clearSearch =
   async () => {
     search.value = "";
+
+    remoteSearchAutores.value = [];
+    remoteSearchTerm.value = "";
 
     await nextTick();
 
@@ -2757,7 +2801,7 @@ const duplicateMessage =
       "identificacion"
     ) {
       return (
-        "Ya existe un autor registrado con esta cédula:"
+        "Ya existe un autor registrado con esta Cédula / DNI:"
       );
     }
 
@@ -2808,6 +2852,14 @@ const cancelDuplicateCheck =
   () => {
     duplicateReq += 1;
 
+    if (searchTimer) {
+      window.clearTimeout(
+        searchTimer
+      );
+
+      searchTimer = null;
+    }
+
     if (duplicateTimer) {
       window.clearTimeout(
         duplicateTimer
@@ -2841,7 +2893,7 @@ const resetDuplicateState =
 const shouldRunDuplicateCheck =
   () => {
     const identificacion =
-      digitsOnly(
+      cleanExternalIdentification(
         nuevo.value
           .identificacion
       );
@@ -2901,7 +2953,7 @@ const runDuplicateCheck =
           {
             params: {
               identificacion:
-                digitsOnly(
+                cleanExternalIdentification(
                   nuevo.value
                     .identificacion
                 ) ||
@@ -3092,7 +3144,7 @@ const validateCreateField = (
   field
 ) => {
   const identificacion =
-    digitsOnly(
+    cleanExternalIdentification(
       nuevo.value
         .identificacion
     );
@@ -3124,18 +3176,19 @@ const validateCreateField = (
   switch (field) {
     case "identificacion":
       if (!identificacion) {
-        return (
-          "El número de cédula es obligatorio."
-        );
+        return "";
       }
 
       if (
-        identificacion.length !==
+        identificacion.length >
         AUTHOR_FIELD_LIMITS
           .identificacion
       ) {
         return (
-          "La cédula debe contener exactamente 10 dígitos numéricos."
+          `La Cédula / DNI no puede superar ${
+            AUTHOR_FIELD_LIMITS
+              .identificacion
+          } caracteres.`
         );
       }
 
@@ -3317,7 +3370,7 @@ const validateCreateForm =
       duplicateBlocking.value
     ) {
       createError.value =
-        "La cédula o el correo ya pertenecen a un autor registrado. Use el registro existente.";
+        "La Cédula/DNI o el correo ya pertenecen a un autor registrado. Use el registro existente.";
 
       return false;
     }
@@ -3369,6 +3422,10 @@ const closePicker =
 
     search.value =
       "";
+
+    remoteSearchAutores.value = [];
+    remoteSearchTerm.value = "";
+    searchReq += 1;
 
     clearDragState();
 
@@ -3509,14 +3566,8 @@ const selectFromList = (
 
   const next = [
     ...selectedResolved.value,
-  ];
 
-  /* -------------------------------------------------------
-     Primer autor = principal
-  ------------------------------------------------------- */
-
-  if (!next.length) {
-    next.push({
+    {
       autor_id:
         id,
 
@@ -3541,60 +3592,13 @@ const selectFromList = (
         autor?.institucion ||
         null,
 
-      rol_autoria:
-        "principal",
+      orden:
+        selectedResolved.value
+          .length + 1,
+    },
+  ];
 
-      orden: 1,
-    });
-
-    emitNormalized(
-      next
-    );
-
-    notifyAuthorAction(
-      `Autor principal agregado: ${nombreAutor}.`
-    );
-
-    return;
-  }
-
-  /* -------------------------------------------------------
-     Siguientes = coautores
-  ------------------------------------------------------- */
-
-  next.push({
-    autor_id:
-      id,
-
-    nombre_completo:
-      nombreAutor,
-
-    identificacion:
-      autor?.identificacion ||
-      null,
-
-    correo:
-      autor?.correo_resuelto ||
-      autor?.correo ||
-      null,
-
-    correo_resuelto:
-      autor?.correo_resuelto ||
-      autor?.correo ||
-      null,
-
-    institucion:
-      autor?.institucion ||
-      null,
-
-    rol_autoria:
-      "coautor",
-
-    orden:
-      next.length + 1,
-  });
-
-  emitNormalized(
+  emitOrderedAuthors(
     next
   );
 
@@ -3605,153 +3609,36 @@ const selectFromList = (
 
 
 /* =========================================================
-   PRINCIPAL
+   GESTIÓN DEL ORDEN
 ========================================================= */
 
-const makePrincipal = (
-  autorId
+const removeAuthor = (
+  index
 ) => {
-  const all = [
+  const next = [
     ...selectedResolved.value,
   ];
 
-  const nuevoPrincipal =
-    all.find(
-      (item) =>
-        Number(
-          item.autor_id
-        ) ===
-        Number(
-          autorId
-        )
-    );
+  const removed =
+    next[index];
 
-  if (
-    !nuevoPrincipal
-  ) {
+  if (!removed) {
     return;
   }
 
-  const nextCoautores =
-    all.filter(
-      (item) =>
-        Number(
-          item.autor_id
-        ) !==
-        Number(
-          autorId
-        )
-    );
-
-  buildNormalizedFromParts(
-    nuevoPrincipal,
-    nextCoautores
-  );
-
-  announce(
-    `${
-      nuevoPrincipal
-        .nombre_completo ||
-      "Autor"
-    } ahora es el autor principal.`
-  );
-};
-
-
-const setPrincipalById = (
-  autorId
-) => {
-  makePrincipal(
-    Number(
-      autorId
-    )
-  );
-};
-
-
-const removePrincipal =
-  () => {
-    if (
-      !principalAutor.value
-    ) {
-      return;
-    }
-
-    const removedName =
-      principalAutor.value
-        .nombre_completo ||
-      "Autor";
-
-    const restantes =
-      selectedResolved.value.filter(
-        (item) =>
-          Number(
-            item.autor_id
-          ) !==
-          Number(
-            principalAutor.value
-              .autor_id
-          )
-      );
-
-    /*
-     * Si quedan autores, el primero pasa
-     * automáticamente a principal.
-     */
-    const nuevoPrincipal =
-      restantes.length
-        ? restantes[0]
-        : null;
-
-    const nextCoautores =
-      restantes.slice(1);
-
-    buildNormalizedFromParts(
-      nuevoPrincipal,
-      nextCoautores
-    );
-
-    announce(
-      `Autor eliminado: ${removedName}.`
-    );
-  };
-
-
-/* =========================================================
-   COAUTORES
-========================================================= */
-
-const removeCoautor = (
-  index
-) => {
-  const principal =
-    principalAutor.value
-      ? {
-          ...principalAutor.value,
-        }
-      : null;
-
-  const nextCoautores = [
-    ...coautores.value,
-  ];
-
-  const removed =
-    nextCoautores[index];
-
-  nextCoautores.splice(
+  next.splice(
     index,
     1
   );
 
-  buildNormalizedFromParts(
-    principal,
-    nextCoautores
+  emitOrderedAuthors(
+    next
   );
 
   clearDragState();
 
   announce(
-    `Coautor eliminado: ${
+    `Autor eliminado: ${
       removed?.nombre_completo ||
       "Autor"
     }.`
@@ -3759,7 +3646,7 @@ const removeCoautor = (
 };
 
 
-const moveCoautorUp = (
+const moveAuthorUp = (
   index
 ) => {
   if (
@@ -3768,86 +3655,54 @@ const moveCoautorUp = (
     return;
   }
 
-  const principal =
-    principalAutor.value
-      ? {
-          ...principalAutor.value,
-        }
-      : null;
-
-  const nextCoautores = [
-    ...coautores.value,
+  const next = [
+    ...selectedResolved.value,
   ];
 
   [
-    nextCoautores[
-      index - 1
-    ],
-    nextCoautores[
-      index
-    ],
+    next[index - 1],
+    next[index],
   ] = [
-    nextCoautores[
-      index
-    ],
-    nextCoautores[
-      index - 1
-    ],
+    next[index],
+    next[index - 1],
   ];
 
-  buildNormalizedFromParts(
-    principal,
-    nextCoautores
+  emitOrderedAuthors(
+    next
   );
 };
 
 
-const moveCoautorDown = (
+const moveAuthorDown = (
   index
 ) => {
   if (
     index >=
-    coautores.value.length -
-      1
+    selectedResolved.value
+      .length - 1
   ) {
     return;
   }
 
-  const principal =
-    principalAutor.value
-      ? {
-          ...principalAutor.value,
-        }
-      : null;
-
-  const nextCoautores = [
-    ...coautores.value,
+  const next = [
+    ...selectedResolved.value,
   ];
 
   [
-    nextCoautores[
-      index + 1
-    ],
-    nextCoautores[
-      index
-    ],
+    next[index + 1],
+    next[index],
   ] = [
-    nextCoautores[
-      index
-    ],
-    nextCoautores[
-      index + 1
-    ],
+    next[index],
+    next[index + 1],
   ];
 
-  buildNormalizedFromParts(
-    principal,
-    nextCoautores
+  emitOrderedAuthors(
+    next
   );
 };
 
 
-const setCoautorOrden = (
+const setAuthorOrder = (
   fromIndex,
   rawValue
 ) => {
@@ -3857,7 +3712,7 @@ const setCoautorOrden = (
     );
 
   const targetIndex =
-    targetOrder - 2;
+    targetOrder - 1;
 
   if (
     !Number.isInteger(
@@ -3870,7 +3725,8 @@ const setCoautorOrden = (
   if (
     targetIndex < 0 ||
     targetIndex >=
-      coautores.value.length
+      selectedResolved.value
+        .length
   ) {
     return;
   }
@@ -3882,32 +3738,9 @@ const setCoautorOrden = (
     return;
   }
 
-  const principal =
-    principalAutor.value
-      ? {
-          ...principalAutor.value,
-        }
-      : null;
-
-  const nextCoautores = [
-    ...coautores.value,
-  ];
-
-  const [moved] =
-    nextCoautores.splice(
-      fromIndex,
-      1
-    );
-
-  nextCoautores.splice(
-    targetIndex,
-    0,
-    moved
-  );
-
-  buildNormalizedFromParts(
-    principal,
-    nextCoautores
+  reorderAuthors(
+    fromIndex,
+    targetIndex
   );
 };
 
@@ -3918,15 +3751,15 @@ const setCoautorOrden = (
 
 const clearDragState =
   () => {
-    draggedCoautorIndex.value =
+    draggedAuthorIndex.value =
       null;
 
-    dragOverCoautorIndex.value =
+    dragOverAuthorIndex.value =
       null;
   };
 
 
-const reorderCoautores = (
+const reorderAuthors = (
   fromIndex,
   toIndex
 ) => {
@@ -3953,55 +3786,49 @@ const reorderCoautores = (
 
   if (
     fromIndex >=
-      coautores.value.length ||
+      selectedResolved.value
+        .length ||
     toIndex >=
-      coautores.value.length
+      selectedResolved.value
+        .length
   ) {
     return;
   }
 
-  const principal =
-    principalAutor.value
-      ? {
-          ...principalAutor.value,
-        }
-      : null;
-
-  const nextCoautores = [
-    ...coautores.value,
+  const next = [
+    ...selectedResolved.value,
   ];
 
   const [moved] =
-    nextCoautores.splice(
+    next.splice(
       fromIndex,
       1
     );
 
-  nextCoautores.splice(
+  next.splice(
     toIndex,
     0,
     moved
   );
 
-  buildNormalizedFromParts(
-    principal,
-    nextCoautores
+  emitOrderedAuthors(
+    next
   );
 
   announce(
-    "Orden de coautores actualizado."
+    "Orden bibliográfico actualizado."
   );
 };
 
 
-const onCoautorDragStart = (
+const onAuthorDragStart = (
   index,
   event
 ) => {
-  draggedCoautorIndex.value =
+  draggedAuthorIndex.value =
     index;
 
-  dragOverCoautorIndex.value =
+  dragOverAuthorIndex.value =
     index;
 
   if (
@@ -4021,34 +3848,34 @@ const onCoautorDragStart = (
 };
 
 
-const onCoautorDragEnter = (
+const onAuthorDragEnter = (
   index
 ) => {
   if (
-    draggedCoautorIndex.value ==
+    draggedAuthorIndex.value ==
     null
   ) {
     return;
   }
 
   if (
-    draggedCoautorIndex.value ===
+    draggedAuthorIndex.value ===
     index
   ) {
     return;
   }
 
-  dragOverCoautorIndex.value =
+  dragOverAuthorIndex.value =
     index;
 };
 
 
-const onCoautorDragOver = (
+const onAuthorDragOver = (
   index,
   event
 ) => {
   if (
-    draggedCoautorIndex.value ==
+    draggedAuthorIndex.value ==
     null
   ) {
     return;
@@ -4061,23 +3888,23 @@ const onCoautorDragOver = (
       "move";
   }
 
-  dragOverCoautorIndex.value =
+  dragOverAuthorIndex.value =
     index;
 };
 
 
-const onCoautorDrop = (
+const onAuthorDrop = (
   index
 ) => {
   if (
-    draggedCoautorIndex.value ==
+    draggedAuthorIndex.value ==
     null
   ) {
     return;
   }
 
-  reorderCoautores(
-    draggedCoautorIndex.value,
+  reorderAuthors(
+    draggedAuthorIndex.value,
     index
   );
 
@@ -4085,7 +3912,7 @@ const onCoautorDrop = (
 };
 
 
-const onCoautorDragEnd =
+const onAuthorDragEnd =
   () => {
     clearDragState();
   };
@@ -4300,10 +4127,11 @@ const createAutor =
        */
       const payload = {
         identificacion:
-          digitsOnly(
+          cleanExternalIdentification(
             nuevo.value
               .identificacion
-          ),
+          ) ||
+          null,
 
         nombres:
           (
@@ -4550,6 +4378,25 @@ const onKey = (
 
 watch(
   () =>
+    search.value,
+
+  (value) => {
+    if (
+      modalState.value !==
+      "picker"
+    ) {
+      return;
+    }
+
+    scheduleAuthorSearch(
+      value
+    );
+  }
+);
+
+
+watch(
+  () =>
     modalState.value,
 
   (value) => {
@@ -4628,6 +4475,7 @@ onMounted(
 onBeforeUnmount(
   () => {
     refreshReq += 1;
+    searchReq += 1;
     duplicateReq += 1;
 
     document.body.classList.remove(

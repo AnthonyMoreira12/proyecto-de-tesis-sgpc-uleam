@@ -1,5 +1,4 @@
 """
-Selectores reutilizables para catálogos y selects del sistema.
 
 Este módulo centraliza las consultas ligeras utilizadas por:
 
@@ -865,6 +864,10 @@ def build_autores_select_data(
     - Identificación.
     - Correo.
     - Institución.
+    - ORCID.
+    - Registro de investigador SENESCYT.
+    - Perfil de Google Scholar.
+    - Scopus ID.
     - Datos del usuario vinculado.
 
     Las coincidencias exactas se muestran antes que las
@@ -918,6 +921,26 @@ def build_autores_select_data(
                     )
                 )
                 | Q(
+                    orcid__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    registro_senescyt__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    google_scholar__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    scopus_id__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
                     usuario__nombres__icontains=(
                         normalized_query
                     )
@@ -940,6 +963,24 @@ def build_autores_select_data(
             )
             .annotate(
                 _select_priority=Case(
+                    When(
+                        orcid__iexact=(
+                            normalized_query
+                        ),
+                        then=Value(0),
+                    ),
+                    When(
+                        registro_senescyt__iexact=(
+                            normalized_query
+                        ),
+                        then=Value(0),
+                    ),
+                    When(
+                        scopus_id__iexact=(
+                            normalized_query
+                        ),
+                        then=Value(0),
+                    ),
                     When(
                         identificacion__iexact=(
                             normalized_query
@@ -1098,6 +1139,26 @@ def build_autores_select_data(
                     "institucion",
                     None,
                 ),
+                "orcid": getattr(
+                    author,
+                    "orcid",
+                    None,
+                ),
+                "registro_senescyt": getattr(
+                    author,
+                    "registro_senescyt",
+                    None,
+                ),
+                "google_scholar": getattr(
+                    author,
+                    "google_scholar",
+                    None,
+                ),
+                "scopus_id": getattr(
+                    author,
+                    "scopus_id",
+                    None,
+                ),
                 "es_externo": bool(
                     getattr(
                         author,
@@ -1136,4 +1197,4 @@ def build_autores_select_data(
             }
         )
 
-    return data 
+    return data

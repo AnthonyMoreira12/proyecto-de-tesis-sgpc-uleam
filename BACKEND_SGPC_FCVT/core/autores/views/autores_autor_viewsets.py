@@ -31,6 +31,9 @@ User = get_user_model()
 
 MAX_SEARCH_LENGTH = 200
 CEDULA_PATTERN = re.compile(r"^\d{10}$")
+ORCID_PATTERN = re.compile(
+    r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$"
+)
 
 
 def _normalize_query(value):
@@ -160,6 +163,10 @@ class AutoresViewSet(viewsets.ModelViewSet):
                     | Q(identificacion__icontains=term)
                     | Q(correo__icontains=term)
                     | Q(institucion__icontains=term)
+                    | Q(orcid__icontains=term)
+                    | Q(registro_senescyt__icontains=term)
+                    | Q(google_scholar__icontains=term)
+                    | Q(scopus_id__icontains=term)
                     | Q(usuario__email__icontains=term)
                     | Q(usuario__identificacion__icontains=term)
                     | Q(usuario__nombres__icontains=term)
@@ -205,7 +212,7 @@ class AutoresViewSet(viewsets.ModelViewSet):
                 {
                     "detail": (
                         "No fue posible registrar el autor por un "
-                        "conflicto de cédula, correo o vínculo."
+                        "conflicto de cédula, correo, ORCID o vínculo."
                     )
                 },
                 status=status.HTTP_409_CONFLICT,
@@ -382,6 +389,9 @@ class AutoresViewSet(viewsets.ModelViewSet):
             request.query_params.get("identificacion")
         )
         raw_email = _normalize_query(request.query_params.get("correo"))
+        raw_orcid = _normalize_query(
+            request.query_params.get("orcid")
+        ).upper()
         names = _normalize_query(request.query_params.get("nombres"))
         surnames = _normalize_query(request.query_params.get("apellidos"))
         excluded_id = _parse_optional_positive_integer(
@@ -392,6 +402,7 @@ class AutoresViewSet(viewsets.ModelViewSet):
         for field_name, field_value in {
             "identificacion": raw_identification,
             "correo": raw_email,
+            "orcid": raw_orcid,
             "nombres": names,
             "apellidos": surnames,
         }.items():
@@ -437,17 +448,26 @@ class AutoresViewSet(viewsets.ModelViewSet):
             else:
                 email = normalized_email
 
+        orcid = None
+        orcid_incomplete = False
+        if raw_orcid:
+            if ORCID_PATTERN.fullmatch(raw_orcid):
+                orcid = raw_orcid
+            else:
+                orcid_incomplete = True
+
         names_ready = bool(
             names and surnames and len(names) >= 2 and len(surnames) >= 2
         )
         names_incomplete = bool(names or surnames) and not names_ready
 
-        if not any((identification, email, names_ready)):
+        if not any((identification, email, orcid, names_ready)):
             response = Response(
                 _empty_match_payload(
                     input_incomplete=(
                         identification_incomplete
                         or email_incomplete
+                        or orcid_incomplete
                         or names_incomplete
                     )
                 )
@@ -458,6 +478,7 @@ class AutoresViewSet(viewsets.ModelViewSet):
         found = buscar_autor_existente(
             identificacion=identification,
             correo=email,
+            orcid=orcid,
             nombres=names if names_ready else "",
             apellidos=surnames if names_ready else "",
             exclude_autor_id=excluded_id,

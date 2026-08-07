@@ -924,19 +924,6 @@ class AdminUsuarioSerializer(
                 None,
             )
 
-            role = _text(
-                getattr(
-                    relation,
-                    "rol_autoria",
-                    "",
-                )
-            ).lower()
-
-            principal = bool(
-                role == "principal"
-                or order == 1
-            )
-
             output.append(
                 {
                     "publicacion_id": (
@@ -963,22 +950,16 @@ class AdminUsuarioSerializer(
                         )
                     ),
 
-                    "rol_autoria": (
-                        "principal"
-                        if principal
-                        else "coautor"
-                    ),
-
-                    "rol_label": (
-                        "Principal"
-                        if principal
-                        else (
-                            f"Coautor #{order}"
-                            if order
-                            else "Coautor"
+                    "mes_publicacion": (
+                        getattr(
+                            publication,
+                            "mes_publicacion",
+                            None,
                         )
                     ),
 
+                    # Todos los participantes son autores.
+                    # El orden conserva la posición bibliográfica.
                     "orden": order,
                 }
             )

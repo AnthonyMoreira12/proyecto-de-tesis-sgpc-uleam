@@ -25,7 +25,7 @@
                 d="m15.5 15.5 5 5"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.8"a
+                stroke-width="1.8"
                 stroke-linecap="round"
               />
 
@@ -53,7 +53,7 @@
 
             <p class="sch-empty-hero__text">
               Encuentre producción científica registrada en SGPC ULEAM mediante
-              títulos, autores, temas, DOI, revistas, eventos o proyectos.
+              títulos, autores, identificadores académicos, DOI, revistas, eventos o proyectos.
             </p>
           </div>
 
@@ -98,7 +98,7 @@
                 v-model.trim="inlineQuery"
                 class="sch-empty-search__input"
                 type="search"
-                placeholder="Título, autor, tema, revista, DOI..."
+                placeholder="Título, autor, ORCID, DOI, revista..."
                 autocomplete="off"
               />
 
@@ -415,6 +415,44 @@
 
             <label class="sch-control">
               <span class="sch-label">
+                Mes
+              </span>
+
+              <span class="sch-select-wrap">
+                <select
+                  id="scholar-month"
+                  class="sch-select"
+                  :value="state.month"
+                  @change="setParam('month', $event.target.value)"
+                >
+                  <option value="">
+                    Todos los meses
+                  </option>
+
+                  <option
+                    v-for="item in monthFacets"
+                    :key="item.value"
+                    :value="item.value"
+                  >
+                    {{ item.label }}
+                  </option>
+                </select>
+
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="m6 8 4 4 4-4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </label>
+
+            <label class="sch-control">
+              <span class="sch-label">
                 Tipo
               </span>
 
@@ -707,8 +745,20 @@
             >
               <div class="sch-publication-card__accent"></div>
 
-              <aside class="sch-publication-card__year">
-                <span>{{ r.year || "S/F" }}</span>
+              <aside
+                class="sch-publication-card__year"
+                :aria-label="publicationPeriodLabel(r)"
+              >
+                <small
+                  v-if="publicationMonthShort(r)"
+                  class="sch-publication-card__month"
+                >
+                  {{ publicationMonthShort(r) }}
+                </small>
+
+                <strong class="sch-publication-card__year-value">
+                  {{ r.year || "S/F" }}
+                </strong>
               </aside>
 
               <div class="sch-publication-card__content">
@@ -1368,6 +1418,11 @@ const state = computed(() => ({
       route.query.year || ""
     ).trim(),
 
+  month:
+    String(
+      route.query.month || ""
+    ).trim(),
+
   type:
     String(
       route.query.type || ""
@@ -1542,6 +1597,94 @@ const fmt = (value) => {
     return String(value || 0);
   }
 };
+
+const MONTH_LABELS = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
+
+
+const publicationMonthLabel = (publication) => {
+  const direct = String(
+    publication?.mes_publicacion_label ??
+    publication?.month_label ??
+    ""
+  ).trim();
+
+  if (direct) {
+    return direct;
+  }
+
+  const month = Number(
+    publication?.mes_publicacion ??
+    publication?.month ??
+    publication?.mes ??
+    0
+  );
+
+  return (
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  )
+    ? MONTH_LABELS[month]
+    : "";
+};
+
+
+const publicationMonthShort = (publication) => {
+  const label =
+    publicationMonthLabel(
+      publication
+    );
+
+  return label
+    ? label.slice(0, 3).toUpperCase()
+    : "";
+};
+
+
+const publicationPeriodLabel = (publication) => {
+  const year = Number(
+    publication?.anio_publicacion ??
+    publication?.year ??
+    publication?.anio ??
+    0
+  );
+
+  const monthLabel =
+    publicationMonthLabel(
+      publication
+    );
+
+  if (
+    Number.isFinite(year) &&
+    year > 0 &&
+    monthLabel
+  ) {
+    return `${monthLabel} de ${year}`;
+  }
+
+  if (
+    Number.isFinite(year) &&
+    year > 0
+  ) {
+    return String(year);
+  }
+
+  return monthLabel || "Sin período";
+};
+
 
 const pluralize = (
   value,
@@ -1770,6 +1913,142 @@ const yearFacets = computed(() => {
     }));
 });
 
+const monthFacets = computed(() => {
+  const fromApi =
+    Array.isArray(
+      store.pubsFacets?.months
+    )
+      ? store.pubsFacets.months
+      : null;
+
+  if (fromApi?.length) {
+    return fromApi
+      .map((item) => {
+        if (
+          typeof item === "string" ||
+          typeof item === "number"
+        ) {
+          const value =
+            String(item).trim();
+
+          const month =
+            Number(value);
+
+          return {
+            value,
+            label:
+              MONTH_LABELS[month] ||
+              value,
+            count: null,
+          };
+        }
+
+        const value =
+          String(
+            item.value ??
+            item.month ??
+            item.mes ??
+            ""
+          ).trim();
+
+        const month =
+          Number(value);
+
+        return {
+          value,
+
+          label:
+            String(
+              item.label ??
+              item.nombre ??
+              MONTH_LABELS[month] ??
+              value
+            ).trim(),
+
+          count:
+            item.count ??
+            null,
+        };
+      })
+      .filter((item) => {
+        const month =
+          Number(item.value);
+
+        return (
+          Number.isInteger(month) &&
+          month >= 1 &&
+          month <= 12
+        );
+      })
+      .sort(
+        (a, b) =>
+          Number(a.value) -
+          Number(b.value)
+      );
+  }
+
+  const map = new Map();
+
+  rawResultsList.value.forEach(
+    (publication) => {
+      const month = Number(
+        publication?.mes_publicacion ??
+        publication?.month ??
+        publication?.mes ??
+        0
+      );
+
+      if (
+        !Number.isInteger(month) ||
+        month < 1 ||
+        month > 12
+      ) {
+        return;
+      }
+
+      map.set(
+        month,
+        (map.get(month) || 0) + 1
+      );
+    }
+  );
+
+  return [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([month, count]) => ({
+      value: String(month),
+      label:
+        MONTH_LABELS[month] ||
+        String(month),
+      count,
+    }));
+});
+
+
+const selectedMonthLabel = computed(() => {
+  const month =
+    String(
+      state.value.month || ""
+    ).trim();
+
+  if (!month) {
+    return "";
+  }
+
+  const match =
+    monthFacets.value.find(
+      (item) =>
+        String(item.value) === month
+    );
+
+  return (
+    match?.label ||
+    MONTH_LABELS[Number(month)] ||
+    month
+  );
+});
+
+
 const selectedTypeLabel = computed(() => {
   const code = state.value.type;
 
@@ -1795,6 +2074,15 @@ const activeFilterChips = computed(() => {
       label: `Año: ${state.value.year}`,
       onRemove: () =>
         setParam("year", ""),
+    });
+  }
+
+  if (state.value.month) {
+    chips.push({
+      key: "month",
+      label: `Mes: ${selectedMonthLabel.value}`,
+      onRemove: () =>
+        setParam("month", ""),
     });
   }
 
@@ -1837,6 +2125,10 @@ const refinementFilterCount = computed(() => {
   let count = 0;
 
   if (state.value.year) {
+    count += 1;
+  }
+
+  if (state.value.month) {
     count += 1;
   }
 
@@ -1909,6 +2201,7 @@ const setParam = (key, value) => {
   if (
     [
       "year",
+      "month",
       "type",
       "sort",
       "has_pdf",
@@ -1940,6 +2233,7 @@ const submitInlineSearch = () => {
     q: query,
     author_id: undefined,
     year: undefined,
+    month: undefined,
     type: undefined,
     has_pdf: undefined,
     sort: "relevance",
@@ -1972,6 +2266,7 @@ const resetSearch = () => {
 const clearRefinementFilters = () => {
   setQuery({
     year: undefined,
+    month: undefined,
     type: undefined,
     has_pdf: undefined,
     sort: "relevance",
@@ -2232,6 +2527,10 @@ const runSearch = async () => {
 
         year:
           currentState.year ||
+          "",
+
+        month:
+          currentState.month ||
           "",
 
         type:

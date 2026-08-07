@@ -1,5 +1,4 @@
-"""
-Servicio centralizado para consultar publicaciones.
+"""Servicio centralizado para consultar publicaciones.
 
 Este módulo funciona como única fuente de verdad para:
 
@@ -236,6 +235,7 @@ def extract_publicaciones_filters(
     origen_tipo
 
     anio
+    mes
     anio_desde
     anio_hasta
 
@@ -316,6 +316,24 @@ def extract_publicaciones_filters(
         ),
         field_name="anio",
     )
+
+    mes = _parse_positive_int(
+        _first_value(
+            query_params,
+            "mes",
+            "mes_publicacion",
+        ),
+        field_name="mes",
+    )
+
+    if mes is not None and mes > 12:
+        raise ValidationError(
+            {
+                "mes": [
+                    "El mes debe estar entre 1 y 12."
+                ]
+            }
+        )
 
     anio_desde = _parse_positive_int(
         _first_value(
@@ -417,6 +435,7 @@ def extract_publicaciones_filters(
         "tipo": tipo,
         "origen_tipo": origen_tipo,
         "anio": anio,
+        "mes": mes,
         "anio_desde": anio_desde,
         "anio_hasta": anio_hasta,
         "texto": texto,
@@ -634,6 +653,15 @@ def apply_publicaciones_filters(
                     anio_hasta
                 )
             )
+
+    mes = filters.get(
+        "mes"
+    )
+
+    if mes:
+        queryset = queryset.filter(
+            mes_publicacion=mes
+        )
 
     facultad_id = filters.get(
         "facultad_id"
@@ -972,7 +1000,12 @@ def apply_publicaciones_ordering(
     if orden == "antiguas":
         return queryset.order_by(
             F(
-                "fecha_publicacion"
+                "anio_publicacion"
+            ).asc(
+                nulls_last=True
+            ),
+            F(
+                "mes_publicacion"
             ).asc(
                 nulls_last=True
             ),
@@ -1016,7 +1049,12 @@ def apply_publicaciones_ordering(
 
     return queryset.order_by(
         F(
-            "fecha_publicacion"
+            "anio_publicacion"
+        ).desc(
+            nulls_last=True
+        ),
+        F(
+            "mes_publicacion"
         ).desc(
             nulls_last=True
         ),
@@ -1054,7 +1092,7 @@ def get_publicaciones_available_years(
 
     solo_mias:
         Cuando es True, limita los años a publicaciones creadas por
-        el usuario o donde participa como autor/coautor.
+        el usuario o donde participa como autor.
     """
 
     filters = dict(
@@ -1065,6 +1103,7 @@ def get_publicaciones_available_years(
     # facultad, carrera, proyecto, texto o PDF, pero no debe filtrarse
     # a sí mismo por un año o rango ya seleccionado.
     filters["anio"] = None
+    filters["mes"] = None
     filters["anio_desde"] = None
     filters["anio_hasta"] = None
 

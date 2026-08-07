@@ -1,16 +1,3 @@
-"""
-Serializers del módulo de banners institucionales.
-
-Este módulo gestiona:
-
-- Serialización de banners.
-- Validación segura de imágenes.
-- Construcción de URLs absolutas.
-- Configuración visual global del componente.
-- Compatibilidad entre nombres camelCase y snake_case.
-- Validación dinámica del ancho del panel visual.
-"""
-
 import os
 import unicodedata
 import warnings
@@ -32,8 +19,6 @@ from core.models.banners import (
     DEFAULT_BANNER_TITLE,
     DISPLAY_MODE_BANNER,
     DISPLAY_MODE_DEFAULT,
-    DISPLAY_MODE_MIXED,
-    DISPLAY_MODE_TEXT,
     MEDIA_PANE_WIDTH_DEFAULT,
     MEDIA_PANE_WIDTH_MIN,
     SPLITTER_WIDTH,
@@ -1044,9 +1029,7 @@ class BannerConfiguracionSerializer(
         source="display_mode",
         required=False,
         choices=[
-            DISPLAY_MODE_MIXED,
             DISPLAY_MODE_BANNER,
-            DISPLAY_MODE_TEXT,
         ],
     )
 
@@ -1236,12 +1219,9 @@ class BannerConfiguracionSerializer(
             )
 
         if "displayMode" in mutable_data:
-            mutable_data["displayMode"] = str(
-                mutable_data.get(
-                    "displayMode"
-                )
-                or ""
-            ).strip().lower()
+            mutable_data["displayMode"] = (
+                DISPLAY_MODE_BANNER
+            )
 
         return super().to_internal_value(
             mutable_data
@@ -1330,16 +1310,8 @@ class BannerConfiguracionSerializer(
             )
         )
 
-        display_mode = str(
-            attrs.get(
-                "display_mode",
-                getattr(
-                    instance,
-                    "display_mode",
-                    DISPLAY_MODE_DEFAULT,
-                ),
-            )
-        ).strip().lower()
+        display_mode = DISPLAY_MODE_BANNER
+        attrs["display_mode"] = DISPLAY_MODE_BANNER
 
         if not (
             STAGE_WIDTH_MIN
@@ -1397,9 +1369,7 @@ class BannerConfiguracionSerializer(
             )
 
         valid_display_modes = {
-            DISPLAY_MODE_MIXED,
             DISPLAY_MODE_BANNER,
-            DISPLAY_MODE_TEXT,
         }
 
         if (

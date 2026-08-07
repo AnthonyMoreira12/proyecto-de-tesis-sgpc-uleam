@@ -321,7 +321,7 @@
                     <span>Desde</span>
 
                     <input
-                      v-model="viewFilters.resumen.fecha_desde"
+                      v-model="viewFilters.resumen.mes_desde"
                       type="month"
                       aria-label="Mes inicial del período"
                       title="Seleccione el mes inicial"
@@ -333,7 +333,7 @@
                     <span>Hasta</span>
 
                     <input
-                      v-model="viewFilters.resumen.fecha_hasta"
+                      v-model="viewFilters.resumen.mes_hasta"
                       type="month"
                       aria-label="Mes final del período"
                       title="Seleccione el mes final"
@@ -348,7 +348,7 @@
                     <span>Desde</span>
 
                     <input
-                      v-model="viewFilters.tendencia.fecha_desde"
+                      v-model="viewFilters.tendencia.mes_desde"
                       type="month"
                       aria-label="Mes inicial de la tendencia"
                       title="Seleccione el mes inicial"
@@ -360,7 +360,7 @@
                     <span>Hasta</span>
 
                     <input
-                      v-model="viewFilters.tendencia.fecha_hasta"
+                      v-model="viewFilters.tendencia.mes_hasta"
                       type="month"
                       aria-label="Mes final de la tendencia"
                       title="Seleccione el mes final"
@@ -393,7 +393,7 @@
                     <span>Desde</span>
 
                     <input
-                      v-model="viewFilters.rankings.fecha_desde"
+                      v-model="viewFilters.rankings.mes_desde"
                       type="month"
                       aria-label="Mes inicial de los rankings"
                       title="Seleccione el mes inicial"
@@ -405,7 +405,7 @@
                     <span>Hasta</span>
 
                     <input
-                      v-model="viewFilters.rankings.fecha_hasta"
+                      v-model="viewFilters.rankings.mes_hasta"
                       type="month"
                       aria-label="Mes final de los rankings"
                       title="Seleccione el mes final"
@@ -1006,18 +1006,18 @@
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
                         <span class="ivbi-card__eyebrow">
-                          Liderazgo autoral
+                          Producción autoral
                         </span>
 
                         <h3 class="ivbi-card__title">
-                          Top autores principales
+                          Top autores
                         </h3>
                       </div>
                     </header>
 
                     <TransitionGroup
                       v-if="
-                        topAutoresPrincipalesResumen.length
+                        topAutoresResumen.length
                       "
                       name="ivbi-list"
                       tag="div"
@@ -1027,9 +1027,9 @@
                         v-for="(
                           item,
                           index
-                        ) in topAutoresPrincipalesResumen"
+                        ) in topAutoresResumen"
                         :key="
-                          `top-autor-principal-${item.label}`
+                          `top-autor-${item.label}`
                         "
                         class="ivbi-rank__row"
                       >
@@ -1060,7 +1060,7 @@
                             :style="{
                               '--rank-w':
                                 horizontalWidth(
-                                  topAutoresPrincipalesResumen,
+                                  topAutoresResumen,
                                   item.total,
                                   'total'
                                 ),
@@ -1655,7 +1655,7 @@
                     </div>
                   </article>
 
-                  <!-- AUTORES PRINCIPALES -->
+                  <!-- AUTORES -->
                   <article
                     class="
                       ivbi-card
@@ -1665,18 +1665,18 @@
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
                         <span class="ivbi-card__eyebrow">
-                          Liderazgo autoral
+                          Producción autoral
                         </span>
 
                         <h3 class="ivbi-card__title">
-                          Top autores principales
+                          Top autores
                         </h3>
                       </div>
                     </header>
 
                     <TransitionGroup
                       v-if="
-                        topAutoresPrincipalesData.length
+                        topAutoresData.length
                       "
                       name="ivbi-list"
                       tag="div"
@@ -1686,9 +1686,9 @@
                         v-for="(
                           item,
                           index
-                        ) in topAutoresPrincipalesData"
+                        ) in topAutoresData"
                         :key="
-                          `rank-autor-principal-${item.label}`
+                          `rank-autor-${item.label}`
                         "
                         class="ivbi-rank__row"
                       >
@@ -1713,7 +1713,7 @@
                             :style="{
                               '--rank-w':
                                 horizontalWidth(
-                                  topAutoresPrincipalesData,
+                                  topAutoresData,
                                   item.total,
                                   'total'
                                 ),
@@ -1743,91 +1743,6 @@
                     </div>
                   </article>
 
-                  <!-- COAUTORES -->
-                  <article
-                    class="
-                      ivbi-card
-                      ivbi-card--coautores-rank
-                    "
-                  >
-                    <header class="ivbi-card__head">
-                      <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Colaboración científica
-                        </span>
-
-                        <h3 class="ivbi-card__title">
-                          Top coautores
-                        </h3>
-                      </div>
-                    </header>
-
-                    <TransitionGroup
-                      v-if="topCoautoresData.length"
-                      name="ivbi-list"
-                      tag="div"
-                      class="ivbi-rank"
-                    >
-                      <div
-                        v-for="(
-                          item,
-                          index
-                        ) in topCoautoresData"
-                        :key="
-                          `rank-coautor-${item.label}`
-                        "
-                        class="ivbi-rank__row"
-                      >
-                        <div class="ivbi-rank__meta">
-                          <span
-                            class="ivbi-rank__index"
-                          >
-                            {{ index + 1 }}
-                          </span>
-
-                          <span
-                            class="ivbi-rank__label"
-                            :title="item.label"
-                          >
-                            {{ item.label }}
-                          </span>
-                        </div>
-
-                        <div class="ivbi-rank__track">
-                          <div
-                            class="ivbi-rank__bar"
-                            :style="{
-                              '--rank-w':
-                                horizontalWidth(
-                                  topCoautoresData,
-                                  item.total,
-                                  'total'
-                                ),
-
-                              '--rank-delay':
-                                `${index * 45}ms`,
-
-                              background:
-                                rankingBarColor(
-                                  index
-                                ),
-                            }"
-                          >
-                            <span>
-                              {{ item.total }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </TransitionGroup>
-
-                    <div
-                      v-else
-                      class="ivbi-empty"
-                    >
-                      Sin datos.
-                    </div>
-                  </article>
 
                   <!-- REVISTAS -->
                   <article
@@ -2143,8 +2058,8 @@ const EMPTY_RESPONSE = Object.freeze({
       anio_base: null,
       items: [],
       total_publicaciones_anio: 0,
-      total_con_fecha: 0,
-      total_sin_fecha: 0,
+      total_con_mes: 0,
+      total_sin_mes: 0,
     },
 
     publicaciones_por_tipo: {
@@ -2169,23 +2084,8 @@ const EMPTY_RESPONSE = Object.freeze({
       items: [],
     },
 
-    top_autores_principales: {
-      limite: 10,
-      rol_autoria: "principal",
-      total_autores_activos: 0,
-      items: [],
-    },
-
-    top_coautores: {
-      limite: 10,
-      rol_autoria: "coautor",
-      total_autores_activos: 0,
-      items: [],
-    },
-
     top_autores: {
       limite: 10,
-      rol_autoria: "principal",
       total_autores_activos: 0,
       items: [],
     },
@@ -2294,21 +2194,21 @@ const globalFilters = reactive({
 const defaultViewFilters = () => ({
   resumen: {
     tipo_codigo: "",
-    fecha_desde: "",
-    fecha_hasta: "",
+    mes_desde: "",
+    mes_hasta: "",
   },
 
   tendencia: {
     tipo_codigo: "",
-    fecha_desde: "",
-    fecha_hasta: "",
+    mes_desde: "",
+    mes_hasta: "",
     anio: "",
   },
 
   rankings: {
     tipo_codigo: "",
-    fecha_desde: "",
-    fecha_hasta: "",
+    mes_desde: "",
+    mes_hasta: "",
     top: "10",
   },
 });
@@ -2946,14 +2846,14 @@ function buildParams() {
           .tipo_codigo ||
         undefined,
 
-      fecha_desde:
+      mes_desde:
         currentViewFilters
-          .fecha_desde ||
+          .mes_desde ||
         undefined,
 
-      fecha_hasta:
+      mes_hasta:
         currentViewFilters
-          .fecha_hasta ||
+          .mes_hasta ||
         undefined,
 
       anio:
@@ -3284,10 +3184,10 @@ async function aplicarFiltros() {
     ] || {};
 
   if (
-    current.fecha_desde &&
-    current.fecha_hasta &&
-    current.fecha_desde >
-      current.fecha_hasta
+    current.mes_desde &&
+    current.mes_hasta &&
+    current.mes_desde >
+      current.mes_hasta
   ) {
     error.value =
       "El período mensual es inválido: " +
@@ -3316,10 +3216,10 @@ async function resetCurrentViewFilters() {
     viewFilters.resumen.tipo_codigo =
       "";
 
-    viewFilters.resumen.fecha_desde =
+    viewFilters.resumen.mes_desde =
       "";
 
-    viewFilters.resumen.fecha_hasta =
+    viewFilters.resumen.mes_hasta =
       "";
   } else if (
     vistaActiva.value ===
@@ -3328,10 +3228,10 @@ async function resetCurrentViewFilters() {
     viewFilters.tendencia.tipo_codigo =
       "";
 
-    viewFilters.tendencia.fecha_desde =
+    viewFilters.tendencia.mes_desde =
       "";
 
-    viewFilters.tendencia.fecha_hasta =
+    viewFilters.tendencia.mes_hasta =
       "";
 
     viewFilters.tendencia.anio =
@@ -3340,10 +3240,10 @@ async function resetCurrentViewFilters() {
     viewFilters.rankings.tipo_codigo =
       "";
 
-    viewFilters.rankings.fecha_desde =
+    viewFilters.rankings.mes_desde =
       "";
 
-    viewFilters.rankings.fecha_hasta =
+    viewFilters.rankings.mes_hasta =
       "";
 
     viewFilters.rankings.top =
@@ -3720,26 +3620,14 @@ const topCarreras =
         .top_carreras
   );
 
-const topAutoresPrincipales =
+const topAutores =
   computed(
     () =>
-      dashboards.value
-        .top_autores_principales ||
       dashboards.value
         .top_autores ||
       EMPTY_RESPONSE
         .dashboards
-        .top_autores_principales
-  );
-
-const topCoautores =
-  computed(
-    () =>
-      dashboards.value
-        .top_coautores ||
-      EMPTY_RESPONSE
-        .dashboards
-        .top_coautores
+        .top_autores
   );
 
 const journals =
@@ -3791,9 +3679,7 @@ const hasData = computed(() => {
         .length > 0 ||
       publicacionesPorTipo.value
         .items.length > 0 ||
-      topAutoresPrincipales.value
-        .items.length > 0 ||
-      topCoautores.value
+      topAutores.value
         .items.length > 0 ||
       topFacultades.value
         .items.length > 0 ||
@@ -3922,19 +3808,19 @@ const tipoDominanteResumen =
 
 const periodoResumen =
   computed(() => {
-    const fechaDesde =
+    const mesDesde =
       filtrosAplicados.value
-        ?.fecha_desde;
+        ?.mes_desde;
 
-    const fechaHasta =
+    const mesHasta =
       filtrosAplicados.value
-        ?.fecha_hasta;
+        ?.mes_hasta;
 
     const desde =
-      formatMonthYear(fechaDesde);
+      formatMonthYear(mesDesde);
 
     const hasta =
-      formatMonthYear(fechaHasta);
+      formatMonthYear(mesHasta);
 
     if (desde && hasta) {
       return desde === hasta
@@ -4215,21 +4101,12 @@ function normalizeAuthorRankingItems(
   );
 }
 
-const topAutoresPrincipalesData =
+const topAutoresData =
   computed(() =>
     normalizeAuthorRankingItems(
-      topAutoresPrincipales.value
+      topAutores.value
         .items || [],
-      "Autor principal"
-    )
-  );
-
-const topCoautoresData =
-  computed(() =>
-    normalizeAuthorRankingItems(
-      topCoautores.value.items ||
-        [],
-      "Coautor"
+      "Autor"
     )
   );
 
@@ -4267,9 +4144,9 @@ const projectsData =
     }))
   );
 
-const topAutoresPrincipalesResumen =
+const topAutoresResumen =
   computed(() =>
-    topAutoresPrincipalesData
+    topAutoresData
       .value.slice(0, 5)
   );
 

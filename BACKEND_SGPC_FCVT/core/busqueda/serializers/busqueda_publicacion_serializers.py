@@ -3,13 +3,13 @@ Serializer para resultados rápidos de búsqueda de publicaciones.
 
 Expone:
 
-- Título resuelto desde el modelo base o el subtipo.
+- Título resuelto desde el subtipo correspondiente.
 - Tipo general y tipo final.
 - Proyecto, carrera y facultad.
 - Área y subárea.
 - Autores científicos obtenidos desde PublicacionAutor.
-- Autor principal para compatibilidad con consumidores antiguos.
-- Fecha y año de publicación.
+- Primer autor como alias de compatibilidad, sin jerarquía de autoría.
+- Mes opcional y año obligatorio de publicación.
 - Revista, evento, editorial o libro contenedor.
 - DOI y enlace externo.
 - Disponibilidad y URL absoluta del PDF.
@@ -240,32 +240,14 @@ def _build_author_name(author):
     return full_name or None
 
 
-def _resolve_principal_participation(publication):
+def _resolve_first_participation(publication):
     """
-    Obtiene el autor principal o, como respaldo, el primer autor.
+    Obtiene la primera participación según PublicacionAutor.orden.
+
+    El orden conserva la secuencia bibliográfica de los autores,
+    pero no representa una jerarquía ni un nivel de contribución.
     """
-    participations = _get_participations(
-        publication
-    )
-
-    for participation in participations:
-        role = str(
-            getattr(
-                participation,
-                "rol_autoria",
-                "",
-            )
-            or ""
-        ).strip().lower()
-
-        order = getattr(
-            participation,
-            "orden",
-            None,
-        )
-
-        if role == "principal" or order == 1:
-            return participation
+    participations = _get_participations(publication)
 
     return participations[0] if participations else None
 
@@ -869,6 +851,14 @@ class PublicacionBusquedaSerializer(
         read_only=True,
     )
 
+    month = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
+    mes_publicacion_label = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
     # --------------------------------------------------------
     # PDF
     # --------------------------------------------------------
@@ -953,10 +943,12 @@ class PublicacionBusquedaSerializer(
             "autor",
             "authors",
 
-            # Fecha
-            "fecha_publicacion",
+            # Periodo de publicación
             "anio_publicacion",
+            "mes_publicacion",
+            "mes_publicacion_label",
             "year",
+            "month",
 
             # PDF
             "tiene_pdf",
@@ -1257,7 +1249,7 @@ class PublicacionBusquedaSerializer(
         self,
         obj,
     ):
-        participation = _resolve_principal_participation(
+        participation = _resolve_first_participation(
             obj
         )
 
@@ -1280,10 +1272,11 @@ class PublicacionBusquedaSerializer(
         """
         Mantiene un alias textual para consumidores antiguos.
 
-        El valor representa al autor científico principal, no al
-        Usuario que registró la publicación.
+        El valor representa al primer autor según el orden
+        bibliográfico, no una jerarquía de autoría ni al Usuario
+        que registró la publicación.
         """
-        participation = _resolve_principal_participation(
+        participation = _resolve_first_participation(
             obj
         )
 
@@ -1322,30 +1315,10 @@ class PublicacionBusquedaSerializer(
             if not author_name:
                 continue
 
-            raw_role = str(
-                getattr(
-                    participation,
-                    "rol_autoria",
-                    "",
-                )
-                or ""
-            ).strip().lower()
-
             order = getattr(
                 participation,
                 "orden",
                 None,
-            )
-
-            is_principal = bool(
-                raw_role == "principal"
-                or order == 1
-            )
-
-            resolved_role = (
-                "principal"
-                if is_principal
-                else "coautor"
             )
 
             output.append(
@@ -1354,8 +1327,6 @@ class PublicacionBusquedaSerializer(
                     "autor_id": author.pk,
                     "name": author_name,
                     "nombre_completo": author_name,
-                    "role": resolved_role,
-                    "rol_autoria": resolved_role,
                     "order": order,
                     "orden": order,
                     "es_externo": bool(
@@ -1371,36 +1342,68 @@ class PublicacionBusquedaSerializer(
         return output
 
     # ========================================================
-    # AÑO
+    # PERIODO DE PUBLICACIÓN
     # ========================================================
 
     def get_year(
         self,
         obj,
     ):
-        publication_year = getattr(
+        return getattr(
             obj,
             "anio_publicacion",
             None,
         )
 
-        if publication_year is not None:
-            return publication_year
-
-        publication_date = getattr(
+    def get_month(
+        self,
+        obj,
+    ):
+        return getattr(
             obj,
-            "fecha_publicacion",
+            "mes_publicacion",
             None,
         )
 
-        if publication_date is None:
+    def get_mes_publicacion_label(
+        self,
+        obj,
+    ):
+        month = self.get_month(obj)
+
+        if month is None:
             return None
 
-        return getattr(
-            publication_date,
-            "year",
+        display = getattr(
+            obj,
+            "get_mes_publicacion_display",
             None,
         )
+
+        if callable(display):
+            value = _optional_text(display())
+            if value:
+                return value
+
+        month_labels = {
+            1: "Enero",
+            2: "Febrero",
+            3: "Marzo",
+            4: "Abril",
+            5: "Mayo",
+            6: "Junio",
+            7: "Julio",
+            8: "Agosto",
+            9: "Septiembre",
+            10: "Octubre",
+            11: "Noviembre",
+            12: "Diciembre",
+        }
+
+        try:
+            return month_labels.get(int(month))
+        except (TypeError, ValueError):
+            return None
 
     # ========================================================
     # PDF

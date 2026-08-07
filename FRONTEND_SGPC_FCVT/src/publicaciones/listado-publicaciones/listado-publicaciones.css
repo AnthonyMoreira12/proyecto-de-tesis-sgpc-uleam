@@ -815,6 +815,10 @@
     repeat(2, minmax(0, 1fr));
 }
 
+.pub-sidePanel__fields--years > .pub-field {
+  align-content: start;
+}
+
 .pub-field--full {
   grid-column: 1 / -1;
 }

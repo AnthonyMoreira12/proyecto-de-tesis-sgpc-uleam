@@ -15,7 +15,7 @@ export const DEFAULT_AVISOS_LAYOUT = Object.freeze({
   stageWidth: 1260,
   stageHeight: 640,
   mediaPaneWidth: 806,
-  displayMode: "mixed",
+  displayMode: "banner",
 });
 
 export const AVISOS_TEXT_MAX_LENGTH = 700;
@@ -27,13 +27,11 @@ export const AVISOS_LAYOUT_LIMITS = Object.freeze({
   stageHeightMax: 900,
   mediaPaneWidthMin: 420,
   asideWidthMin: 320,
-  splitterWidth: 14,
+  splitterWidth: 0,
 });
 
 export const AVISOS_DISPLAY_MODES = Object.freeze([
-  "mixed",
   "banner",
-  "text",
 ]);
 
 const STAGE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.stageWidthMin;
@@ -44,7 +42,7 @@ const MEDIA_PANE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.mediaPaneWidthMin;
 const ASIDE_WIDTH_MIN = AVISOS_LAYOUT_LIMITS.asideWidthMin;
 const SPLITTER_WIDTH = AVISOS_LAYOUT_LIMITS.splitterWidth;
 
-const DISPLAY_MODE_DEFAULT = "mixed";
+const DISPLAY_MODE_DEFAULT = "banner";
 const DISPLAY_MODE_ALLOWED = new Set(AVISOS_DISPLAY_MODES);
 
 let avisosConfigCache = {
@@ -478,36 +476,97 @@ const buildLayoutPatchPayload = (
   };
 };
 
-const resolveUserKey = (
-  user
-) => {
-  if (user?.id) {
-    return String(user.id);
-  }
-
-  if (user?.email) {
-    return String(
-      user.email
-    ).toLowerCase();
-  }
-
-  return "anonymous";
+const normalizeUserEmail = (value) => {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 };
 
-const getSeenOnceKey = (
-  user
-) => {
-  return `${SEEN_ONCE_PREFIX}:${resolveUserKey(
-    user
-  )}`;
+const resolveUserKey = (user) => {
+  const userId = String(
+    user?.id ?? ""
+  ).trim();
+
+  if (userId) {
+    return `id:${userId}`;
+  }
+
+  const email = normalizeUserEmail(
+    user?.email
+  );
+
+  if (email) {
+    return `email:${email}`;
+  }
+
+  return null;
 };
 
-const getSeenVersionKey = (
+export const hasAvisosUserIdentity = (
   user
 ) => {
-  return `${SEEN_VERSION_PREFIX}:${resolveUserKey(
-    user
-  )}`;
+  return Boolean(resolveUserKey(user));
+};
+
+const getSeenOnceKey = (user) => {
+  const userKey = resolveUserKey(user);
+
+  return userKey
+    ? `${SEEN_ONCE_PREFIX}:${userKey}`
+    : null;
+};
+
+const getSeenVersionKey = (user) => {
+  const userKey = resolveUserKey(user);
+
+  return userKey
+    ? `${SEEN_VERSION_PREFIX}:${userKey}`
+    : null;
+};
+
+const readLocalStorage = (key) => {
+  if (!key || typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeLocalStorage = (
+  key,
+  value
+) => {
+  if (!key || typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(
+      key,
+      String(value)
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const removeLocalStorage = (key) => {
+  if (!key || typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const normalizeStatus = (
@@ -760,80 +819,97 @@ export const shouldOpenAvisos =
     user,
     providedStatus = null
   ) => {
+    if (!hasAvisosUserIdentity(user)) {
+      return false;
+    }
+
     const avisosStatus =
       providedStatus ||
       await getAvisosStatus();
 
-    if (
-      !avisosStatus.hasItems
-    ) {
+    if (!avisosStatus.hasItems) {
       return false;
     }
-
-    const seenOnce =
-      localStorage.getItem(
-        getSeenOnceKey(user)
-      ) === "1";
-
-    const seenVersion =
-      localStorage.getItem(
-        getSeenVersionKey(user)
-      ) || "";
 
     const currentNotifyVersion =
       getAvisosCombinedVersion(
         avisosStatus
-      );
+      ).trim();
 
-    if (
-      !seenOnce
-    ) {
+    // No se abre ni se persiste un aviso cuya versión
+    // no haya sido confirmada por el backend.
+    if (!currentNotifyVersion) {
+      return false;
+    }
+
+    const seenOnce =
+      readLocalStorage(
+        getSeenOnceKey(user)
+      ) === "1";
+
+    const seenVersion =
+      readLocalStorage(
+        getSeenVersionKey(user)
+      ) || "";
+
+    if (!seenOnce) {
       return true;
     }
 
-    if (
-      currentNotifyVersion &&
+    return (
       seenVersion !==
-        currentNotifyVersion
-    ) {
-      return true;
-    }
-
-    return false;
+      currentNotifyVersion
+    );
   };
 
 export const markAvisosAsSeen = (
   user,
   versionOrStatus = ""
 ) => {
-  localStorage.setItem(
-    getSeenOnceKey(user),
-    "1"
-  );
+  if (!hasAvisosUserIdentity(user)) {
+    return false;
+  }
 
   const version =
     getAvisosCombinedVersion(
       versionOrStatus
+    ).trim();
+
+  if (!version) {
+    return false;
+  }
+
+  const onceStored =
+    writeLocalStorage(
+      getSeenOnceKey(user),
+      "1"
     );
 
-  if (
-    version
-  ) {
-    localStorage.setItem(
+  const versionStored =
+    writeLocalStorage(
       getSeenVersionKey(user),
-      String(version)
+      version
     );
-  }
+
+  return onceStored && versionStored;
 };
 
 export const clearAvisosSeenState = (
   user
 ) => {
-  localStorage.removeItem(
-    getSeenOnceKey(user)
-  );
+  if (!hasAvisosUserIdentity(user)) {
+    return false;
+  }
 
-  localStorage.removeItem(
-    getSeenVersionKey(user)
-  );
+  const onceRemoved =
+    removeLocalStorage(
+      getSeenOnceKey(user)
+    );
+
+  const versionRemoved =
+    removeLocalStorage(
+      getSeenVersionKey(user)
+    );
+
+  return onceRemoved && versionRemoved;
 };

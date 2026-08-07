@@ -920,62 +920,6 @@ const totalPublicaciones = (usuario) => {
    BÚSQUEDA
 ============================================================ */
 
-const publicationSearchText = (usuario) => {
-  const publications =
-    Array.isArray(
-      usuario?.publicaciones_relacionadas
-    )
-      ? usuario.publicaciones_relacionadas
-      : [];
-
-  return publications
-    .map((publication) => {
-      return [
-        publication?.label,
-        publication?.titulo,
-        publication?.rol_label,
-        publication?.rol_autoria,
-        publication?.tipo,
-        publication?.tipo_codigo,
-        publication?.numero,
-        publication?.anio_publicacion,
-      ]
-        .map(normalizeText)
-        .filter(Boolean)
-        .join(" ");
-    })
-    .join(" ");
-};
-
-
-const passesSearch = (
-  usuario,
-  query
-) => {
-  if (!query) {
-    return true;
-  }
-
-  const searchableValues = [
-    fullName(usuario),
-    usuario?.nombres,
-    usuario?.apellidos,
-    usuario?.email,
-    usuario?.identificacion,
-    usuario?.facultad_nombre,
-    usuario?.carrera_nombre,
-    usuario?.autor_nombre,
-    publicationSearchText(usuario),
-  ];
-
-  return searchableValues.some(
-    (value) => {
-      return normalizeSearchText(
-        value
-      ).includes(query);
-    }
-  );
-};
 
 
 /* ============================================================
@@ -983,18 +927,23 @@ const passesSearch = (
 ============================================================ */
 
 const filteredUsuarios = computed(() => {
-  const query = normalizeSearchText(
-    busquedaTrim.value
-  );
-
-  const visibleUsers = (
-    usuarios.value || []
-  ).filter((usuario) => {
-    return passesSearch(
-      usuario,
-      query
-    );
-  });
+  /*
+   * La búsqueda textual se resuelve en el backend mediante
+   * adminApi.usuarios(busquedaTrim).
+   *
+   * No repetimos esa búsqueda en el navegador porque el backend
+   * también puede encontrar cuentas mediante datos del Autor,
+   * incluidos sus identificadores académicos, aunque esos campos
+   * no formen parte del payload compacto de cada usuario.
+   *
+   * En el frontend únicamente conservamos los filtros visuales
+   * de las pestañas administrativas.
+   */
+  const visibleUsers = Array.isArray(
+    usuarios.value
+  )
+    ? usuarios.value
+    : [];
 
   switch (activeTab.value) {
     case "pendientes":

@@ -8,13 +8,14 @@ Centraliza:
 - publicaciones;
 - PDF;
 - autores;
-- coautores;
+- autores relacionados;
 - información pública del perfil.
 """
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import (
     Exists,
+    F,
     OuterRef,
     Prefetch,
     Q,
@@ -59,6 +60,87 @@ def _to_lower(value):
         if value
         else ""
     )
+
+
+MESES_PUBLICACION = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre",
+}
+
+
+def get_publicacion_month_label(
+    publicacion,
+):
+    month = getattr(
+        publicacion,
+        "mes_publicacion",
+        None,
+    )
+
+    if month in (None, ""):
+        return None
+
+    try:
+        month = int(month)
+    except (TypeError, ValueError):
+        return None
+
+    display = getattr(
+        publicacion,
+        "get_mes_publicacion_display",
+        None,
+    )
+
+    if callable(display):
+        try:
+            label = _to_str(display())
+
+            if label:
+                return label
+        except Exception:
+            pass
+
+    return MESES_PUBLICACION.get(month)
+
+
+def _academic_identifiers(
+    author,
+):
+    """
+    Devuelve únicamente los identificadores académicos
+    realmente registrados.
+    """
+
+    output = {}
+
+    for field in (
+        "orcid",
+        "registro_senescyt",
+        "google_scholar",
+        "scopus_id",
+    ):
+        value = _to_str(
+            getattr(
+                author,
+                field,
+                None,
+            )
+        )
+
+        if value:
+            output[field] = value
+
+    return output
 
 
 def _safe_related(
@@ -792,7 +874,16 @@ def build_public_profile_payload(
             )
         )
         .order_by(
-            "-anio_publicacion",
+            F(
+                "anio_publicacion"
+            ).desc(
+                nulls_last=True
+            ),
+            F(
+                "mes_publicacion"
+            ).desc(
+                nulls_last=True
+            ),
             "-id",
         )
     )
@@ -801,7 +892,7 @@ def build_public_profile_payload(
 
     years = []
 
-    coauthors_map = {}
+    related_authors_map = {}
 
     for pub in publicaciones_qs:
         title, venue = (
@@ -831,56 +922,66 @@ def build_public_profile_payload(
             None,
         )
 
+        month = getattr(
+            pub,
+            "mes_publicacion",
+            None,
+        )
+
+        month_label = get_publicacion_month_label(
+            pub
+        )
+
         if year:
             years.append(
                 int(year)
             )
 
         # -----------------------------------------------------
-        # Coautores
+        # Autores relacionados
         # -----------------------------------------------------
 
         for rel in _get_publicacion_autor_rels(
             pub
         ):
-            coauthor = getattr(
+            related_author = getattr(
                 rel,
                 "autor",
                 None,
             )
 
             if (
-                not coauthor
-                or coauthor.id == author.id
+                not related_author
+                or related_author.id == author.id
             ):
                 continue
 
             if (
-                coauthor.id
-                not in coauthors_map
+                related_author.id
+                not in related_authors_map
             ):
-                coauthor_user = getattr(
-                    coauthor,
+                related_author_user = getattr(
+                    related_author,
                     "usuario",
                     None,
                 )
 
-                coauthors_map[
-                    coauthor.id
+                related_authors_map[
+                    related_author.id
                 ] = {
-                    "id": coauthor.id,
+                    "id": related_author.id,
                     "name": _author_name(
-                        coauthor
+                        related_author
                     ),
                     "org": (
                         get_author_org_label(
-                            coauthor
+                            related_author
                         )
                     ),
                     "avatar": (
                         get_user_avatar_absolute_url(
                             request,
-                            coauthor_user,
+                            related_author_user,
                         )
                     ),
                 }
@@ -906,6 +1007,10 @@ def build_public_profile_payload(
 
                 "year": year,
                 "anio_publicacion": year,
+
+                "month": month,
+                "mes_publicacion": month,
+                "mes_publicacion_label": month_label,
 
                 "type": (
                     {
@@ -978,10 +1083,32 @@ def build_public_profile_payload(
             publicaciones
         ),
 
+        "related_authors": list(
+            related_authors_map.values()
+        ),
+
+        "autores_relacionados": list(
+            related_authors_map.values()
+        ),
+
+        # Alias temporal para no romper interfaces antiguas.
+        # No representa un rol de autoría.
         "coauthors": list(
-            coauthors_map.values()
+            related_authors_map.values()
         ),
     }
+
+    academic_identifiers = _academic_identifiers(
+        author
+    )
+
+    if academic_identifiers:
+        payload["academic_identifiers"] = (
+            academic_identifiers
+        )
+
+        for field, value in academic_identifiers.items():
+            payload[field] = value
 
     if is_me:
         payload["is_me"] = True

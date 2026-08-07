@@ -64,7 +64,7 @@
 
               <p class="adm-del-card__subtitle">
                 Busque cuentas activas por nombre, correo,
-                identificación, facultad o carrera.
+                identificación, unidad académica o identificador académico.
               </p>
             </div>
 
@@ -109,7 +109,7 @@
                   v-model.trim="search"
                   class="adm-del-input"
                   type="search"
-                  placeholder="Ej.: María Pérez, 1312345678 o usuario@uleam.edu.ec"
+                  placeholder="Ej.: María Pérez, cédula, correo u ORCID"
                   autocomplete="off"
                   :disabled="loadingUsers"
                   :aria-describedby="
@@ -713,7 +713,7 @@
                   </span>
 
                   <span class="adm-del-mini-pill">
-                    {{ item.anio_publicacion || "Sin año" }}
+                    {{ publicationPeriod(item) }}
                   </span>
                 </div>
 
@@ -727,9 +727,10 @@
 
                 <p class="adm-del-history-card__meta">
                   {{
-                    item.autor_principal ||
                     item.autor ||
-                    "Sin autor principal"
+                    item.autores ||
+                    item.primer_autor ||
+                    "Sin autores registrados"
                   }}
                 </p>
 
@@ -838,14 +839,6 @@ const normalizeRows = (data) => {
   }
 
   return [];
-};
-
-const normalizeText = (value) => {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim();
 };
 
 const getBackendOrigin = () => {
@@ -975,25 +968,21 @@ const hasSearch = computed(() => {
 });
 
 const filteredUsers = computed(() => {
-  const query = normalizeText(search.value);
-
-  if (!query) {
+  /*
+   * La búsqueda ya se resuelve en el backend.
+   *
+   * No volvemos a filtrar localmente porque el backend también
+   * puede encontrar usuarios por datos del Autor (por ejemplo,
+   * ORCID, Registro SENESCYT o Scopus ID) que no necesariamente
+   * forman parte del payload compacto del usuario.
+   */
+  if (!hasSearch.value) {
     return [];
   }
 
-  return users.value.filter((user) => {
-    const content = [
-      user?.nombres,
-      user?.apellidos,
-      user?.email,
-      user?.identificacion,
-      user?.autor_nombre,
-      user?.facultad_nombre,
-      user?.carrera_nombre,
-    ].join(" ");
-
-    return normalizeText(content).includes(query);
-  });
+  return Array.isArray(users.value)
+    ? users.value
+    : [];
 });
 
 const selectedInitials = computed(() => {
@@ -1126,6 +1115,70 @@ const publicationTotalLabel = (value) => {
     : `${total} publicaciones`;
 };
 
+const MONTH_LABELS = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
+
+
+const publicationPeriod = (item) => {
+  const rawYear =
+    item?.anio_publicacion ??
+    item?.anio ??
+    null;
+
+  const year = Number(rawYear);
+
+  const rawMonth =
+    item?.mes_publicacion ??
+    item?.mes ??
+    null;
+
+  const month = Number(rawMonth);
+
+  const backendMonthLabel = String(
+    item?.mes_publicacion_label || ""
+  ).trim();
+
+  const monthLabel =
+    backendMonthLabel ||
+    (
+      Number.isInteger(month) &&
+      month >= 1 &&
+      month <= 12
+        ? MONTH_LABELS[month]
+        : ""
+    );
+
+  const hasYear =
+    Number.isInteger(year) &&
+    year > 0;
+
+  if (hasYear && monthLabel) {
+    return `${monthLabel} de ${year}`;
+  }
+
+  if (hasYear) {
+    return String(year);
+  }
+
+  if (monthLabel) {
+    return monthLabel;
+  }
+
+  return "Sin período";
+};
+
 const historyItemKey = (item, index) => {
   return [
     item?.id,
@@ -1237,7 +1290,7 @@ const fetchUserPublicaciones = async () => {
   try {
     const response = await listarAdminPublicaciones({
       usuario_objetivo_id: selectedUserId,
-      ordering: "fecha_desc",
+      ordering: "anio_desc",
     });
 
     if (requestId !== publicacionesRequestSerial) {

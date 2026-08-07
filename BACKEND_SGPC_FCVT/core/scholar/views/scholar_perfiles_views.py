@@ -2,24 +2,50 @@
 Views para perfiles tipo Scholar de autores.
 
 Endpoints públicos:
+
 - listado/búsqueda de investigadores;
 - detalle de perfil.
 
 Endpoint autenticado:
-- perfil Scholar del usuario actual.
+
+- perfil Scholar del usuario actual;
+- actualización de sus identificadores académicos.
+
+Los identificadores académicos pertenecen al modelo Autor:
+
+- ORCID;
+- Registro SENESCYT;
+- Google Scholar;
+- Scopus ID.
 """
 
-from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Count, Q, Value
-from django.db.models.functions import Lower
-from rest_framework import permissions, status
-from rest_framework.pagination import PageNumberPagination
+from django.contrib.postgres.search import (
+    TrigramSimilarity,
+)
+from django.db.models import (
+    Count,
+    Q,
+    Value,
+)
+from django.db.models.functions import (
+    Lower,
+)
+from rest_framework import (
+    permissions,
+    status,
+)
+from rest_framework.pagination import (
+    PageNumberPagination,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.authentication import (
+    JWTAuthentication,
+)
 
 from core.models import Autor
 from core.scholar.serializers.scholar_perfiles_serializers import (
+    PerfilAcademicoAutorSerializer,
     PerfilAutorListSerializer,
 )
 from core.scholar.services.scholar_perfiles_services import (
@@ -64,8 +90,11 @@ def _build_author_payload(
     author,
 ):
     """
-    Usa el serializer base y conserva los campos
-    adicionales que ya expone la API Scholar.
+    Usa el serializer compacto y conserva los campos adicionales
+    que ya expone la API Scholar.
+
+    Los identificadores académicos no se incluyen en las tarjetas
+    del listado; se muestran en el detalle del perfil.
     """
 
     base = PerfilAutorListSerializer(
@@ -119,6 +148,41 @@ def _build_author_payload(
     }
 
 
+def _get_author_by_user(
+    user,
+):
+    """
+    Obtiene el Autor asociado al usuario autenticado.
+    """
+
+    return (
+        Autor.objects
+        .select_related(
+            "usuario",
+            "usuario__carrera",
+            "usuario__carrera__facultad",
+        )
+        .filter(
+            usuario=user
+        )
+        .first()
+    )
+
+
+def _autor_not_found_response():
+    return Response(
+        {
+            "detail": (
+                "No existe un perfil "
+                "de autor asociado a tu cuenta."
+            )
+        },
+        status=(
+            status.HTTP_404_NOT_FOUND
+        ),
+    )
+
+
 # =============================================================
 # LISTADO / BÚSQUEDA PÚBLICA
 # =============================================================
@@ -130,11 +194,23 @@ class PerfilesScholarAPIView(
     """
     Lista y busca investigadores.
 
-    Este endpoint es público porque forma parte
-    de la búsqueda académica institucional.
+    El endpoint es público porque forma parte de la búsqueda
+    académica institucional.
+
+    La búsqueda contempla:
+
+    - nombres y apellidos;
+    - correo;
+    - identificación;
+    - institución;
+    - ORCID;
+    - Registro SENESCYT;
+    - URL de Google Scholar;
+    - Scopus ID.
     """
 
     authentication_classes = []
+
     permission_classes = [
         permissions.AllowAny
     ]
@@ -182,7 +258,7 @@ class PerfilesScholarAPIView(
         )
 
         # -----------------------------------------------------
-        # Sin búsqueda
+        # SIN BÚSQUEDA
         # -----------------------------------------------------
 
         if not q:
@@ -195,7 +271,7 @@ class PerfilesScholarAPIView(
             )
 
         # -----------------------------------------------------
-        # Con búsqueda
+        # CON BÚSQUEDA
         # -----------------------------------------------------
 
         else:
@@ -226,6 +302,18 @@ class PerfilesScholarAPIView(
                         institucion__icontains=q
                     )
                     | Q(
+                        orcid__icontains=q
+                    )
+                    | Q(
+                        registro_senescyt__icontains=q
+                    )
+                    | Q(
+                        google_scholar__icontains=q
+                    )
+                    | Q(
+                        scopus_id__icontains=q
+                    )
+                    | Q(
                         sim__gte=0.2
                     )
                 )
@@ -239,7 +327,7 @@ class PerfilesScholarAPIView(
             )
 
         # -----------------------------------------------------
-        # Paginación
+        # PAGINACIÓN
         # -----------------------------------------------------
 
         paginator = (
@@ -286,6 +374,7 @@ class PerfilScholarDetailAPIView(
     """
 
     authentication_classes = []
+
     permission_classes = [
         permissions.AllowAny
     ]
@@ -343,6 +432,30 @@ class PerfilScholarDetailAPIView(
 class PerfilScholarMeAPIView(
     APIView
 ):
+    """
+    Perfil Scholar del usuario autenticado.
+
+    GET
+        Consulta el perfil académico.
+
+    PATCH
+        Actualiza parcialmente los identificadores académicos.
+
+    PUT
+        Mantiene compatibilidad con clientes que utilicen PUT.
+        Como los cuatro identificadores son opcionales, se procesa
+        de forma parcial para no borrar datos no enviados.
+
+    Los campos editables son exclusivamente:
+
+        orcid
+        registro_senescyt
+        google_scholar
+        scopus_id
+
+    No se modifica el modelo Usuario ni su perfil_completo.
+    """
+
     authentication_classes = [
         JWTAuthentication
     ]
@@ -355,30 +468,13 @@ class PerfilScholarMeAPIView(
         self,
         request,
     ):
-        author = (
-            Autor.objects
-            .select_related(
-                "usuario",
-                "usuario__carrera",
-                "usuario__carrera__facultad",
-            )
-            .filter(
-                usuario=request.user
-            )
-            .first()
+        author = _get_author_by_user(
+            request.user
         )
 
         if not author:
-            return Response(
-                {
-                    "detail": (
-                        "No existe un perfil "
-                        "de autor asociado a tu cuenta."
-                    )
-                },
-                status=(
-                    status.HTTP_404_NOT_FOUND
-                ),
+            return (
+                _autor_not_found_response()
             )
 
         payload = (
@@ -392,4 +488,73 @@ class PerfilScholarMeAPIView(
         return Response(
             payload,
             status=status.HTTP_200_OK,
+        )
+
+    def _update_academic_profile(
+        self,
+        request,
+    ):
+        author = _get_author_by_user(
+            request.user
+        )
+
+        if not author:
+            return (
+                _autor_not_found_response()
+            )
+
+        serializer = (
+            PerfilAcademicoAutorSerializer(
+                author,
+                data=request.data,
+                partial=True,
+                context={
+                    "request": request,
+                },
+            )
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        # Se vuelve a construir el perfil completo para que la
+        # respuesta tenga exactamente el mismo contrato que GET.
+        author = _get_author_by_user(
+            request.user
+        )
+
+        payload = (
+            build_public_profile_payload(
+                request=request,
+                author=author,
+                is_me=True,
+            )
+        )
+
+        return Response(
+            payload,
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(
+        self,
+        request,
+    ):
+        return (
+            self._update_academic_profile(
+                request
+            )
+        )
+
+    def put(
+        self,
+        request,
+    ):
+        return (
+            self._update_academic_profile(
+                request
+            )
         )

@@ -858,6 +858,19 @@
   );
 }
 
+.pdet-authorRow {
+  transition:
+    border-color var(--t-fast, 0.18s ease),
+    box-shadow var(--t-fast, 0.18s ease),
+    transform var(--t-fast, 0.18s ease);
+}
+
+.pdet-authorRow:hover {
+  border-color: var(--pdet-primary-line);
+  box-shadow: var(--pdet-shadow-soft);
+  transform: translateY(-1px);
+}
+
 .pdet-authorIndex {
   width: 34px;
   height: 34px;
@@ -893,13 +906,24 @@
 }
 
 .pdet-authorMeta {
-  margin: 3px 0 0;
+  display: inline-flex;
+  align-items: center;
 
-  color: var(--pdet-muted);
+  width: fit-content;
+  min-height: 24px;
 
-  font-size: 0.76rem;
-  line-height: 1.4;
-  font-weight: 560;
+  margin: 6px 0 0;
+  padding: 0 8px;
+
+  border: 1px solid var(--pdet-primary-line);
+  border-radius: var(--pdet-radius-pill);
+
+  background: var(--pdet-primary-soft);
+  color: var(--pdet-primary);
+
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 720;
 }
 
 /* ============================================================

@@ -359,6 +359,29 @@
               </select>
             </div>
 
+            <div class="filter-field filter-field--month">
+              <label
+                class="filter-label"
+                for="mispub-mes"
+              >
+                Mes
+              </label>
+
+              <select
+                id="mispub-mes"
+                v-model="filtroMes"
+                class="filter-select"
+              >
+                <option
+                  v-for="mes in MESES_LIST"
+                  :key="`mes-${mes.value || 'all'}`"
+                  :value="mes.value"
+                >
+                  {{ mes.label }}
+                </option>
+              </select>
+            </div>
+
             <div class="filter-field filter-field--advancedAction">
               <span class="filter-label">
                 Opciones
@@ -436,7 +459,7 @@
               </h3>
 
               <span class="filters__groupHint">
-                Para el periodo use un año exacto o un rango, no ambos.
+                Para el período use un año exacto o un rango; el mes puede combinarse con ambos.
               </span>
             </div>
 
@@ -689,9 +712,9 @@
 
               <time
                 class="date"
-                :datetime="pub.fecha_publicacion || ''"
+                :datetime="publicationPeriodDatetime(pub)"
               >
-                {{ formatFecha(pub.fecha_publicacion) }}
+                {{ formatPublicationPeriod(pub) }}
               </time>
             </div>
 
@@ -809,7 +832,7 @@
                 </th>
 
                 <th scope="col">
-                  Fecha
+                  Período
                 </th>
 
                 <th scope="col">
@@ -866,7 +889,7 @@
                 </td>
 
                 <td>
-                  {{ formatFecha(pub.fecha_publicacion) }}
+                  {{ formatPublicationPeriod(pub) }}
                 </td>
 
                 <td :title="pub.facultad || 'Sin facultad'">
@@ -1080,6 +1103,22 @@ const ORDENES = Object.freeze([
   },
 ]);
 
+const MESES_LIST = Object.freeze([
+  { value: "", label: "Todos los meses" },
+  { value: "1", label: "Enero" },
+  { value: "2", label: "Febrero" },
+  { value: "3", label: "Marzo" },
+  { value: "4", label: "Abril" },
+  { value: "5", label: "Mayo" },
+  { value: "6", label: "Junio" },
+  { value: "7", label: "Julio" },
+  { value: "8", label: "Agosto" },
+  { value: "9", label: "Septiembre" },
+  { value: "10", label: "Octubre" },
+  { value: "11", label: "Noviembre" },
+  { value: "12", label: "Diciembre" },
+]);
+
 /* ============================================================
   DATOS PRINCIPALES
 ============================================================ */
@@ -1131,6 +1170,7 @@ const filtroCarrera = ref("");
 const filtroProyecto = ref("");
 
 const filtroAnio = ref("");
+const filtroMes = ref("");
 const filtroAnioDesde = ref("");
 const filtroAnioHasta = ref("");
 
@@ -1318,34 +1358,81 @@ function catalogContainsId(
 }
 
 /* ============================================================
-  FECHAS Y AÑOS
+  PERÍODOS Y AÑOS
 ============================================================ */
 
-function formatFecha(fecha) {
-  if (!fecha) {
-    return "Sin fecha";
-  }
-
-  const normalized = String(
-    fecha
-  ).slice(0, 10);
-
-  const date = new Date(
-    `${normalized}T00:00:00`
+function resolvePublicationYear(publicacion) {
+  const year = Number(
+    publicacion?.anio_publicacion ??
+      publicacion?.anio ??
+      publicacion?.year
   );
 
-  if (Number.isNaN(date.getTime())) {
-    return "Sin fecha";
+  return Number.isInteger(year) && year > 0
+    ? year
+    : null;
+}
+
+function resolvePublicationMonth(publicacion) {
+  const month = Number(
+    publicacion?.mes_publicacion ??
+      publicacion?.mes ??
+      publicacion?.month
+  );
+
+  return (
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  )
+    ? month
+    : null;
+}
+
+function formatPublicationPeriod(publicacion) {
+  const year =
+    resolvePublicationYear(publicacion);
+
+  if (!year) {
+    return "Sin período";
+  }
+
+  const month =
+    resolvePublicationMonth(publicacion);
+
+  if (!month) {
+    return String(year);
   }
 
   return new Intl.DateTimeFormat(
     "es-EC",
     {
-      day: "2-digit",
-      month: "short",
+      month: "long",
       year: "numeric",
     }
-  ).format(date);
+  ).format(
+    new Date(
+      year,
+      month - 1,
+      1
+    )
+  );
+}
+
+function publicationPeriodDatetime(publicacion) {
+  const year =
+    resolvePublicationYear(publicacion);
+
+  if (!year) {
+    return "";
+  }
+
+  const month =
+    resolvePublicationMonth(publicacion);
+
+  return month
+    ? `${year}-${String(month).padStart(2, "0")}`
+    : String(year);
 }
 
 function normalizeSelectedYearRange() {
@@ -1783,6 +1870,19 @@ function hydrateStateFromRoute() {
       route.query.anio
     );
 
+  const mesQuery =
+    normalizeQueryValue(
+      route.query.mes
+    );
+
+  filtroMes.value =
+    MESES_LIST.some(
+      (item) =>
+        item.value === mesQuery
+    )
+      ? mesQuery
+      : "";
+
   filtroAnioDesde.value =
     normalizeQueryValue(
       route.query.desde
@@ -1852,6 +1952,7 @@ function buildStateQuery() {
     "carrera",
     "proyecto",
     "anio",
+    "mes",
     "desde",
     "hasta",
     "pdf",
@@ -1899,6 +2000,11 @@ function buildStateQuery() {
   if (filtroAnio.value) {
     query.anio =
       filtroAnio.value;
+  }
+
+  if (filtroMes.value) {
+    query.mes =
+      filtroMes.value;
   }
 
   if (filtroAnioDesde.value) {
@@ -1982,6 +2088,11 @@ function buildBackendParams({
         params.anio_hasta =
           filtroAnioHasta.value;
       }
+    }
+
+    if (filtroMes.value) {
+      params.mes =
+        filtroMes.value;
     }
   }
 
@@ -2075,6 +2186,7 @@ const activeFiltersCount =
 
     if (
       filtroAnio.value ||
+      filtroMes.value ||
       filtroAnioDesde.value ||
       filtroAnioHasta.value
     ) {
@@ -2124,6 +2236,7 @@ const canClearFilters =
       Boolean(filtroCarrera.value) ||
       Boolean(filtroProyecto.value) ||
       Boolean(filtroAnio.value) ||
+      Boolean(filtroMes.value) ||
       Boolean(filtroAnioDesde.value) ||
       Boolean(filtroAnioHasta.value) ||
       soloConPdf.value ||
@@ -2193,6 +2306,7 @@ function clearAllFilters() {
   proyectos.value = [];
 
   filtroAnio.value = "";
+  filtroMes.value = "";
   filtroAnioDesde.value = "";
   filtroAnioHasta.value = "";
 
@@ -2724,6 +2838,7 @@ watch(
     filtroCarrera,
     filtroProyecto,
     filtroAnio,
+    filtroMes,
     filtroAnioDesde,
     filtroAnioHasta,
     soloConPdf,

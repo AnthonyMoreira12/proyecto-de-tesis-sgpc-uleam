@@ -181,6 +181,7 @@ def _participations_queryset():
         )
         .order_by(
             "-publicacion__anio_publicacion",
+            "-publicacion__mes_publicacion",
             "-publicacion_id",
             "orden",
             "id",
@@ -469,6 +470,18 @@ def filter_admin_users_queryset(
             )
             | Q(
                 autor__institucion__icontains=query
+            )
+            | Q(
+                autor__orcid__icontains=query
+            )
+            | Q(
+                autor__registro_senescyt__icontains=query
+            )
+            | Q(
+                autor__google_scholar__icontains=query
+            )
+            | Q(
+                autor__scopus_id__icontains=query
             )
 
             # Microsoft

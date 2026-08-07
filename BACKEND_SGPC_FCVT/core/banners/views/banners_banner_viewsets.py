@@ -185,7 +185,7 @@ class BannerViewSet(viewsets.ModelViewSet):
 
     queryset = (
         Banner.objects
-        .all()
+        .exclude(image="")
         .order_by(
             "-created_at",
             "-pk",
@@ -427,7 +427,7 @@ class BannerViewSet(viewsets.ModelViewSet):
 
         return (
             Banner.objects
-            .all()
+            .exclude(image="")
             .order_by(
                 "-created_at",
                 "-pk",
@@ -853,14 +853,13 @@ class BannerViewSet(viewsets.ModelViewSet):
         Devuelve dos versiones independientes:
 
         - version:
-          Cambia por contenido, imágenes o diseño.
+          Cambia por imágenes o por el diseño del carrusel.
 
         - notify_version:
-          Cambia únicamente cuando se modifica información que
-          debe volver a mostrarse como aviso a los usuarios.
+          Cambia cuando se publica, reemplaza o elimina una imagen.
 
-        De este modo, cambiar solo el tamaño o la distribución
-        no reabre el overlay institucional para todos.
+        Los registros heredados que no contienen imagen se ignoran,
+        porque el módulo funciona exclusivamente como carrusel visual.
         """
         if not self._banner_table_ready():
             return Response(
@@ -871,17 +870,13 @@ class BannerViewSet(viewsets.ModelViewSet):
         try:
             queryset = (
                 Banner.objects
-                .all()
+                .exclude(image="")
                 .order_by("pk")
             )
 
             banner_rows = list(
                 queryset.values(
                     "pk",
-                    "title",
-                    "eyebrow",
-                    "text",
-                    "recent_label",
                     "image",
                     "created_at",
                     "updated_at",
@@ -896,18 +891,6 @@ class BannerViewSet(viewsets.ModelViewSet):
                 normalized_banners.append(
                     {
                         "id": row.get("pk"),
-                        "title": str(
-                            row.get("title") or ""
-                        ),
-                        "eyebrow": str(
-                            row.get("eyebrow") or ""
-                        ),
-                        "text": str(
-                            row.get("text") or ""
-                        ),
-                        "recent_label": str(
-                            row.get("recent_label") or ""
-                        ),
                         "image": str(
                             row.get("image") or ""
                         ),
@@ -928,41 +911,6 @@ class BannerViewSet(viewsets.ModelViewSet):
                     .order_by("pk")
                     .first()
                 )
-
-            global_content = {
-                "eyebrow": str(
-                    getattr(
-                        configuration,
-                        "eyebrow",
-                        DEFAULT_BANNER_EYEBROW,
-                    )
-                    or ""
-                ),
-                "title": str(
-                    getattr(
-                        configuration,
-                        "title",
-                        DEFAULT_BANNER_TITLE,
-                    )
-                    or ""
-                ),
-                "text": str(
-                    getattr(
-                        configuration,
-                        "text",
-                        DEFAULT_BANNER_TEXT,
-                    )
-                    or ""
-                ),
-                "recent_label": str(
-                    getattr(
-                        configuration,
-                        "recent_label",
-                        DEFAULT_BANNER_RECENT_LABEL,
-                    )
-                    or ""
-                ),
-            }
 
             layout = {
                 "stage_width": int(
@@ -999,7 +947,6 @@ class BannerViewSet(viewsets.ModelViewSet):
             notify_version = _hash_version_payload(
                 {
                     "banners": normalized_banners,
-                    "global_content": global_content,
                 }
             )
 

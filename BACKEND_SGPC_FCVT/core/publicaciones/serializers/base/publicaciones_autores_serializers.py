@@ -4,12 +4,15 @@ en publicaciones.
 
 Reglas principales:
 
+- todos los participantes se consideran autores;
+- no existe clasificación entre autor principal y coautor;
 - acepta autor_id como campo oficial;
-- mantiene compatibilidad con el alias autor;
-- orden >= 1;
-- orden 1 = autor principal;
-- orden > 1 = coautor;
-- evita inconsistencias entre orden y rol.
+- mantiene compatibilidad temporal con el alias autor;
+- mantiene compatibilidad temporal ignorando rol_autoria si
+  un frontend antiguo todavía lo envía;
+- cada autor debe tener un orden mayor o igual a 1;
+- el orden representa únicamente la posición bibliográfica
+  del autor dentro de la publicación.
 """
 
 from rest_framework import serializers
@@ -27,22 +30,32 @@ class AutorParticipacionSerializer(
     Serializer de entrada utilizado durante el registro
     de una publicación.
 
-    Payload recomendado:
+    Payload oficial:
 
         {
             "autor_id": 10,
             "orden": 1
         }
 
-    También admite por compatibilidad:
+    También admite temporalmente el alias histórico:
 
         {
             "autor": 10,
             "orden": 1
         }
 
-    El rol se determina automáticamente a partir
-    del orden.
+    IMPORTANTE:
+
+    El valor de ``orden`` NO representa una jerarquía de
+    autoría. Únicamente conserva la posición en la que los
+    autores deben mostrarse en:
+
+    - detalles;
+    - listados;
+    - perfiles académicos;
+    - reportes;
+    - exportaciones;
+    - referencias bibliográficas.
     """
 
     autor_id = serializers.PrimaryKeyRelatedField(
@@ -55,12 +68,6 @@ class AutorParticipacionSerializer(
         min_value=1,
     )
 
-    rol_autoria = serializers.ChoiceField(
-        choices=PublicacionAutor.ROL_AUTORIA,
-        required=False,
-        allow_null=True,
-    )
-
     # =========================================================
     # INPUT
     # =========================================================
@@ -69,6 +76,23 @@ class AutorParticipacionSerializer(
         self,
         data,
     ):
+        """
+        Normaliza aliases históricos del frontend.
+
+        Contrato nuevo:
+
+            autor_id
+            orden
+
+        Compatibilidad temporal:
+
+            autor -> autor_id
+
+        ``rol_autoria`` se descarta si todavía es enviado por
+        una versión anterior del frontend. No se valida, no se
+        almacena y no forma parte del contrato actual.
+        """
+
         if hasattr(
             data,
             "copy",
@@ -78,7 +102,7 @@ class AutorParticipacionSerializer(
             source = dict(data)
 
         # -----------------------------------------------------
-        # Compatibilidad:
+        # Alias histórico:
         #
         #     autor
         #
@@ -109,10 +133,25 @@ class AutorParticipacionSerializer(
                     autor_alias
                 )
 
-        # Evitamos que el alias llegue como un campo
-        # desconocido al Serializer.
+        # Evitamos que el alias llegue como campo desconocido.
         source.pop(
             "autor",
+            None,
+        )
+
+        # -----------------------------------------------------
+        # Compatibilidad temporal con el contrato antiguo.
+        #
+        # Los roles de autoría fueron eliminados.
+        # -----------------------------------------------------
+
+        source.pop(
+            "rol_autoria",
+            None,
+        )
+
+        source.pop(
+            "role",
             None,
         )
 
@@ -128,6 +167,17 @@ class AutorParticipacionSerializer(
         self,
         attrs,
     ):
+        """
+        Valida exclusivamente:
+
+        - existencia del autor;
+        - orden bibliográfico >= 1.
+
+        La unicidad y consecutividad del conjunto completo
+        de autores se comprueba posteriormente en el servicio
+        de registro.
+        """
+
         autor = attrs.get(
             "autor"
         )
@@ -184,51 +234,7 @@ class AutorParticipacionSerializer(
                 }
             )
 
-        # -----------------------------------------------------
-        # El rol real se deriva del orden.
-        # -----------------------------------------------------
-
-        expected_role = (
-            "principal"
-            if orden == 1
-            else "coautor"
-        )
-
-        received_role = attrs.get(
-            "rol_autoria"
-        )
-
-        # Si el frontend envía rol, comprobamos que
-        # sea coherente.
-        if (
-            received_role
-            and received_role
-            != expected_role
-        ):
-            if orden == 1:
-                raise serializers.ValidationError(
-                    {
-                        "rol_autoria": [
-                            "El autor ubicado en "
-                            "el orden 1 debe ser principal."
-                        ]
-                    }
-                )
-
-            raise serializers.ValidationError(
-                {
-                    "rol_autoria": [
-                        "Los autores con orden superior "
-                        "a 1 deben ser coautores."
-                    ]
-                }
-            )
-
         attrs["orden"] = orden
-
-        attrs[
-            "rol_autoria"
-        ] = expected_role
 
         return attrs
 
@@ -239,12 +245,18 @@ class PublicacionAutorSerializer(
     """
     Serializer de lectura de PublicacionAutor.
 
-    Mantiene los alias históricos utilizados por
-    distintas interfaces del frontend:
+    Todos los participantes se exponen simplemente como
+    autores.
 
-    - autor_nombre
-    - nombre
-    - nombre_completo
+    Se mantienen los aliases históricos de nombre porque
+    distintas interfaces del frontend utilizan:
+
+    - autor_nombre;
+    - nombre;
+    - nombre_completo.
+
+    No se expone ``rol_autoria`` porque esa clasificación
+    dejó de formar parte del dominio de publicaciones.
     """
 
     autor_id = serializers.IntegerField(
@@ -279,7 +291,6 @@ class PublicacionAutorSerializer(
             "autor_nombre",
             "nombre",
             "nombre_completo",
-            "rol_autoria",
             "orden",
         )
 
@@ -289,6 +300,17 @@ class PublicacionAutorSerializer(
         self,
         obj,
     ):
+        """
+        Construye una representación legible del autor.
+
+        Prioridad:
+
+        1. nombres + apellidos;
+        2. correo;
+        3. identificación;
+        4. etiqueta genérica.
+        """
+
         autor = getattr(
             obj,
             "autor",

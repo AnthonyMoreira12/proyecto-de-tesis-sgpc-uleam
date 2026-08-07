@@ -319,11 +319,10 @@ def _parse_autores(value):
 
         item["orden"] = orden
 
-        item["rol_autoria"] = (
-            "principal"
-            if orden == 1
-            else "coautor"
-        )
+        # Compatibilidad temporal con formularios antiguos.
+        # Los roles de autoría ya no forman parte del dominio.
+        item.pop("rol_autoria", None)
+        item.pop("role", None)
 
         normalized.append(
             item
@@ -376,11 +375,16 @@ def _normalize_autores(autores):
             }
         )
 
-    if 1 not in ordenes:
+    expected_orders = list(
+        range(1, len(autores) + 1)
+    )
+
+    if sorted(ordenes) != expected_orders:
         raise ValidationError(
             {
                 "autores": [
-                    "Debe existir un autor principal con orden 1."
+                    "Los órdenes de los autores deben ser "
+                    f"consecutivos: {expected_orders}."
                 ]
             }
         )
@@ -392,17 +396,6 @@ def _normalize_autores(autores):
         ),
     )
 
-    for index, item in enumerate(
-        autores,
-        start=1,
-    ):
-        item["orden"] = index
-
-        item["rol_autoria"] = (
-            "principal"
-            if index == 1
-            else "coautor"
-        )
 
     return autores
 
@@ -448,15 +441,6 @@ class CapituloLibroRegistroSerializer(
         write_only=True,
     )
 
-    fecha_publicacion = serializers.DateField(
-        required=False,
-        allow_null=True,
-        write_only=True,
-        input_formats=[
-            "%Y-%m-%d",
-            "%d/%m/%Y",
-        ],
-    )
 
     archivo_pdf = serializers.FileField(
         required=False,
@@ -487,7 +471,8 @@ class CapituloLibroRegistroSerializer(
             "subarea",
             "origen_tipo",
             "origen_grado",
-            "fecha_publicacion",
+            "anio_publicacion",
+            "mes_publicacion",
             "archivo_pdf",
             "nombre_capitulo",
             "nombre_libro",
@@ -688,11 +673,13 @@ class CapituloLibroRegistroSerializer(
             None,
         )
 
-        fecha_publicacion = (
-            validated_data.pop(
-                "fecha_publicacion",
-                None,
-            )
+        anio_publicacion = validated_data.pop(
+            "anio_publicacion"
+        )
+
+        mes_publicacion = validated_data.pop(
+            "mes_publicacion",
+            None,
         )
 
         archivo_pdf = (
@@ -723,8 +710,11 @@ class CapituloLibroRegistroSerializer(
             ciudad=None,
             origen_tipo=origen_tipo,
             origen_grado=origen_grado,
-            fecha_publicacion=(
-                fecha_publicacion
+            anio_publicacion=(
+                anio_publicacion
+            ),
+            mes_publicacion=(
+                mes_publicacion
             ),
             archivo_pdf=archivo_pdf,
             registrado_por_admin=(

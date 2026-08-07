@@ -26,7 +26,10 @@ STAGE_HEIGHT_DEFAULT = 640
 STAGE_HEIGHT_MIN = 440
 STAGE_HEIGHT_MAX = 900
 
-SPLITTER_WIDTH = 14
+# La interfaz utiliza dos columnas contiguas. El borde visual del panel
+# derecho está incluido en su propio box-sizing, por lo que no existe
+# una tercera columna que deba reservar espacio adicional.
+SPLITTER_WIDTH = 0
 MEDIA_PANE_WIDTH_MIN = 420
 ASIDE_WIDTH_MIN = 320
 MEDIA_PANE_WIDTH_DEFAULT = 806
@@ -35,16 +38,15 @@ DISPLAY_MODE_MIXED = "mixed"
 DISPLAY_MODE_BANNER = "banner"
 DISPLAY_MODE_TEXT = "text"
 
-DISPLAY_MODE_DEFAULT = DISPLAY_MODE_MIXED
+# El módulo de avisos se utiliza únicamente como carrusel visual.
+# Se conservan las constantes antiguas para compatibilidad de imports,
+# pero la configuración pública solo permite el modo banner.
+DISPLAY_MODE_DEFAULT = DISPLAY_MODE_BANNER
 DISPLAY_MODE_CHOICES = (
-    (DISPLAY_MODE_MIXED, "Banner + texto"),
     (DISPLAY_MODE_BANNER, "Solo banner"),
-    (DISPLAY_MODE_TEXT, "Solo texto"),
 )
 DISPLAY_MODE_VALUES = {
-    DISPLAY_MODE_MIXED,
     DISPLAY_MODE_BANNER,
-    DISPLAY_MODE_TEXT,
 }
 
 BANNER_MAX_BYTES = 2 * 1024 * 1024
@@ -240,7 +242,6 @@ class Banner(models.Model):
                 "El mensaje del banner no puede superar "
                 f"los {BANNER_TEXT_MAX_LENGTH} caracteres."
             )
-
         if not self.image:
             errors["image"] = (
                 "La imagen del banner es obligatoria."
@@ -473,9 +474,7 @@ class BannerConfiguracion(models.Model):
                 f"los {BANNER_TEXT_MAX_LENGTH} caracteres."
             )
 
-        self.display_mode = _norm_display_mode(
-            self.display_mode
-        )
+        self.display_mode = DISPLAY_MODE_BANNER
 
         self.stage_width = _safe_int(
             self.stage_width,

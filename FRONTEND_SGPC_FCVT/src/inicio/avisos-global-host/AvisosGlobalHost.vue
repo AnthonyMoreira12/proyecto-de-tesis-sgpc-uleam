@@ -10,7 +10,13 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
 
 import api from "../../scripts/api/axios";
@@ -36,13 +42,22 @@ const user = ref(null);
 const overlayVisible = ref(false);
 const openInManageMode = ref(false);
 const currentVersion = ref("");
+const lastConfirmedVersion = ref("");
 
 let checkTimer = null;
 let routeCheckTimer = null;
 let checking = false;
+let closingOverlay = false;
 
 const getAccessToken = () => {
   return localStorage.getItem("access_token") || "";
+};
+
+const hasUserIdentity = (value) => {
+  return Boolean(
+    value?.id ||
+      String(value?.email || "").trim()
+  );
 };
 
 const isAvisosDisabledRoute = () => {
@@ -50,7 +65,18 @@ const isAvisosDisabledRoute = () => {
 };
 
 const canCheckAvisos = () => {
-  return !isAvisosDisabledRoute() && Boolean(getAccessToken());
+  return (
+    !isAvisosDisabledRoute() &&
+    Boolean(getAccessToken())
+  );
+};
+
+const getStatusVersion = (status) => {
+  return String(
+    status?.notifyVersion ||
+      status?.version ||
+      ""
+  ).trim();
 };
 
 const loadProfile = async () => {
@@ -60,15 +86,22 @@ const loadProfile = async () => {
   }
 
   try {
-    const { data } = await api.get("auth/profile/");
+    const { data } = await api.get(
+      "auth/profile/"
+    );
 
     user.value = data;
-
     return data;
   } catch (error) {
-    user.value = null;
+    const statusCode = Number(
+      error?.response?.status || 0
+    );
 
-    if (Number(error?.response?.status || 0) !== 401) {
+    if (statusCode === 401) {
+      user.value = null;
+    }
+
+    if (statusCode !== 401) {
       console.error(
         "No fue posible cargar el perfil para los avisos.",
         error
@@ -79,31 +112,61 @@ const loadProfile = async () => {
   }
 };
 
-const checkAvisos = async ({ force = false } = {}) => {
-  if (checking || !canCheckAvisos()) return;
-  if (overlayVisible.value && !force) return;
+const ensureResolvedUser = async () => {
+  if (hasUserIdentity(user.value)) {
+    return user.value;
+  }
+
+  const loadedUser = await loadProfile();
+
+  return hasUserIdentity(loadedUser)
+    ? loadedUser
+    : null;
+};
+
+const fetchConfirmedStatus = async () => {
+  const status = await getAvisosStatus();
+  const version = getStatusVersion(status);
+
+  currentVersion.value = version;
+  lastConfirmedVersion.value = version;
+
+  return status;
+};
+
+const checkAvisos = async ({
+  force = false,
+} = {}) => {
+  if (
+    checking ||
+    closingOverlay ||
+    !canCheckAvisos()
+  ) {
+    return;
+  }
+
+  if (overlayVisible.value && !force) {
+    return;
+  }
 
   checking = true;
 
   try {
-    if (!user.value) {
-      await loadProfile();
+    const resolvedUser =
+      await ensureResolvedUser();
+
+    if (!resolvedUser) {
+      return;
     }
 
-    const status = await getAvisosStatus();
+    const status =
+      await fetchConfirmedStatus();
 
-    const nextVersion = String(
-      status?.notifyVersion ||
-        status?.version ||
-        ""
-    );
-
-    currentVersion.value = nextVersion;
-
-    const mustOpen = await shouldOpenAvisos(
-      user.value,
-      status
-    );
+    const mustOpen =
+      await shouldOpenAvisos(
+        resolvedUser,
+        status
+      );
 
     if (mustOpen) {
       openInManageMode.value = false;
@@ -125,11 +188,42 @@ const checkAvisos = async ({ force = false } = {}) => {
   }
 };
 
-const openAvisosViewer = async () => {
-  if (!canCheckAvisos()) return;
+const prepareManualOpen = async () => {
+  if (!canCheckAvisos()) {
+    return null;
+  }
 
-  if (!user.value) {
-    await loadProfile();
+  const resolvedUser =
+    await ensureResolvedUser();
+
+  if (!resolvedUser) {
+    return null;
+  }
+
+  try {
+    await fetchConfirmedStatus();
+  } catch (error) {
+    const statusCode = Number(
+      error?.response?.status || 0
+    );
+
+    if (statusCode !== 401) {
+      console.error(
+        "No fue posible sincronizar la versión de los avisos.",
+        error
+      );
+    }
+  }
+
+  return resolvedUser;
+};
+
+const openAvisosViewer = async () => {
+  const resolvedUser =
+    await prepareManualOpen();
+
+  if (!resolvedUser) {
+    return;
   }
 
   openInManageMode.value = false;
@@ -137,20 +231,23 @@ const openAvisosViewer = async () => {
 };
 
 const openAvisosManager = async () => {
-  if (!canCheckAvisos()) return;
+  const resolvedUser =
+    await prepareManualOpen();
 
-  if (!user.value) {
-    await loadProfile();
+  if (!resolvedUser) {
+    return;
   }
 
   const isAdmin = Boolean(
-    user.value?.is_staff ||
-      user.value?.is_superuser ||
-      user.value?.es_admin ||
-      user.value?.is_admin
+    resolvedUser?.is_staff ||
+      resolvedUser?.is_superuser ||
+      resolvedUser?.es_admin ||
+      resolvedUser?.is_admin
   );
 
-  if (!isAdmin) return;
+  if (!isAdmin) {
+    return;
+  }
 
   openInManageMode.value = true;
   overlayVisible.value = true;
@@ -178,25 +275,101 @@ const handleExternalOpen = async (event) => {
   await openAvisosViewer();
 };
 
-const handleOverlayClosed = () => {
-  if (currentVersion.value) {
-    markAvisosAsSeen(
-      user.value,
-      currentVersion.value
-    );
+const handleOverlayClosed = async () => {
+  if (closingOverlay) {
+    return;
   }
 
+  closingOverlay = true;
+
+  const wasManageMode =
+    openInManageMode.value;
+
   openInManageMode.value = false;
+
+  try {
+    if (!canCheckAvisos()) {
+      return;
+    }
+
+    const resolvedUser =
+      await ensureResolvedUser();
+
+    if (!resolvedUser) {
+      return;
+    }
+
+    try {
+      const status =
+        await fetchConfirmedStatus();
+
+      const confirmedVersion =
+        getStatusVersion(status);
+
+      if (
+        status?.hasItems &&
+        confirmedVersion
+      ) {
+        markAvisosAsSeen(
+          resolvedUser,
+          status
+        );
+      }
+
+      return;
+    } catch (error) {
+      const statusCode = Number(
+        error?.response?.status || 0
+      );
+
+      if (statusCode !== 401) {
+        console.error(
+          "No fue posible confirmar la versión al cerrar los avisos.",
+          error
+        );
+      }
+    }
+
+    /*
+     * Para una visualización normal puede utilizarse la última
+     * versión confirmada obtenida al abrir el overlay.
+     *
+     * En modo administrador no se usa este respaldo porque el
+     * contenido pudo cambiar durante la sesión de edición.
+     */
+    if (
+      !wasManageMode &&
+      lastConfirmedVersion.value
+    ) {
+      markAvisosAsSeen(
+        resolvedUser,
+        lastConfirmedVersion.value
+      );
+    }
+  } finally {
+    closingOverlay = false;
+  }
 };
 
-const handleVersionChange = (nextVersion) => {
-  currentVersion.value = String(
+const handleVersionChange = (
+  nextVersion
+) => {
+  const normalizedVersion = String(
     nextVersion || ""
-  );
+  ).trim();
+
+  if (!normalizedVersion) {
+    return;
+  }
+
+  currentVersion.value =
+    normalizedVersion;
 };
 
 const clearRouteCheck = () => {
-  if (!routeCheckTimer) return;
+  if (!routeCheckTimer) {
+    return;
+  }
 
   window.clearTimeout(routeCheckTimer);
   routeCheckTimer = null;
@@ -209,9 +382,10 @@ const scheduleRouteCheck = () => {
     async () => {
       routeCheckTimer = null;
 
-      if (!canCheckAvisos()) return;
+      if (!canCheckAvisos()) {
+        return;
+      }
 
-      await loadProfile();
       await checkAvisos();
     },
     ROUTE_CHECK_DELAY_MS
@@ -219,15 +393,22 @@ const scheduleRouteCheck = () => {
 };
 
 const startInterval = () => {
-  if (checkTimer) return;
+  if (checkTimer) {
+    return;
+  }
 
-  checkTimer = window.setInterval(() => {
-    checkAvisos();
-  }, CHECK_INTERVAL_MS);
+  checkTimer = window.setInterval(
+    () => {
+      checkAvisos();
+    },
+    CHECK_INTERVAL_MS
+  );
 };
 
 const stopInterval = () => {
-  if (!checkTimer) return;
+  if (!checkTimer) {
+    return;
+  }
 
   window.clearInterval(checkTimer);
   checkTimer = null;
@@ -258,7 +439,6 @@ onMounted(async () => {
   await nextTick();
 
   if (canCheckAvisos()) {
-    await loadProfile();
     await checkAvisos();
   }
 

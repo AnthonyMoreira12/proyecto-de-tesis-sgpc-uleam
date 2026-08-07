@@ -1,10 +1,12 @@
 import api from "./axios";
 
+
 const toStr = (value) => (
   value == null
     ? ""
     : String(value)
 );
+
 
 const cleanParams = (
   object = {}
@@ -51,6 +53,7 @@ const cleanParams = (
   return output;
 };
 
+
 const unwrap = (
   response
 ) => (
@@ -74,6 +77,7 @@ export async function scholarSuggest(
   ) {
     return {
       suggestions: [],
+      results: [],
     };
   }
 
@@ -99,6 +103,7 @@ export async function searchScholarPublications(
   {
     q = "",
     year = "",
+    month = "",
     type = "",
     sort = "relevance",
     facets = "1",
@@ -119,6 +124,7 @@ export async function searchScholarPublications(
         params: cleanParams({
           q,
           year,
+          month,
           type,
           sort,
           facets,
@@ -211,6 +217,64 @@ export async function getScholarProfileDetail(
   const response =
     await api.get(
       path,
+      {
+        signal,
+      }
+    );
+
+  return unwrap(
+    response
+  );
+}
+
+
+export async function getScholarMyProfile(
+  {
+    signal,
+  } = {}
+) {
+  return getScholarProfileDetail(
+    "me",
+    {
+      signal,
+    }
+  );
+}
+
+
+export async function updateScholarMyProfile(
+  payload = {},
+  {
+    signal,
+  } = {}
+) {
+  const allowedFields = [
+    "orcid",
+    "registro_senescyt",
+    "google_scholar",
+    "scopus_id",
+  ];
+
+  const body = {};
+
+  allowedFields.forEach(
+    (field) => {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          payload || {},
+          field
+        )
+      ) {
+        body[field] =
+          payload[field];
+      }
+    }
+  );
+
+  const response =
+    await api.patch(
+      "scholar/perfiles/me/",
+      body,
       {
         signal,
       }

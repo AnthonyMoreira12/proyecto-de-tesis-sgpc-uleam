@@ -299,6 +299,206 @@
         </header>
 
         <!-- ===================================================
+             IDENTIFICADORES ACADÉMICOS
+        ==================================================== -->
+        <section
+          class="gsp-identifiers page-stage"
+          aria-labelledby="academic-identifiers-title"
+        >
+          <header class="gsp-identifiers__head">
+            <div>
+              <span class="gsp-identifiers__eyebrow">
+                Identidad académica
+              </span>
+
+              <h2
+                id="academic-identifiers-title"
+                class="gsp-identifiers__title"
+              >
+                Identificadores académicos
+              </h2>
+
+              <p class="gsp-identifiers__description">
+                {{
+                  isMyProfile
+                    ? "Mantenga actualizados sus identificadores de investigación. Todos son opcionales."
+                    : "Identificadores académicos registrados para este investigador."
+                }}
+              </p>
+            </div>
+
+            <div
+              v-if="isMyProfile"
+              class="gsp-identifiers__actions"
+            >
+              <button
+                v-if="!editingIdentifiers"
+                class="gsp-btn gsp-btn--secondary"
+                type="button"
+                @click="startIdentifiersEdit"
+              >
+                Editar identificadores
+              </button>
+            </div>
+          </header>
+
+          <form
+            v-if="isMyProfile && editingIdentifiers"
+            class="gsp-identifiers__form"
+            @submit.prevent="saveIdentifiers"
+          >
+            <label class="gsp-identifiers__field">
+              <span>ORCID</span>
+
+              <input
+                v-model.trim="identifierForm.orcid"
+                class="gsp-identifiers__input"
+                type="text"
+                maxlength="50"
+                placeholder="0000-0000-0000-0000"
+                autocomplete="off"
+              />
+
+              <small>
+                Puede pegar el identificador o la URL completa de ORCID.
+              </small>
+            </label>
+
+            <label class="gsp-identifiers__field">
+              <span>Registro SENESCYT</span>
+
+              <input
+                v-model.trim="identifierForm.registro_senescyt"
+                class="gsp-identifiers__input"
+                type="text"
+                maxlength="100"
+                placeholder="Número de registro"
+                autocomplete="off"
+              />
+            </label>
+
+            <label class="gsp-identifiers__field">
+              <span>Google Scholar</span>
+
+              <input
+                v-model.trim="identifierForm.google_scholar"
+                class="gsp-identifiers__input"
+                type="url"
+                maxlength="500"
+                placeholder="https://scholar.google.com/..."
+                autocomplete="url"
+              />
+            </label>
+
+            <label class="gsp-identifiers__field">
+              <span>Scopus ID</span>
+
+              <input
+                v-model.trim="identifierForm.scopus_id"
+                class="gsp-identifiers__input"
+                type="text"
+                maxlength="100"
+                placeholder="Identificador de autor"
+                autocomplete="off"
+              />
+            </label>
+
+            <p
+              v-if="identifierSaveError"
+              class="gsp-identifiers__message gsp-identifiers__message--error"
+              role="alert"
+            >
+              {{ identifierSaveError }}
+            </p>
+
+            <div class="gsp-identifiers__form-actions">
+              <button
+                class="gsp-btn gsp-btn--primary"
+                type="submit"
+                :disabled="savingIdentifiers"
+              >
+                {{
+                  savingIdentifiers
+                    ? "Guardando..."
+                    : "Guardar cambios"
+                }}
+              </button>
+
+              <button
+                class="gsp-btn gsp-btn--secondary"
+                type="button"
+                :disabled="savingIdentifiers"
+                @click="cancelIdentifiersEdit"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+
+          <div
+            v-else-if="academicIdentifierItems.length"
+            class="gsp-identifiers__grid"
+          >
+            <article
+              v-for="item in academicIdentifierItems"
+              :key="item.key"
+              class="gsp-identifier"
+            >
+              <span class="gsp-identifier__label">
+                {{ item.label }}
+              </span>
+
+              <a
+                v-if="item.href"
+                class="gsp-identifier__value gsp-identifier__value--link"
+                :href="item.href"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ item.value }}
+              </a>
+
+              <strong
+                v-else
+                class="gsp-identifier__value"
+              >
+                {{ item.value }}
+              </strong>
+            </article>
+          </div>
+
+          <div
+            v-else
+            class="gsp-identifiers__empty"
+          >
+            <p>
+              {{
+                isMyProfile
+                  ? "Aún no ha registrado identificadores académicos."
+                  : "Este perfil no tiene identificadores académicos registrados."
+              }}
+            </p>
+
+            <button
+              v-if="isMyProfile"
+              class="gsp-btn gsp-btn--secondary"
+              type="button"
+              @click="startIdentifiersEdit"
+            >
+              Registrar identificadores
+            </button>
+          </div>
+
+          <p
+            v-if="identifierSaveSuccess"
+            class="gsp-identifiers__message gsp-identifiers__message--success"
+            role="status"
+          >
+            Los identificadores académicos se actualizaron correctamente.
+          </p>
+        </section>
+
+        <!-- ===================================================
              PUBLICACIONES
         ==================================================== -->
         <section
@@ -380,7 +580,7 @@
                 v-model="localQuery"
                 class="gsp-input"
                 type="search"
-                placeholder="Buscar por título, autor, año, tipo, área o DOI"
+                placeholder="Buscar por título, autor, período, tipo, área o DOI"
                 autocomplete="off"
               />
 
@@ -437,10 +637,10 @@
                   </span>
 
                   <span
-                    v-if="pub.year"
+                    v-if="pub.periodLabel"
                     class="gsp-result__badge"
                   >
-                    {{ pub.year }}
+                    {{ pub.periodLabel }}
                   </span>
 
                   <span
@@ -636,7 +836,7 @@
               <p class="gsp-state__text">
                 {{
                   localQuery
-                    ? "Pruebe con otro título, autor, año, área o DOI."
+                    ? "Pruebe con otro título, autor, período, área o DOI."
                     : "Las publicaciones registradas aparecerán en esta sección."
                 }}
               </p>
@@ -745,6 +945,18 @@ const store = useScholarStore();
 const localQuery = ref("");
 const avatarBroken = ref(false);
 
+const editingIdentifiers = ref(false);
+const savingIdentifiers = ref(false);
+const identifierSaveError = ref("");
+const identifierSaveSuccess = ref(false);
+
+const identifierForm = ref({
+  orcid: "",
+  registro_senescyt: "",
+  google_scholar: "",
+  scopus_id: "",
+});
+
 const loading = computed(() => {
   return Boolean(store.perfilDetailLoading);
 });
@@ -759,6 +971,10 @@ const P = computed(() => {
 
 const resolvedProfileId = computed(() => {
   return String(props.id || "").trim();
+});
+
+const isMyProfile = computed(() => {
+  return resolvedProfileId.value === "me";
 });
 
 const profileName = computed(() => {
@@ -804,6 +1020,248 @@ const initial = computed(() => {
     "?"
   );
 });
+
+const academicIdentifierItems = computed(() => {
+  const profile = P.value || {};
+
+  const nested =
+    profile?.academic_identifiers &&
+    typeof profile.academic_identifiers === "object"
+      ? profile.academic_identifiers
+      : {};
+
+  const orcid = String(
+    profile?.orcid ??
+    nested?.orcid ??
+    ""
+  ).trim();
+
+  const registroSenescyt = String(
+    profile?.registro_senescyt ??
+    nested?.registro_senescyt ??
+    ""
+  ).trim();
+
+  const googleScholar = String(
+    profile?.google_scholar ??
+    nested?.google_scholar ??
+    ""
+  ).trim();
+
+  const scopusId = String(
+    profile?.scopus_id ??
+    nested?.scopus_id ??
+    ""
+  ).trim();
+
+  return [
+    {
+      key: "orcid",
+      label: "ORCID",
+      value: orcid,
+      href: orcid
+        ? `https://orcid.org/${orcid.replace(
+            /^https?:\/\/orcid\.org\//i,
+            ""
+          )}`
+        : null,
+    },
+    {
+      key: "registro_senescyt",
+      label: "Registro SENESCYT",
+      value: registroSenescyt,
+      href: null,
+    },
+    {
+      key: "google_scholar",
+      label: "Google Scholar",
+      value: googleScholar,
+      href: googleScholar || null,
+    },
+    {
+      key: "scopus_id",
+      label: "Scopus ID",
+      value: scopusId,
+      href: null,
+    },
+  ].filter((item) => item.value);
+});
+
+
+const syncIdentifierForm = () => {
+  const profile = P.value || {};
+
+  const nested =
+    profile?.academic_identifiers &&
+    typeof profile.academic_identifiers === "object"
+      ? profile.academic_identifiers
+      : {};
+
+  identifierForm.value = {
+    orcid: String(
+      profile?.orcid ??
+      nested?.orcid ??
+      ""
+    ).trim(),
+
+    registro_senescyt: String(
+      profile?.registro_senescyt ??
+      nested?.registro_senescyt ??
+      ""
+    ).trim(),
+
+    google_scholar: String(
+      profile?.google_scholar ??
+      nested?.google_scholar ??
+      ""
+    ).trim(),
+
+    scopus_id: String(
+      profile?.scopus_id ??
+      nested?.scopus_id ??
+      ""
+    ).trim(),
+  };
+};
+
+
+const startIdentifiersEdit = () => {
+  syncIdentifierForm();
+
+  identifierSaveError.value = "";
+  identifierSaveSuccess.value = false;
+  editingIdentifiers.value = true;
+};
+
+
+const cancelIdentifiersEdit = () => {
+  syncIdentifierForm();
+
+  identifierSaveError.value = "";
+  editingIdentifiers.value = false;
+};
+
+
+const normalizeOptionalValue = (value) => {
+  const normalized = String(
+    value ?? ""
+  ).trim();
+
+  return normalized || null;
+};
+
+
+const saveIdentifiers = async () => {
+  if (
+    !isMyProfile.value ||
+    savingIdentifiers.value
+  ) {
+    return;
+  }
+
+  savingIdentifiers.value = true;
+  identifierSaveError.value = "";
+  identifierSaveSuccess.value = false;
+
+  try {
+    await store.updatePerfilMe({
+      orcid: normalizeOptionalValue(
+        identifierForm.value.orcid
+      ),
+
+      registro_senescyt: normalizeOptionalValue(
+        identifierForm.value.registro_senescyt
+      ),
+
+      google_scholar: normalizeOptionalValue(
+        identifierForm.value.google_scholar
+      ),
+
+      scopus_id: normalizeOptionalValue(
+        identifierForm.value.scopus_id
+      ),
+    });
+
+    syncIdentifierForm();
+
+    editingIdentifiers.value = false;
+    identifierSaveSuccess.value = true;
+  } catch {
+    identifierSaveError.value =
+      store.perfilDetailError ||
+      "No se pudieron guardar los identificadores académicos.";
+  } finally {
+    savingIdentifiers.value = false;
+  }
+};
+
+
+const MONTH_LABELS = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
+
+
+const buildPublicationPeriod = (item) => {
+  const rawYear =
+    item?.anio_publicacion ??
+    item?.year ??
+    item?.anio ??
+    null;
+
+  const rawMonth =
+    item?.mes_publicacion ??
+    item?.month ??
+    item?.mes ??
+    null;
+
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+
+  const backendMonthLabel = String(
+    item?.mes_publicacion_label ??
+    item?.month_label ??
+    ""
+  ).trim();
+
+  const monthLabel =
+    backendMonthLabel ||
+    (
+      Number.isInteger(month) &&
+      month >= 1 &&
+      month <= 12
+        ? MONTH_LABELS[month]
+        : ""
+    );
+
+  const hasYear =
+    Number.isFinite(year) &&
+    year > 0;
+
+  if (
+    hasYear &&
+    monthLabel
+  ) {
+    return `${monthLabel} de ${year}`;
+  }
+
+  if (hasYear) {
+    return String(year);
+  }
+
+  return monthLabel || null;
+};
+
 
 const pubs = computed(() => {
   const items = Array.isArray(
@@ -875,9 +1333,31 @@ const pubs = computed(() => {
         null,
 
       year:
+        item?.anio_publicacion ??
         item?.year ??
         item?.anio ??
         null,
+
+      month:
+        item?.mes_publicacion ??
+        item?.month ??
+        item?.mes ??
+        null,
+
+      monthLabel:
+        String(
+          item?.mes_publicacion_label ??
+          item?.month_label ??
+          ""
+        ).trim() ||
+        null,
+
+      periodLabel:
+        String(
+          item?.period_label ??
+          ""
+        ).trim() ||
+        buildPublicationPeriod(item),
 
       tipoLabel:
         String(
@@ -969,7 +1449,9 @@ const filteredPubs = computed(() => {
         item.title,
         item.authorsText,
         item.venue,
+        item.periodLabel,
         item.year,
+        item.monthLabel,
         item.tipoLabel,
         item.areaLabel,
         item.doi,
@@ -985,9 +1467,20 @@ const filteredPubs = computed(() => {
   );
 
   return [...filtered].sort(
-    (a, b) =>
-      Number(b?.year || 0) -
-      Number(a?.year || 0)
+    (a, b) => {
+      const yearDifference =
+        Number(b?.year || 0) -
+        Number(a?.year || 0);
+
+      if (yearDifference) {
+        return yearDifference;
+      }
+
+      return (
+        Number(b?.month || 0) -
+        Number(a?.month || 0)
+      );
+    }
   );
 });
 
@@ -1004,7 +1497,11 @@ async function fetchDetail() {
   avatarBroken.value = false;
 
   try {
-    await store.fetchPerfilDetail(id);
+    if (isMyProfile.value) {
+      await store.fetchPerfilMe();
+    } else {
+      await store.fetchPerfilDetail(id);
+    }
   } catch {
     // El store administra el estado de error.
   }
@@ -1066,6 +1563,11 @@ watch(
   () => {
     avatarBroken.value = false;
     localQuery.value = "";
+
+    identifierSaveError.value = "";
+    editingIdentifiers.value = false;
+
+    syncIdentifierForm();
   }
 );
 

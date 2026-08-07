@@ -32,10 +32,11 @@ ORDERING_MAP = {
     "updated_asc": ("updated_at", "id"),
     "created_desc": ("-created_at", "-id"),
     "created_asc": ("created_at", "id"),
-    "fecha_desc": ("-fecha_publicacion", "-id"),
-    "fecha_asc": ("fecha_publicacion", "id"),
-    "anio_desc": ("-anio_publicacion", "-id"),
-    "anio_asc": ("anio_publicacion", "id"),
+    # Alias de compatibilidad: "fecha_*" ahora ordena por año/mes.
+    "fecha_desc": ("-anio_publicacion", "-mes_publicacion", "-id"),
+    "fecha_asc": ("anio_publicacion", "mes_publicacion", "id"),
+    "anio_desc": ("-anio_publicacion", "-mes_publicacion", "-id"),
+    "anio_asc": ("anio_publicacion", "mes_publicacion", "id"),
     "titulo_asc": ("titulo_admin", "id"),
     "titulo_desc": ("-titulo_admin", "-id"),
     "numero_desc": ("-numero", "-id"),
@@ -77,6 +78,18 @@ def _year(value):
     if (
         parsed is not None
         and 1900 <= parsed <= 2100
+    ):
+        return parsed
+
+    return None
+
+
+def _month(value):
+    parsed = _positive_int(value)
+
+    if (
+        parsed is not None
+        and 1 <= parsed <= 12
     ):
         return parsed
 
@@ -283,6 +296,7 @@ def filter_admin_publicaciones_queryset(
     facultad_id=None,
     carrera_id=None,
     anio=None,
+    mes=None,
     solo_delegadas=None,
     solo_con_pdf=None,
     solo_con_adjuntos=None,
@@ -318,6 +332,10 @@ def filter_admin_publicaciones_queryset(
 
     publication_year = _year(
         anio
+    )
+
+    publication_month = _month(
+        mes
     )
 
     delegated = _bool(
@@ -360,6 +378,11 @@ def filter_admin_publicaciones_queryset(
     if publication_year is not None:
         queryset = queryset.filter(
             anio_publicacion=publication_year
+        )
+
+    if publication_month is not None:
+        queryset = queryset.filter(
+            mes_publicacion=publication_month
         )
 
     if delegated is True:
@@ -475,6 +498,18 @@ def filter_admin_publicaciones_queryset(
             )
             | Q(
                 participaciones__autor__institucion__icontains=query
+            )
+            | Q(
+                participaciones__autor__orcid__icontains=query
+            )
+            | Q(
+                participaciones__autor__registro_senescyt__icontains=query
+            )
+            | Q(
+                participaciones__autor__google_scholar__icontains=query
+            )
+            | Q(
+                participaciones__autor__scopus_id__icontains=query
             )
             | Q(
                 articulo__nombre_articulo__icontains=query

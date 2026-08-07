@@ -254,6 +254,11 @@ class PublicacionDetalleSerializer(
         serializers.SerializerMethodField()
     )
 
+    # Periodo de publicación
+    mes_publicacion_label = (
+        serializers.SerializerMethodField()
+    )
+
     archivo_pdf = (
         serializers.SerializerMethodField()
     )
@@ -456,8 +461,9 @@ class PublicacionDetalleSerializer(
             "origen_detalle_label",
             "origen_resumen",
 
-            "fecha_publicacion",
             "anio_publicacion",
+            "mes_publicacion",
+            "mes_publicacion_label",
 
             "archivo_pdf",
             "archivo_pdf_url",
@@ -1162,6 +1168,34 @@ class PublicacionDetalleSerializer(
             )
 
         return label
+
+    # ---------------------------------------------------------
+    # Periodo de publicación
+    # ---------------------------------------------------------
+
+    def get_mes_publicacion_label(
+        self,
+        obj,
+    ):
+        mes = getattr(
+            obj,
+            "mes_publicacion",
+            None,
+        )
+
+        if mes in (
+            None,
+            "",
+        ):
+            return None
+
+        try:
+            return obj.get_mes_publicacion_display()
+        except (
+            AttributeError,
+            ValueError,
+        ):
+            return None
 
     def get_archivo_pdf(
         self,

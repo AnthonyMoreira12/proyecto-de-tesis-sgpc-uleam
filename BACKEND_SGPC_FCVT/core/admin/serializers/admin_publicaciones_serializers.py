@@ -24,9 +24,9 @@ ADMIN_FIELDS = (
     "tiene_pdf_principal",
     "tiene_adjuntos",
     "tiene_pdf",
-    "autor_principal_id",
-    "autor_principal",
-    "autor_principal_email",
+    "primer_autor_id",
+    "primer_autor",
+    "primer_autor_email",
     "autores_total",
 )
 
@@ -73,9 +73,9 @@ class _AdminFieldsMixin(serializers.Serializer):
     tiene_pdf_principal = serializers.SerializerMethodField()
     tiene_adjuntos = serializers.SerializerMethodField()
     tiene_pdf = serializers.SerializerMethodField()
-    autor_principal_id = serializers.SerializerMethodField()
-    autor_principal = serializers.SerializerMethodField()
-    autor_principal_email = serializers.SerializerMethodField()
+    primer_autor_id = serializers.SerializerMethodField()
+    primer_autor = serializers.SerializerMethodField()
+    primer_autor_email = serializers.SerializerMethodField()
     autores_total = serializers.SerializerMethodField()
 
     def _participations(self, obj):
@@ -93,22 +93,16 @@ class _AdminFieldsMixin(serializers.Serializer):
             .order_by("orden", "id")
         )
 
-    def _principal(self, obj):
-        first = None
-
+    def _first_author_relation(self, obj):
+        """
+        Devuelve la primera relación de autor según el orden
+        bibliográfico de la publicación.
+        """
         for relation in self._participations(obj):
-            if getattr(relation, "autor", None) is None:
-                continue
-
-            first = first or relation
-
-            if (
-                _text(relation.rol_autoria).lower() == "principal"
-                or relation.orden == 1
-            ):
+            if getattr(relation, "autor", None) is not None:
                 return relation
 
-        return first
+        return None
 
     def get_usuario_creador_nombre(self, obj):
         return _name(getattr(obj, "usuario_creador", None))
@@ -163,16 +157,16 @@ class _AdminFieldsMixin(serializers.Serializer):
             or self.get_tiene_adjuntos(obj)
         )
 
-    def get_autor_principal_id(self, obj):
-        relation = self._principal(obj)
+    def get_primer_autor_id(self, obj):
+        relation = self._first_author_relation(obj)
         return getattr(relation, "autor_id", None)
 
-    def get_autor_principal(self, obj):
-        relation = self._principal(obj)
+    def get_primer_autor(self, obj):
+        relation = self._first_author_relation(obj)
         return _name(getattr(relation, "autor", None)) or "—"
 
-    def get_autor_principal_email(self, obj):
-        relation = self._principal(obj)
+    def get_primer_autor_email(self, obj):
+        relation = self._first_author_relation(obj)
         author = getattr(relation, "autor", None)
         return _text(getattr(author, "correo", "")) or None
 

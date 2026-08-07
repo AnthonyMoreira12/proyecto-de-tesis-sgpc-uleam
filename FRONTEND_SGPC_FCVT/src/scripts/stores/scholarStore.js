@@ -5,6 +5,7 @@ import {
   listScholarProfiles,
   scholarSuggest,
   searchScholarPublications,
+  updateScholarMyProfile,
 } from "../api/scholarApi.js";
 
 
@@ -221,43 +222,137 @@ const buildFullName = (
 const extractYear = (
   item
 ) => {
-  const directYear =
-    item?.year
-    ?? item?.anio
-    ?? item?.anio_publicacion;
+  const value =
+    item?.anio_publicacion
+    ?? item?.year
+    ?? item?.anio;
 
-  const directNumber =
+  const parsed =
     Number(
-      directYear
+      value
     );
+
+  return (
+    Number.isFinite(
+      parsed
+    )
+    && parsed > 0
+  )
+    ? parsed
+    : null;
+};
+
+
+const MONTH_LABELS = Object.freeze({
+  1: "Enero",
+  2: "Febrero",
+  3: "Marzo",
+  4: "Abril",
+  5: "Mayo",
+  6: "Junio",
+  7: "Julio",
+  8: "Agosto",
+  9: "Septiembre",
+  10: "Octubre",
+  11: "Noviembre",
+  12: "Diciembre",
+});
+
+
+const extractMonth = (
+  item
+) => {
+  const value =
+    item?.mes_publicacion
+    ?? item?.month
+    ?? item?.mes;
 
   if (
-    Number.isFinite(
-      directNumber
-    )
-    && directNumber > 0
+    value == null
+    || value === ""
   ) {
-    return directNumber;
+    return null;
   }
 
-  const rawDate =
-    toStr(
-      item?.fecha_publicacion
-      ?? item?.published_at
-      ?? item?.date
-    ).trim();
-
-  const match =
-    rawDate.match(
-      /^(\d{4})/
+  const parsed =
+    Number(
+      value
     );
 
-  return match
-    ? Number(
-        match[1]
+  return (
+    Number.isInteger(
+      parsed
+    )
+    && parsed >= 1
+    && parsed <= 12
+  )
+    ? parsed
+    : null;
+};
+
+
+const extractMonthLabel = (
+  item,
+  month = extractMonth(item)
+) => {
+  const direct =
+    toStr(
+      item?.mes_publicacion_label
+      ?? item?.month_label
+      ?? item?.mes_label
+    ).trim();
+
+  if (
+    direct
+  ) {
+    return direct;
+  }
+
+  return month
+    ? (
+        MONTH_LABELS[month]
+        || null
       )
     : null;
 };
+
+
+const buildPeriodLabel = (
+  item
+) => {
+  const year =
+    extractYear(
+      item
+    );
+
+  const month =
+    extractMonth(
+      item
+    );
+
+  const monthLabel =
+    extractMonthLabel(
+      item,
+      month
+    );
+
+  if (
+    year
+    && monthLabel
+  ) {
+    return `${monthLabel} de ${year}`;
+  }
+
+  if (
+    year
+  ) {
+    return String(year);
+  }
+
+  return monthLabel
+    || null;
+};
+
 
 const composeOrg = (
   item
@@ -486,16 +581,10 @@ const normAuthors = (
                 || "—"
               ),
 
-              role: (
-                toStr(
-                  item?.role
-                  ?? item?.rol
-                  ?? item?.rol_autoria
-                ).trim()
-                || null
-              ),
-
               order,
+
+              orden:
+                order,
 
               es_externo:
                 toBool(
@@ -628,6 +717,27 @@ const normPub = (
     || null
   );
 
+  const year =
+    extractYear(
+      item
+    );
+
+  const month =
+    extractMonth(
+      item
+    );
+
+  const monthLabel =
+    extractMonthLabel(
+      item,
+      month
+    );
+
+  const periodLabel =
+    buildPeriodLabel(
+      item
+    );
+
   return {
     id:
       item?.id
@@ -652,10 +762,24 @@ const normPub = (
       || ""
     ),
 
-    year:
-      extractYear(
-        item
-      ),
+    year,
+
+    anio_publicacion:
+      year,
+
+    month,
+
+    mes_publicacion:
+      month,
+
+    month_label:
+      monthLabel,
+
+    mes_publicacion_label:
+      monthLabel,
+
+    period_label:
+      periodLabel,
 
     tipo_codigo:
       typeCode,
@@ -728,6 +852,49 @@ const normPub = (
    NORMALIZACIÓN DE INVESTIGADORES
 ========================================================== */
 
+const normalizeAcademicIdentifiers = (
+  item
+) => {
+  const nested = (
+    item?.academic_identifiers
+    && typeof item.academic_identifiers
+      === "object"
+  )
+    ? item.academic_identifiers
+    : {};
+
+  return {
+    orcid:
+      toStr(
+        item?.orcid
+        ?? nested?.orcid
+      ).trim()
+      || null,
+
+    registro_senescyt:
+      toStr(
+        item?.registro_senescyt
+        ?? nested?.registro_senescyt
+      ).trim()
+      || null,
+
+    google_scholar:
+      toStr(
+        item?.google_scholar
+        ?? nested?.google_scholar
+      ).trim()
+      || null,
+
+    scopus_id:
+      toStr(
+        item?.scopus_id
+        ?? nested?.scopus_id
+      ).trim()
+      || null,
+  };
+};
+
+
 const normAuthor = (
   item
 ) => {
@@ -789,6 +956,11 @@ const normAuthor = (
     ?? null
   );
 
+  const academicIdentifiers =
+    normalizeAcademicIdentifiers(
+      item
+    );
+
   return {
     id:
       authorId,
@@ -815,6 +987,24 @@ const normAuthor = (
     ),
 
     publications,
+
+    academic_identifiers:
+      academicIdentifiers,
+
+    orcid:
+      academicIdentifiers.orcid,
+
+    registro_senescyt:
+      academicIdentifiers
+        .registro_senescyt,
+
+    google_scholar:
+      academicIdentifiers
+        .google_scholar,
+
+    scopus_id:
+      academicIdentifiers
+        .scopus_id,
 
     verified:
       toBool(
@@ -885,6 +1075,33 @@ const normalizeProfileDetail = (
       data || {}
     );
 
+  const relatedAuthorsRaw = (
+    Array.isArray(
+      data?.related_authors
+    )
+      ? data.related_authors
+      : (
+          Array.isArray(
+            data?.autores_relacionados
+          )
+            ? data.autores_relacionados
+            : (
+                Array.isArray(
+                  data?.coauthors
+                )
+                  ? data.coauthors
+                  : []
+              )
+        )
+  );
+
+  const relatedAuthors =
+    dedupeAuthors(
+      relatedAuthorsRaw.map(
+        normAuthor
+      )
+    );
+
   return {
     ...normalizedAuthor,
 
@@ -892,6 +1109,12 @@ const normalizeProfileDetail = (
       rawPublications.map(
         normPub
       ),
+
+    related_authors:
+      relatedAuthors,
+
+    autores_relacionados:
+      relatedAuthors,
   };
 };
 
@@ -1247,6 +1470,13 @@ const normalizeFacets = (
       )
         ? value.types
         : [],
+
+    months:
+      Array.isArray(
+        value.months
+      )
+        ? value.months
+        : [],
   };
 };
 
@@ -1274,9 +1504,11 @@ export const useScholarStore =
         pubsFacets: {
           years: [],
           types: [],
+          months: [],
         },
         pubsParams: {
           year: "",
+          month: "",
           type: "",
           sort: "relevance",
           facets: "1",
@@ -1325,6 +1557,7 @@ export const useScholarStore =
           state
         ) => Boolean(
           state.pubsParams.year
+          || state.pubsParams.month
           || state.pubsParams.type
           || (
             state.pubsParams.lang
@@ -1342,6 +1575,12 @@ export const useScholarStore =
 
           if (
             state.pubsParams.year
+          ) {
+            count += 1;
+          }
+
+          if (
+            state.pubsParams.month
           ) {
             count += 1;
           }
@@ -1778,7 +2017,8 @@ export const useScholarStore =
 
                     const extra = [
                       authorsText,
-                      publication.year,
+                      publication.period_label
+                      || publication.year,
                       publication.venue,
                     ]
                       .filter(
@@ -1986,6 +2226,15 @@ export const useScholarStore =
                   .year
               ).trim(),
 
+            month:
+              toStr(
+                input.month
+                ?? input.mes
+                ?? this
+                  .pubsParams
+                  .month
+              ).trim(),
+
             type:
               toStr(
                 input.type
@@ -2064,6 +2313,9 @@ export const useScholarStore =
 
             year:
               params.year,
+
+            month:
+              params.month,
 
             type:
               params.type,
@@ -2146,6 +2398,9 @@ export const useScholarStore =
 
                   year:
                     params.year,
+
+                  month:
+                    params.month,
 
                   type:
                     params.type,
@@ -2297,6 +2552,7 @@ export const useScholarStore =
             this.pubsFacets = {
               years: [],
               types: [],
+              months: [],
             };
             this.pubsNext = null;
             this.pubsPrev = null;
@@ -2838,6 +3094,54 @@ export const useScholarStore =
           }
         },
 
+        async fetchPerfilMe() {
+          return this
+            .fetchPerfilDetail(
+              "me"
+            );
+        },
+
+        async updatePerfilMe(
+          payload = {}
+        ) {
+          this.perfilDetailError =
+            null;
+
+          try {
+            const data =
+              await updateScholarMyProfile(
+                payload
+              );
+
+            this.perfilDetail =
+              normalizeProfileDetail(
+                data || {}
+              );
+
+            this
+              .clearProfilesCache();
+
+            this
+              .clearPubsCache();
+
+            return this
+              .perfilDetail;
+          } catch (
+            error
+          ) {
+            this.perfilDetailError =
+              extractErrorMessage(
+                error,
+                (
+                  "No se pudieron actualizar "
+                  + "los identificadores académicos."
+                )
+              );
+
+            throw error;
+          }
+        },
+
         /* ==================================================
            REINICIO Y CACHÉ
         ================================================== */
@@ -2851,6 +3155,7 @@ export const useScholarStore =
           this.pubsFacets = {
             years: [],
             types: [],
+            months: [],
           };
           this.pubsPage = 1;
           this.pubsNext = null;
@@ -2915,6 +3220,7 @@ export const useScholarStore =
 
           this.pubsParams = {
             year: "",
+            month: "",
             type: "",
             sort: "relevance",
             facets: "1",

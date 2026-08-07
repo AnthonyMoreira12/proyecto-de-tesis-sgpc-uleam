@@ -370,7 +370,7 @@
 
               <section class="pub-sidePanel__section">
                 <h3 class="pub-sidePanel__sectionTitle">
-                  Periodo de publicación
+                  Período de publicación
                 </h3>
 
                 <div
@@ -379,7 +379,7 @@
                     pub-sidePanel__fields--years
                   "
                 >
-                  <div class="pub-field pub-field--full">
+                  <div class="pub-field">
                     <label
                       class="pub-label"
                       for="fAnio"
@@ -407,6 +407,29 @@
                         :value="String(anio)"
                       >
                         {{ anio }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="pub-field">
+                    <label
+                      class="pub-label"
+                      for="fMes"
+                    >
+                      Mes
+                    </label>
+
+                    <select
+                      id="fMes"
+                      v-model="filtroMes"
+                      class="pub-select"
+                    >
+                      <option
+                        v-for="mes in MESES_LIST"
+                        :key="`mes-${mes.value || 'all'}`"
+                        :value="mes.value"
+                      >
+                        {{ mes.label }}
                       </option>
                     </select>
                   </div>
@@ -765,6 +788,29 @@
                   <div class="pub-field">
                     <label
                       class="pub-label"
+                      for="expMes"
+                    >
+                      Mes
+                    </label>
+
+                    <select
+                      id="expMes"
+                      v-model="exportFiltroMes"
+                      class="pub-select"
+                    >
+                      <option
+                        v-for="mes in MESES_LIST"
+                        :key="`exp-mes-${mes.value || 'all'}`"
+                        :value="mes.value"
+                      >
+                        {{ mes.label }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="pub-field">
+                    <label
+                      class="pub-label"
                       for="expAnioDesde"
                     >
                       Desde
@@ -1002,9 +1048,9 @@
 
                   <time
                     class="pub-date"
-                    :datetime="pub.fecha_publicacion || ''"
+                    :datetime="publicationPeriodDatetime(pub)"
                   >
-                    {{ formatFecha(pub.fecha_publicacion) }}
+                    {{ formatPublicationPeriod(pub) }}
                   </time>
                 </div>
 
@@ -1263,6 +1309,22 @@ const ORDENES_LIST = Object.freeze([
   },
 ]);
 
+const MESES_LIST = Object.freeze([
+  { value: "", label: "Todos los meses" },
+  { value: "1", label: "Enero" },
+  { value: "2", label: "Febrero" },
+  { value: "3", label: "Marzo" },
+  { value: "4", label: "Abril" },
+  { value: "5", label: "Mayo" },
+  { value: "6", label: "Junio" },
+  { value: "7", label: "Julio" },
+  { value: "8", label: "Agosto" },
+  { value: "9", label: "Septiembre" },
+  { value: "10", label: "Octubre" },
+  { value: "11", label: "Noviembre" },
+  { value: "12", label: "Diciembre" },
+]);
+
 /* ============================================================
   DATOS PRINCIPALES
 ============================================================ */
@@ -1284,6 +1346,7 @@ const filtroTipo = ref(TIPOS.ALL.value);
 const filtroOrigen = ref("ALL");
 const ordenListado = ref("recientes");
 const filtroAnio = ref("");
+const filtroMes = ref("");
 const filtroAnioDesde = ref("");
 const filtroAnioHasta = ref("");
 const filtroTexto = ref("");
@@ -1299,6 +1362,7 @@ const soloConPdf = ref(false);
 const exportFiltroTipo = ref(TIPOS.ALL.value);
 const exportFiltroOrigen = ref("ALL");
 const exportFiltroAnio = ref("");
+const exportFiltroMes = ref("");
 const exportFiltroAnioDesde = ref("");
 const exportFiltroAnioHasta = ref("");
 const exportFiltroTexto = ref("");
@@ -1565,23 +1629,78 @@ function buildAcademicMeta(publicacion) {
   );
 }
 
-function formatFecha(fecha) {
-  if (!fecha) {
-    return "Sin fecha";
+function resolvePublicationYear(publicacion) {
+  const year = Number(
+    publicacion?.anio_publicacion ??
+      publicacion?.anio ??
+      publicacion?.year
+  );
+
+  return Number.isInteger(year) && year > 0
+    ? year
+    : null;
+}
+
+function resolvePublicationMonth(publicacion) {
+  const month = Number(
+    publicacion?.mes_publicacion ??
+      publicacion?.mes ??
+      publicacion?.month
+  );
+
+  return (
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  )
+    ? month
+    : null;
+}
+
+function formatPublicationPeriod(publicacion) {
+  const year =
+    resolvePublicationYear(publicacion);
+
+  if (!year) {
+    return "Sin período";
   }
 
-  const normalized = String(fecha).slice(0, 10);
-  const date = new Date(`${normalized}T00:00:00`);
+  const month =
+    resolvePublicationMonth(publicacion);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Sin fecha";
+  if (!month) {
+    return String(year);
   }
 
-  return new Intl.DateTimeFormat("es-EC", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    "es-EC",
+    {
+      month: "long",
+      year: "numeric",
+    }
+  ).format(
+    new Date(
+      year,
+      month - 1,
+      1
+    )
+  );
+}
+
+function publicationPeriodDatetime(publicacion) {
+  const year =
+    resolvePublicationYear(publicacion);
+
+  if (!year) {
+    return "";
+  }
+
+  const month =
+    resolvePublicationMonth(publicacion);
+
+  return month
+    ? `${year}-${String(month).padStart(2, "0")}`
+    : String(year);
 }
 
 /* ============================================================
@@ -1607,6 +1726,7 @@ function buildParamsFromState({
   tipo,
   origen,
   anio,
+  mes,
   anioDesde,
   anioHasta,
   texto,
@@ -1638,6 +1758,10 @@ function buildParamsFromState({
     if (anioHasta) {
       params.anio_hasta = anioHasta;
     }
+  }
+
+  if (mes) {
+    params.mes = mes;
   }
 
   if (texto?.trim()) {
@@ -1677,6 +1801,7 @@ function getMainFilterState({
       : TIPOS.ALL.value,
     origen: filtroOrigen.value,
     anio: filtroAnio.value,
+    mes: filtroMes.value,
     anioDesde: filtroAnioDesde.value,
     anioHasta: filtroAnioHasta.value,
     texto: filtroTexto.value,
@@ -1695,6 +1820,7 @@ function getExportFilterState() {
     tipo: exportFiltroTipo.value,
     origen: exportFiltroOrigen.value,
     anio: exportFiltroAnio.value,
+    mes: exportFiltroMes.value,
     anioDesde: exportFiltroAnioDesde.value,
     anioHasta: exportFiltroAnioHasta.value,
     texto: exportFiltroTexto.value,
@@ -1789,6 +1915,7 @@ const hayFiltros = computed(() => {
     filtroTipo.value !== TIPOS.ALL.value ||
     filtroOrigen.value !== "ALL" ||
     Boolean(filtroAnio.value) ||
+    Boolean(filtroMes.value) ||
     Boolean(filtroAnioDesde.value) ||
     Boolean(filtroAnioHasta.value) ||
     Boolean(filtroFacultad.value) ||
@@ -1803,6 +1930,7 @@ const hayFiltrosExportacion = computed(() => {
     exportFiltroTipo.value !== TIPOS.ALL.value ||
     exportFiltroOrigen.value !== "ALL" ||
     Boolean(exportFiltroAnio.value) ||
+    Boolean(exportFiltroMes.value) ||
     Boolean(exportFiltroAnioDesde.value) ||
     Boolean(exportFiltroAnioHasta.value) ||
     Boolean(exportFiltroFacultad.value) ||
@@ -1827,6 +1955,7 @@ const hayFiltrosVisibles = computed(() => {
 const activeAdvancedFiltersCount = computed(() => {
   const hasPeriod = Boolean(
     filtroAnio.value ||
+      filtroMes.value ||
       filtroAnioDesde.value ||
       filtroAnioHasta.value
   );
@@ -1858,6 +1987,7 @@ const totalActiveFiltersCount = computed(() => {
 const exportActiveFiltersCount = computed(() => {
   const hasPeriod = Boolean(
     exportFiltroAnio.value ||
+      exportFiltroMes.value ||
       exportFiltroAnioDesde.value ||
       exportFiltroAnioHasta.value
   );
@@ -1977,12 +2107,14 @@ function syncYearFiltersWithCatalog() {
 
   syncGroup(
     filtroAnio,
+    filtroMes,
     filtroAnioDesde,
     filtroAnioHasta
   );
 
   syncGroup(
     exportFiltroAnio,
+    exportFiltroMes,
     exportFiltroAnioDesde,
     exportFiltroAnioHasta
   );
@@ -2240,6 +2372,7 @@ function limpiarFiltros() {
   filtroOrigen.value = "ALL";
   ordenListado.value = "recientes";
   filtroAnio.value = "";
+  filtroMes.value = "";
   filtroAnioDesde.value = "";
   filtroAnioHasta.value = "";
   filtroTexto.value = "";
@@ -2256,6 +2389,7 @@ function limpiarExportFilters() {
   exportFiltroTipo.value = TIPOS.ALL.value;
   exportFiltroOrigen.value = "ALL";
   exportFiltroAnio.value = "";
+  exportFiltroMes.value = "";
   exportFiltroAnioDesde.value = "";
   exportFiltroAnioHasta.value = "";
   exportFiltroTexto.value = "";
@@ -2295,6 +2429,7 @@ async function syncExportFiltersFromVisible() {
   exportFiltroTipo.value = filtroTipo.value;
   exportFiltroOrigen.value = filtroOrigen.value;
   exportFiltroAnio.value = filtroAnio.value;
+  exportFiltroMes.value = filtroMes.value;
   exportFiltroAnioDesde.value =
     filtroAnioDesde.value;
   exportFiltroAnioHasta.value =

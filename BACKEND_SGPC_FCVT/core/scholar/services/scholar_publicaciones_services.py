@@ -1,16 +1,19 @@
 """
-Servicio de búsqueda de publicaciones tipo Scholar.
+Servicio centralizado para la búsqueda pública de publicaciones
+tipo Scholar.
 
-Gestiona:
+Responsabilidades:
+
+- construir el queryset base;
 - búsqueda textual;
-- relevancia;
-- año;
-- tipo;
-- PDF;
-- orden;
-- facetas;
-- autores;
-- URLs de PDF.
+- búsqueda por autores e identificadores académicos;
+- filtros por año, mes, tipo y disponibilidad de PDF;
+- ordenamiento;
+- construcción de facetas;
+- serialización de resultados.
+
+La vista HTTP debe delegar en este servicio para evitar mantener
+dos implementaciones diferentes de la búsqueda Scholar.
 """
 
 from django.contrib.postgres.search import (
@@ -19,6 +22,7 @@ from django.contrib.postgres.search import (
 from django.db.models import (
     Count,
     Exists,
+    F,
     OuterRef,
     Prefetch,
     Q,
@@ -42,20 +46,72 @@ from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
 )
 
 
+MESES_PUBLICACION = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre",
+}
+
+
 # =============================================================
-# HELPERS
+# NORMALIZACIÓN
 # =============================================================
 
 
-def _to_str(value):
+def _to_str(
+    value,
+):
     return str(
         value or ""
     ).strip()
 
 
-def parsear_anio(
-    year_str: str,
+def _is_truthy(
+    value,
 ):
+    return (
+        _to_str(
+            value
+        ).lower()
+        in {
+            "1",
+            "true",
+            "t",
+            "yes",
+            "y",
+            "si",
+            "sí",
+            "on",
+        }
+    )
+
+
+def parsear_anio(
+    year_str,
+):
+    """
+    Admite:
+
+        2026
+        2020-2026
+
+    Retorna:
+
+        (2026, 2026)
+        (2020, 2026)
+
+    Si el valor no es válido, retorna None.
+    """
+
     raw = _to_str(
         year_str
     )
@@ -67,7 +123,9 @@ def parsear_anio(
         raw.isdigit()
         and len(raw) == 4
     ):
-        year = int(raw)
+        year = int(
+            raw
+        )
 
         return (
             year,
@@ -93,14 +151,15 @@ def parsear_anio(
     ):
         return None
 
-    start_year = int(start)
-    end_year = int(end)
+    start_year = int(
+        start
+    )
+    end_year = int(
+        end
+    )
 
     if start_year > end_year:
-        (
-            start_year,
-            end_year,
-        ) = (
+        start_year, end_year = (
             end_year,
             start_year,
         )
@@ -111,22 +170,82 @@ def parsear_anio(
     )
 
 
-def _is_truthy(value):
-    return (
-        _to_str(
-            value
-        ).lower()
-        in {
-            "1",
-            "true",
-            "t",
-            "yes",
-            "y",
-            "si",
-            "sí",
-            "on",
-        }
+def parsear_mes(
+    month_value,
+):
+    """
+    Convierte el mes a entero entre 1 y 12.
+
+    Un valor vacío o inválido no aplica filtro.
+    """
+
+    raw = _to_str(
+        month_value
     )
+
+    if not raw:
+        return None
+
+    try:
+        month = int(
+            raw
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return None
+
+    if not 1 <= month <= 12:
+        return None
+
+    return month
+
+
+def _month_label(
+    publication,
+):
+    month = getattr(
+        publication,
+        "mes_publicacion",
+        None,
+    )
+
+    if month in (
+        None,
+        "",
+    ):
+        return None
+
+    display = getattr(
+        publication,
+        "get_mes_publicacion_display",
+        None,
+    )
+
+    if callable(display):
+        try:
+            label = _to_str(
+                display()
+            )
+
+            if label:
+                return label
+
+        except Exception:
+            pass
+
+    try:
+        return MESES_PUBLICACION.get(
+            int(month)
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return None
 
 
 # =============================================================
@@ -164,6 +283,7 @@ def _build_absolute_url(
                     url
                 )
             )
+
         except Exception:
             pass
 
@@ -171,10 +291,10 @@ def _build_absolute_url(
 
 
 def _get_pdf_file(
-    pub,
+    publication,
 ):
     archivo_pdf = getattr(
-        pub,
+        publication,
         "archivo_pdf",
         None,
     )
@@ -190,14 +310,16 @@ def _get_pdf_file(
         return archivo_pdf
 
     prefetched = getattr(
-        pub,
+        publication,
         "_prefetched_objects_cache",
         {},
     )
 
     if "archivos" in prefetched:
         archivos = sorted(
-            prefetched["archivos"],
+            prefetched[
+                "archivos"
+            ],
             key=lambda item: (
                 getattr(
                     item,
@@ -233,7 +355,7 @@ def _get_pdf_file(
 
     try:
         adjunto = (
-            pub.archivos
+            publication.archivos
             .exclude(
                 archivo=""
             )
@@ -269,17 +391,17 @@ def _get_pdf_file(
     return None
 
 
-def _pub_has_pdf(
-    pub,
+def _publication_has_pdf(
+    publication,
 ):
     annotated = getattr(
-        pub,
+        publication,
         "tiene_adjuntos_pdf",
         None,
     )
 
     archivo_pdf = getattr(
-        pub,
+        publication,
         "archivo_pdf",
         None,
     )
@@ -301,19 +423,19 @@ def _pub_has_pdf(
 
     return bool(
         _get_pdf_file(
-            pub
+            publication
         )
     )
 
 
-def _pub_pdf_url(
+def _publication_pdf_url(
     request,
-    pub,
+    publication,
 ):
     return _build_absolute_url(
         request,
         _get_pdf_file(
-            pub
+            publication
         ),
     )
 
@@ -325,7 +447,9 @@ def _with_pdf_annotation(
         PublicacionArchivo.objects
         .filter(
             publicacion_id=(
-                OuterRef("pk")
+                OuterRef(
+                    "pk"
+                )
             ),
         )
         .exclude(
@@ -341,7 +465,7 @@ def _with_pdf_annotation(
 
 
 # =============================================================
-# PUBLICACIONES
+# PUBLICACIÓN / AUTORES
 # =============================================================
 
 
@@ -356,17 +480,42 @@ def _title_expression():
     )
 
 
-def _get_autor_rels(
-    pub,
+def _get_author_relations(
+    publication,
 ):
-    participaciones = getattr(
-        pub,
+    relations = getattr(
+        publication,
         "participaciones_ordenadas",
         None,
     )
 
-    if participaciones is not None:
-        return participaciones
+    if relations is not None:
+        return relations
+
+    prefetched = getattr(
+        publication,
+        "_prefetched_objects_cache",
+        {},
+    )
+
+    if "participaciones" in prefetched:
+        return sorted(
+            prefetched[
+                "participaciones"
+            ],
+            key=lambda item: (
+                getattr(
+                    item,
+                    "orden",
+                    0,
+                ),
+                getattr(
+                    item,
+                    "id",
+                    0,
+                ),
+            ),
+        )
 
     return (
         PublicacionAutor.objects
@@ -374,7 +523,7 @@ def _get_autor_rels(
             "autor"
         )
         .filter(
-            publicacion=pub
+            publicacion=publication
         )
         .order_by(
             "orden",
@@ -383,35 +532,78 @@ def _get_autor_rels(
     )
 
 
-def _cadena_autores(
-    pub,
-) -> str:
+def _build_authors(
+    publication,
+):
+    """
+    Construye autores respetando PublicacionAutor.orden.
+
+    No existe diferenciación entre autor principal y coautor.
+    """
+
+    authors = []
     names = []
 
-    for rel in _get_autor_rels(
-        pub
+    for relation in _get_author_relations(
+        publication
     ):
-        autor = getattr(
-            rel,
+        author = getattr(
+            relation,
             "autor",
             None,
         )
 
-        if not autor:
+        if not author:
             continue
 
+        nombres = _to_str(
+            getattr(
+                author,
+                "nombres",
+                "",
+            )
+        )
+
+        apellidos = _to_str(
+            getattr(
+                author,
+                "apellidos",
+                "",
+            )
+        )
+
         label = (
-            f"{_to_str(autor.nombres)} "
-            f"{_to_str(autor.apellidos)}"
+            f"{nombres} {apellidos}"
         ).strip()
 
         if not label:
             label = (
                 _to_str(
-                    autor.correo
+                    getattr(
+                        author,
+                        "correo",
+                        "",
+                    )
                 )
                 or "—"
             )
+
+        order = getattr(
+            relation,
+            "orden",
+            None,
+        )
+
+        authors.append(
+            {
+                "id": author.id,
+                "autor_id": author.id,
+                "name": label,
+                "nombre_completo": label,
+                "order": order,
+                "orden": order,
+            }
+        )
 
         if label != "—":
             names.append(
@@ -419,15 +611,23 @@ def _cadena_autores(
             )
 
     return (
-        ", ".join(names)
+        authors,
+        ", ".join(
+            names
+        )
         if names
-        else "—"
+        else "—",
     )
+
+
+# =============================================================
+# SERVICIO
+# =============================================================
 
 
 class PublicacionesScholarServicio:
     """
-    Servicio principal de búsqueda Scholar.
+    Servicio central de búsqueda Scholar.
     """
 
     # =========================================================
@@ -459,13 +659,10 @@ class PublicacionesScholarServicio:
                 "tipo",
                 "proyecto",
                 "usuario_creador",
-
                 "carrera",
                 "carrera__facultad",
-
                 "area",
                 "subarea",
-
                 "articulo",
                 "ponencia",
                 "libro",
@@ -500,122 +697,30 @@ class PublicacionesScholarServicio:
         )
 
     # =========================================================
-    # TÍTULO / SEDE
-    # =========================================================
-
-    @staticmethod
-    def _construir_titulo_y_sede(
-        pub,
-    ):
-        articulo = getattr(
-            pub,
-            "articulo",
-            None,
-        )
-
-        if articulo:
-            return (
-                _to_str(
-                    articulo.nombre_articulo
-                )
-                or "—",
-                _to_str(
-                    articulo.nombre_revista
-                )
-                or None,
-            )
-
-        ponencia = getattr(
-            pub,
-            "ponencia",
-            None,
-        )
-
-        if ponencia:
-            return (
-                _to_str(
-                    ponencia.nombre_ponencia
-                )
-                or "—",
-                _to_str(
-                    ponencia.nombre_evento
-                )
-                or None,
-            )
-
-        libro = getattr(
-            pub,
-            "libro",
-            None,
-        )
-
-        if libro:
-            return (
-                _to_str(
-                    libro.nombre_libro
-                )
-                or "—",
-                _to_str(
-                    libro.editorial_compilador
-                )
-                or None,
-            )
-
-        capitulo = getattr(
-            pub,
-            "capitulo_libro",
-            None,
-        )
-
-        if capitulo:
-            return (
-                _to_str(
-                    capitulo.nombre_capitulo
-                )
-                or "—",
-                _to_str(
-                    capitulo.nombre_libro
-                )
-                or None,
-            )
-
-        tipo_nombre = (
-            pub.tipo.nombre
-            if pub.tipo
-            else "Publicación"
-        )
-
-        numero = (
-            pub.numero
-            or pub.id
-        )
-
-        return (
-            f"{tipo_nombre} #{numero}",
-            None,
-        )
-
-    # =========================================================
-    # FILTRO Q
+    # BÚSQUEDA TEXTUAL
     # =========================================================
 
     @staticmethod
     def _aplicar_filtro_q(
-        qs,
+        queryset,
         q_norm,
     ):
         if not q_norm:
-            return qs
+            return queryset
 
-        qs = qs.annotate(
+        queryset = queryset.annotate(
             sim=TrigramSimilarity(
-                "titulo_busqueda",
-                Value(q_norm),
+                Lower(
+                    "titulo_busqueda"
+                ),
+                Value(
+                    q_norm
+                ),
             )
         )
 
         return (
-            qs.filter(
+            queryset.filter(
                 Q(
                     titulo_busqueda__icontains=(
                         q_norm
@@ -657,12 +762,42 @@ class PublicacionesScholarServicio:
                     )
                 )
                 | Q(
+                    participaciones__autor__identificacion__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    participaciones__autor__orcid__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    participaciones__autor__registro_senescyt__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    participaciones__autor__google_scholar__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    participaciones__autor__scopus_id__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
                     articulo__nombre_revista__icontains=(
                         q_norm
                     )
                 )
                 | Q(
                     articulo__codigo_doi__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    articulo__codigo_issn__icontains=(
                         q_norm
                     )
                 )
@@ -689,26 +824,26 @@ class PublicacionesScholarServicio:
         )
 
     # =========================================================
-    # AÑO
+    # PERÍODO
     # =========================================================
 
     @staticmethod
     def _aplicar_filtro_anio(
-        qs,
-        year_str,
+        queryset,
+        year_value,
     ):
         year_range = parsear_anio(
-            year_str
+            year_value
         )
 
         if not year_range:
             return (
-                qs,
+                queryset,
                 None,
             )
 
         return (
-            qs.filter(
+            queryset.filter(
                 anio_publicacion__gte=(
                     year_range[0]
                 ),
@@ -719,13 +854,35 @@ class PublicacionesScholarServicio:
             year_range,
         )
 
+    @staticmethod
+    def _aplicar_filtro_mes(
+        queryset,
+        month_value,
+    ):
+        month = parsear_mes(
+            month_value
+        )
+
+        if month is None:
+            return (
+                queryset,
+                None,
+            )
+
+        return (
+            queryset.filter(
+                mes_publicacion=month
+            ),
+            month,
+        )
+
     # =========================================================
     # TIPO
     # =========================================================
 
     @staticmethod
     def _aplicar_filtro_tipo(
-        qs,
+        queryset,
         tipo,
     ):
         raw = _to_str(
@@ -733,11 +890,13 @@ class PublicacionesScholarServicio:
         ).lower()
 
         if not raw:
-            return qs
+            return queryset
 
         if raw.isdigit():
-            return qs.filter(
-                tipo_id=int(raw)
+            return queryset.filter(
+                tipo_id=int(
+                    raw
+                )
             )
 
         tipo_normalizado = (
@@ -747,9 +906,9 @@ class PublicacionesScholarServicio:
         )
 
         if not tipo_normalizado:
-            return qs
+            return queryset
 
-        return qs.filter(
+        return queryset.filter(
             tipo_publicacion_final=(
                 tipo_normalizado
             )
@@ -761,14 +920,14 @@ class PublicacionesScholarServicio:
 
     @staticmethod
     def _aplicar_filtro_pdf(
-        qs,
+        queryset,
         solo_con_pdf,
     ):
         if not solo_con_pdf:
-            return qs
+            return queryset
 
         return (
-            qs.filter(
+            queryset.filter(
                 (
                     Q(
                         archivo_pdf__isnull=False
@@ -790,93 +949,148 @@ class PublicacionesScholarServicio:
 
     @staticmethod
     def _aplicar_orden(
-        qs,
+        queryset,
         sort,
         *,
         has_query=False,
     ):
         sort = (
-            _to_str(sort)
+            _to_str(
+                sort
+            ).lower()
             or "relevance"
         )
 
         if sort == "year_desc":
-            return qs.order_by(
-                "-anio_publicacion",
+            return queryset.order_by(
+                F(
+                    "anio_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
+                F(
+                    "mes_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
                 "-id",
             )
 
         if sort == "year_asc":
-            return qs.order_by(
-                "anio_publicacion",
+            return queryset.order_by(
+                F(
+                    "anio_publicacion"
+                ).asc(
+                    nulls_last=True
+                ),
+                F(
+                    "mes_publicacion"
+                ).asc(
+                    nulls_last=True
+                ),
                 "id",
             )
 
         if sort == "title_asc":
-            return qs.order_by(
+            return queryset.order_by(
                 Lower(
                     "titulo_busqueda"
                 ),
                 "id",
             )
 
-        # -----------------------------------------------------
-        # Relevancia
-        # -----------------------------------------------------
-
         if (
             sort == "relevance"
             and has_query
         ):
-            return qs.order_by(
+            return queryset.order_by(
                 "-sim",
-                "-anio_publicacion",
+                F(
+                    "anio_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
+                F(
+                    "mes_publicacion"
+                ).desc(
+                    nulls_last=True
+                ),
                 "-id",
             )
 
-        return qs.order_by(
-            "-anio_publicacion",
+        return queryset.order_by(
+            F(
+                "anio_publicacion"
+            ).desc(
+                nulls_last=True
+            ),
+            F(
+                "mes_publicacion"
+            ).desc(
+                nulls_last=True
+            ),
             "-id",
         )
 
     # =========================================================
-    # BÚSQUEDA
+    # QUERYSET PÚBLICO
     # =========================================================
 
-    @staticmethod
-    def buscar(
-        *,
-        request,
-        params,
+    @classmethod
+    def construir_queryset(
+        cls,
+        params=None,
     ):
+        """
+        Construye el queryset final y devuelve además los valores
+        normalizados que se necesitan para las facetas.
+        """
+
         params = params or {}
 
         q = _to_str(
-            params.get("q")
+            params.get(
+                "q"
+            )
         )
 
         q_norm = q.lower()
 
-        year = _to_str(
-            params.get("year")
+        year = (
+            params.get(
+                "year"
+            )
+            or params.get(
+                "anio"
+            )
         )
 
-        tipo = _to_str(
-            params.get("type")
+        month = (
+            params.get(
+                "month"
+            )
+            or params.get(
+                "mes"
+            )
+            or params.get(
+                "mes_publicacion"
+            )
+        )
+
+        tipo = (
+            params.get(
+                "type"
+            )
+            or params.get(
+                "tipo"
+            )
         )
 
         sort = (
-            _to_str(
-                params.get("sort")
+            params.get(
+                "sort"
             )
             or "relevance"
-        )
-
-        facets = (
-            _to_str(
-                params.get("facets")
-            )
-            or "1"
         )
 
         solo_con_pdf = _is_truthy(
@@ -897,54 +1111,54 @@ class PublicacionesScholarServicio:
             )
         )
 
-        # -----------------------------------------------------
-        # Query principal
-        # -----------------------------------------------------
-
-        qs = (
-            PublicacionesScholarServicio
-            ._base_queryset()
+        queryset = (
+            cls._base_queryset()
         )
 
-        qs = (
-            PublicacionesScholarServicio
-            ._aplicar_filtro_q(
-                qs,
+        queryset = (
+            cls._aplicar_filtro_q(
+                queryset,
                 q_norm,
             )
         )
 
         (
-            qs,
+            queryset,
             year_range,
         ) = (
-            PublicacionesScholarServicio
-            ._aplicar_filtro_anio(
-                qs,
+            cls._aplicar_filtro_anio(
+                queryset,
                 year,
             )
         )
 
-        qs = (
-            PublicacionesScholarServicio
-            ._aplicar_filtro_tipo(
-                qs,
+        (
+            queryset,
+            month_value,
+        ) = (
+            cls._aplicar_filtro_mes(
+                queryset,
+                month,
+            )
+        )
+
+        queryset = (
+            cls._aplicar_filtro_tipo(
+                queryset,
                 tipo,
             )
         )
 
-        qs = (
-            PublicacionesScholarServicio
-            ._aplicar_filtro_pdf(
-                qs,
+        queryset = (
+            cls._aplicar_filtro_pdf(
+                queryset,
                 solo_con_pdf,
             )
         )
 
-        qs = (
-            PublicacionesScholarServicio
-            ._aplicar_orden(
-                qs,
+        queryset = (
+            cls._aplicar_orden(
+                queryset,
                 sort,
                 has_query=bool(
                     q_norm
@@ -952,242 +1166,454 @@ class PublicacionesScholarServicio:
             )
         )
 
-        total = qs.count()
+        metadata = {
+            "q": q,
+            "q_norm": q_norm,
+            "year_range": (
+                year_range
+            ),
+            "month": (
+                month_value
+            ),
+            "type": _to_str(
+                tipo
+            ),
+            "solo_con_pdf": (
+                solo_con_pdf
+            ),
+            "sort": _to_str(
+                sort
+            )
+            or "relevance",
+        }
 
-        results = []
+        return (
+            queryset,
+            metadata,
+        )
 
-        for pub in qs[:50]:
-            (
-                title,
-                venue,
-            ) = (
-                PublicacionesScholarServicio
-                ._construir_titulo_y_sede(
-                    pub
+    # =========================================================
+    # SERIALIZACIÓN
+    # =========================================================
+
+    @staticmethod
+    def serializar_publicacion(
+        *,
+        request,
+        publication,
+    ):
+        (
+            authors,
+            author_names,
+        ) = _build_authors(
+            publication
+        )
+
+        tipo_final = getattr(
+            publication,
+            "tipo_publicacion_final",
+            "sin_clasificar",
+        )
+
+        has_pdf = _publication_has_pdf(
+            publication
+        )
+
+        pdf_url = _publication_pdf_url(
+            request,
+            publication,
+        )
+
+        title = (
+            _to_str(
+                getattr(
+                    publication,
+                    "titulo_busqueda",
+                    "",
                 )
             )
+            or "—"
+        )
 
-            authors = (
-                _cadena_autores(
-                    pub
+        month = getattr(
+            publication,
+            "mes_publicacion",
+            None,
+        )
+
+        return {
+            "id": publication.id,
+
+            "title": title,
+            "titulo": title,
+
+            "year": (
+                publication.anio_publicacion
+            ),
+            "anio_publicacion": (
+                publication.anio_publicacion
+            ),
+
+            "month": month,
+            "mes_publicacion": month,
+            "mes_publicacion_label": (
+                _month_label(
+                    publication
                 )
-            )
+            ),
 
-            tipo_final = getattr(
-                pub,
-                "tipo_publicacion_final",
-                "sin_clasificar",
-            )
+            "tipo": (
+                publication.tipo.nombre
+                if publication.tipo
+                else None
+            ),
 
-            has_pdf = _pub_has_pdf(
-                pub
-            )
+            "tipo_codigo": (
+                publication.tipo.codigo
+                if publication.tipo
+                else None
+            ),
 
-            pdf_url = _pub_pdf_url(
-                request,
-                pub,
-            )
-
-            results.append(
+            "type": (
                 {
-                    "id": pub.id,
-
-                    "title": title,
-                    "titulo": title,
-
-                    "authors": authors,
-                    "autor": authors,
-
-                    "venue": venue,
-
-                    "year": (
-                        pub.anio_publicacion
+                    "id": (
+                        publication.tipo_id
                     ),
-
-                    "anio_publicacion": (
-                        pub.anio_publicacion
+                    "nombre": (
+                        publication.tipo.nombre
                     ),
-
-                    "type": (
-                        {
-                            "id": (
-                                pub.tipo_id
-                            ),
-                            "nombre": (
-                                pub.tipo.nombre
-                            ),
-                            "codigo": (
-                                pub.tipo.codigo
-                            ),
-                        }
-                        if pub.tipo
-                        else None
+                    "codigo": (
+                        publication.tipo.codigo
                     ),
+                }
+                if publication.tipo
+                else None
+            ),
 
-                    "tipo_publicacion_final": (
-                        tipo_final
+            "tipo_publicacion_final": (
+                tipo_final
+            ),
+
+            "tipo_publicacion_final_label": (
+                tipo_publicacion_label(
+                    tipo_final
+                )
+            ),
+
+            "authors": authors,
+            "autor": author_names,
+
+            "snippet": None,
+
+            "sim": float(
+                getattr(
+                    publication,
+                    "sim",
+                    0,
+                )
+                or 0
+            ),
+
+            "hasPdf": has_pdf,
+            "has_pdf": has_pdf,
+            "tiene_pdf": has_pdf,
+
+            "pdf_url": pdf_url,
+            "archivo_pdf_url": (
+                pdf_url
+            ),
+
+            # El dominio todavía no posee un modelo
+            # bibliométrico de citas.
+            "citedBy": 0,
+        }
+
+    # =========================================================
+    # FACETAS
+    # =========================================================
+
+    @classmethod
+    def construir_facetas(
+        cls,
+        *,
+        metadata,
+    ):
+        """
+        Construye facetas con la misma búsqueda textual/PDF.
+
+        - años respetan tipo y mes;
+        - tipos respetan año y mes;
+        - meses respetan año y tipo.
+        """
+
+        base = cls._base_queryset()
+
+        base = cls._aplicar_filtro_q(
+            base,
+            metadata.get(
+                "q_norm"
+            ),
+        )
+
+        base = cls._aplicar_filtro_pdf(
+            base,
+            metadata.get(
+                "solo_con_pdf",
+                False,
+            ),
+        )
+
+        tipo = metadata.get(
+            "type"
+        )
+
+        year_range = metadata.get(
+            "year_range"
+        )
+
+        month = metadata.get(
+            "month"
+        )
+
+        # -----------------------------------------------------
+        # AÑOS
+        # -----------------------------------------------------
+
+        base_years = base
+
+        if tipo:
+            base_years = (
+                cls._aplicar_filtro_tipo(
+                    base_years,
+                    tipo,
+                )
+            )
+
+        if month:
+            base_years = (
+                base_years.filter(
+                    mes_publicacion=month
+                )
+            )
+
+        years_qs = (
+            base_years
+            .exclude(
+                anio_publicacion__isnull=True
+            )
+            .values(
+                "anio_publicacion"
+            )
+            .annotate(
+                c=Count(
+                    "id",
+                    distinct=True,
+                )
+            )
+            .order_by(
+                "-anio_publicacion"
+            )
+        )
+
+        # -----------------------------------------------------
+        # TIPOS
+        # -----------------------------------------------------
+
+        base_types = base
+
+        if year_range:
+            base_types = (
+                base_types.filter(
+                    anio_publicacion__gte=(
+                        year_range[0]
                     ),
+                    anio_publicacion__lte=(
+                        year_range[1]
+                    ),
+                )
+            )
 
-                    "tipo_publicacion_final_label": (
+        if month:
+            base_types = (
+                base_types.filter(
+                    mes_publicacion=month
+                )
+            )
+
+        types_qs = (
+            base_types
+            .values(
+                "tipo_publicacion_final"
+            )
+            .annotate(
+                c=Count(
+                    "id",
+                    distinct=True,
+                )
+            )
+            .order_by(
+                "tipo_publicacion_final"
+            )
+        )
+
+        # -----------------------------------------------------
+        # MESES
+        # -----------------------------------------------------
+
+        base_months = base
+
+        if tipo:
+            base_months = (
+                cls._aplicar_filtro_tipo(
+                    base_months,
+                    tipo,
+                )
+            )
+
+        if year_range:
+            base_months = (
+                base_months.filter(
+                    anio_publicacion__gte=(
+                        year_range[0]
+                    ),
+                    anio_publicacion__lte=(
+                        year_range[1]
+                    ),
+                )
+            )
+
+        months_qs = (
+            base_months
+            .exclude(
+                mes_publicacion__isnull=True
+            )
+            .values(
+                "mes_publicacion"
+            )
+            .annotate(
+                c=Count(
+                    "id",
+                    distinct=True,
+                )
+            )
+            .order_by(
+                "mes_publicacion"
+            )
+        )
+
+        return {
+            "years": [
+                {
+                    "value": row[
+                        "anio_publicacion"
+                    ],
+                    "count": row["c"],
+                }
+                for row in years_qs
+                if row[
+                    "anio_publicacion"
+                ]
+            ],
+
+            "types": [
+                {
+                    "codigo": row[
+                        "tipo_publicacion_final"
+                    ],
+                    "nombre": (
                         tipo_publicacion_label(
-                            tipo_final
+                            row[
+                                "tipo_publicacion_final"
+                            ]
                         )
                     ),
-
-                    "hasPdf": has_pdf,
-                    "has_pdf": has_pdf,
-                    "tiene_pdf": has_pdf,
-
-                    "pdf_url": pdf_url,
-
-                    "archivo_pdf_url": (
-                        pdf_url
-                    ),
-
-                    # No existe todavía un modelo
-                    # bibliométrico de citas.
-                    "citedBy": 0,
+                    "count": row["c"],
                 }
+                for row in types_qs
+                if row[
+                    "tipo_publicacion_final"
+                ]
+            ],
+
+            "months": [
+                {
+                    "value": row[
+                        "mes_publicacion"
+                    ],
+                    "nombre": (
+                        MESES_PUBLICACION.get(
+                            row[
+                                "mes_publicacion"
+                            ]
+                        )
+                    ),
+                    "count": row["c"],
+                }
+                for row in months_qs
+                if row[
+                    "mes_publicacion"
+                ]
+            ],
+        }
+
+    # =========================================================
+    # COMPATIBILIDAD DEL SERVICIO
+    # =========================================================
+
+    @classmethod
+    def buscar(
+        cls,
+        *,
+        request,
+        params=None,
+    ):
+        """
+        Mantiene un punto de entrada de servicio independiente
+        de la APIView.
+
+        Por compatibilidad limita esta respuesta directa a los
+        primeros 50 resultados. La vista pública utiliza
+        paginación real.
+        """
+
+        params = params or {}
+
+        queryset, metadata = (
+            cls.construir_queryset(
+                params
             )
+        )
+
+        total = queryset.count()
+
+        results = [
+            cls.serializar_publicacion(
+                request=request,
+                publication=publication,
+            )
+            for publication in queryset[
+                :50
+            ]
+        ]
 
         payload = {
             "results": results,
             "total": total,
+            "count": total,
         }
 
-        # =====================================================
-        # FACETAS
-        # =====================================================
+        facets = _to_str(
+            params.get(
+                "facets",
+                "1",
+            )
+        )
 
         if facets == "1":
-            base = (
-                PublicacionesScholarServicio
-                ._base_queryset()
-            )
-
-            base = (
-                PublicacionesScholarServicio
-                ._aplicar_filtro_q(
-                    base,
-                    q_norm,
+            payload["facets"] = (
+                cls.construir_facetas(
+                    metadata=metadata
                 )
             )
-
-            base = (
-                PublicacionesScholarServicio
-                ._aplicar_filtro_pdf(
-                    base,
-                    solo_con_pdf,
-                )
-            )
-
-            # -------------------------------------------------
-            # Faceta de años:
-            # respeta el filtro de tipo.
-            # -------------------------------------------------
-
-            base_years = base
-
-            if tipo:
-                base_years = (
-                    PublicacionesScholarServicio
-                    ._aplicar_filtro_tipo(
-                        base_years,
-                        tipo,
-                    )
-                )
-
-            years_qs = (
-                base_years
-                .exclude(
-                    anio_publicacion__isnull=True
-                )
-                .values(
-                    "anio_publicacion"
-                )
-                .annotate(
-                    c=Count(
-                        "id",
-                        distinct=True,
-                    )
-                )
-                .order_by(
-                    "-anio_publicacion"
-                )
-            )
-
-            # -------------------------------------------------
-            # Faceta de tipos:
-            # respeta el filtro de año.
-            # -------------------------------------------------
-
-            base_types = base
-
-            if year_range:
-                base_types = (
-                    base_types.filter(
-                        anio_publicacion__gte=(
-                            year_range[0]
-                        ),
-                        anio_publicacion__lte=(
-                            year_range[1]
-                        ),
-                    )
-                )
-
-            types_qs = (
-                base_types
-                .values(
-                    "tipo_publicacion_final"
-                )
-                .annotate(
-                    c=Count(
-                        "id",
-                        distinct=True,
-                    )
-                )
-                .order_by(
-                    "tipo_publicacion_final"
-                )
-            )
-
-            payload["facets"] = {
-                "years": [
-                    {
-                        "value": row[
-                            "anio_publicacion"
-                        ],
-                        "count": row["c"],
-                    }
-                    for row in years_qs
-                    if row[
-                        "anio_publicacion"
-                    ]
-                ],
-
-                "types": [
-                    {
-                        "codigo": row[
-                            "tipo_publicacion_final"
-                        ],
-
-                        "nombre": (
-                            tipo_publicacion_label(
-                                row[
-                                    "tipo_publicacion_final"
-                                ]
-                            )
-                        ),
-
-                        "count": row["c"],
-                    }
-
-                    for row in types_qs
-
-                    if row[
-                        "tipo_publicacion_final"
-                    ]
-                ],
-            }
 
         return payload

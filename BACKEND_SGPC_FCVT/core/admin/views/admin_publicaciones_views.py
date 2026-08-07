@@ -160,6 +160,9 @@ class AdminPublicacionViewSet(
             anio=params.get(
                 "anio"
             ),
+            mes=params.get(
+                "mes"
+            ),
             solo_delegadas=params.get(
                 "solo_delegadas"
             ),
@@ -310,7 +313,7 @@ class AdminPublicacionViewSet(
         El servicio prepara:
 
         - Usuario objetivo.
-        - Autor principal.
+        - Autor objetivo.
         - Datos normalizados.
         - Archivos adjuntos validados.
         """

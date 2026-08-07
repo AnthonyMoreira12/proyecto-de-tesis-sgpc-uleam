@@ -473,6 +473,29 @@
   font-weight: 900;
 }
 
+.pedit-optional {
+  margin-left: 4px;
+  color: var(--pe-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.pedit-field--period {
+  padding: 12px;
+  border: 1px solid var(--pe-line);
+  border-radius: var(--pe-radius-lg);
+  background:
+    color-mix(
+      in srgb,
+      var(--pe-card) 94%,
+      var(--pe-bg)
+    );
+}
+
+.pedit-field--period .pedit-help {
+  margin-top: 1px;
+}
+
 .pedit-input {
   width: 100%;
   min-width: 0;

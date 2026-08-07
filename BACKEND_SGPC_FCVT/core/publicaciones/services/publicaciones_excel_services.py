@@ -1,5 +1,4 @@
-"""
-Servicio de exportación Excel de publicaciones.
+"""Servicio de exportación Excel de publicaciones.
 
 Genera una hoja diferente según el tipo:
 
@@ -288,17 +287,23 @@ def _get_archivos(
         return []
 
 
-def _autor_data(
+def _autores_text(
     publicacion,
 ):
+    """
+    Devuelve todos los autores en el orden bibliográfico
+    registrado para la publicación.
+
+    No existe clasificación entre autor principal y coautor.
+    """
+
     participaciones = (
         _get_participaciones(
             publicacion
         )
     )
 
-    principal = ""
-    coautores = []
+    autores = []
 
     for participacion in participaciones:
         autor = _safe_related(
@@ -324,24 +329,12 @@ def _autor_data(
                 )
             )
 
-        if (
-            participacion.orden == 1
-            or participacion.rol_autoria
-            == "principal"
-        ):
-            principal = nombre
-
-        elif nombre:
-            coautores.append(
-                nombre
-            )
+        if nombre:
+            autores.append(nombre)
 
     return (
-        principal or "—",
-        " | ".join(
-            coautores
-        )
-        or "—",
+        " | ".join(autores)
+        or "—"
     )
 
 
@@ -396,7 +389,7 @@ def _principal_pdf_text(
 def _pdf_text(
     publicacion,
 ):
-    principal = (
+    principal_pdf = (
         _principal_pdf_text(
             publicacion
         )
@@ -410,9 +403,9 @@ def _pdf_text(
 
     values = []
 
-    if principal != "—":
+    if principal_pdf != "—":
         values.append(
-            principal
+            principal_pdf
         )
 
     if adjuntos != "—":
@@ -689,21 +682,79 @@ def _base_common(
     )
 
 
-def _fecha_text(
+def _periodo_text(
     publicacion,
 ):
-    return (
-        publicacion.fecha_publicacion.isoformat()
-        if publicacion.fecha_publicacion
-        else "—"
+    """
+    Representa el período sin inventar un día de publicación.
+
+    Ejemplos:
+        Agosto de 2026
+        2026
+    """
+
+    anio = getattr(
+        publicacion,
+        "anio_publicacion",
+        None,
     )
+
+    mes = getattr(
+        publicacion,
+        "mes_publicacion",
+        None,
+    )
+
+    if not anio:
+        return "—"
+
+    if not mes:
+        return str(anio)
+
+    display = getattr(
+        publicacion,
+        "get_mes_publicacion_display",
+        None,
+    )
+
+    if callable(display):
+        try:
+            mes_label = _normalize_text(
+                display()
+            )
+        except Exception:
+            mes_label = ""
+    else:
+        mes_label = ""
+
+    if not mes_label:
+        meses = {
+            1: "Enero",
+            2: "Febrero",
+            3: "Marzo",
+            4: "Abril",
+            5: "Mayo",
+            6: "Junio",
+            7: "Julio",
+            8: "Agosto",
+            9: "Septiembre",
+            10: "Octubre",
+            11: "Noviembre",
+            12: "Diciembre",
+        }
+        mes_label = meses.get(
+            mes,
+            str(mes),
+        )
+
+    return f"{mes_label} de {anio}"
 
 
 def _row_alto_impacto(
     publicacion,
 ):
-    principal, coautores = (
-        _autor_data(
+    autores = (
+        _autores_text(
             publicacion
         )
     )
@@ -719,8 +770,8 @@ def _row_alto_impacto(
             "Título del artículo": (
                 articulo.nombre_articulo
             ),
-            "Fecha publicación": (
-                _fecha_text(
+            "Periodo de publicación": (
+                _periodo_text(
                     publicacion
                 )
             ),
@@ -770,8 +821,7 @@ def _row_alto_impacto(
                 )
                 or "—"
             ),
-            "Autor principal": principal,
-            "Coautores": coautores,
+            "Autores": autores,
             "Archivos PDF": (
                 _pdf_text(
                     publicacion
@@ -786,8 +836,8 @@ def _row_alto_impacto(
 def _row_regional(
     publicacion,
 ):
-    principal, coautores = (
-        _autor_data(
+    autores = (
+        _autores_text(
             publicacion
         )
     )
@@ -803,8 +853,8 @@ def _row_regional(
             "Título del artículo": (
                 articulo.nombre_articulo
             ),
-            "Fecha publicación": (
-                _fecha_text(
+            "Periodo de publicación": (
+                _periodo_text(
                     publicacion
                 )
             ),
@@ -857,8 +907,7 @@ def _row_regional(
                 )
                 or "—"
             ),
-            "Autor principal": principal,
-            "Coautores": coautores,
+            "Autores": autores,
             "Archivos PDF": (
                 _pdf_text(
                     publicacion
@@ -873,8 +922,8 @@ def _row_regional(
 def _row_ponencia(
     publicacion,
 ):
-    principal, coautores = (
-        _autor_data(
+    autores = (
+        _autores_text(
             publicacion
         )
     )
@@ -903,8 +952,8 @@ def _row_ponencia(
             "Nombre ponencia": (
                 ponencia.nombre_ponencia
             ),
-            "Fecha presentación": (
-                _fecha_text(
+            "Periodo de presentación": (
+                _periodo_text(
                     publicacion
                 )
             ),
@@ -960,8 +1009,7 @@ def _row_ponencia(
                 )
                 or "—"
             ),
-            "Autor principal": principal,
-            "Coautores": coautores,
+            "Autores": autores,
             "PDF disponible": (
                 "Sí"
                 if _has_any_pdf(
@@ -983,8 +1031,8 @@ def _row_ponencia(
 def _row_libro(
     publicacion,
 ):
-    principal, coautores = (
-        _autor_data(
+    autores = (
+        _autores_text(
             publicacion
         )
     )
@@ -1000,8 +1048,8 @@ def _row_libro(
             "Nombre del libro": (
                 libro.nombre_libro
             ),
-            "Fecha publicación": (
-                _fecha_text(
+            "Periodo de publicación": (
+                _periodo_text(
                     publicacion
                 )
             ),
@@ -1018,8 +1066,7 @@ def _row_libro(
             "Link libro": (
                 libro.link_libro
             ),
-            "Autor principal": principal,
-            "Coautores": coautores,
+            "Autores": autores,
             "Archivos PDF": (
                 _pdf_text(
                     publicacion
@@ -1034,8 +1081,8 @@ def _row_libro(
 def _row_capitulo(
     publicacion,
 ):
-    principal, coautores = (
-        _autor_data(
+    autores = (
+        _autores_text(
             publicacion
         )
     )
@@ -1056,8 +1103,8 @@ def _row_capitulo(
             "Nombre del libro": (
                 capitulo.nombre_libro
             ),
-            "Fecha publicación": (
-                _fecha_text(
+            "Periodo de publicación": (
+                _periodo_text(
                     publicacion
                 )
             ),
@@ -1076,8 +1123,7 @@ def _row_capitulo(
             "Link capítulo": (
                 capitulo.link_capitulo
             ),
-            "Autor principal": principal,
-            "Coautores": coautores,
+            "Autores": autores,
             "Archivos PDF": (
                 _pdf_text(
                     publicacion

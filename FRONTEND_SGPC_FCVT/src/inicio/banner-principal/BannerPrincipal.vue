@@ -4,10 +4,9 @@
       class="avn-stage-card"
       :class="{
         'is-manage-open': manageModeActive,
-        'is-banner-mode': isBannerOnly,
-        'is-text-mode': isTextOnly,
+        'is-banner-mode': true,
         'is-empty': isEmptyState,
-        'has-media': showCarousel && !isTextOnly,
+        'has-media': showCarousel,
       }"
       :style="stageCardStyle"
     >
@@ -44,13 +43,7 @@
 
       <template v-else-if="showCarousel">
         <div
-          class="avn-stage-main"
-          :class="{
-            'avn-stage-main--mixed': isMixedMode,
-            'avn-stage-main--banner': isBannerOnly,
-            'avn-stage-main--text': isTextOnly,
-          }"
-          :style="stageGridStyle"
+          class="avn-stage-main avn-stage-main--banner"
           tabindex="0"
           role="region"
           aria-roledescription="carrusel"
@@ -63,7 +56,7 @@
             Aviso {{ currentBanner + 1 }} de {{ bannersNormalized.length }}.
           </p>
 
-          <section v-if="!isTextOnly" class="avn-stage__media">
+          <section class="avn-stage__media">
             <div class="avn-slides">
               <article
                 v-for="(banner, index) in bannersNormalized"
@@ -88,44 +81,6 @@
             <span class="avn-media__brand">
               SGPC ULEAM
             </span>
-          </section>
-
-          <section v-if="!isBannerOnly" class="avn-stage__aside">
-            <div class="avn-stage__copy">
-              <div class="avn-stage__eyebrow-row">
-                <span class="avn-stage__eyebrow">
-                  {{ panelDisplayContent.eyebrow }}
-                </span>
-
-                <span
-                  v-if="panelDisplayContent.recentLabel"
-                  class="avn-stage__badge"
-                >
-                  {{ panelDisplayContent.recentLabel }}
-                </span>
-              </div>
-
-              <h2 class="avn-stage__title">
-                {{ panelDisplayContent.title }}
-              </h2>
-
-              <p class="avn-stage__text">
-                {{ panelDisplayContent.text }}
-              </p>
-
-              <div class="avn-stage__meta">
-                <span class="avn-chip">
-                  Comunicado institucional
-                </span>
-
-                <span
-                  v-if="manageModeActive"
-                  class="avn-chip avn-chip--accent"
-                >
-                  {{ displayModeLabel }}
-                </span>
-              </div>
-            </div>
           </section>
         </div>
 
@@ -485,31 +440,10 @@
                     Aviso {{ index + 1 }}
                   </strong>
 
-                  <span>
-                    {{ resolveBannerContent(banner).title }}
-                  </span>
+                  <span>Imagen institucional</span>
                 </div>
 
                 <div class="avn-published-item__actions">
-                  <button
-                    class="avn-icon-btn"
-                    type="button"
-                    aria-label="Editar contenido del aviso"
-                    title="Editar contenido"
-                    @click="editBanner(index)"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="m4 15.5 9.9-9.9 4.5 4.5-9.9 9.9H4v-4.5Zm11.3-11.3 1.4-1.4a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8l-1.4 1.4-4.5-4.5Z"
-                      />
-                    </svg>
-                  </button>
 
                   <button
                     class="avn-icon-btn avn-icon-btn--danger"
@@ -553,278 +487,6 @@
         </section>
 
         <section
-          v-show="activeAdminTab === 'content'"
-          id="avn-panel-content"
-          class="avn-admin-panel"
-          role="tabpanel"
-          aria-labelledby="avn-tab-content"
-        >
-          <div class="avn-panel-heading">
-            <div>
-              <h4>Contenido del aviso activo</h4>
-
-              <p>
-                Edita el texto propio del aviso. Los campos vacíos utilizarán
-                automáticamente el contenido global predeterminado.
-              </p>
-            </div>
-
-            <span
-              v-if="showCarousel"
-              class="avn-panel-heading__status"
-            >
-              Aviso {{ currentBanner + 1 }} de
-              {{ bannersNormalized.length }}
-            </span>
-          </div>
-
-          <form
-            v-if="showCarousel"
-            class="avn-form-grid"
-            @submit.prevent="saveActiveBannerContent"
-          >
-            <label
-              class="avn-field avn-field--half"
-              for="avn-content-eyebrow"
-            >
-              <span>Etiqueta superior</span>
-
-              <input
-                id="avn-content-eyebrow"
-                v-model="activeBannerContentDraft.eyebrow"
-                type="text"
-                maxlength="60"
-                autocomplete="off"
-              />
-
-              <small>
-                Ejemplo: Comunicado institucional.
-              </small>
-            </label>
-
-            <label
-              class="avn-field avn-field--half"
-              for="avn-content-recent"
-            >
-              <span>Etiqueta de actualización</span>
-
-              <input
-                id="avn-content-recent"
-                v-model="activeBannerContentDraft.recentLabel"
-                type="text"
-                maxlength="60"
-                autocomplete="off"
-              />
-
-              <small>
-                Ejemplo: Nuevo o Actualizado.
-              </small>
-            </label>
-
-            <label
-              class="avn-field"
-              for="avn-content-title"
-            >
-              <span>Título</span>
-
-              <textarea
-                id="avn-content-title"
-                v-model="activeBannerContentDraft.title"
-                rows="3"
-                maxlength="220"
-              ></textarea>
-            </label>
-
-            <label
-              class="avn-field"
-              for="avn-content-text"
-            >
-              <span>Mensaje</span>
-
-              <textarea
-                id="avn-content-text"
-                v-model="activeBannerContentDraft.text"
-                rows="6"
-                :maxlength="AVISOS_TEXT_MAX_LENGTH"
-              ></textarea>
-            </label>
-
-            <div class="avn-form-actions">
-              <button
-                class="avn-btn avn-btn--ghost"
-                type="button"
-                :disabled="
-                  !hasActiveBannerContentChanges ||
-                  savingBannerContent
-                "
-                @click="cancelActiveBannerContent"
-              >
-                Descartar cambios
-              </button>
-
-              <button
-                class="avn-btn avn-btn--secondary"
-                type="button"
-                :disabled="savingBannerContent"
-                @click="resetActiveBannerContent"
-              >
-                Usar texto global
-              </button>
-
-              <button
-                class="avn-btn avn-btn--primary"
-                type="submit"
-                :disabled="
-                  !hasActiveBannerContentChanges ||
-                  savingBannerContent
-                "
-              >
-                {{
-                  savingBannerContent
-                    ? "Guardando…"
-                    : "Guardar contenido"
-                }}
-              </button>
-            </div>
-          </form>
-
-          <div v-else class="avn-panel-empty">
-            <p>
-              Publica un aviso para habilitar la edición de contenido.
-            </p>
-
-            <button
-              class="avn-btn avn-btn--primary"
-              type="button"
-              @click="activeAdminTab = 'publish'"
-            >
-              Ir a publicar
-            </button>
-          </div>
-        </section>
-
-        <section
-          v-show="activeAdminTab === 'content'"
-          class="avn-admin-panel"
-          aria-labelledby="avn-global-content-title"
-        >
-          <div class="avn-panel-heading">
-            <div>
-              <h4 id="avn-global-content-title">
-                Contenido global predeterminado
-              </h4>
-
-              <p>
-                Este contenido se utiliza cuando un aviso no tiene textos
-                propios guardados.
-              </p>
-            </div>
-          </div>
-
-          <form
-            class="avn-form-grid"
-            @submit.prevent="saveGlobalContent"
-          >
-            <label
-              class="avn-field avn-field--half"
-              for="avn-global-eyebrow"
-            >
-              <span>Etiqueta superior global</span>
-
-              <input
-                id="avn-global-eyebrow"
-                v-model="globalContentDraft.eyebrow"
-                type="text"
-                maxlength="60"
-                autocomplete="off"
-              />
-            </label>
-
-            <label
-              class="avn-field avn-field--half"
-              for="avn-global-recent"
-            >
-              <span>Etiqueta de actualización global</span>
-
-              <input
-                id="avn-global-recent"
-                v-model="globalContentDraft.recentLabel"
-                type="text"
-                maxlength="60"
-                autocomplete="off"
-              />
-            </label>
-
-            <label
-              class="avn-field"
-              for="avn-global-title"
-            >
-              <span>Título global</span>
-
-              <input
-                id="avn-global-title"
-                v-model="globalContentDraft.title"
-                type="text"
-                maxlength="220"
-                autocomplete="off"
-              />
-            </label>
-
-            <label
-              class="avn-field"
-              for="avn-global-text"
-            >
-              <span>Mensaje global</span>
-
-              <textarea
-                id="avn-global-text"
-                v-model="globalContentDraft.text"
-                rows="6"
-                :maxlength="AVISOS_TEXT_MAX_LENGTH"
-              ></textarea>
-            </label>
-
-            <div class="avn-form-actions">
-              <button
-                class="avn-btn avn-btn--ghost"
-                type="button"
-                :disabled="
-                  !hasGlobalContentChanges ||
-                  savingGlobalContent
-                "
-                @click="cancelGlobalContent"
-              >
-                Descartar cambios
-              </button>
-
-              <button
-                class="avn-btn avn-btn--secondary"
-                type="button"
-                :disabled="savingGlobalContent"
-                @click="resetGlobalContent"
-              >
-                Restablecer valores
-              </button>
-
-              <button
-                class="avn-btn avn-btn--primary"
-                type="submit"
-                :disabled="
-                  !hasGlobalContentChanges ||
-                  savingGlobalContent
-                "
-              >
-                {{
-                  savingGlobalContent
-                    ? "Guardando…"
-                    : "Guardar contenido global"
-                }}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section
           v-show="activeAdminTab === 'design'"
           id="avn-panel-design"
           class="avn-admin-panel"
@@ -836,48 +498,20 @@
               <h4>Diseño y presentación</h4>
 
               <p>
-                Utiliza configuraciones predeterminadas para mantener una
-                composición consistente.
+                Define el tamaño del banner institucional manteniendo una
+                presentación consistente.
               </p>
             </div>
           </div>
 
           <div class="avn-design-sections">
-            <fieldset class="avn-option-group">
-              <legend>Modo de visualización</legend>
-
-              <p>
-                Define qué contenido se muestra en el aviso.
-              </p>
-
-              <div class="avn-choice-grid avn-choice-grid--three">
-                <button
-                  v-for="option in displayModeOptions"
-                  :key="option.value"
-                  class="avn-choice-card"
-                  :class="{
-                    'is-active': displayMode === option.value,
-                  }"
-                  type="button"
-                  :aria-pressed="
-                    displayMode === option.value
-                      ? 'true'
-                      : 'false'
-                  "
-                  @click="setDisplayMode(option.value)"
-                >
-                  <strong>{{ option.label }}</strong>
-                  <span>{{ option.description }}</span>
-                </button>
-              </div>
-            </fieldset>
 
             <fieldset class="avn-option-group">
               <legend>Tamaño del aviso</legend>
 
               <p>
-                Evita redimensionamientos libres y conserva proporciones
-                institucionales.
+                Selecciona una medida predeterminada para el carrusel de
+                imágenes institucionales.
               </p>
 
               <div class="avn-choice-grid avn-choice-grid--three">
@@ -895,40 +529,6 @@
                       : 'false'
                   "
                   @click="applySizePreset(option.value)"
-                >
-                  <strong>{{ option.label }}</strong>
-                  <span>{{ option.description }}</span>
-                </button>
-              </div>
-            </fieldset>
-
-            <fieldset
-              class="avn-option-group"
-              :disabled="!isMixedMode"
-            >
-              <legend>Distribución</legend>
-
-              <p>
-                Determina la proporción entre la imagen y el texto.
-              </p>
-
-              <div class="avn-choice-grid avn-choice-grid--three">
-                <button
-                  v-for="option in distributionPresets"
-                  :key="option.value"
-                  class="avn-choice-card"
-                  :class="{
-                    'is-active':
-                      activeDistributionPreset === option.value,
-                  }"
-                  type="button"
-                  :disabled="!isMixedMode"
-                  :aria-pressed="
-                    activeDistributionPreset === option.value
-                      ? 'true'
-                      : 'false'
-                  "
-                  @click="applyDistributionPreset(option.value)"
                 >
                   <strong>{{ option.label }}</strong>
                   <span>{{ option.description }}</span>
@@ -969,126 +569,125 @@
         >
           <div class="avn-panel-heading">
             <div>
-              <h4>Publicar nuevos avisos</h4>
+              <h4>Publicar nuevo aviso</h4>
 
               <p>
                 Agrega imágenes JPG o PNG al carrusel institucional.
               </p>
             </div>
           </div>
+<div
+  class="avn-dropzone"
+  :class="{ 'is-dragging': dragging }"
+  role="button"
+  tabindex="0"
+  aria-label="Seleccionar imágenes para publicar"
+  @click="openPicker"
+  @keydown.enter.prevent="openPicker"
+  @keydown.space.prevent="openPicker"
+  @dragover.prevent="onDragOver"
+  @dragenter.prevent="onDragEnter"
+  @dragleave.prevent="onDragLeave"
+  @drop.prevent="onDrop"
+>
+  <div class="avn-dropzone__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="28" height="28">
+      <path
+        fill="currentColor"
+        d="M11 16V8.8L8.4 11.4 7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2ZM5 19v-4h2v2h10v-2h2v4H5Z"
+      />
+    </svg>
+  </div>
 
-          <div
-            class="avn-dropzone"
-            :class="{ 'is-dragging': dragging }"
-            role="button"
-            tabindex="0"
-            aria-label="Seleccionar imágenes para publicar"
-            @click="openPicker"
-            @keydown.enter.prevent="openPicker"
-            @keydown.space.prevent="openPicker"
-            @dragover.prevent="onDragOver"
-            @dragenter.prevent="onDragEnter"
-            @dragleave.prevent="onDragLeave"
-            @drop.prevent="onDrop"
-          >
-            <div class="avn-dropzone__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="28" height="28">
-                <path
-                  fill="currentColor"
-                  d="M11 16V8.8L8.4 11.4 7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2ZM5 19v-4h2v2h10v-2h2v4H5Z"
-                />
-              </svg>
-            </div>
+  <strong>
+    Arrastra las imágenes aquí
+  </strong>
 
-            <strong>
-              Arrastra las imágenes aquí
-            </strong>
+  <span>
+    o haz clic para buscarlas en tu equipo
+  </span>
 
-            <span>
-              o haz clic para buscarlas en tu equipo
-            </span>
+  <small>
+    JPG o PNG · máximo {{ bannerMaxSizeLabel }} por imagen
+  </small>
+</div>
 
-            <small>
-              JPG o PNG · máximo {{ bannerMaxSizeLabel }} por imagen
-            </small>
-          </div>
+<div
+  v-if="previews.length"
+  class="avn-preview-grid"
+>
+  <article
+    v-for="(preview, index) in previews"
+    :key="`${preview}-${index}`"
+    class="avn-upload-preview"
+  >
+    <img
+      :src="preview"
+      :alt="`Vista previa de la imagen ${index + 1}`"
+    />
 
-          <div
-            v-if="previews.length"
-            class="avn-preview-grid"
-          >
-            <article
-              v-for="(preview, index) in previews"
-              :key="`${preview}-${index}`"
-              class="avn-upload-preview"
-            >
-              <img
-                :src="preview"
-                :alt="`Vista previa de la imagen ${index + 1}`"
-              />
+    <div class="avn-upload-preview__meta">
+      <span>
+        {{
+          files[index]?.name ||
+          `Imagen ${index + 1}`
+        }}
+      </span>
 
-              <div class="avn-upload-preview__meta">
-                <span>
-                  {{
-                    files[index]?.name ||
-                    `Imagen ${index + 1}`
-                  }}
-                </span>
+      <small>
+        {{ prettyBytes(files[index]?.size || 0) }}
+      </small>
+    </div>
 
-                <small>
-                  {{ prettyBytes(files[index]?.size || 0) }}
-                </small>
-              </div>
+    <button
+      class="avn-icon-btn avn-icon-btn--danger"
+      type="button"
+      aria-label="Quitar imagen"
+      :disabled="uploading"
+      @click="removeFileAt(index)"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="17"
+        height="17"
+        aria-hidden="true"
+      >
+        <path
+          fill="currentColor"
+          d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"
+        />
+      </svg>
+    </button>
+  </article>
+</div>
 
-              <button
-                class="avn-icon-btn avn-icon-btn--danger"
-                type="button"
-                aria-label="Quitar imagen"
-                :disabled="uploading"
-                @click="removeFileAt(index)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="17"
-                  height="17"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"
-                  />
-                </svg>
-              </button>
-            </article>
-          </div>
+<div class="avn-form-actions">
+  <button
+    class="avn-btn avn-btn--secondary"
+    type="button"
+    :disabled="uploading || deletingBulk"
+    @click="openPicker"
+  >
+    Seleccionar imágenes
+  </button>
 
-          <div class="avn-form-actions">
-            <button
-              class="avn-btn avn-btn--secondary"
-              type="button"
-              :disabled="uploading || deletingBulk"
-              @click="openPicker"
-            >
-              Seleccionar imágenes
-            </button>
-
-            <button
-              class="avn-btn avn-btn--primary"
-              type="button"
-              :disabled="
-                !files.length ||
-                uploading ||
-                deletingBulk
-              "
-              @click="subirBanners"
-            >
-              {{
-                uploading
-                  ? uploadLabel
-                  : "Publicar avisos"
-              }}
-            </button>
-          </div>
+  <button
+    class="avn-btn avn-btn--primary"
+    type="button"
+    :disabled="
+      !files.length ||
+      uploading ||
+      deletingBulk
+    "
+    @click="subirBanners"
+  >
+    {{
+      uploading
+        ? uploadLabel
+        : "Publicar avisos"
+    }}
+  </button>
+</div>
         </section>
       </div>
     </section>
@@ -1196,7 +795,6 @@ import {
   AVISOS_LAYOUT_LIMITS,
   AVISOS_TEXT_MAX_LENGTH,
   DEFAULT_AVISOS_CONTENT,
-  getAvisosCombinedVersion,
   getAvisosContent,
   getAvisosLayout,
   getAvisosStatus,
@@ -1256,12 +854,10 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-const DISPLAY_MODE_DEFAULT = "mixed";
+const DISPLAY_MODE_DEFAULT = "banner";
 
 const DISPLAY_MODE_VALUES = new Set([
-  "mixed",
   "banner",
-  "text",
 ]);
 
 const SIZE_PRESETS = Object.freeze({
@@ -1310,10 +906,6 @@ const adminTabs = [
     label: "Publicados",
   },
   {
-    value: "content",
-    label: "Contenido",
-  },
-  {
     value: "design",
     label: "Diseño",
   },
@@ -1349,19 +941,19 @@ const sizePresets = [
     value: "compact",
     label: "Compacto",
     description:
-      "Adecuado para mensajes breves.",
+      "Adecuado para avisos visuales breves.",
   },
   {
     value: "standard",
     label: "Estándar",
     description:
-      "Equilibrio recomendado para uso general.",
+      "Tamaño recomendado para uso general.",
   },
   {
     value: "wide",
     label: "Amplio",
     description:
-      "Mayor espacio para imágenes y textos extensos.",
+      "Mayor espacio para imágenes de alta presencia.",
   },
 ];
 
@@ -1520,6 +1112,20 @@ const normalizeContentForPayload = (
   };
 };
 
+const hasMeaningfulTextContent = (
+  value
+) => {
+  const normalized =
+    normalizeContentForPayload(
+      value
+    );
+
+  return Boolean(
+    normalized.title ||
+    normalized.text
+  );
+};
+
 const normalizeContentForDisplay = (
   value
 ) => {
@@ -1633,6 +1239,7 @@ const paused = ref(false);
 const isCompactScreen = ref(false);
 
 const uploading = ref(false);
+const publishingTextNotice = ref(false);
 const deletingId = ref(null);
 const deletingBulk = ref(false);
 
@@ -1737,6 +1344,20 @@ const globalContentDraft = ref(
   )
 );
 
+const newTextNoticeBaseline = ref(
+  cloneContent(
+    getAvisosContent(),
+    DEFAULT_AVISOS_CONTENT
+  )
+);
+
+const newTextNoticeDraft = ref(
+  cloneContent(
+    getAvisosContent(),
+    DEFAULT_AVISOS_CONTENT
+  )
+);
+
 let carouselTimer = null;
 let pauseTimeout = null;
 let panelErrorTimeout = null;
@@ -1760,7 +1381,11 @@ const bannersNormalized = computed(() => {
       ? banners.value
       : []
   ).filter((banner) => {
-    return Boolean(banner?.image_url);
+    return Boolean(
+      banner?.id !== undefined &&
+      banner?.id !== null &&
+      banner?.image_url
+    );
   });
 });
 
@@ -1838,12 +1463,41 @@ const isTextOnly = computed(() => {
   return displayMode.value === "text";
 });
 
+const activeBannerHasImage = computed(() => {
+  return Boolean(
+    activeBannerItem.value?.image_url
+  );
+});
+
+const renderDisplayMode = computed(() => {
+  if (
+    activeBannerItem.value &&
+    !activeBannerHasImage.value
+  ) {
+    return "text";
+  }
+
+  return displayMode.value;
+});
+
+const isRenderMixedMode = computed(() => {
+  return renderDisplayMode.value === "mixed";
+});
+
+const isRenderBannerOnly = computed(() => {
+  return renderDisplayMode.value === "banner";
+});
+
+const isRenderTextOnly = computed(() => {
+  return renderDisplayMode.value === "text";
+});
+
 const displayModeLabel = computed(() => {
-  if (isBannerOnly.value) {
+  if (isRenderBannerOnly.value) {
     return "Solo banner";
   }
 
-  if (isTextOnly.value) {
+  if (isRenderTextOnly.value) {
     return "Solo texto";
   }
 
@@ -1892,9 +1546,56 @@ const hasGlobalContentChanges =
     );
   });
 
+const hasNewTextNoticeChanges =
+  computed(() => {
+    return (
+      JSON.stringify(
+        normalizeContentForPayload(
+          newTextNoticeDraft.value
+        )
+      ) !==
+      JSON.stringify(
+        normalizeContentForPayload(
+          newTextNoticeBaseline.value
+        )
+      )
+    );
+  });
+
+const canPublishTextNotice = computed(() => {
+  return Boolean(
+    isAdmin.value &&
+    isTextOnly.value &&
+    hasMeaningfulTextContent(
+      newTextNoticeDraft.value
+    ) &&
+    !publishingTextNotice.value &&
+    !uploading.value &&
+    !deletingBulk.value
+  );
+});
+
+const canSaveActiveBannerContent = computed(() => {
+  if (
+    !activeBannerItem.value ||
+    !hasActiveBannerContentChanges.value ||
+    savingBannerContent.value
+  ) {
+    return false;
+  }
+
+  return (
+    activeBannerHasImage.value ||
+    hasMeaningfulTextContent(
+      activeBannerContentDraft.value
+    )
+  );
+});
+
 const hasBlockingOperation = computed(() => {
   return Boolean(
     uploading.value ||
+      publishingTextNotice.value ||
       deletingBulk.value ||
       deletingId.value !== null ||
       savingLayout.value ||
@@ -1983,16 +1684,6 @@ const activeDistributionPreset =
 const pendingChangeCount = computed(() => {
   let count = 0;
 
-  if (
-    hasActiveBannerContentChanges.value
-  ) {
-    count += 1;
-  }
-
-  if (hasGlobalContentChanges.value) {
-    count += 1;
-  }
-
   if (files.value.length) {
     count += 1;
   }
@@ -2075,7 +1766,7 @@ const stageCardStyle = computed(() => {
 const stageGridStyle = computed(() => {
   if (
     isCompactScreen.value ||
-    !isMixedMode.value
+    !isRenderMixedMode.value
   ) {
     return {};
   }
@@ -2103,9 +1794,9 @@ const updateCompactScreen = () => {
     COMPACT_BREAKPOINT;
 };
 
-const setDisplayMode = (mode) => {
+const setDisplayMode = () => {
   displayMode.value =
-    sanitizeDisplayMode(mode);
+    DISPLAY_MODE_DEFAULT;
 };
 
 const applySizePreset = (
@@ -2212,28 +1903,51 @@ const requestVersionSync = async ({
     pendingRemoteVersionSync.value =
       true;
 
-    return;
+    return false;
   }
 
-  const status =
-    await getAvisosStatus().catch(
-      () => null
+  try {
+    const status =
+      await getAvisosStatus();
+
+    const nextVersion = String(
+      status?.notifyVersion ||
+        status?.version ||
+        ""
+    ).trim();
+
+    /*
+     * Nunca se reutiliza props.version como respaldo. Esa versión
+     * puede corresponder al estado anterior a una publicación,
+     * edición o eliminación realizada en esta misma sesión.
+     */
+    if (!nextVersion) {
+      pendingRemoteVersionSync.value =
+        true;
+
+      return false;
+    }
+
+    emit(
+      "version-change",
+      nextVersion
     );
 
-  const nextVersion =
-    status?.notifyVersion ||
-    status?.version ||
-    getAvisosCombinedVersion(
-      props.version
+    pendingRemoteVersionSync.value =
+      false;
+
+    return true;
+  } catch (error) {
+    pendingRemoteVersionSync.value =
+      true;
+
+    console.error(
+      "No fue posible sincronizar la versión de los avisos.",
+      error
     );
 
-  emit(
-    "version-change",
-    nextVersion
-  );
-
-  pendingRemoteVersionSync.value =
-    false;
+    return false;
+  }
 };
 
 const syncPersistedLayout = () => {
@@ -2290,9 +2004,7 @@ const applyRemoteLayout = (
     );
 
   displayMode.value =
-    sanitizeDisplayMode(
-      config?.displayMode
-    );
+    DISPLAY_MODE_DEFAULT;
 
   syncPersistedLayout();
 
@@ -2320,6 +2032,14 @@ const applyRemoteConfig = (
 
   globalContentDraft.value =
     cloneContent(remoteContent);
+
+  if (!hasNewTextNoticeChanges.value) {
+    newTextNoticeBaseline.value =
+      cloneContent(remoteContent);
+
+    newTextNoticeDraft.value =
+      cloneContent(remoteContent);
+  }
 
   applyRemoteLayout(config);
 };
@@ -2473,17 +2193,28 @@ const saveActiveBannerContent =
       return;
     }
 
+    clearPanelError();
+
+    const payload =
+      normalizeContentForPayload(
+        activeBannerContentDraft.value
+      );
+
+    if (
+      !activeBannerHasImage.value &&
+      !hasMeaningfulTextContent(payload)
+    ) {
+      setPanelError(
+        "Un aviso sin imagen debe conservar al menos un título o un mensaje."
+      );
+
+      return;
+    }
+
     savingBannerContent.value =
       true;
 
-    clearPanelError();
-
     try {
-      const payload =
-        normalizeContentForPayload(
-          activeBannerContentDraft.value
-        );
-
       const { data } =
         await api.patch(
           `banners/${activeBannerItem.value.id}/`,
@@ -2543,6 +2274,14 @@ const saveGlobalContent = async () => {
     globalContentDraft.value =
       cloneContent(normalized);
 
+    if (!hasNewTextNoticeChanges.value) {
+      newTextNoticeBaseline.value =
+        cloneContent(normalized);
+
+      newTextNoticeDraft.value =
+        cloneContent(normalized);
+    }
+
     setEditorStatus(
       "Contenido global guardado correctamente."
     );
@@ -2573,6 +2312,19 @@ const resetGlobalContent = () => {
     );
 };
 
+const resetNewTextNoticeDraft = () => {
+  const next = cloneContent(
+    contentSaved.value,
+    DEFAULT_AVISOS_CONTENT
+  );
+
+  newTextNoticeBaseline.value =
+    cloneContent(next);
+
+  newTextNoticeDraft.value =
+    cloneContent(next);
+};
+
 const cancelActiveBannerContent =
   () => {
     activeBannerContentDraft.value =
@@ -2597,21 +2349,30 @@ const resetActiveBannerContent =
     clearPanelError();
 
     try {
+      const payload =
+        activeBannerHasImage.value
+          ? {
+              eyebrow: "",
+              title: "",
+              text: "",
+              recentLabel: "",
+            }
+          : normalizeContentForPayload(
+              contentSaved.value
+            );
+
       const { data } =
         await api.patch(
           `banners/${activeBannerItem.value.id}/`,
-          {
-            eyebrow: "",
-            title: "",
-            text: "",
-            recentLabel: "",
-          }
+          payload
         );
 
       updateBannerInList(data);
 
       setEditorStatus(
-        "El aviso volvió a utilizar el contenido global."
+        activeBannerHasImage.value
+          ? "El aviso volvió a utilizar el contenido global."
+          : "El contenido global se copió al aviso de texto."
       );
 
       await requestVersionSync();
@@ -2654,6 +2415,13 @@ const toggleGestion = async () => {
 const openPublishTab = () => {
   panelAbierto.value = true;
   activeAdminTab.value = "publish";
+
+  if (
+    isTextOnly.value &&
+    !hasNewTextNoticeChanges.value
+  ) {
+    resetNewTextNoticeDraft();
+  }
 };
 
 const discardPendingChanges = () => {
@@ -2665,6 +2433,11 @@ const discardPendingChanges = () => {
   globalContentDraft.value =
     cloneContent(
       globalContentSaved.value
+    );
+
+  newTextNoticeDraft.value =
+    cloneContent(
+      newTextNoticeBaseline.value
     );
 
   setFiles([]);
@@ -2698,6 +2471,7 @@ const handleContinue = async () => {
   const hasDraftChanges = Boolean(
     hasActiveBannerContentChanges.value ||
       hasGlobalContentChanges.value ||
+      hasNewTextNoticeChanges.value ||
       files.value.length
   );
 
@@ -3241,6 +3015,77 @@ const cargarBanners = async ({
   }
 };
 
+const publishTextNotice = async () => {
+  if (!canPublishTextNotice.value) {
+    if (
+      !hasMeaningfulTextContent(
+        newTextNoticeDraft.value
+      )
+    ) {
+      setPanelError(
+        "Ingrese al menos un título o un mensaje para publicar el aviso."
+      );
+    }
+
+    return;
+  }
+
+  publishingTextNotice.value =
+    true;
+
+  clearPanelError();
+
+  try {
+    const payload =
+      normalizeContentForPayload(
+        newTextNoticeDraft.value
+      );
+
+    const { data } =
+      await api.post(
+        "banners/",
+        payload
+      );
+
+    await cargarBanners({
+      preserveActive: false,
+      showLoading: false,
+      preferredBannerId:
+        data?.id ?? null,
+    });
+
+    resetNewTextNoticeDraft();
+
+    activeAdminTab.value =
+      "published";
+
+    setEditorStatus(
+      "Aviso de texto publicado correctamente."
+    );
+
+    await requestVersionSync();
+  } catch (error) {
+    console.error(error);
+
+    const responseData =
+      error?.response?.data;
+
+    const textError =
+      Array.isArray(responseData?.text)
+        ? responseData.text[0]
+        : responseData?.text;
+
+    setPanelError(
+      textError ||
+      responseData?.detail ||
+      "No fue posible publicar el aviso de texto."
+    );
+  } finally {
+    publishingTextNotice.value =
+      false;
+  }
+};
+
 const subirBanners = async () => {
   if (
     !files.value.length ||
@@ -3493,12 +3338,8 @@ const eliminarSeleccionados =
       activeBannerItem.value?.id ??
       null;
 
-    const preferredBannerId =
-      ids.includes(activeId)
-        ? null
-        : activeId;
-
-    let failed = 0;
+    const failedIds = [];
+    let successCount = 0;
 
     try {
       for (
@@ -3506,19 +3347,37 @@ const eliminarSeleccionados =
         index < ids.length;
         index += 1
       ) {
+        const id = ids[index];
+
         bulkDeleteProgress.value =
           index + 1;
 
         try {
           await api.delete(
-            `banners/${ids[index]}/`
+            `banners/${id}/`
           );
-        } catch {
-          failed += 1;
+
+          successCount += 1;
+        } catch (error) {
+          console.error(error);
+          failedIds.push(id);
         }
       }
 
-      selectedBannerIds.value = [];
+      /*
+       * Conserva seleccionados únicamente los avisos que fallaron,
+       * de modo que el administrador pueda reintentar la operación.
+       */
+      selectedBannerIds.value = [
+        ...failedIds,
+      ];
+
+      const preferredBannerId =
+        failedIds.includes(activeId)
+          ? activeId
+          : ids.includes(activeId)
+            ? null
+            : activeId;
 
       await cargarBanners({
         preserveActive: true,
@@ -3526,25 +3385,44 @@ const eliminarSeleccionados =
         preferredBannerId,
       });
 
-      if (failed) {
-        setPanelError(
-          failed === ids.length
-            ? "No fue posible eliminar los avisos seleccionados."
-            : `${failed} aviso${
-                failed !== 1 ? "s" : ""
-              } no pudo${
-                failed !== 1
-                  ? "ieron"
-                  : ""
-              } eliminarse.`
-        );
-      } else {
-        setEditorStatus(
-          "Avisos eliminados."
-        );
-
+      /*
+       * La versión debe sincronizarse siempre que el backend haya
+       * eliminado al menos un aviso, aunque otras eliminaciones
+       * hayan fallado dentro del mismo lote.
+       */
+      if (successCount > 0) {
         await requestVersionSync();
       }
+
+      if (!failedIds.length) {
+        setEditorStatus(
+          successCount === 1
+            ? "Aviso eliminado."
+            : "Avisos eliminados."
+        );
+
+        return;
+      }
+
+      if (!successCount) {
+        setPanelError(
+          "No fue posible eliminar los avisos seleccionados."
+        );
+
+        return;
+      }
+
+      setPanelError(
+        `${successCount} aviso${
+          successCount !== 1 ? "s" : ""
+        } eliminado${
+          successCount !== 1 ? "s" : ""
+        } y ${failedIds.length} aviso${
+          failedIds.length !== 1 ? "s" : ""
+        } pendiente${
+          failedIds.length !== 1 ? "s" : ""
+        } por error. Los avisos fallidos permanecen seleccionados para reintentar.`
+      );
     } finally {
       deletingBulk.value = false;
 

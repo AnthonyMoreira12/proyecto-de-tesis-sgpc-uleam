@@ -209,8 +209,7 @@ def _publication_term_query(term):
     """
     return (
         # Datos generales
-        Q(titulo__icontains=term)
-        | Q(tipo__nombre__icontains=term)
+        Q(tipo__nombre__icontains=term)
         | Q(tipo__codigo__icontains=term)
         | Q(tipo__categoria__icontains=term)
         | Q(proyecto__nombre__icontains=term)
@@ -225,6 +224,10 @@ def _publication_term_query(term):
         | Q(participaciones__autor__nombres__icontains=term)
         | Q(participaciones__autor__apellidos__icontains=term)
         | Q(participaciones__autor__institucion__icontains=term)
+        | Q(participaciones__autor__orcid__icontains=term)
+        | Q(participaciones__autor__registro_senescyt__icontains=term)
+        | Q(participaciones__autor__google_scholar__icontains=term)
+        | Q(participaciones__autor__scopus_id__icontains=term)
         | Q(participaciones__autor__usuario__nombres__icontains=term)
         | Q(participaciones__autor__usuario__apellidos__icontains=term)
 
@@ -265,11 +268,14 @@ def _author_term_query(term):
         | Q(correo__icontains=term)
         | Q(identificacion__icontains=term)
         | Q(institucion__icontains=term)
+        | Q(orcid__icontains=term)
+        | Q(registro_senescyt__icontains=term)
+        | Q(google_scholar__icontains=term)
+        | Q(scopus_id__icontains=term)
         | Q(usuario__nombres__icontains=term)
         | Q(usuario__apellidos__icontains=term)
         | Q(usuario__email__icontains=term)
         | Q(usuario__identificacion__icontains=term)
-        | Q(participaciones__publicacion__titulo__icontains=term)
         | Q(
             participaciones__publicacion__articulo__nombre_articulo__icontains=(
                 term
@@ -596,10 +602,6 @@ def buscar_publicaciones(
                     then=Value(0),
                 ),
                 When(
-                    titulo__iexact=query,
-                    then=Value(0),
-                ),
-                When(
                     articulo__nombre_articulo__iexact=query,
                     then=Value(0),
                 ),
@@ -617,10 +619,6 @@ def buscar_publicaciones(
                 ),
 
                 # Coincidencias por prefijo de título
-                When(
-                    titulo__istartswith=query,
-                    then=Value(1),
-                ),
                 When(
                     articulo__nombre_articulo__istartswith=query,
                     then=Value(1),
@@ -683,7 +681,10 @@ def buscar_publicaciones(
         .distinct()
         .order_by(
             "_search_priority",
-            F("fecha_publicacion").desc(
+            F("anio_publicacion").desc(
+                nulls_last=True
+            ),
+            F("mes_publicacion").desc(
                 nulls_last=True
             ),
             "-pk",
@@ -707,8 +708,8 @@ def buscar_autores(
     publicaciones relacionadas.
 
     Incluye autores externos pendientes porque pueden estar
-    registrados como coautores aunque todavía no tengan una
-    cuenta activa.
+    registrados como autores de publicaciones aunque todavía no
+    tengan una cuenta activa.
     """
     query = _normalize_query(q)
     normalized_limit = _normalize_limit(limit)
@@ -756,6 +757,18 @@ def buscar_autores(
         queryset
         .annotate(
             _search_priority=Case(
+                When(
+                    orcid__iexact=query,
+                    then=Value(0),
+                ),
+                When(
+                    registro_senescyt__iexact=query,
+                    then=Value(0),
+                ),
+                When(
+                    scopus_id__iexact=query,
+                    then=Value(0),
+                ),
                 When(
                     identificacion__iexact=query,
                     then=Value(0),

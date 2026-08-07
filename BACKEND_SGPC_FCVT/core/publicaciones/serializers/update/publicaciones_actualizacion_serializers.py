@@ -316,18 +316,19 @@ def _django_validation_to_drf(exc):
 class AutorActualizacionItemSerializer(
     serializers.Serializer
 ):
+    """
+    Autor incluido durante la actualización de una publicación.
+
+    Todos los participantes se consideran autores. ``orden`` representa
+    únicamente la posición bibliográfica y no una jerarquía de autoría.
+    """
+
     autor_id = serializers.IntegerField(
         min_value=1,
     )
 
     orden = serializers.IntegerField(
-        required=False,
         min_value=1,
-    )
-
-    rol_autoria = serializers.ChoiceField(
-        choices=PublicacionAutor.ROL_AUTORIA,
-        required=False,
     )
 
 
@@ -412,15 +413,16 @@ class PublicacionActualizacionSerializer(
         )
     )
 
-    fecha_publicacion = (
-        serializers.DateField(
-            required=False,
-            allow_null=True,
-            input_formats=[
-                "%Y-%m-%d",
-                "%d/%m/%Y",
-            ],
-        )
+    anio_publicacion = serializers.IntegerField(
+        required=False,
+        min_value=1900,
+    )
+
+    mes_publicacion = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=12,
     )
 
     origen_tipo = (
@@ -862,6 +864,11 @@ class PublicacionActualizacionSerializer(
                     item["autor"]
                 )
 
+            # Compatibilidad temporal con payloads antiguos.
+            # Los roles de autoría ya no forman parte del dominio.
+            item.pop("rol_autoria", None)
+            item.pop("role", None)
+
             normalized.append(
                 item
             )
@@ -1192,6 +1199,88 @@ class PublicacionActualizacionSerializer(
 
         return attrs
 
+    def _validate_periodo_publicacion(
+        self,
+        attrs,
+    ):
+        """
+        Garantiza que la publicación mantenga un año válido y que
+        el mes, cuando exista, esté entre 1 y 12.
+        """
+
+        instance = self.instance
+
+        anio = self._final_value(
+            attrs,
+            "anio_publicacion",
+            getattr(instance, "anio_publicacion", None),
+        )
+
+        if anio in (None, ""):
+            raise ValidationError(
+                {
+                    "anio_publicacion": [
+                        "El año de publicación es obligatorio."
+                    ]
+                }
+            )
+
+        try:
+            anio = int(anio)
+        except (TypeError, ValueError):
+            raise ValidationError(
+                {
+                    "anio_publicacion": [
+                        "El año de publicación debe ser numérico."
+                    ]
+                }
+            )
+
+        if anio < 1900:
+            raise ValidationError(
+                {
+                    "anio_publicacion": [
+                        "El año de publicación debe ser mayor "
+                        "o igual a 1900."
+                    ]
+                }
+            )
+
+        mes = self._final_value(
+            attrs,
+            "mes_publicacion",
+            getattr(instance, "mes_publicacion", None),
+        )
+
+        if mes in ("", None):
+            mes = None
+        else:
+            try:
+                mes = int(mes)
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    {
+                        "mes_publicacion": [
+                            "El mes de publicación debe ser numérico."
+                        ]
+                    }
+                )
+
+            if not 1 <= mes <= 12:
+                raise ValidationError(
+                    {
+                        "mes_publicacion": [
+                            "El mes de publicación debe estar "
+                            "entre 1 y 12."
+                        ]
+                    }
+                )
+
+        attrs["anio_publicacion"] = anio
+        attrs["mes_publicacion"] = mes
+
+        return attrs
+
     def _validate_origen(
         self,
         attrs,
@@ -1281,6 +1370,17 @@ class PublicacionActualizacionSerializer(
         self,
         attrs,
     ):
+        """
+        Valida la lista completa de autores.
+
+        Reglas:
+        - al menos un autor;
+        - autores no repetidos;
+        - orden no repetido;
+        - órdenes consecutivos 1..N;
+        - el orden se conserva exactamente y no genera roles.
+        """
+
         if "autores" not in attrs:
             return attrs
 
@@ -1298,39 +1398,79 @@ class PublicacionActualizacionSerializer(
                 }
             )
 
+        normalized = []
         autor_ids = []
         ordenes = []
 
-        for item in autores:
-            autor_id = int(
-                item["autor_id"]
-            )
-
-            autor_ids.append(
-                autor_id
-            )
-
-            orden = item.get(
-                "orden"
-            )
-
-            if orden is None:
-                orden = (
-                    len(ordenes) + 1
+        for index, item in enumerate(
+            autores,
+            start=1,
+        ):
+            try:
+                autor_id = int(
+                    item["autor_id"]
+                )
+            except (
+                KeyError,
+                TypeError,
+                ValueError,
+            ):
+                raise ValidationError(
+                    {
+                        "autores": [
+                            f"El autor #{index} debe incluir "
+                            "un autor_id válido."
+                        ]
+                    }
                 )
 
-            orden = int(
-                orden
+            orden = item.get("orden")
+
+            if orden in (None, ""):
+                raise ValidationError(
+                    {
+                        "autores": [
+                            f"El autor #{index} debe incluir "
+                            "su orden bibliográfico."
+                        ]
+                    }
+                )
+
+            try:
+                orden = int(orden)
+            except (
+                TypeError,
+                ValueError,
+            ):
+                raise ValidationError(
+                    {
+                        "autores": [
+                            f"El orden del autor #{index} "
+                            "debe ser numérico."
+                        ]
+                    }
+                )
+
+            if orden < 1:
+                raise ValidationError(
+                    {
+                        "autores": [
+                            "El orden de los autores debe ser "
+                            "mayor o igual a 1."
+                        ]
+                    }
+                )
+
+            autor_ids.append(autor_id)
+            ordenes.append(orden)
+            normalized.append(
+                {
+                    "autor_id": autor_id,
+                    "orden": orden,
+                }
             )
 
-            ordenes.append(
-                orden
-            )
-
-        if (
-            len(autor_ids)
-            != len(set(autor_ids))
-        ):
+        if len(autor_ids) != len(set(autor_ids)):
             raise ValidationError(
                 {
                     "autores": [
@@ -1340,10 +1480,7 @@ class PublicacionActualizacionSerializer(
                 }
             )
 
-        if (
-            len(ordenes)
-            != len(set(ordenes))
-        ):
+        if len(ordenes) != len(set(ordenes)):
             raise ValidationError(
                 {
                     "autores": [
@@ -1353,19 +1490,27 @@ class PublicacionActualizacionSerializer(
                 }
             )
 
-        missing_ids = (
-            set(autor_ids)
-            - set(
-                Autor.objects
-                .filter(
-                    id__in=autor_ids
-                )
-                .values_list(
-                    "id",
-                    flat=True,
-                )
-            )
+        expected_orders = list(
+            range(1, len(normalized) + 1)
         )
+
+        if sorted(ordenes) != expected_orders:
+            raise ValidationError(
+                {
+                    "autores": [
+                        "Los órdenes de los autores deben ser "
+                        f"consecutivos: {expected_orders}."
+                    ]
+                }
+            )
+
+        existing_ids = set(
+            Autor.objects
+            .filter(id__in=autor_ids)
+            .values_list("id", flat=True)
+        )
+
+        missing_ids = set(autor_ids) - existing_ids
 
         if missing_ids:
             raise ValidationError(
@@ -1377,41 +1522,11 @@ class PublicacionActualizacionSerializer(
                 }
             )
 
-        sorted_data = sorted(
-            autores,
-            key=lambda item: int(
-                item.get(
-                    "orden"
-                )
-                or 999999
-            ),
+        normalized.sort(
+            key=lambda item: item["orden"]
         )
 
-        normalized = []
-
-        for index, item in enumerate(
-            sorted_data,
-            start=1,
-        ):
-            normalized.append(
-                {
-                    "autor_id": int(
-                        item[
-                            "autor_id"
-                        ]
-                    ),
-                    "orden": index,
-                    "rol_autoria": (
-                        "principal"
-                        if index == 1
-                        else "coautor"
-                    ),
-                }
-            )
-
-        attrs["autores"] = (
-            normalized
-        )
+        attrs["autores"] = normalized
 
         return attrs
 
@@ -1986,6 +2101,10 @@ class PublicacionActualizacionSerializer(
             )
         )
 
+        attrs = self._validate_periodo_publicacion(
+            attrs
+        )
+
         attrs = self._validate_origen(
             attrs
         )
@@ -2052,10 +2171,12 @@ class PublicacionActualizacionSerializer(
         publicacion,
         autores_data,
     ):
-        autores_data = (
-            autores_data
-            or []
-        )
+        """
+        Sustituye las relaciones de autoría conservando únicamente
+        el autor y su orden bibliográfico.
+        """
+
+        autores_data = autores_data or []
 
         if not autores_data:
             raise ValidationError(
@@ -2068,25 +2189,15 @@ class PublicacionActualizacionSerializer(
             )
 
         autor_ids = [
-            int(
-                item[
-                    "autor_id"
-                ]
-            )
-            for item
-            in autores_data
+            int(item["autor_id"])
+            for item in autores_data
         ]
 
-        autores_map = (
-            Autor.objects.in_bulk(
-                autor_ids
-            )
+        autores_map = Autor.objects.in_bulk(
+            autor_ids
         )
 
-        if (
-            len(autores_map)
-            != len(set(autor_ids))
-        ):
+        if len(autores_map) != len(set(autor_ids)):
             raise ValidationError(
                 {
                     "autores": [
@@ -2102,26 +2213,13 @@ class PublicacionActualizacionSerializer(
 
         for item in autores_data:
             autor_id = int(
-                item[
-                    "autor_id"
-                ]
+                item["autor_id"]
             )
 
             PublicacionAutor.objects.create(
                 publicacion=publicacion,
-                autor=autores_map[
-                    autor_id
-                ],
-                orden=int(
-                    item[
-                        "orden"
-                    ]
-                ),
-                rol_autoria=(
-                    item[
-                        "rol_autoria"
-                    ]
-                ),
+                autor=autores_map[autor_id],
+                orden=int(item["orden"]),
             )
 
     # =========================================================
@@ -2280,7 +2378,8 @@ class PublicacionActualizacionSerializer(
             "ciudad",
             "origen_tipo",
             "origen_grado",
-            "fecha_publicacion",
+            "anio_publicacion",
+            "mes_publicacion",
         ]
 
         for field in base_fields:
@@ -2305,16 +2404,6 @@ class PublicacionActualizacionSerializer(
                 instance.subarea.area
             )
 
-        if instance.fecha_publicacion:
-            instance.anio_publicacion = (
-                instance
-                .fecha_publicacion
-                .year
-            )
-        else:
-            instance.anio_publicacion = (
-                None
-            )
 
         if quitar_pdf_actual:
             self._quitar_pdf_actual(

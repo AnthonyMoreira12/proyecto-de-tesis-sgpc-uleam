@@ -3,20 +3,13 @@
 # SGPC ULEAM — Dashboard institucional + reporte Excel
 # ============================================================
 
-from calendar import monthrange
-from datetime import date
 from io import BytesIO
 import unicodedata
 
 from django.apps import apps
-from django.db.models import Count, F
-from django.db.models.functions import (
-    ExtractMonth,
-    ExtractYear,
-)
+from django.db.models import Count, F, Q
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, DoughnutChart, Reference
@@ -69,6 +62,22 @@ MONTH_LABELS_ES = {
     10: "Oct",
     11: "Nov",
     12: "Dic",
+}
+
+
+MONTH_NAMES_ES = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre",
 }
 
 
@@ -348,24 +357,20 @@ def _normalize_year_range(
     )
 
 
-def _safe_period_date(
+def _safe_period_month(
     value,
     *,
     field_name,
-    end_of_month=False,
 ):
     """
-    Convierte valores de periodo a una fecha válida.
+    Convierte un período mensual a una tupla (año, mes).
 
-    Formatos aceptados:
+    Formato canónico:
 
-        YYYY-MM-DD
         YYYY-MM
 
-    Cuando recibe YYYY-MM:
-
-        fecha_desde -> primer día del mes
-        fecha_hasta -> último día del mes
+    Por compatibilidad temporal también acepta YYYY-MM-DD,
+    pero el día se ignora.
     """
 
     raw = str(
@@ -375,50 +380,73 @@ def _safe_period_date(
     if not raw:
         return None
 
-    parsed = parse_date(raw)
-
-    if parsed:
-        return parsed
-
     parts = raw.split("-")
 
-    if len(parts) == 2:
-        try:
-            year = int(parts[0])
-            month = int(parts[1])
+    if len(parts) not in {
+        2,
+        3,
+    }:
+        raise DRFValidationError(
+            {
+                field_name: (
+                    "Utilice el formato YYYY-MM."
+                )
+            }
+        )
 
-            if month < 1 or month > 12:
-                raise ValueError
+    try:
+        year = int(
+            parts[0]
+        )
 
-            day = (
-                monthrange(
-                    year,
-                    month,
-                )[1]
-                if end_of_month
-                else 1
-            )
+        month = int(
+            parts[1]
+        )
 
-            return date(
-                year,
-                month,
-                day,
-            )
+    except (
+        TypeError,
+        ValueError,
+        OverflowError,
+    ):
+        raise DRFValidationError(
+            {
+                field_name: (
+                    "Utilice el formato YYYY-MM."
+                )
+            }
+        )
 
-        except (
-            TypeError,
-            ValueError,
-            OverflowError,
-        ):
-            pass
+    if (
+        year <= 0
+        or month < 1
+        or month > 12
+    ):
+        raise DRFValidationError(
+            {
+                field_name: (
+                    "Utilice un año válido y "
+                    "un mes entre 01 y 12."
+                )
+            }
+        )
 
-    raise DRFValidationError(
-        {
-            field_name: (
-                "Utilice el formato YYYY-MM "
-                "o YYYY-MM-DD."
-            )
-        }
+    return (
+        year,
+        month,
+    )
+
+
+def _period_month_to_string(
+    value,
+):
+    if not value:
+        return None
+
+    year, month = value
+
+    return (
+        f"{int(year):04d}-"
+        f"{int(month):02d}"
     )
 
 
@@ -428,65 +456,81 @@ def _resolve_period_filters(
     """
     Resuelve los filtros temporales del dashboard.
 
-    Los filtros por fecha tienen prioridad sobre los filtros
-    históricos por año. Esto conserva compatibilidad con el
-    frontend anterior mientras se migra a selectores mensuales.
+    Contrato canónico:
+
+        mes_desde=YYYY-MM
+        mes_hasta=YYYY-MM
+
+    Los aliases históricos de período se aceptan de forma
+    temporal para no romper clientes anteriores.
+
+    Cuando existe un rango mensual, los registros sin mes se
+    excluyen porque no pueden ubicarse con precisión.
     """
 
-    raw_fecha_desde = (
-        params.get("fecha_desde")
-        or params.get("mes_desde")
+    raw_mes_desde = (
+        params.get(
+            "mes_desde"
+        )
+        or params.get(
+            "fecha_desde"
+        )
     )
 
-    raw_fecha_hasta = (
-        params.get("fecha_hasta")
-        or params.get("mes_hasta")
+    raw_mes_hasta = (
+        params.get(
+            "mes_hasta"
+        )
+        or params.get(
+            "fecha_hasta"
+        )
     )
 
-    fecha_desde = _safe_period_date(
-        raw_fecha_desde,
-        field_name="fecha_desde",
-        end_of_month=False,
+    mes_desde = _safe_period_month(
+        raw_mes_desde,
+        field_name="mes_desde",
     )
 
-    fecha_hasta = _safe_period_date(
-        raw_fecha_hasta,
-        field_name="fecha_hasta",
-        end_of_month=True,
+    mes_hasta = _safe_period_month(
+        raw_mes_hasta,
+        field_name="mes_hasta",
     )
 
     if (
-        fecha_desde
-        and fecha_hasta
-        and fecha_desde > fecha_hasta
+        mes_desde
+        and mes_hasta
+        and mes_desde > mes_hasta
     ):
-        fecha_desde = _safe_period_date(
-            raw_fecha_hasta,
-            field_name="fecha_desde",
-            end_of_month=False,
+        (
+            mes_desde,
+            mes_hasta,
+        ) = (
+            mes_hasta,
+            mes_desde,
         )
 
-        fecha_hasta = _safe_period_date(
-            raw_fecha_desde,
-            field_name="fecha_hasta",
-            end_of_month=True,
-        )
-
-    if fecha_desde or fecha_hasta:
+    if (
+        mes_desde
+        or mes_hasta
+    ):
         return {
-            "fecha_desde": fecha_desde,
-            "fecha_hasta": fecha_hasta,
+            "mes_desde": mes_desde,
+            "mes_hasta": mes_hasta,
             "anio_desde": None,
             "anio_hasta": None,
-            "modo": "fecha",
+            "modo": "mes",
         }
 
     anio_desde = _safe_int(
-        params.get("anio_desde")
+        params.get(
+            "anio_desde"
+        )
     )
 
     anio_hasta = _safe_int(
-        params.get("anio_hasta")
+        params.get(
+            "anio_hasta"
+        )
     )
 
     (
@@ -498,13 +542,16 @@ def _resolve_period_filters(
     )
 
     return {
-        "fecha_desde": None,
-        "fecha_hasta": None,
+        "mes_desde": None,
+        "mes_hasta": None,
         "anio_desde": anio_desde,
         "anio_hasta": anio_hasta,
         "modo": (
             "anio"
-            if anio_desde or anio_hasta
+            if (
+                anio_desde
+                or anio_hasta
+            )
             else None
         ),
     }
@@ -582,28 +629,69 @@ def _build_base_queryset(
         )
 
     # --------------------------------------------------------
-    # Periodo exacto o mensual
+    # Período mensual sobre año + mes.
     # --------------------------------------------------------
 
-    if period["fecha_desde"]:
+    if (
+        period["mes_desde"]
+        or period["mes_hasta"]
+    ):
+        queryset = queryset.exclude(
+            mes_publicacion__isnull=True
+        )
+
+    if period["mes_desde"]:
+        (
+            anio_desde,
+            mes_desde,
+        ) = period[
+            "mes_desde"
+        ]
+
         queryset = queryset.filter(
-            fecha_publicacion__gte=(
-                period["fecha_desde"]
+            Q(
+                anio_publicacion__gt=(
+                    anio_desde
+                )
+            )
+            | Q(
+                anio_publicacion=(
+                    anio_desde
+                ),
+                mes_publicacion__gte=(
+                    mes_desde
+                ),
             )
         )
 
-    if period["fecha_hasta"]:
+    if period["mes_hasta"]:
+        (
+            anio_hasta,
+            mes_hasta,
+        ) = period[
+            "mes_hasta"
+        ]
+
         queryset = queryset.filter(
-            fecha_publicacion__lte=(
-                period["fecha_hasta"]
+            Q(
+                anio_publicacion__lt=(
+                    anio_hasta
+                )
+            )
+            | Q(
+                anio_publicacion=(
+                    anio_hasta
+                ),
+                mes_publicacion__lte=(
+                    mes_hasta
+                ),
             )
         )
 
     # --------------------------------------------------------
-    # Compatibilidad con filtros históricos por año
+    # Compatibilidad con filtros por rango de años.
     #
-    # Solo se aplican cuando no se enviaron fecha_desde ni
-    # fecha_hasta.
+    # Solo se aplican cuando no existe rango mensual.
     # --------------------------------------------------------
 
     if period["anio_desde"]:
@@ -860,35 +948,27 @@ def _resolve_anio_base_mensual(
     if explicit_year:
         return explicit_year
 
-    ultimo_anio_fecha = (
+    ultimo_anio_con_mes = (
         publicaciones
         .exclude(
-            fecha_publicacion__isnull=True
-        )
-        .annotate(
-            fecha_year=ExtractYear(
-                "fecha_publicacion"
-            )
+            mes_publicacion__isnull=True
         )
         .values_list(
-            "fecha_year",
+            "anio_publicacion",
             flat=True,
         )
         .distinct()
         .order_by(
-            "-fecha_year"
+            "-anio_publicacion"
         )
         .first()
     )
 
-    if ultimo_anio_fecha:
-        return ultimo_anio_fecha
+    if ultimo_anio_con_mes:
+        return ultimo_anio_con_mes
 
     return (
         publicaciones
-        .exclude(
-            anio_publicacion__isnull=True
-        )
         .values_list(
             "anio_publicacion",
             flat=True,
@@ -913,62 +993,63 @@ def _build_publicaciones_por_mes(
         )
     )
 
-    qs_fechadas = (
-        publicaciones
-        .exclude(
-            fecha_publicacion__isnull=True
-        )
-        .annotate(
-            fecha_year=ExtractYear(
-                "fecha_publicacion"
-            ),
-            month=ExtractMonth(
-                "fecha_publicacion"
-            ),
-        )
-    )
-
-    total_publicaciones = (
-        publicaciones.count()
-    )
-
-    total_con_fecha = (
-        qs_fechadas.count()
-    )
-
-    total_sin_fecha = max(
-        total_publicaciones
-        - total_con_fecha,
-        0,
-    )
-
     if anio_base:
         qs_anio = (
-            qs_fechadas.filter(
-                fecha_year=anio_base
+            publicaciones.filter(
+                anio_publicacion=(
+                    anio_base
+                )
             )
         )
     else:
         qs_anio = (
-            qs_fechadas.none()
+            publicaciones.none()
         )
 
+    qs_con_mes = (
+        qs_anio.exclude(
+            mes_publicacion__isnull=True
+        )
+    )
+
+    total_publicaciones_anio = (
+        qs_anio.count()
+    )
+
+    total_con_mes = (
+        qs_con_mes.count()
+    )
+
+    total_sin_mes = max(
+        total_publicaciones_anio
+        - total_con_mes,
+        0,
+    )
+
     rows = (
-        qs_anio
-        .values("month")
+        qs_con_mes
+        .values(
+            "mes_publicacion"
+        )
         .annotate(
             total=Count("id")
         )
-        .order_by("month")
+        .order_by(
+            "mes_publicacion"
+        )
     )
 
     totals = {
-        row["month"]: int(
+        row[
+            "mes_publicacion"
+        ]: int(
             row["total"]
             or 0
         )
         for row in rows
-        if row["month"]
+        if row[
+            "mes_publicacion"
+        ]
     }
 
     return {
@@ -978,6 +1059,7 @@ def _build_publicaciones_por_mes(
 
         "items": [
             {
+                "mes": i,
                 "label": (
                     MONTH_LABELS_ES[i]
                 ),
@@ -995,15 +1077,15 @@ def _build_publicaciones_por_mes(
         ],
 
         "total_publicaciones_anio": (
-            qs_anio.count()
+            total_publicaciones_anio
         ),
 
-        "total_con_fecha": (
-            total_con_fecha
+        "total_con_mes": (
+            total_con_mes
         ),
 
-        "total_sin_fecha": (
-            total_sin_fecha
+        "total_sin_mes": (
+            total_sin_mes
         ),
     }
 
@@ -1375,11 +1457,15 @@ def _build_top_carreras(
 # ============================================================
 
 
-def _build_top_autores_por_rol(
+def _build_top_autores(
     publicaciones,
     limit,
-    rol_autoria,
 ):
+    """
+    Ranking de autores por cantidad de publicaciones en las que
+    participan. El orden bibliográfico no altera el conteo.
+    """
+
     PublicacionAutor = (
         get_publicacion_autor_model()
     )
@@ -1389,10 +1475,7 @@ def _build_top_autores_por_rol(
         .filter(
             publicacion__in=(
                 publicaciones
-            ),
-            rol_autoria=(
-                rol_autoria
-            ),
+            )
         )
         .exclude(
             autor_id__isnull=True
@@ -1462,10 +1545,6 @@ def _build_top_autores_por_rol(
                     nombre_autor
                 ),
 
-                "rol_autoria": (
-                    rol_autoria
-                ),
-
                 "total_publicaciones": (
                     total_publicaciones
                 ),
@@ -1478,67 +1557,13 @@ def _build_top_autores_por_rol(
 
     return {
         "limite": limit,
-        "rol_autoria": (
-            rol_autoria
-        ),
+
         "total_autores_activos": (
             total_autores_activos
         ),
+
         "items": items,
     }
-
-
-def _build_top_autores_principales(
-    publicaciones,
-    limit,
-):
-    return (
-        _build_top_autores_por_rol(
-            publicaciones=(
-                publicaciones
-            ),
-            limit=limit,
-            rol_autoria=(
-                "principal"
-            ),
-        )
-    )
-
-
-def _build_top_coautores(
-    publicaciones,
-    limit,
-):
-    return (
-        _build_top_autores_por_rol(
-            publicaciones=(
-                publicaciones
-            ),
-            limit=limit,
-            rol_autoria=(
-                "coautor"
-            ),
-        )
-    )
-
-
-def _build_top_autores(
-    publicaciones,
-    limit,
-):
-    """
-    Alias de compatibilidad.
-
-    top_autores representa actualmente a los autores
-    principales, no mezcla autores principales y coautores.
-    """
-
-    return (
-        _build_top_autores_principales(
-            publicaciones,
-            limit,
-        )
-    )
 
 
 # ============================================================
@@ -2070,12 +2095,12 @@ def _build_filtros_aplicados(
         else None
     )
 
-    fecha_desde = period[
-        "fecha_desde"
+    mes_desde = period[
+        "mes_desde"
     ]
 
-    fecha_hasta = period[
-        "fecha_hasta"
+    mes_hasta = period[
+        "mes_hasta"
     ]
 
     return {
@@ -2105,16 +2130,16 @@ def _build_filtros_aplicados(
             else None
         ),
 
-        "fecha_desde": (
-            fecha_desde.isoformat()
-            if fecha_desde
-            else None
+        "mes_desde": (
+            _period_month_to_string(
+                mes_desde
+            )
         ),
 
-        "fecha_hasta": (
-            fecha_hasta.isoformat()
-            if fecha_hasta
-            else None
+        "mes_hasta": (
+            _period_month_to_string(
+                mes_hasta
+            )
         ),
 
         "anio_desde": (
@@ -2237,15 +2262,8 @@ def _build_dashboard_payload(
     # Autores
     # --------------------------------------------------------
 
-    top_autores_principales = (
-        _build_top_autores_principales(
-            publicaciones,
-            top_limit,
-        )
-    )
-
-    top_coautores = (
-        _build_top_coautores(
+    top_autores = (
+        _build_top_autores(
             publicaciones,
             top_limit,
         )
@@ -2317,17 +2335,8 @@ def _build_dashboard_payload(
                 )
             ),
 
-            "top_autores_principales": (
-                top_autores_principales
-            ),
-
-            "top_coautores": (
-                top_coautores
-            ),
-
-            # Alias histórico para no romper frontend.
             "top_autores": (
-                top_autores_principales
+                top_autores
             ),
 
             "journals": (
@@ -2522,54 +2531,88 @@ def _merge_block(
     return anchor
 
 
-def _format_periodo(filtros):
-    fecha_desde_raw = filtros.get(
-        "fecha_desde"
+def _format_month_period_label(
+    value,
+):
+    parsed = _safe_period_month(
+        value,
+        field_name="periodo",
     )
 
-    fecha_hasta_raw = filtros.get(
-        "fecha_hasta"
+    if not parsed:
+        return ""
+
+    year, month = parsed
+
+    return (
+        f"{MONTH_NAMES_ES[month]} "
+        f"de {year}"
     )
 
-    fecha_desde = (
-        parse_date(fecha_desde_raw)
-        if fecha_desde_raw
-        else None
-    )
 
-    fecha_hasta = (
-        parse_date(fecha_hasta_raw)
-        if fecha_hasta_raw
-        else None
-    )
-
-    if fecha_desde or fecha_hasta:
-        def format_date(value):
-            return value.strftime(
-                "%d/%m/%Y"
-            )
-
-        if fecha_desde and fecha_hasta:
-            if fecha_desde == fecha_hasta:
-                return format_date(
-                    fecha_desde
-                )
-
-            return (
-                f"{format_date(fecha_desde)} "
-                f"– {format_date(fecha_hasta)}"
-            )
-
-        if fecha_desde:
-            return (
-                "Desde "
-                f"{format_date(fecha_desde)}"
-            )
-
-        return (
-            "Hasta "
-            f"{format_date(fecha_hasta)}"
+def _format_periodo(
+    filtros,
+):
+    mes_desde_raw = (
+        filtros.get(
+            "mes_desde"
         )
+        or filtros.get(
+            "fecha_desde"
+        )
+    )
+
+    mes_hasta_raw = (
+        filtros.get(
+            "mes_hasta"
+        )
+        or filtros.get(
+            "fecha_hasta"
+        )
+    )
+
+    if (
+        mes_desde_raw
+        or mes_hasta_raw
+    ):
+        desde = (
+            _format_month_period_label(
+                mes_desde_raw
+            )
+            if mes_desde_raw
+            else ""
+        )
+
+        hasta = (
+            _format_month_period_label(
+                mes_hasta_raw
+            )
+            if mes_hasta_raw
+            else ""
+        )
+
+        if (
+            desde
+            and hasta
+        ):
+            return (
+                desde
+                if desde == hasta
+                else (
+                    f"{desde} – "
+                    f"{hasta}"
+                )
+            )
+
+        if desde:
+            return (
+                f"Desde {desde}"
+            )
+
+        if hasta:
+            return (
+                f"Hasta {hasta}"
+            )
 
     desde = filtros.get(
         "anio_desde"
@@ -2579,18 +2622,28 @@ def _format_periodo(filtros):
         "anio_hasta"
     )
 
-    if desde and hasta:
+    if (
+        desde
+        and hasta
+    ):
         return (
             str(desde)
             if desde == hasta
-            else f"{desde} – {hasta}"
+            else (
+                f"{desde} – "
+                f"{hasta}"
+            )
         )
 
     if desde:
-        return f"Desde {desde}"
+        return (
+            f"Desde {desde}"
+        )
 
     if hasta:
-        return f"Hasta {hasta}"
+        return (
+            f"Hasta {hasta}"
+        )
 
     return "Todos los periodos"
 
@@ -2814,8 +2867,9 @@ def _build_chart_data_sheet(workbook, dashboards):
     publicaciones_por_anio = dashboards.get("publicaciones_por_anio", []) or []
     top_facultades = dashboards.get("top_facultades", {}) or {}
     top_autores = (
-        dashboards.get("top_autores_principales")
-        or dashboards.get("top_autores")
+        dashboards.get(
+            "top_autores"
+        )
         or {}
     )
 
@@ -3077,8 +3131,9 @@ def _add_summary_charts(summary_ws, data_ws, dashboards):
     publicaciones_por_anio = dashboards.get("publicaciones_por_anio", []) or []
     top_facultades = dashboards.get("top_facultades", {}) or {}
     top_autores = (
-        dashboards.get("top_autores_principales")
-        or dashboards.get("top_autores")
+        dashboards.get(
+            "top_autores"
+        )
         or {}
     )
 
@@ -3180,7 +3235,7 @@ def _add_summary_charts(summary_ws, data_ws, dashboards):
         chart.set_categories(
             Reference(data_ws, min_col=11, min_row=2, max_row=len(author_items) + 1)
         )
-        chart.title = "Top autores principales"
+        chart.title = "Top autores"
         chart.height = 7
         chart.width = 10
         chart.legend = None
@@ -3220,12 +3275,12 @@ def _build_report_workbook(payload):
     publicaciones_por_tipo_anual = dashboards.get("publicaciones_por_tipo_anual", {}) or {}
     top_facultades = dashboards.get("top_facultades", {}) or {}
     top_carreras = dashboards.get("top_carreras", {}) or {}
-    top_autores_principales = (
-        dashboards.get("top_autores_principales")
-        or dashboards.get("top_autores")
+    top_autores = (
+        dashboards.get(
+            "top_autores"
+        )
         or {}
     )
-    top_coautores = dashboards.get("top_coautores", {}) or {}
     journals = dashboards.get("journals", {}) or {}
     projects = dashboards.get("projects", {}) or {}
     areas = dashboards.get("areas", {}) or {}
@@ -3300,32 +3355,42 @@ def _build_report_workbook(payload):
 
     _create_sheet(
         workbook,
-        "Autores principales",
-        "Autores principales con más publicaciones lideradas.",
-        ["Autor principal", "Total publicaciones"],
+        "Autores",
+        (
+            "Autores con mayor número de publicaciones "
+            "registradas en el período."
+        ),
+        [
+            "Autor",
+            "Total publicaciones",
+        ],
         [
             [
-                item.get("autor") or item.get("label"),
-                item.get("total_publicaciones", item.get("total", 0)),
+                (
+                    item.get("autor")
+                    or item.get("label")
+                ),
+                item.get(
+                    "total_publicaciones",
+                    item.get(
+                        "total",
+                        0,
+                    ),
+                ),
             ]
-            for item in top_autores_principales.get("items", []) or []
+            for item in (
+                top_autores.get(
+                    "items",
+                    [],
+                )
+                or []
+            )
         ],
-        tab_color=REPORT_COLORS["purple"],
-    )
-
-    _create_sheet(
-        workbook,
-        "Coautores",
-        "Coautores con mayor participación colaborativa.",
-        ["Coautor", "Total participaciones"],
-        [
-            [
-                item.get("autor") or item.get("label"),
-                item.get("total_publicaciones", item.get("total", 0)),
+        tab_color=(
+            REPORT_COLORS[
+                "purple"
             ]
-            for item in top_coautores.get("items", []) or []
-        ],
-        tab_color=REPORT_COLORS["purple"],
+        ),
     )
 
     _create_sheet(

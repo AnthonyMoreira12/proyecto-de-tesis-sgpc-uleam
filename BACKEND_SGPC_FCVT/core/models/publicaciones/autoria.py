@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -16,6 +18,36 @@ def _norm_optional_text(value):
 def _norm_email(value):
     value = _norm_text(value).lower()
     return value or None
+
+
+ORCID_PATTERN = re.compile(
+    r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$"
+)
+
+
+def _norm_orcid(value):
+    value = _norm_optional_text(value)
+    return value.upper() if value else None
+
+
+def _is_valid_orcid(value):
+    """Valida formato y dígito de control ORCID (ISO 7064 MOD 11-2)."""
+    value = _norm_orcid(value)
+
+    if not value or not ORCID_PATTERN.fullmatch(value):
+        return False
+
+    digits = value.replace("-", "")
+    total = 0
+
+    for char in digits[:-1]:
+        total = (total + int(char)) * 2
+
+    remainder = total % 11
+    result = (12 - remainder) % 11
+    expected = "X" if result == 10 else str(result)
+
+    return digits[-1] == expected
 
 
 class Autor(models.Model):
@@ -56,6 +88,43 @@ class Autor(models.Model):
         ),
     )
 
+    orcid = models.CharField(
+        max_length=19,
+        null=True,
+        blank=True,
+        help_text=(
+            "Identificador ORCID del autor en formato "
+            "0000-0000-0000-0000."
+        ),
+    )
+
+    registro_senescyt = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text=(
+            "Número de registro de investigador SENESCYT."
+        ),
+    )
+
+    google_scholar = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text=(
+            "Enlace al perfil de Google Scholar."
+        ),
+    )
+
+    scopus_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text=(
+            "Identificador de autor en Scopus."
+        ),
+    )
+
     es_externo = models.BooleanField(
         default=False,
     )
@@ -89,6 +158,14 @@ class Autor(models.Model):
                 ),
                 name="unique_autor_correo_no_vacio",
             ),
+            models.UniqueConstraint(
+                fields=["orcid"],
+                condition=(
+                    Q(orcid__isnull=False)
+                    & ~Q(orcid="")
+                ),
+                name="unique_autor_orcid_no_vacio",
+            ),
         ]
         indexes = [
             models.Index(
@@ -97,6 +174,8 @@ class Autor(models.Model):
             models.Index(fields=["correo"]),
             models.Index(fields=["identificacion"]),
             models.Index(fields=["institucion"]),
+            models.Index(fields=["registro_senescyt"]),
+            models.Index(fields=["scopus_id"]),
         ]
 
     def clean(self):
@@ -119,6 +198,18 @@ class Autor(models.Model):
         self.institucion = _norm_optional_text(
             self.institucion
         )
+        self.orcid = _norm_orcid(
+            self.orcid
+        )
+        self.registro_senescyt = _norm_optional_text(
+            self.registro_senescyt
+        )
+        self.google_scholar = _norm_optional_text(
+            self.google_scholar
+        )
+        self.scopus_id = _norm_optional_text(
+            self.scopus_id
+        )
 
         if not self.nombres:
             errors["nombres"] = (
@@ -137,6 +228,12 @@ class Autor(models.Model):
             errors["identificacion"] = (
                 "Debe registrar al menos una "
                 "identificación o un correo."
+            )
+
+        if self.orcid and not _is_valid_orcid(self.orcid):
+            errors["orcid"] = (
+                "El ORCID no tiene un formato o dígito "
+                "de control válido."
             )
 
         if (
@@ -172,17 +269,6 @@ class Autor(models.Model):
 
 
 class PublicacionAutor(models.Model):
-    ROL_AUTORIA = [
-        (
-            "principal",
-            "Autor principal",
-        ),
-        (
-            "coautor",
-            "Coautor",
-        ),
-    ]
-
     publicacion = models.ForeignKey(
         "core.Publicacion",
         on_delete=models.CASCADE,
@@ -193,11 +279,6 @@ class PublicacionAutor(models.Model):
         Autor,
         on_delete=models.CASCADE,
         related_name="participaciones",
-    )
-
-    rol_autoria = models.CharField(
-        max_length=20,
-        choices=ROL_AUTORIA,
     )
 
     orden = models.PositiveIntegerField()
@@ -214,23 +295,8 @@ class PublicacionAutor(models.Model):
                 fields=["publicacion", "orden"],
                 name="unique_orden_por_publicacion",
             ),
-            models.UniqueConstraint(
-                fields=["publicacion"],
-                condition=Q(
-                    rol_autoria="principal"
-                ),
-                name=(
-                    "unique_autor_principal_por_publicacion"
-                ),
-            ),
         ]
         indexes = [
-            models.Index(
-                fields=[
-                    "publicacion",
-                    "rol_autoria",
-                ],
-            ),
             models.Index(fields=["autor"]),
         ]
 
@@ -238,12 +304,6 @@ class PublicacionAutor(models.Model):
         super().clean()
 
         errors = {}
-
-        valid_roles = {
-            value
-            for value, _label
-            in self.ROL_AUTORIA
-        }
 
         if not self.publicacion_id:
             errors["publicacion"] = (
@@ -260,56 +320,6 @@ class PublicacionAutor(models.Model):
                 "El orden debe ser mayor o igual a 1."
             )
 
-        if self.rol_autoria not in valid_roles:
-            errors["rol_autoria"] = (
-                "El rol de autoría es inválido."
-            )
-
-        if (
-            self.rol_autoria == "principal"
-            and self.orden != 1
-        ):
-            errors["orden"] = (
-                "El autor principal debe ocupar "
-                "el orden 1."
-            )
-
-        if (
-            self.orden == 1
-            and self.rol_autoria != "principal"
-        ):
-            errors["rol_autoria"] = (
-                "El autor ubicado en el orden 1 "
-                "debe ser principal."
-            )
-
-        if self.publicacion_id:
-            principal_query = (
-                PublicacionAutor.objects
-                .filter(
-                    publicacion_id=(
-                        self.publicacion_id
-                    ),
-                    rol_autoria="principal",
-                )
-            )
-
-            if self.pk:
-                principal_query = (
-                    principal_query.exclude(
-                        pk=self.pk
-                    )
-                )
-
-            if (
-                self.rol_autoria == "principal"
-                and principal_query.exists()
-            ):
-                errors["rol_autoria"] = (
-                    "La publicación ya tiene "
-                    "un autor principal."
-                )
-
         if errors:
             raise ValidationError(errors)
 
@@ -318,8 +328,4 @@ class PublicacionAutor(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return (
-            f"{self.autor} "
-            f"({self.rol_autoria}) "
-            f"#{self.orden}"
-        )
+        return f"{self.autor} #{self.orden}"

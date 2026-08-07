@@ -329,7 +329,12 @@ class Articulo(models.Model):
     class Meta:
         db_table = "articulos"
         ordering = [
-            "-publicacion__fecha_publicacion",
+            models.F(
+                "publicacion__anio_publicacion"
+            ).desc(),
+            models.F(
+                "publicacion__mes_publicacion"
+            ).desc(nulls_last=True),
             "-id",
         ]
         indexes = [

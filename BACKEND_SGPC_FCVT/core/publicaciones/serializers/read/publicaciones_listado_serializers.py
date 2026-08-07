@@ -351,6 +351,14 @@ class PublicacionListadoSerializer(
     )
 
     # ========================================================
+    # PERIODO DE PUBLICACIÓN
+    # ========================================================
+
+    mes_publicacion_label = (
+        serializers.SerializerMethodField()
+    )
+
+    # ========================================================
     # PDF
     # ========================================================
 
@@ -395,8 +403,9 @@ class PublicacionListadoSerializer(
             "carrera_id",
             "carrera",
 
-            "fecha_publicacion",
             "anio_publicacion",
+            "mes_publicacion",
+            "mes_publicacion_label",
 
             "tipo",
             "tipo_codigo",
@@ -956,6 +965,34 @@ class PublicacionListadoSerializer(
             )
 
         return label
+
+    # ========================================================
+    # PERIODO DE PUBLICACIÓN
+    # ========================================================
+
+    def get_mes_publicacion_label(
+        self,
+        obj,
+    ):
+        mes = getattr(
+            obj,
+            "mes_publicacion",
+            None,
+        )
+
+        if mes in (
+            None,
+            "",
+        ):
+            return None
+
+        try:
+            return obj.get_mes_publicacion_display()
+        except (
+            AttributeError,
+            ValueError,
+        ):
+            return None
 
     # ========================================================
     # PDF

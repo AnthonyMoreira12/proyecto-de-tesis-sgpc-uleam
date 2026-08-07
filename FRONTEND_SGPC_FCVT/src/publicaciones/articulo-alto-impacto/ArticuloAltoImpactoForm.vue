@@ -80,7 +80,7 @@
         class="sgpc-form sgpc-form--with-aside"
         aria-label="Formulario para registrar un artículo de alto impacto"
         enctype="multipart/form-data"
-        @submit.prevent="registrarArticulo"
+        @submit.prevent="handleSubmitIntent"
       >
         <main class="sgpc-form-main page-stage page-main">
           <!-- =================================================
@@ -171,6 +171,13 @@
                   Clasificación institucional del registro.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredContext, optionalContextMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredContext, optionalContextMissingCount) }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -205,6 +212,13 @@
                   Relación académica del artículo.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredOrigin, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredOrigin, 0) }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -351,6 +365,13 @@
                   Datos básicos de la publicación.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredArticle, optionalArticleMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredArticle, optionalArticleMissingCount) }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -390,12 +411,12 @@
                   </p>
                 </div>
 
-                <div class="sgpc-field sgpc-col-span-6">
+                <div class="sgpc-field sgpc-col-span-3">
                   <label
                     class="sgpc-label"
-                    for="ai-fecha_publicacion"
+                    for="ai-anio_publicacion"
                   >
-                    Fecha de publicación
+                    Año de publicación
                     <span
                       class="req"
                       aria-hidden="true"
@@ -405,22 +426,74 @@
                   </label>
 
                   <input
-                    id="ai-fecha_publicacion"
-                    v-model="form.fecha_publicacion"
+                    id="ai-anio_publicacion"
+                    v-model.number="form.anio_publicacion"
                     class="sgpc-input"
-                    type="date"
-                    :aria-invalid="hasFieldError('fecha_publicacion')"
-                    :aria-describedby="errorDescriptionId('fecha_publicacion')"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Ej. 2026"
+                    :aria-invalid="hasFieldError('anio_publicacion')"
+                    :aria-describedby="errorDescriptionId('anio_publicacion')"
                     required
                   />
 
                   <p
-                    v-if="fieldErrors.fecha_publicacion"
-                    :id="fieldErrorId('fecha_publicacion')"
+                    v-if="fieldErrors.anio_publicacion"
+                    :id="fieldErrorId('anio_publicacion')"
                     class="sgpc-hint sgpc-hint-error"
                     role="alert"
                   >
-                    {{ fieldErrors.fecha_publicacion }}
+                    {{ fieldErrors.anio_publicacion }}
+                  </p>
+                </div>
+
+                <div class="sgpc-field sgpc-col-span-3">
+                  <label
+                    class="sgpc-label"
+                    for="ai-mes_publicacion"
+                  >
+                    Mes de publicación
+                    <span class="sgpc-label-optional">
+                      (opcional)
+                    </span>
+                  </label>
+
+                  <select
+                    id="ai-mes_publicacion"
+                    v-model="form.mes_publicacion"
+                    class="sgpc-input"
+                    :aria-invalid="hasFieldError('mes_publicacion')"
+                    :aria-describedby="monthDescriptionIds"
+                  >
+                    <option value="">
+                      Sin mes especificado
+                    </option>
+
+                    <option
+                      v-for="month in publicationMonths"
+                      :key="month.value"
+                      :value="month.value"
+                    >
+                      {{ month.label }}
+                    </option>
+                  </select>
+
+                  <p
+                    id="ai-mes-publicacion-help"
+                    class="sgpc-hint"
+                  >
+                    Puede dejar el mes vacío si no consta en la fuente bibliográfica.
+                  </p>
+
+                  <p
+                    v-if="fieldErrors.mes_publicacion"
+                    :id="fieldErrorId('mes_publicacion')"
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
+                    {{ fieldErrors.mes_publicacion }}
                   </p>
                 </div>
 
@@ -463,6 +536,13 @@
                   Información editorial, enlaces e indicadores de alto impacto.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredJournal, optionalJournalMissingCount)"
+              >
+                {{ sectionStateLabel(hasRequiredJournal, optionalJournalMissingCount) }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -824,9 +904,16 @@
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Seleccione autores y defina su jerarquía y orden.
+                  Seleccione los autores y defina únicamente su orden bibliográfico.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="sectionStateClass(hasRequiredAuthors, 0)"
+              >
+                {{ sectionStateLabel(hasRequiredAuthors, 0) }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -861,6 +948,13 @@
                   Adjunte la carta de aceptación y otros soportes relacionados.
                 </p>
               </div>
+              <span
+                class="sgpc-section-state"
+                :class="hasAdjuntos ? 'is-complete' : 'is-optional'"
+              >
+                {{ hasAdjuntos ? "Completado" : "Opcional" }}
+              </span>
+
             </div>
 
             <div class="sgpc-card-body">
@@ -930,7 +1024,10 @@
               </div>
             </div>
 
-            <div class="sgpc-progress">
+            <div
+              class="sgpc-progress"
+              :class="{ 'is-complete': canSubmit }"
+            >
               <div class="sgpc-progress-row">
                 <span>
                   Completitud
@@ -963,6 +1060,52 @@
               </p>
             </div>
 
+            <div class="sgpc-optional-summary">
+              <div class="sgpc-optional-summary__head">
+                <span>Información complementaria</span>
+                <strong>{{ optionalCompletedCount }}/{{ totalOptionalCount }}</strong>
+              </div>
+
+              <p v-if="optionalMissingCount > 0">
+                <strong>{{ optionalMissingCount }}</strong>
+                {{ optionalMissingCount === 1 ? "dato opcional sin completar" : "datos opcionales sin completar" }}.
+                Puede registrar igualmente, pero conviene revisarlos si dispone de esa información.
+              </p>
+
+              <p v-else class="is-complete">
+                Toda la información complementaria aplicable está completa.
+              </p>
+
+              <button
+                v-if="optionalMissingCount > 0"
+                type="button"
+                class="sgpc-summary-link"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+            </div>
+
+            <div
+              v-if="canSubmit"
+              class="sgpc-ready-notice"
+              :class="{ 'has-optional-gap': optionalMissingCount > 0 }"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>
+                {{ optionalMissingCount > 0 ? "Listo para registrar" : "Registro completo" }}
+              </strong>
+
+              <span v-if="optionalMissingCount > 0">
+                Los datos obligatorios están completos. Quedan opcionales que puede revisar antes de guardar.
+              </span>
+
+              <span v-else>
+                Los datos obligatorios y complementarios están completos.
+              </span>
+            </div>
+
             <div class="sgpc-status-list">
               <button
                 v-for="item in summarySections"
@@ -971,6 +1114,12 @@
                 class="sgpc-status-item"
                 :class="{
                   'is-ok': item.done,
+                  'has-optional-gap':
+                    item.done &&
+                    item.optionalMissing > 0,
+                  'is-optional-empty':
+                    !item.required &&
+                    !item.done,
                 }"
                 @click="goTo(item.target)"
               >
@@ -1038,6 +1187,77 @@
           </div>
         </aside>
       </form>
+
+      <div
+        v-if="showOptionalReviewDialog"
+        class="sgpc-review-modal"
+        role="presentation"
+        @mousedown.self="closeOptionalReviewDialog"
+      >
+        <section
+          ref="optionalReviewDialog"
+          class="sgpc-review-modal__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ai-optional-review-title"
+          aria-describedby="ai-optional-review-description"
+          tabindex="-1"
+          @keydown.esc="closeOptionalReviewDialog"
+        >
+          <div class="sgpc-review-modal__icon" aria-hidden="true">!</div>
+
+          <div class="sgpc-review-modal__content">
+            <p class="sgpc-review-modal__kicker">Revisión final</p>
+
+            <h2 id="ai-optional-review-title">
+              El artículo está listo para registrarse
+            </h2>
+
+            <p id="ai-optional-review-description">
+              Todos los campos obligatorios están completos, pero quedan
+              {{ optionalMissingCount }}
+              {{ optionalMissingCount === 1 ? "dato opcional vacío" : "datos opcionales vacíos" }}.
+              Esto no impide guardar el registro.
+            </p>
+
+            <ul class="sgpc-review-modal__list">
+              <li
+                v-for="item in optionalMissingItems"
+                :key="item.key"
+              >
+                <span>{{ item.label }}</span>
+                <small>{{ item.sectionLabel }}</small>
+              </li>
+            </ul>
+
+            <div class="sgpc-review-modal__actions">
+              <button
+                type="button"
+                class="sgpc-btn-primary"
+                @click="confirmOptionalRegistration"
+              >
+                Registrar de todas formas
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-btn"
+                @click="reviewOptionalFields"
+              >
+                Revisar opcionales
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-review-modal__cancel"
+                @click="closeOptionalReviewDialog"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -1056,7 +1276,7 @@ import {
 
 
 const BASE_STORAGE_KEY =
-  "sgpc-articulo-alto-impacto-draft:v23";
+  "sgpc-articulo-alto-impacto-draft:v24";
 
 const STANDARD_CREATE_ENDPOINT =
   "/publicaciones/articulos/crear/";
@@ -1075,6 +1295,22 @@ const FIELD_LIMITS = Object.freeze({
   link_publicacion: 500,
   sjr: 100,
 });
+
+
+const PUBLICATION_MONTHS = Object.freeze([
+  { value: 1, label: "Enero" },
+  { value: 2, label: "Febrero" },
+  { value: 3, label: "Marzo" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Mayo" },
+  { value: 6, label: "Junio" },
+  { value: 7, label: "Julio" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Septiembre" },
+  { value: 10, label: "Octubre" },
+  { value: 11, label: "Noviembre" },
+  { value: 12, label: "Diciembre" },
+]);
 
 
 const ERROR_KEY_ALIASES = Object.freeze({
@@ -1106,7 +1342,8 @@ const FIELD_LABELS = Object.freeze({
   subarea: "Subárea del conocimiento (UNESCO)",
   tipo_codigo: "Tipo de artículo",
   nombre_articulo: "Título del artículo",
-  fecha_publicacion: "Fecha de publicación",
+  anio_publicacion: "Año de publicación",
+  mes_publicacion: "Mes de publicación",
   codigo_doi: "DOI",
   codigo_issn: "ISSN",
   nombre_revista: "Nombre de la revista",
@@ -1134,7 +1371,8 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "origen_tipo",
   "origen_grado",
   "nombre_articulo",
-  "fecha_publicacion",
+  "anio_publicacion",
+  "mes_publicacion",
   "nombre_revista",
   "numero_revista",
   "codigo_issn",
@@ -1166,7 +1404,8 @@ function createEmptyForm() {
     origen_grado: "",
 
     nombre_articulo: "",
-    fecha_publicacion: "",
+    anio_publicacion: null,
+    mes_publicacion: "",
 
     codigo_doi: "",
     codigo_issn: "",
@@ -1443,6 +1682,7 @@ export default {
       fieldErrors: {},
 
       draftInfo: "",
+      showOptionalReviewDialog: false,
       draftTimer: null,
       draftEnabled: true,
 
@@ -1458,6 +1698,10 @@ export default {
   },
 
   computed: {
+    publicationMonths() {
+      return PUBLICATION_MONTHS;
+    },
+
     // ========================================================
     // CONTEXTO ADMINISTRATIVO
     // ========================================================
@@ -1573,6 +1817,16 @@ export default {
       );
     },
 
+    adminReady() {
+      return (
+        !this.isAdminDelegado ||
+        Boolean(
+          this.adminContext
+            .usuarioId
+        )
+      );
+    },
+
     // ========================================================
     // CABECERA
     // ========================================================
@@ -1635,9 +1889,7 @@ export default {
 
       return Boolean(
         datos.facultad &&
-        datos.carrera &&
-        datos.area &&
-        datos.subarea
+        datos.carrera
       );
     },
 
@@ -1673,8 +1925,17 @@ export default {
           ""
         ).trim() &&
 
-        this.form
-          .fecha_publicacion
+        Number.isInteger(
+          Number(
+            this.form
+              .anio_publicacion
+          )
+        ) &&
+
+        Number(
+          this.form
+            .anio_publicacion
+        ) > 0
       );
     },
 
@@ -1741,21 +2002,192 @@ export default {
       );
     },
 
+    optionalMissingItems() {
+      const general =
+        this.form.datos_generales || {};
+
+      const hasValue = (value) =>
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== "";
+
+      const items = [];
+
+      if (!hasValue(general.proyecto)) {
+        items.push({
+          key: "proyecto",
+          label: "Proyecto de investigación",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      }
+
+      if (!hasValue(general.area)) {
+        items.push({
+          key: "area",
+          label: "Área del conocimiento (UNESCO)",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      } else if (!hasValue(general.subarea)) {
+        items.push({
+          key: "subarea",
+          label: "Subárea del conocimiento (UNESCO)",
+          section: "datos",
+          sectionLabel: "Datos generales",
+        });
+      }
+
+      if (!hasValue(this.form.mes_publicacion)) {
+        items.push({
+          key: "mes_publicacion",
+          label: "Mes de publicación",
+          section: "articulo",
+          sectionLabel: "Información del artículo",
+        });
+      }
+
+      if (!hasValue(this.form.numero_revista)) {
+        items.push({
+          key: "numero_revista",
+          label: "Número de la revista",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!hasValue(this.form.codigo_doi)) {
+        items.push({
+          key: "codigo_doi",
+          label: "Código DOI",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!hasValue(this.form.link_revista)) {
+        items.push({
+          key: "link_revista",
+          label: "Link de la revista",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!hasValue(this.form.link_publicacion)) {
+        items.push({
+          key: "link_publicacion",
+          label: "Link de la publicación",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!hasValue(this.form.factor_impacto)) {
+        items.push({
+          key: "factor_impacto",
+          label: "Factor de impacto",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!hasValue(this.form.cuartil)) {
+        items.push({
+          key: "cuartil",
+          label: "Cuartil",
+          section: "revista",
+          sectionLabel: "Revista e indicadores",
+        });
+      }
+
+      if (!this.hasAdjuntos) {
+        items.push({
+          key: "archivos",
+          label: "Adjuntos PDF",
+          section: "adjuntos",
+          sectionLabel: "Adjuntos",
+        });
+      }
+
+      return items;
+    },
+
+    optionalMissingCount() {
+      return this.optionalMissingItems.length;
+    },
+
+    totalOptionalCount() {
+      const general =
+        this.form.datos_generales || {};
+
+      const hasArea =
+        general.area !== null &&
+        general.area !== undefined &&
+        String(general.area).trim() !== "";
+
+      /*
+       * Proyecto, área, mes, número de revista, DOI,
+       * link de revista, link de publicación, factor de impacto,
+       * cuartil y adjuntos.
+       *
+       * La subárea solamente aplica si se seleccionó un área.
+       * SJR no se cuenta como opcional: cuando factor_impacto ===
+       * "sjr" se convierte en requisito condicional.
+       */
+      return 10 + (hasArea ? 1 : 0);
+    },
+
+    optionalCompletedCount() {
+      return Math.max(
+        0,
+        this.totalOptionalCount -
+          this.optionalMissingCount
+      );
+    },
+
+    optionalContextMissingCount() {
+      return this.optionalMissingItems
+        .filter((item) => item.section === "datos")
+        .length;
+    },
+
+    optionalArticleMissingCount() {
+      return this.optionalMissingItems
+        .filter((item) => item.section === "articulo")
+        .length;
+    },
+
+    optionalJournalMissingCount() {
+      return this.optionalMissingItems
+        .filter((item) => item.section === "revista")
+        .length;
+    },
+
+    canSubmit() {
+      return Boolean(
+        this.totalRequiredCount > 0 &&
+        this.completedRequiredCount ===
+          this.totalRequiredCount
+      );
+    },
+
     summarySections() {
-      return [
+      const sections = [
         {
           key: "datos",
-          target:
-            "sec-datos-generales",
-          label:
-            "Datos generales",
-          done:
-            this.hasRequiredContext,
+          target: "sec-datos-generales",
+          label: "Datos generales",
+          done: this.hasRequiredContext,
           required: true,
+          optionalMissing:
+            this.optionalContextMissingCount,
           detail:
             this.hasRequiredContext
-              ? "Completo"
-              : "Campos pendientes",
+              ? this.sectionStatusText(
+                  this.optionalContextMissingCount
+                )
+              : "Campos obligatorios pendientes",
           status:
             this.hasRequiredContext
               ? "Completo"
@@ -1764,12 +2196,11 @@ export default {
 
         {
           key: "origen",
-          target:
-            "sec-origen",
+          target: "sec-origen",
           label: "Origen",
-          done:
-            this.hasRequiredOrigin,
+          done: this.hasRequiredOrigin,
           required: true,
+          optionalMissing: 0,
           detail:
             this.hasRequiredOrigin
               ? "Completo"
@@ -1782,16 +2213,18 @@ export default {
 
         {
           key: "articulo",
-          target:
-            "sec-articulo",
+          target: "sec-articulo",
           label: "Artículo",
-          done:
-            this.hasRequiredArticle,
+          done: this.hasRequiredArticle,
           required: true,
+          optionalMissing:
+            this.optionalArticleMissingCount,
           detail:
             this.hasRequiredArticle
-              ? "Completo"
-              : "Título o fecha pendientes",
+              ? this.sectionStatusText(
+                  this.optionalArticleMissingCount
+                )
+              : "Título o año pendientes",
           status:
             this.hasRequiredArticle
               ? "Completo"
@@ -1800,16 +2233,18 @@ export default {
 
         {
           key: "revista",
-          target:
-            "sec-revista",
-          label: "Revista",
-          done:
-            this.hasRequiredJournal,
+          target: "sec-revista",
+          label: "Revista e indicadores",
+          done: this.hasRequiredJournal,
           required: true,
+          optionalMissing:
+            this.optionalJournalMissingCount,
           detail:
             this.hasRequiredJournal
-              ? "Completo"
-              : "Revista o ISSN pendientes",
+              ? this.sectionStatusText(
+                  this.optionalJournalMissingCount
+                )
+              : "Revista, ISSN o indicador requerido pendiente",
           status:
             this.hasRequiredJournal
               ? "Completo"
@@ -1818,19 +2253,14 @@ export default {
 
         {
           key: "autores",
-          target:
-            "sec-autores",
+          target: "sec-autores",
           label: "Autores",
-          done:
-            this.hasRequiredAuthors,
+          done: this.hasRequiredAuthors,
           required: true,
+          optionalMissing: 0,
           detail:
             this.hasRequiredAuthors
-              ? `${
-                  this.form
-                    .autores
-                    .length
-                } autor(es)`
+              ? `${this.form.autores.length} autor(es)`
               : "Sin autores",
           status:
             this.hasRequiredAuthors
@@ -1840,26 +2270,46 @@ export default {
 
         {
           key: "adjuntos",
-          target:
-            "sec-adjuntos",
+          target: "sec-adjuntos",
           label: "Adjuntos",
-          done:
-            this.hasAdjuntos,
+          done: this.hasAdjuntos,
           required: false,
+          optionalMissing:
+            this.hasAdjuntos ? 0 : 1,
           detail:
             this.hasAdjuntos
-              ? `${
-                  this.form
-                    .archivos
-                    .length
-                } archivo(s)`
-              : "Opcional",
+              ? `${this.form.archivos.length} archivo(s)`
+              : "Sin archivos adjuntos",
           status:
             this.hasAdjuntos
-              ? "Completo"
+              ? "Completado"
               : "Opcional",
         },
       ];
+
+      if (this.isAdminDelegado) {
+        return [
+          {
+            key: "admin",
+            target: "sec-contexto-admin",
+            label: "Contexto administrativo",
+            done: this.adminReady,
+            required: true,
+            optionalMissing: 0,
+            detail:
+              this.adminReady
+                ? "Usuario objetivo válido"
+                : "Falta usuario objetivo",
+            status:
+              this.adminReady
+                ? "Completo"
+                : "Pendiente",
+          },
+          ...sections,
+        ];
+      }
+
+      return sections;
     },
 
     completedRequiredCount() {
@@ -1899,6 +2349,25 @@ export default {
         ) *
         100
       );
+    },
+
+    monthDescriptionIds() {
+      const ids = [
+        "ai-mes-publicacion-help",
+      ];
+
+      if (
+        this.fieldErrors
+          .mes_publicacion
+      ) {
+        ids.push(
+          this.fieldErrorId(
+            "mes_publicacion"
+          )
+        );
+      }
+
+      return ids.join(" ");
     },
 
     originGradeDescriptionIds() {
@@ -2013,6 +2482,114 @@ export default {
   },
 
   methods: {
+    /* ========================================================
+       RESUMEN / OPCIONALES
+    ======================================================== */
+
+    sectionStatusText(optionalMissing = 0) {
+      if (optionalMissing > 0) {
+        return `${optionalMissing} ${
+          optionalMissing === 1
+            ? "opcional sin completar"
+            : "opcionales sin completar"
+        }`;
+      }
+
+      return "Información completa";
+    },
+
+    sectionStateLabel(requiredDone, optionalMissing = 0) {
+      if (!requiredDone) {
+        return "Pendiente";
+      }
+
+      return optionalMissing > 0
+        ? "Completo · revisar opcionales"
+        : "Completo";
+    },
+
+    sectionStateClass(requiredDone, optionalMissing = 0) {
+      if (!requiredDone) {
+        return "is-pending";
+      }
+
+      return optionalMissing > 0
+        ? "is-complete has-optional-gap"
+        : "is-complete";
+    },
+
+    focusOptionalItem(item) {
+      if (!item) {
+        return;
+      }
+
+      if (item.key === "archivos") {
+        this.goTo("sec-adjuntos");
+        return;
+      }
+
+      this.focusField(item.key);
+    },
+
+    reviewOptionalFields() {
+      const first =
+        this.optionalMissingItems[0];
+
+      this.closeOptionalReviewDialog();
+
+      if (!first) {
+        return;
+      }
+
+      this.$nextTick(() => {
+        this.focusOptionalItem(first);
+      });
+    },
+
+    openOptionalReviewDialog() {
+      this.showOptionalReviewDialog =
+        true;
+
+      this.$nextTick(() => {
+        this.$refs.optionalReviewDialog
+          ?.focus?.();
+      });
+    },
+
+    closeOptionalReviewDialog() {
+      this.showOptionalReviewDialog =
+        false;
+    },
+
+    async confirmOptionalRegistration() {
+      this.closeOptionalReviewDialog();
+
+      await this.registrarArticulo({
+        skipFrontValidation: true,
+      });
+    },
+
+    async handleSubmitIntent() {
+      if (this.loading) {
+        return;
+      }
+
+      this.clearErrors();
+
+      if (!this.validateFront()) {
+        return;
+      }
+
+      if (this.optionalMissingCount > 0) {
+        this.openOptionalReviewDialog();
+        return;
+      }
+
+      await this.registrarArticulo({
+        skipFrontValidation: true,
+      });
+    },
+
     // ========================================================
     // ERRORES
     // ========================================================
@@ -2167,6 +2744,106 @@ export default {
     // BORRADOR
     // ========================================================
 
+    normalizeRecoveredPeriod(
+      recovered
+    ) {
+      const rawYear =
+        Number(
+          recovered
+            ?.anio_publicacion
+        );
+
+      let year = (
+        Number.isInteger(
+          rawYear
+        ) &&
+        rawYear > 0
+      )
+        ? rawYear
+        : null;
+
+      const rawMonth =
+        Number(
+          recovered
+            ?.mes_publicacion
+        );
+
+      let month = (
+        Number.isInteger(
+          rawMonth
+        ) &&
+        rawMonth >= 1 &&
+        rawMonth <= 12
+      )
+        ? rawMonth
+        : "";
+
+      /*
+       * Compatibilidad defensiva con borradores antiguos:
+       * si existiera una fecha YYYY-MM-DD, conservamos solo
+       * año y mes y descartamos el día.
+       */
+      const legacyDate =
+        String(
+          recovered?.[
+            "fecha_" + "publicacion"
+          ] ||
+          ""
+        ).trim();
+
+      const legacyMatch =
+        legacyDate.match(
+          /^(\d{4})-(\d{2})/
+        );
+
+      if (
+        legacyMatch
+      ) {
+        if (!year) {
+          const parsedYear =
+            Number(
+              legacyMatch[1]
+            );
+
+          if (
+            Number.isInteger(
+              parsedYear
+            ) &&
+            parsedYear > 0
+          ) {
+            year =
+              parsedYear;
+          }
+        }
+
+        if (!month) {
+          const parsedMonth =
+            Number(
+              legacyMatch[2]
+            );
+
+          if (
+            Number.isInteger(
+              parsedMonth
+            ) &&
+            parsedMonth >= 1 &&
+            parsedMonth <= 12
+          ) {
+            month =
+              parsedMonth;
+          }
+        }
+      }
+
+      return {
+        anio_publicacion:
+          year,
+
+        mes_publicacion:
+          month,
+      };
+    },
+
     saveDraft(value) {
       const payload = {
         form: {
@@ -2190,8 +2867,11 @@ export default {
           nombre_articulo:
             value.nombre_articulo,
 
-          fecha_publicacion:
-            value.fecha_publicacion,
+          anio_publicacion:
+            value.anio_publicacion,
+
+          mes_publicacion:
+            value.mes_publicacion,
 
           codigo_doi:
             value.codigo_doi,
@@ -2280,6 +2960,11 @@ export default {
           parsed.form ||
           parsed;
 
+        const recoveredPeriod =
+          this.normalizeRecoveredPeriod(
+            recovered
+          );
+
         const base =
           createEmptyForm();
 
@@ -2288,6 +2973,14 @@ export default {
         this.form = {
           ...base,
           ...recovered,
+
+          anio_publicacion:
+            recoveredPeriod
+              .anio_publicacion,
+
+          mes_publicacion:
+            recoveredPeriod
+              .mes_publicacion,
 
           datos_generales: {
             ...base
@@ -2410,8 +3103,11 @@ export default {
         nombre_articulo:
           "ai-nombre_articulo",
 
-        fecha_publicacion:
-          "ai-fecha_publicacion",
+        anio_publicacion:
+          "ai-anio_publicacion",
+
+        mes_publicacion:
+          "ai-mes_publicacion",
 
         codigo_doi:
           "ai-codigo_doi",
@@ -2539,13 +3235,7 @@ export default {
 
             return {
               autor_id: id,
-
               orden,
-
-              rol_autoria:
-                orden === 1
-                  ? "principal"
-                  : "coautor",
             };
           }
         )
@@ -2617,20 +3307,6 @@ export default {
           "Seleccione una carrera.";
       }
 
-      if (
-        !datos.area
-      ) {
-        errors.area =
-          "Seleccione un área del conocimiento (UNESCO).";
-      }
-
-      if (
-        !datos.subarea
-      ) {
-        errors.subarea =
-          "Seleccione una subárea del conocimiento (UNESCO).";
-      }
-
       // ------------------------------------------------------
       // Origen
       // ------------------------------------------------------
@@ -2697,12 +3373,42 @@ export default {
           `El título no puede superar ${FIELD_LIMITS.nombre_articulo} caracteres.`;
       }
 
+      const publicationYear =
+        Number(
+          this.form
+            .anio_publicacion
+        );
+
       if (
-        !this.form
-          .fecha_publicacion
+        !Number.isInteger(
+          publicationYear
+        ) ||
+        publicationYear <= 0
       ) {
-        errors.fecha_publicacion =
-          "Campo obligatorio.";
+        errors.anio_publicacion =
+          "Ingrese un año de publicación válido.";
+      }
+
+      if (
+        this.form
+          .mes_publicacion !== ""
+      ) {
+        const publicationMonth =
+          Number(
+            this.form
+              .mes_publicacion
+          );
+
+        if (
+          !Number.isInteger(
+            publicationMonth
+          ) ||
+          publicationMonth < 1 ||
+          publicationMonth > 12
+        ) {
+          errors.mes_publicacion =
+            "Seleccione un mes válido.";
+        }
       }
 
       // ------------------------------------------------------
@@ -2957,7 +3663,7 @@ export default {
     // REGISTRO
     // ========================================================
 
-    async registrarArticulo() {
+    async registrarArticulo({ skipFrontValidation = false } = {}) {
       if (
         this.loading
       ) {
@@ -2967,10 +3673,13 @@ export default {
       this.loading =
         true;
 
-      this.clearErrors();
+      if (!skipFrontValidation) {
+        this.clearErrors();
+      }
 
       try {
         if (
+          !skipFrontValidation &&
           !this.validateFront()
         ) {
           return;
@@ -3115,7 +3824,8 @@ export default {
 
         [
           "nombre_articulo",
-          "fecha_publicacion",
+          "anio_publicacion",
+          "mes_publicacion",
           "codigo_doi",
           "codigo_issn",
           "nombre_revista",
@@ -3341,6 +4051,9 @@ export default {
       this.draftInfo =
         "";
 
+      this.showOptionalReviewDialog =
+        false;
+
       this.mensaje =
         "";
 
@@ -3355,4 +4068,3 @@ export default {
 </script>
 
 <style src="../componentes/sgpc-fcvt.css"></style>
-<style src="./articulo-alto-impacto-form.css"></style>

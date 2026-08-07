@@ -1823,6 +1823,43 @@ button {
     transform 220ms ease;
 }
 
+.avn-published-item__text-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  width: 100%;
+  height: 100%;
+
+  padding: 22px;
+
+  color: var(--avn-primary);
+
+  background:
+    radial-gradient(
+      circle at 50% 18%,
+      color-mix(
+        in srgb,
+        var(--avn-primary) 16%,
+        transparent
+      ),
+      transparent 54%
+    ),
+    var(--avn-soft-strong);
+
+  font-size: 0.78em;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.avn-published-item__text-preview svg {
+  flex: 0 0 auto;
+}
+
 .avn-published-item:hover
   .avn-published-item__preview
   img {
@@ -1942,6 +1979,28 @@ button {
 /* ============================================================
    FORMULARIOS
 ============================================================ */
+
+.avn-text-publish-form {
+  padding: 22px;
+
+  border:
+    1px solid
+    var(--avn-line);
+
+  border-radius:
+    var(
+      --radius-xl,
+      18px
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--avn-card) 92%,
+      var(--avn-primary-soft) 8%
+    );
+}
+
 
 .avn-form-grid {
   display: grid;

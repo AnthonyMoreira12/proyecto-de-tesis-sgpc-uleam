@@ -80,6 +80,13 @@ def build_publicaciones_report_filters(
 
     La validación definitiva se realiza dentro del servicio
     centralizado de publicaciones.
+
+    Filtros temporales admitidos:
+
+    - anio;
+    - mes;
+    - anio_desde;
+    - anio_hasta.
     """
 
     params = request.query_params
@@ -112,6 +119,16 @@ def build_publicaciones_report_filters(
         "anio": _first_query_param(
             params,
             "anio",
+        ),
+
+        # =====================================================
+        # MES
+        # =====================================================
+
+        "mes": _first_query_param(
+            params,
+            "mes",
+            "mes_publicacion",
         ),
 
         # =====================================================

@@ -623,10 +623,6 @@
   gap: 10px;
 }
 
-.as-alert-inline {
-  margin-top: 10px;
-}
-
 .as-alert-stack {
   display: grid;
 
@@ -955,24 +951,6 @@
   white-space: nowrap;
 }
 
-.as-subempty {
-  padding:
-    11px 12px;
-
-  border:
-    1px dashed
-    var(--as-line);
-
-  border-radius:
-    var(--as-radius-md);
-
-  color:
-    var(--as-text-soft);
-
-  font-size: 0.73rem;
-  line-height: 1.45;
-}
-
 .as-list-selected {
   display: grid;
 
@@ -1016,20 +994,18 @@
     transform 150ms ease;
 }
 
-.as-row--principal {
-  border-color:
-    var(--as-primary-line);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--as-primary) 3%,
-      var(--as-surface)
-    );
-}
-
 .as-row--draggable {
   cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .as-row--draggable:hover {
+    border-color:
+      var(--as-primary-line);
+
+    box-shadow:
+      var(--as-shadow-sm);
+  }
 }
 
 .as-row--dragging {
@@ -1133,17 +1109,6 @@
   line-height: 1;
 }
 
-.as-status--primary {
-  border-color:
-    var(--as-primary-line);
-
-  background:
-    var(--as-primary-soft);
-
-  color:
-    var(--as-primary);
-}
-
 .as-status--soft {
   background:
     var(--as-surface-2);
@@ -1202,7 +1167,7 @@
 }
 
 /* =========================================================
-   8. CONTROLES DE ROL Y ORDEN
+   8. CONTROL DE ORDEN BIBLIOGRÁFICO
 ========================================================= */
 
 .as-field-inline {
@@ -1283,11 +1248,6 @@
     box-shadow 150ms ease;
 }
 
-.as-control-select--role {
-  min-width:
-    min(290px, 100%);
-}
-
 .as-control-select--order {
   width: 78px;
 }
@@ -1328,13 +1288,15 @@
     rgba(23, 32, 51, 0.5);
 
   backdrop-filter:
-    blur(4px);
+    blur(6px) saturate(110%);
 
   -webkit-backdrop-filter:
-    blur(4px);
+    blur(6px) saturate(110%);
 }
 
 .as-modal {
+  isolation: isolate;
+
   display: grid;
 
   grid-template-rows:
@@ -1346,7 +1308,7 @@
     min(760px, 100%);
 
   max-height:
-    min(88vh, 820px);
+    min(90dvh, 840px);
 
   overflow: hidden;
 
@@ -1431,6 +1393,9 @@
 
   padding:
     18px 20px;
+
+  background:
+    var(--as-surface);
 
   scrollbar-width: thin;
 
@@ -1834,9 +1799,21 @@
     box-shadow 150ms ease;
 }
 
-.as-catalog-item:hover {
-  border-color:
-    var(--as-primary-line);
+@media (hover: hover) and (pointer: fine) {
+  .as-catalog-item:hover {
+    border-color:
+      var(--as-primary-line);
+
+    background:
+      color-mix(
+        in srgb,
+        var(--as-primary) 2.5%,
+        var(--as-surface)
+      );
+
+    box-shadow:
+      var(--as-shadow-sm);
+  }
 }
 
 .as-catalog-item--disabled {
@@ -1879,7 +1856,7 @@
 
   min-width: 0;
 
-  gap: 3px;
+  gap: 4px;
 }
 
 .as-ci-name {
@@ -1901,6 +1878,68 @@
   line-height: 1.42;
 
   overflow-wrap: anywhere;
+}
+
+
+.as-ci-match {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+  max-width: 100%;
+
+  margin-top: 3px;
+
+  padding:
+    4px 8px;
+
+  border:
+    1px solid
+    var(--as-primary-line);
+
+  border-radius:
+    var(--as-radius-pill);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--as-primary) 7%,
+      var(--as-surface)
+    );
+
+  color:
+    var(--as-primary);
+
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.as-ci-match::before {
+  content: "";
+
+  flex: 0 0 auto;
+
+  width: 5px;
+  height: 5px;
+
+  margin-right: 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--as-primary);
+
+  box-shadow:
+    0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--as-primary) 10%,
+        transparent
+      );
 }
 
 .as-ci-right {
@@ -2069,6 +2108,30 @@
     var(--as-success);
 }
 
+
+@media (hover: hover) and (pointer: fine) {
+  .as-catalog-item:has(.as-ci-match) {
+    border-color:
+      color-mix(
+        in srgb,
+        var(--as-primary) 18%,
+        var(--as-line)
+      );
+  }
+
+  .as-catalog-item:has(.as-ci-match):hover {
+    border-color:
+      var(--as-primary-line);
+
+    background:
+      color-mix(
+        in srgb,
+        var(--as-primary) 4%,
+        var(--as-surface)
+      );
+  }
+}
+
 /* =========================================================
    13. FORMULARIO DE NUEVO AUTOR
 ========================================================= */
@@ -2109,6 +2172,17 @@
   font-size: 0.77rem;
   font-weight: 680;
   line-height: 1.4;
+}
+
+.as-field-optional {
+  margin-left: 4px;
+
+  color:
+    var(--as-text-soft);
+
+  font-size: 0.7rem;
+  font-weight: 560;
+  line-height: 1.35;
 }
 
 .as-field--invalid
@@ -2209,6 +2283,14 @@
   opacity: 0;
 }
 
+.modal-fade-enter-active
+  .as-modal,
+.modal-fade-leave-active
+  .as-modal {
+  transition:
+    transform 170ms ease;
+}
+
 .modal-fade-enter-from
   .as-modal,
 .modal-fade-leave-to
@@ -2224,21 +2306,25 @@
 
 :global(html.dark)
   :is(
+    .as,
     .as-modal-overlay,
     .as-modal
   ),
 :global(body.dark)
   :is(
+    .as,
     .as-modal-overlay,
     .as-modal
   ),
 :global(.dark)
   :is(
+    .as,
     .as-modal-overlay,
     .as-modal
   ),
 :global([data-theme="dark"])
   :is(
+    .as,
     .as-modal-overlay,
     .as-modal
   ) {
@@ -2260,6 +2346,12 @@
   --as-text-soft:
     var(--text-secondary, #9ba8bc);
 
+  --as-text-disabled:
+    var(
+      --text-disabled,
+      rgba(237, 242, 249, 0.46)
+    );
+
   --as-line:
     var(
       --border-color,
@@ -2272,21 +2364,39 @@
       rgba(255, 255, 255, 0.15)
     );
 
+  --as-shadow-sm:
+    0 10px 26px
+      rgba(0, 0, 0, 0.18);
+
   --as-shadow-modal:
     0 26px 74px
       rgba(0, 0, 0, 0.48);
 
-  background:
-    rgba(0, 0, 0, 0.66);
-
   color-scheme: dark;
 }
 
-:global(html.dark) .as,
-:global(body.dark) .as,
-:global(.dark) .as,
-:global([data-theme="dark"]) .as {
-  color-scheme: dark;
+:global(html.dark)
+  .as-modal-overlay,
+:global(body.dark)
+  .as-modal-overlay,
+:global(.dark)
+  .as-modal-overlay,
+:global([data-theme="dark"])
+  .as-modal-overlay {
+  background:
+    rgba(0, 0, 0, 0.66);
+}
+
+:global(html.dark)
+  .as-modal,
+:global(body.dark)
+  .as-modal,
+:global(.dark)
+  .as-modal,
+:global([data-theme="dark"])
+  .as-modal {
+  background:
+    var(--as-surface);
 }
 
 /* =========================================================
@@ -2402,7 +2512,6 @@
   }
 
   .as-field-inline,
-  .as-control-select--role,
   .as-control-select--order,
   .as-row-controls
     .as-btn {
@@ -2447,6 +2556,13 @@
 }
 
 @media (max-width: 480px) {
+
+  .as-ci-match {
+    width: fit-content;
+    max-width: 100%;
+
+    white-space: normal;
+  }
   .as {
     gap: 10px;
   }
@@ -2471,7 +2587,7 @@
 
   .as-modal {
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     max-height: none;
 
     border: 0;
@@ -2499,6 +2615,12 @@
   .as-modal-foot
     .as-btn {
     width: 100%;
+  }
+
+  .as-row-actions
+    .as-icon,
+  .as-fav-btn {
+    min-height: 38px;
   }
 
   .as-toolbar-actions {
