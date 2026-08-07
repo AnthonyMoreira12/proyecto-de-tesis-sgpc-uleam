@@ -13,6 +13,9 @@ Este módulo gestiona:
 Los serializers normalizan textos antes de guardar y exponen
 de forma segura los nombres de las relaciones utilizadas por
 formularios, filtros y listados.
+
+Para las áreas y subáreas de conocimiento también se conserva
+el código oficial UNESCO como información estructurada.
 """
 
 import unicodedata
@@ -121,6 +124,48 @@ def _normalize_multiline(
         )
 
     return result
+
+
+def _normalize_codigo(
+    value,
+    *,
+    length,
+    label,
+):
+    """
+    Normaliza y valida códigos numéricos de catálogos UNESCO.
+
+    Los códigos se conservan como texto para mantener
+    correctamente los ceros iniciales:
+
+        "01"
+        "05"
+        "061"
+    """
+    if value is None:
+        raise serializers.ValidationError(
+            f"El código de {label} no puede ser nulo."
+        )
+
+    codigo = str(
+        value
+    ).strip()
+
+    if not codigo:
+        raise serializers.ValidationError(
+            f"El código de {label} es obligatorio."
+        )
+
+    if (
+        len(codigo) != length
+        or not codigo.isdigit()
+    ):
+        raise serializers.ValidationError(
+            f"El código de {label} debe contener "
+            f"exactamente {length} dígitos."
+        )
+
+    return codigo
 
 
 def _related_name(
@@ -349,6 +394,9 @@ class AreaConocimientoSerializer(
 ):
     """
     Serializer de áreas de conocimiento.
+
+    El código UNESCO se conserva como texto para mantener
+    correctamente los ceros iniciales.
     """
 
     class Meta:
@@ -356,12 +404,34 @@ class AreaConocimientoSerializer(
 
         fields = [
             "id",
+            "codigo",
             "nombre",
         ]
 
         read_only_fields = [
             "id",
         ]
+
+    def validate_codigo(
+        self,
+        value,
+    ):
+        """
+        Valida códigos UNESCO de área amplia.
+
+        Ejemplos válidos:
+
+            00
+            01
+            05
+            06
+            10
+        """
+        return _normalize_codigo(
+            value,
+            length=2,
+            label="área",
+        )
 
 
 # ============================================================
@@ -377,6 +447,9 @@ class SubareaConocimientoSerializer(
 
     El área se recibe como identificador y se expone también
     mediante area_nombre.
+
+    El código de la subárea debe conservar la jerarquía
+    establecida por el área UNESCO.
     """
 
     area_nombre = serializers.SerializerMethodField(
@@ -388,6 +461,7 @@ class SubareaConocimientoSerializer(
 
         fields = [
             "id",
+            "codigo",
             "nombre",
             "area",
             "area_nombre",
@@ -397,6 +471,93 @@ class SubareaConocimientoSerializer(
             "id",
             "area_nombre",
         ]
+
+    def validate_codigo(
+        self,
+        value,
+    ):
+        """
+        Valida códigos UNESCO de subárea.
+
+        Ejemplos válidos:
+
+            011
+            051
+            052
+            061
+            091
+        """
+        return _normalize_codigo(
+            value,
+            length=3,
+            label="subárea",
+        )
+
+    def validate(
+        self,
+        attrs,
+    ):
+        attrs = super().validate(
+            attrs
+        )
+
+        instance = getattr(
+            self,
+            "instance",
+            None,
+        )
+
+        codigo = attrs.get(
+            "codigo",
+            getattr(
+                instance,
+                "codigo",
+                None,
+            )
+            if instance is not None
+            else None,
+        )
+
+        area = attrs.get(
+            "area",
+            getattr(
+                instance,
+                "area",
+                None,
+            )
+            if instance is not None
+            else None,
+        )
+
+        if (
+            codigo
+            and area is not None
+        ):
+            area_codigo = str(
+                getattr(
+                    area,
+                    "codigo",
+                    "",
+                )
+                or ""
+            ).strip()
+
+            if (
+                area_codigo
+                and not codigo.startswith(
+                    area_codigo
+                )
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "codigo": [
+                            "El código de la subárea no "
+                            "corresponde al área seleccionada."
+                        ]
+                    }
+                )
+
+        return attrs
 
     def get_area_nombre(
         self,

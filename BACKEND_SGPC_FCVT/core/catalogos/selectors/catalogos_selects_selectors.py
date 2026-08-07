@@ -1,5 +1,4 @@
 """
-
 Este módulo centraliza las consultas ligeras utilizadas por:
 
 - APIViews de catálogos.
@@ -15,6 +14,7 @@ Los selectores:
 - Derivan la facultad desde Carrera.
 - Controlan proyectos activos y cerrados.
 - Mantienen visible un proyecto previamente seleccionado.
+- Ordenan áreas y subáreas según su código UNESCO.
 - Limitan defensivamente los resultados de autores.
 """
 
@@ -788,15 +788,22 @@ def build_ciudades_select_data(
 def build_areas_select_data():
     """
     Construye el catálogo de áreas de conocimiento.
+
+    El código UNESCO se devuelve como información técnica,
+    mientras que el frontend puede continuar mostrando
+    únicamente el nombre.
+
+    El orden corresponde al código oficial del catálogo.
     """
     return list(
         AreaConocimiento.objects
         .values(
             "id",
+            "codigo",
             "nombre",
         )
         .order_by(
-            "nombre",
+            "codigo",
             "id",
         )
     )
@@ -812,6 +819,9 @@ def build_subareas_select_data(
 ):
     """
     Construye el catálogo de subáreas dependiente de área.
+
+    El código UNESCO se devuelve como información técnica.
+    Las subáreas se ordenan según su código oficial.
     """
     was_provided, normalized_area_id = (
         _parse_optional_positive_int(
@@ -825,7 +835,13 @@ def build_subareas_select_data(
     ):
         return []
 
-    queryset = Subarea.objects.all()
+    queryset = (
+        Subarea.objects
+        .select_related(
+            "area"
+        )
+        .all()
+    )
 
     if normalized_area_id is not None:
         queryset = queryset.filter(
@@ -836,10 +852,12 @@ def build_subareas_select_data(
         queryset
         .values(
             "id",
+            "codigo",
             "nombre",
+            "area_id",
         )
         .order_by(
-            "nombre",
+            "codigo",
             "id",
         )
     )

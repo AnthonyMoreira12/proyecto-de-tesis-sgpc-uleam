@@ -736,6 +736,40 @@ const sortByNombre = (list) => (
   ))
 );
 
+const sortByCodigo = (list) => (
+  [...list].sort((a, b) => {
+    const codigoA = String(
+      a?.codigo || ""
+    ).trim();
+
+    const codigoB = String(
+      b?.codigo || ""
+    ).trim();
+
+    if (codigoA && codigoB) {
+      return codigoA.localeCompare(
+        codigoB,
+        "es",
+        {
+          numeric: true,
+        }
+      );
+    }
+
+    return String(
+      a?.nombre || ""
+    ).localeCompare(
+      String(
+        b?.nombre || ""
+      ),
+      "es",
+      {
+        sensitivity: "base",
+      }
+    );
+  })
+);
+
 const hasItemId = (
   list,
   value
@@ -1278,7 +1312,7 @@ const cargarAreas = async () => {
     return;
   }
 
-  areas.value = sortByNombre(
+  areas.value = sortByCodigo(
     asArrayResponse(
       response.data
     )
@@ -1498,7 +1532,7 @@ const cargarSubareas = async (
       return;
     }
 
-    subareas.value = sortByNombre(
+    subareas.value = sortByCodigo(
       asArrayResponse(
         response.data
       )
