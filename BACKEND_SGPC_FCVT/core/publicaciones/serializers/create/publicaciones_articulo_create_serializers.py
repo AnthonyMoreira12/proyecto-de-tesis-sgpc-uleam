@@ -409,11 +409,27 @@ def _normalize_validated_autores(autores):
 
     return autores
 
-
 class ArticuloRegistroSerializer(
     PublicacionCamposBaseMixin,
     serializers.ModelSerializer,
 ):
+    """
+    Serializer de registro para artículos regionales
+    y artículos de alto impacto.
+
+    Reglas principales:
+
+    - La facultad se recibe únicamente para validar
+      la relación Facultad -> Carrera.
+    - El proyecto es opcional.
+    - Área y subárea son opcionales.
+    - Los autores se registran mediante autor_id + orden.
+    - Los artículos regionales utilizan base de datos/indexación.
+    - Los artículos de alto impacto pueden utilizar SJR o JCR.
+    - Si se selecciona SJR, su valor es obligatorio.
+    - Si se selecciona JCR, su valor es obligatorio.
+    """
+
     autores = AutorParticipacionSerializer(
         many=True,
         write_only=True,
@@ -451,7 +467,9 @@ class ArticuloRegistroSerializer(
                 "El proyecto seleccionado no existe "
                 "o no está disponible."
             ),
-            "incorrect_type": "Proyecto inválido.",
+            "incorrect_type": (
+                "Proyecto inválido."
+            ),
         },
     )
 
@@ -470,7 +488,6 @@ class ArticuloRegistroSerializer(
         allow_null=True,
         write_only=True,
     )
-
 
     archivo_pdf = serializers.FileField(
         required=False,
@@ -510,30 +527,44 @@ class ArticuloRegistroSerializer(
 
         fields = [
             "id",
+
             "tipo_codigo",
+
             "facultad",
             "carrera",
             "proyecto",
             "area",
             "subarea",
+
             "origen_tipo",
             "origen_grado",
+
             "anio_publicacion",
             "mes_publicacion",
+
             "archivo_pdf",
+
             "tipo_articulo",
             "nombre_articulo",
+
             "base_datos_indexada",
             "base_datos_otra",
+
             "codigo_doi",
             "codigo_issn",
+
             "nombre_revista",
             "numero_revista",
+
             "link_revista",
             "link_publicacion",
+
             "factor_impacto",
             "cuartil",
+
             "sjr",
+            "jcr",
+
             "autores",
         ]
 
@@ -545,45 +576,71 @@ class ArticuloRegistroSerializer(
             "tipo_articulo": {
                 "required": False,
             },
+
             "base_datos_otra": {
                 "required": False,
                 "allow_blank": True,
                 "allow_null": True,
             },
+
             "codigo_doi": {
                 "required": False,
                 "allow_blank": True,
                 "allow_null": True,
             },
+
             "link_revista": {
                 "required": False,
                 "allow_blank": True,
                 "allow_null": True,
             },
+
             "link_publicacion": {
                 "required": False,
                 "allow_blank": True,
                 "allow_null": True,
             },
+
             "sjr": {
+                "required": False,
+                "allow_blank": True,
+                "allow_null": True,
+            },
+
+            "jcr": {
                 "required": False,
                 "allow_blank": True,
                 "allow_null": True,
             },
         }
 
-    def to_internal_value(self, data):
-        data = _querydict_to_dict(data)
+    # ============================================================
+    # INPUT
+    # ============================================================
+
+    def to_internal_value(
+        self,
+        data,
+    ):
+        data = _querydict_to_dict(
+            data
+        )
 
         data["autores"] = (
             _parse_autores_payload(
-                data.get("autores")
+                data.get(
+                    "autores"
+                )
             )
         )
 
         return super().to_internal_value(
             data
         )
+
+    # ============================================================
+    # PDF PRINCIPAL
+    # ============================================================
 
     def validate_archivo_pdf(
         self,
@@ -593,13 +650,28 @@ class ArticuloRegistroSerializer(
             value
         )
 
-    def validate(self, attrs):
-        attrs = self._aplicar_reglas_origen(
-            attrs
+    # ============================================================
+    # VALIDACIÓN GENERAL
+    # ============================================================
+
+    def validate(
+        self,
+        attrs,
+    ):
+        attrs = (
+            self._aplicar_reglas_origen(
+                attrs
+            )
         )
 
+        # --------------------------------------------------------
+        # TIPO DE ARTÍCULO
+        # --------------------------------------------------------
+
         tipo_codigo = _to_lower(
-            attrs.get("tipo_codigo")
+            attrs.get(
+                "tipo_codigo"
+            )
         )
 
         valid_codes = {
@@ -607,7 +679,10 @@ class ArticuloRegistroSerializer(
             "articulo_alto_impacto",
         }
 
-        if tipo_codigo not in valid_codes:
+        if (
+            tipo_codigo
+            not in valid_codes
+        ):
             raise ValidationError(
                 {
                     "tipo_codigo": [
@@ -624,14 +699,28 @@ class ArticuloRegistroSerializer(
 
         attrs["tipo_articulo"] = (
             "regional"
-            if tipo_codigo
-            == "articulo_regional"
+            if (
+                tipo_codigo
+                == "articulo_regional"
+            )
             else "alto_impacto"
         )
 
-        facultad = attrs.get("facultad")
-        carrera = attrs.get("carrera")
-        proyecto = attrs.get("proyecto")
+        # --------------------------------------------------------
+        # FACULTAD / CARRERA / PROYECTO
+        # --------------------------------------------------------
+
+        facultad = attrs.get(
+            "facultad"
+        )
+
+        carrera = attrs.get(
+            "carrera"
+        )
+
+        proyecto = attrs.get(
+            "proyecto"
+        )
 
         if (
             carrera
@@ -663,12 +752,29 @@ class ArticuloRegistroSerializer(
                 }
             )
 
-        area = attrs.get("area")
-        subarea = attrs.get("subarea")
+        # --------------------------------------------------------
+        # ÁREA / SUBÁREA
+        # --------------------------------------------------------
 
-        if subarea and not area:
-            attrs["area"] = subarea.area
-            area = subarea.area
+        area = attrs.get(
+            "area"
+        )
+
+        subarea = attrs.get(
+            "subarea"
+        )
+
+        if (
+            subarea
+            and not area
+        ):
+            attrs["area"] = (
+                subarea.area
+            )
+
+            area = (
+                subarea.area
+            )
 
         if (
             area
@@ -685,13 +791,26 @@ class ArticuloRegistroSerializer(
                 }
             )
 
+        # --------------------------------------------------------
+        # AUTORES
+        # --------------------------------------------------------
+
         autores = (
             _normalize_validated_autores(
-                attrs.get("autores") or []
+                attrs.get(
+                    "autores"
+                )
+                or []
             )
         )
 
-        attrs["autores"] = autores
+        attrs["autores"] = (
+            autores
+        )
+
+        # --------------------------------------------------------
+        # NORMALIZACIÓN DE TEXTOS
+        # --------------------------------------------------------
 
         for field in (
             "nombre_articulo",
@@ -702,13 +821,20 @@ class ArticuloRegistroSerializer(
             "link_revista",
             "link_publicacion",
             "sjr",
+            "jcr",
         ):
             if field in attrs:
                 attrs[field] = (
                     _none_if_blank(
-                        attrs.get(field)
+                        attrs.get(
+                            field
+                        )
                     )
                 )
+
+        # --------------------------------------------------------
+        # CAMPOS OBLIGATORIOS COMUNES
+        # --------------------------------------------------------
 
         for required_field in (
             "nombre_articulo",
@@ -728,13 +854,31 @@ class ArticuloRegistroSerializer(
                     }
                 )
 
+        # ========================================================
+        # ARTÍCULO REGIONAL
+        # ========================================================
+
         if (
             attrs["tipo_articulo"]
             == "regional"
         ):
-            attrs["factor_impacto"] = None
-            attrs["cuartil"] = None
-            attrs["sjr"] = None
+            # Un artículo regional no utiliza
+            # factor SJR/JCR ni cuartil.
+            attrs["factor_impacto"] = (
+                None
+            )
+
+            attrs["cuartil"] = (
+                None
+            )
+
+            attrs["sjr"] = (
+                None
+            )
+
+            attrs["jcr"] = (
+                None
+            )
 
             base_datos = _to_lower(
                 attrs.get(
@@ -758,7 +902,10 @@ class ArticuloRegistroSerializer(
                     }
                 )
 
-            if base_datos not in valid_bases:
+            if (
+                base_datos
+                not in valid_bases
+            ):
                 raise ValidationError(
                     {
                         "base_datos_indexada": [
@@ -772,10 +919,15 @@ class ArticuloRegistroSerializer(
                 "base_datos_indexada"
             ] = base_datos
 
-            if base_datos == "otra":
-                otra = _none_if_blank(
-                    attrs.get(
-                        "base_datos_otra"
+            if (
+                base_datos
+                == "otra"
+            ):
+                otra = (
+                    _none_if_blank(
+                        attrs.get(
+                            "base_datos_otra"
+                        )
                     )
                 )
 
@@ -798,7 +950,13 @@ class ArticuloRegistroSerializer(
                     "base_datos_otra"
                 ] = None
 
+        # ========================================================
+        # ARTÍCULO DE ALTO IMPACTO
+        # ========================================================
+
         else:
+            # Alto impacto no utiliza la indexación
+            # correspondiente al artículo regional.
             attrs[
                 "base_datos_indexada"
             ] = None
@@ -814,11 +972,21 @@ class ArticuloRegistroSerializer(
             )
 
             cuartil = _to_lower(
-                attrs.get("cuartil")
+                attrs.get(
+                    "cuartil"
+                )
             )
 
             sjr = _none_if_blank(
-                attrs.get("sjr")
+                attrs.get(
+                    "sjr"
+                )
+            )
+
+            jcr = _none_if_blank(
+                attrs.get(
+                    "jcr"
+                )
             )
 
             valid_factors = {
@@ -833,6 +1001,10 @@ class ArticuloRegistroSerializer(
                 in Articulo.CUARTIL
             }
 
+            # ----------------------------------------------------
+            # FACTOR
+            # ----------------------------------------------------
+
             if (
                 factor
                 and factor
@@ -845,6 +1017,10 @@ class ArticuloRegistroSerializer(
                         ]
                     }
                 )
+
+            # ----------------------------------------------------
+            # CUARTIL
+            # ----------------------------------------------------
 
             if (
                 cuartil
@@ -859,33 +1035,78 @@ class ArticuloRegistroSerializer(
                     }
                 )
 
-            if (
-                factor == "sjr"
-                and not sjr
-            ):
-                raise ValidationError(
-                    {
-                        "sjr": [
-                            "Debe ingresar el valor SJR "
-                            "cuando el factor es SJR."
-                        ]
-                    }
-                )
+            # ----------------------------------------------------
+            # SJR
+            # ----------------------------------------------------
 
-            if factor != "sjr":
+            if factor == "sjr":
+                if not sjr:
+                    raise ValidationError(
+                        {
+                            "sjr": [
+                                "Debe ingresar el valor SJR "
+                                "cuando el factor es SJR."
+                            ]
+                        }
+                    )
+
+                # No conservar un JCR anterior o enviado
+                # accidentalmente.
+                jcr = None
+
+            # ----------------------------------------------------
+            # JCR
+            # ----------------------------------------------------
+
+            elif factor == "jcr":
+                if not jcr:
+                    raise ValidationError(
+                        {
+                            "jcr": [
+                                "Debe ingresar el valor JCR "
+                                "cuando el factor es JCR."
+                            ]
+                        }
+                    )
+
+                # No conservar un SJR cuando se trabaja con JCR.
                 sjr = None
+
+            # ----------------------------------------------------
+            # SIN FACTOR
+            # ----------------------------------------------------
+
+            else:
+                sjr = None
+                jcr = None
 
             attrs[
                 "factor_impacto"
-            ] = factor or None
+            ] = (
+                factor
+                or None
+            )
 
             attrs[
                 "cuartil"
-            ] = cuartil or None
+            ] = (
+                cuartil
+                or None
+            )
 
-            attrs["sjr"] = sjr
+            attrs["sjr"] = (
+                sjr
+            )
+
+            attrs["jcr"] = (
+                jcr
+            )
 
         return attrs
+
+    # ============================================================
+    # CREACIÓN
+    # ============================================================
 
     @transaction.atomic
     def create(
@@ -903,8 +1124,10 @@ class ArticuloRegistroSerializer(
             usuario_creador,
             admin_registrador,
             registrado_por_admin,
-        ) = resolve_publicacion_creation_context(
-            self
+        ) = (
+            resolve_publicacion_creation_context(
+                self
+            )
         )
 
         validated_data.pop(
@@ -937,14 +1160,18 @@ class ArticuloRegistroSerializer(
             )
         )
 
-        area = validated_data.pop(
-            "area",
-            None,
+        area = (
+            validated_data.pop(
+                "area",
+                None,
+            )
         )
 
-        subarea = validated_data.pop(
-            "subarea",
-            None,
+        subarea = (
+            validated_data.pop(
+                "subarea",
+                None,
+            )
         )
 
         origen_tipo = (
@@ -961,13 +1188,17 @@ class ArticuloRegistroSerializer(
             )
         )
 
-        anio_publicacion = validated_data.pop(
-            "anio_publicacion"
+        anio_publicacion = (
+            validated_data.pop(
+                "anio_publicacion"
+            )
         )
 
-        mes_publicacion = validated_data.pop(
-            "mes_publicacion",
-            None,
+        mes_publicacion = (
+            validated_data.pop(
+                "mes_publicacion",
+                None,
+            )
         )
 
         archivo_pdf = (
@@ -977,7 +1208,14 @@ class ArticuloRegistroSerializer(
             )
         )
 
-        if tipo_articulo == "regional":
+        # --------------------------------------------------------
+        # TIPO DE PUBLICACIÓN
+        # --------------------------------------------------------
+
+        if (
+            tipo_articulo
+            == "regional"
+        ):
             tipo = (
                 obtener_o_crear_tipo_publicacion(
                     codigo="articulo_regional",
@@ -986,6 +1224,7 @@ class ArticuloRegistroSerializer(
                     orden=2,
                 )
             )
+
         else:
             tipo = (
                 obtener_o_crear_tipo_publicacion(
@@ -996,42 +1235,70 @@ class ArticuloRegistroSerializer(
                 )
             )
 
-        publicacion = crear_publicacion_base(
-            proyecto=proyecto,
-            tipo=tipo,
-            usuario=usuario_creador,
+        # --------------------------------------------------------
+        # PUBLICACIÓN BASE
+        # --------------------------------------------------------
 
-            # Solo se utiliza para comprobar
-            # Carrera -> Facultad.
-            facultad=facultad,
+        publicacion = (
+            crear_publicacion_base(
+                proyecto=proyecto,
+                tipo=tipo,
+                usuario=usuario_creador,
 
-            carrera=carrera,
-            area=area,
-            subarea=subarea,
-            pais=None,
-            ciudad=None,
-            origen_tipo=origen_tipo,
-            origen_grado=origen_grado,
-            anio_publicacion=(
-                anio_publicacion
-            ),
-            mes_publicacion=(
-                mes_publicacion
-            ),
-            archivo_pdf=archivo_pdf,
-            registrado_por_admin=(
-                registrado_por_admin
-            ),
-            admin_registrador=(
-                admin_registrador
-            ),
+                # Solo se utiliza para comprobar
+                # Carrera -> Facultad.
+                facultad=facultad,
+
+                carrera=carrera,
+                area=area,
+                subarea=subarea,
+
+                # Los artículos no utilizan ubicación.
+                pais=None,
+                ciudad=None,
+
+                origen_tipo=origen_tipo,
+                origen_grado=origen_grado,
+
+                anio_publicacion=(
+                    anio_publicacion
+                ),
+
+                mes_publicacion=(
+                    mes_publicacion
+                ),
+
+                archivo_pdf=(
+                    archivo_pdf
+                ),
+
+                registrado_por_admin=(
+                    registrado_por_admin
+                ),
+
+                admin_registrador=(
+                    admin_registrador
+                ),
+            )
         )
 
-        articulo = Articulo.objects.create(
-            publicacion=publicacion,
-            tipo_articulo=tipo_articulo,
-            **validated_data,
+        # --------------------------------------------------------
+        # DETALLE DEL ARTÍCULO
+        # --------------------------------------------------------
+
+        articulo = (
+            Articulo.objects.create(
+                publicacion=publicacion,
+                tipo_articulo=(
+                    tipo_articulo
+                ),
+                **validated_data,
+            )
         )
+
+        # --------------------------------------------------------
+        # AUTORES
+        # --------------------------------------------------------
 
         registrar_autores_publicacion(
             publicacion=publicacion,

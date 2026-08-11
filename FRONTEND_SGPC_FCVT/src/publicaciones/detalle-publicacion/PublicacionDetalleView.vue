@@ -188,10 +188,10 @@
                 </span>
 
                 <span
-                  v-else-if="userOwnsPublication"
+                  v-else-if="canEdit"
                   class="pdet-chip pdet-chip--permission"
                 >
-                  Autor vinculado
+                  Puede editar
                 </span>
               </div>
 
@@ -1293,10 +1293,39 @@ const userOwnsPublication = computed(() => {
   });
 });
 
+const creatorUserId = computed(() => {
+  return toPositiveInt(
+    detalle.value?.usuario_creador_id ??
+      detalle.value?.usuario_creador?.id ??
+      detalle.value?.usuario_creador?.pk ??
+      null
+  );
+});
+
+const currentUserIsCreator = computed(() => {
+  const creatorId = creatorUserId.value;
+
+  if (!creatorId) {
+    return false;
+  }
+
+  return currentUserIds.value.includes(creatorId);
+});
+
 const canEdit = computed(() => {
+  const backendPermission =
+    detalle.value?.puede_editar;
+
+  // El backend es la autoridad principal.
+  if (typeof backendPermission === "boolean") {
+    return backendPermission;
+  }
+
+  // Respaldo para respuestas antiguas del API:
+  // administrador o usuario que creó la publicación.
   return (
     isAdmin.value ||
-    userOwnsPublication.value
+    currentUserIsCreator.value
   );
 });
 
@@ -1312,10 +1341,10 @@ const heroIntroText = computed(() => {
     );
   }
 
-  if (userOwnsPublication.value) {
+  if (canEdit.value) {
     return (
-      "Consulte y actualice esta publicación porque se " +
-      "encuentra vinculado como autor."
+      "Consulte y actualice la información académica, " +
+      "documental y autoral de esta publicación."
     );
   }
 
@@ -1792,6 +1821,49 @@ const identificadoresAcademicos = computed(() => {
     data.doi
   );
 
+  const factorImpacto = stripAccents(
+    firstFilled(
+      data.factor_impacto,
+      data.factor_impacto_label
+    )
+  ).toLowerCase();
+
+  const indicadorImpacto = (() => {
+    if (factorImpacto === "jcr") {
+      return buildField(
+        "JCR",
+        firstFilled(data.jcr),
+        { span: 4 }
+      );
+    }
+
+    if (factorImpacto === "sjr") {
+      return buildField(
+        "SJR",
+        firstFilled(data.sjr),
+        { span: 4 }
+      );
+    }
+
+    if (firstFilled(data.jcr)) {
+      return buildField(
+        "JCR",
+        firstFilled(data.jcr),
+        { span: 4 }
+      );
+    }
+
+    if (firstFilled(data.sjr)) {
+      return buildField(
+        "SJR",
+        firstFilled(data.sjr),
+        { span: 4 }
+      );
+    }
+
+    return null;
+  })();
+
   return visibleFields([
     buildField(
       "DOI",
@@ -1849,11 +1921,7 @@ const identificadoresAcademicos = computed(() => {
       { span: 4 }
     ),
 
-    buildField(
-      "SJR",
-      firstFilled(data.sjr),
-      { span: 4 }
-    ),
+    indicadorImpacto,
   ]);
 });
 

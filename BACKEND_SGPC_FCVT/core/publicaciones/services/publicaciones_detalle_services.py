@@ -525,6 +525,7 @@ def _get_articulo_payload(
 
     cuartil = articulo.cuartil
     sjr = articulo.sjr
+    jcr = articulo.jcr
 
     # ---------------------------------------------------------
     # Regional
@@ -534,6 +535,7 @@ def _get_articulo_payload(
         factor_impacto = None
         cuartil = None
         sjr = None
+        jcr = None
 
         if (
             _to_lower(base_datos)
@@ -568,8 +570,16 @@ def _get_articulo_payload(
             or None
         )
 
+        jcr = (
+            _to_str(jcr)
+            or None
+        )
+
         if factor_impacto != "sjr":
             sjr = None
+
+        if factor_impacto != "jcr":
+            jcr = None
 
     return {
         "tipo_articulo": tipo_articulo,
@@ -605,6 +615,7 @@ def _get_articulo_payload(
         ),
         "cuartil": cuartil,
         "sjr": sjr,
+        "jcr": jcr,
     }
 
 

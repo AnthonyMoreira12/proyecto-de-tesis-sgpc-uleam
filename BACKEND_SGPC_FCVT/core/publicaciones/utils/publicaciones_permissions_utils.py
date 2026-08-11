@@ -9,25 +9,27 @@ Reglas de edición:
 2. Usuario creador:
    puede gestionar la publicación que creó.
 
-3. Autor vinculado:
-   puede gestionar una publicación en la que
-   aparece mediante PublicacionAutor.
+Los autores vinculados mediante PublicacionAutor no adquieren
+permiso de edición únicamente por figurar como autores. El permiso
+se concede al usuario que registró la publicación y a los
+administradores.
 """
-
-from core.models import PublicacionAutor
 
 
 def is_admin_user(
     user,
 ) -> bool:
     """
+    Determina si el usuario autenticado tiene privilegios
+    administrativos dentro del sistema.
+
     En Usuario los roles funcionales son:
 
         autor
         autor_externo
 
-    Por tanto, el carácter administrativo se determina
-    mediante is_staff / is_superuser.
+    Por tanto, el carácter administrativo se determina mediante
+    is_staff / is_superuser.
     """
 
     if (
@@ -73,9 +75,9 @@ def resolve_user_autor_id(
             OneToOneField
             related_name="autor"
 
-    Por compatibilidad se conservan las comprobaciones
-    de autor_id / author_id si alguna capa anterior
-    las proporciona.
+    Esta utilidad se conserva porque otras partes del proyecto
+    la utilizan para resolver la relación Usuario -> Autor.
+    No se utiliza para conceder permisos de edición de publicaciones.
     """
 
     if (
@@ -132,6 +134,13 @@ def can_edit_publicacion(
 ) -> bool:
     """
     Determina si un usuario puede modificar una publicación.
+
+    Regla institucional:
+
+    - un administrador puede editar cualquier publicación;
+    - el usuario que creó la publicación puede editarla;
+    - los demás usuarios no pueden editarla, aunque aparezcan
+      como autores bibliográficos de la publicación.
     """
 
     if (
@@ -154,96 +163,24 @@ def can_edit_publicacion(
     ):
         return True
 
+    # ---------------------------------------------------------
+    # Usuario creador de la publicación
+    # ---------------------------------------------------------
+
     user_id = getattr(
         user,
         "pk",
         None,
     )
 
-    # ---------------------------------------------------------
-    # Usuario creador
-    # ---------------------------------------------------------
+    if user_id is None:
+        return False
 
-    if (
-        user_id is not None
-        and getattr(
+    return (
+        getattr(
             publicacion,
             "usuario_creador_id",
             None,
         )
         == user_id
-    ):
-        return True
-
-    # ---------------------------------------------------------
-    # Autor asociado
-    # ---------------------------------------------------------
-
-    autor_id = (
-        resolve_user_autor_id(
-            user
-        )
-    )
-
-    if not autor_id:
-        return False
-
-    # ---------------------------------------------------------
-    # Aprovechar prefetch si está disponible
-    # ---------------------------------------------------------
-
-    participaciones_ordenadas = getattr(
-        publicacion,
-        "participaciones_ordenadas",
-        None,
-    )
-
-    if (
-        participaciones_ordenadas
-        is not None
-    ):
-        return any(
-            getattr(
-                participacion,
-                "autor_id",
-                None,
-            )
-            == autor_id
-            for participacion
-            in participaciones_ordenadas
-        )
-
-    prefetched = getattr(
-        publicacion,
-        "_prefetched_objects_cache",
-        {},
-    )
-
-    if "participaciones" in prefetched:
-        return any(
-            getattr(
-                participacion,
-                "autor_id",
-                None,
-            )
-            == autor_id
-            for participacion
-            in prefetched[
-                "participaciones"
-            ]
-        )
-
-    # ---------------------------------------------------------
-    # Consulta de respaldo
-    # ---------------------------------------------------------
-
-    return (
-        PublicacionAutor.objects
-        .filter(
-            publicacion_id=(
-                publicacion.pk
-            ),
-            autor_id=autor_id,
-        )
-        .exists()
     )

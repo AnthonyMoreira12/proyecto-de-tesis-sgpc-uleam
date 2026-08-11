@@ -648,6 +648,13 @@ class PublicacionActualizacionSerializer(
         max_length=100,
     )
 
+    jcr = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=100,
+    )
+
     # ---------------------------------------------------------
     # Ponencia / Libro / Capítulo
     # ---------------------------------------------------------
@@ -1860,6 +1867,7 @@ class PublicacionActualizacionSerializer(
             attrs["cuartil"] = None
 
             attrs["sjr"] = None
+            attrs["jcr"] = None
 
         else:
             factor = _to_lower(
@@ -1883,6 +1891,14 @@ class PublicacionActualizacionSerializer(
                     attrs,
                     "sjr",
                     articulo.sjr,
+                )
+            )
+
+            jcr = _none_if_blank(
+                self._final_value(
+                    attrs,
+                    "jcr",
+                    articulo.jcr,
                 )
             )
 
@@ -1924,21 +1940,33 @@ class PublicacionActualizacionSerializer(
                     }
                 )
 
-            if (
-                factor == "sjr"
-                and not sjr
-            ):
-                raise ValidationError(
-                    {
-                        "sjr": [
-                            "Debe ingresar el valor SJR "
-                            "cuando el factor es SJR."
-                        ]
-                    }
-                )
+            if factor == "sjr":
+                if not sjr:
+                    raise ValidationError(
+                        {
+                            "sjr": [
+                                "Debe ingresar el valor SJR "
+                                "cuando el factor es SJR."
+                            ]
+                        }
+                    )
+                jcr = None
 
-            if factor != "sjr":
+            elif factor == "jcr":
+                if not jcr:
+                    raise ValidationError(
+                        {
+                            "jcr": [
+                                "Debe ingresar el valor JCR "
+                                "cuando el factor es JCR."
+                            ]
+                        }
+                    )
                 sjr = None
+
+            else:
+                sjr = None
+                jcr = None
 
             attrs[
                 "base_datos_indexada"
@@ -1957,6 +1985,7 @@ class PublicacionActualizacionSerializer(
             )
 
             attrs["sjr"] = sjr
+            attrs["jcr"] = jcr
 
         return attrs
 
@@ -2532,6 +2561,7 @@ class PublicacionActualizacionSerializer(
                 "factor_impacto",
                 "cuartil",
                 "sjr",
+                "jcr",
             ]
 
             for field in fields:

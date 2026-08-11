@@ -61,9 +61,6 @@ import PublicacionesListadoView from
 import PublicacionDetalleView from
   "../publicaciones/detalle-publicacion/PublicacionDetalleView.vue";
 
-import EditarPublicacionView from
-  "../publicaciones/detalle-publicacion/EditarPublicacionView.vue";
-
 import ArticuloAltoImpactoForm from
   "../publicaciones/articulo-alto-impacto/ArticuloAltoImpactoForm.vue";
 
@@ -557,7 +554,7 @@ const routes = [
   {
     path: "/publicacion/:id/editar",
     name: "EditarPublicacion",
-    component: EditarPublicacionView,
+    component: PublicacionDetalleView,
 
     alias: [
       "/publicaciones/:id/editar",
@@ -565,6 +562,7 @@ const routes = [
 
     meta: {
       requiresAuth: true,
+      publicationEdit: true,
       title: "Editar publicación",
     },
 
@@ -890,11 +888,12 @@ const routes = [
   {
     path: "/admin/publicaciones/:id/editar",
     name: "AdminEditarPublicacion",
-    component: EditarPublicacionView,
+    component: PublicacionDetalleView,
 
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
+      publicationEdit: true,
       title: "Editar publicación",
     },
 

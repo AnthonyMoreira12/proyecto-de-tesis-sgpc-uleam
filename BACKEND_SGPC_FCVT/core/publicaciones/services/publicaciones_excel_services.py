@@ -809,6 +809,12 @@ def _row_alto_impacto(
                 )
                 or "—"
             ),
+            "JCR": (
+                _normalize_text(
+                    articulo.jcr
+                )
+                or "—"
+            ),
             "Link revista": (
                 _normalize_text(
                     articulo.link_revista

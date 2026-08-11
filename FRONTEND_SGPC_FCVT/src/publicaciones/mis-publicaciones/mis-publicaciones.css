@@ -1894,22 +1894,32 @@ body.dark .mispub
 ============================================================ */
 
 .mispub .mispub__results {
+  width: 100%;
   min-width: 0;
 }
 
 .mispub .cards {
+  width: 100%;
+  min-width: 0;
+
   display: grid;
 
   grid-template-columns:
     repeat(
-      3,
-      minmax(0, 1fr)
+      auto-fit,
+      minmax(
+        min(100%, 360px),
+        1fr
+      )
     );
 
+  align-items: stretch;
+
   gap:
-    var(
-      --sgpc-list-page-gap,
-      14px
+    clamp(
+      14px,
+      1.4vw,
+      20px
     );
 }
 
@@ -1943,6 +1953,9 @@ body.dark .mispub
     );
 
   position: relative;
+
+  width: 100%;
+  height: 100%;
 
   min-width: 0;
   min-height: 232px;
@@ -2137,15 +2150,8 @@ body.dark .mispub
   letter-spacing: -0.018em;
   font-weight: 750;
 
-  display: -webkit-box;
-
-  line-clamp: 3;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
-
   overflow-wrap: anywhere;
+  word-break: normal;
 
   transition:
     color var(--t-fast, 0.18s ease);
@@ -2685,13 +2691,6 @@ body.dark .mispub
       1 / -1;
   }
 
-  .mispub .cards {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
 }
 
 /* ============================================================

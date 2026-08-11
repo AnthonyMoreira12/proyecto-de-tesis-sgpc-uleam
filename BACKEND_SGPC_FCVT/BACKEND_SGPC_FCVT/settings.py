@@ -581,7 +581,7 @@ CORS_ALLOWED_ORIGINS = env_list(
     ),
 )
 
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = list(
     dict.fromkeys(

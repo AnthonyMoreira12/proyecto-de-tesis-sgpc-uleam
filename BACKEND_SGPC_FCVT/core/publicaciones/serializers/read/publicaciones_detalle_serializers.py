@@ -387,6 +387,10 @@ class PublicacionDetalleSerializer(
         serializers.SerializerMethodField()
     )
 
+    jcr = (
+        serializers.SerializerMethodField()
+    )
+
     # Compartido por Ponencia / Libro / Capítulo
     revisor_par_arbitraje = (
         serializers.SerializerMethodField()
@@ -501,6 +505,7 @@ class PublicacionDetalleSerializer(
             "factor_impacto",
             "cuartil",
             "sjr",
+            "jcr",
 
             "revisor_par_arbitraje",
 
@@ -1630,6 +1635,26 @@ class PublicacionDetalleSerializer(
                 obj,
                 "articulo",
                 "sjr",
+            )
+        )
+
+    def get_jcr(
+        self,
+        obj,
+    ):
+        if (
+            self._get_tipo_articulo(
+                obj
+            )
+            != "alto_impacto"
+        ):
+            return ""
+
+        return _to_str(
+            self._related_attr(
+                obj,
+                "articulo",
+                "jcr",
             )
         )
 

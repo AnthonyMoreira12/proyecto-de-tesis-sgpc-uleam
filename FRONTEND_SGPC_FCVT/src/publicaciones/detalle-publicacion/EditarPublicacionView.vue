@@ -673,7 +673,7 @@
               class="pedit-label"
               for="pedit-sjr"
             >
-              SJR
+              SJR (valor)
               <span class="pedit-required">*</span>
             </label>
 
@@ -682,6 +682,34 @@
               v-model.trim="form.sjr"
               class="pedit-input"
               type="text"
+              inputmode="decimal"
+              maxlength="100"
+              placeholder="Ej. 0.845"
+              required
+              :disabled="savingLocal || removingPdf"
+            />
+          </div>
+
+          <div
+            v-if="form.factor_impacto === 'jcr'"
+            class="pedit-field"
+          >
+            <label
+              class="pedit-label"
+              for="pedit-jcr"
+            >
+              JCR (valor)
+              <span class="pedit-required">*</span>
+            </label>
+
+            <input
+              id="pedit-jcr"
+              v-model.trim="form.jcr"
+              class="pedit-input"
+              type="text"
+              inputmode="decimal"
+              maxlength="100"
+              placeholder="Ej. 3.25"
               required
               :disabled="savingLocal || removingPdf"
             />
@@ -1639,6 +1667,7 @@ const form = reactive({
   factor_impacto: "",
   cuartil: "",
   sjr: "",
+  jcr: "",
 
   nombre_evento: "",
   nombre_ponencia: "",
@@ -1847,6 +1876,9 @@ const mapDetalleToForm = (detalle) => {
   form.sjr =
     detalle?.sjr || "";
 
+  form.jcr =
+    detalle?.jcr || "";
+
   form.nombre_capitulo =
     detalle?.nombre_capitulo || "";
 
@@ -1882,6 +1914,7 @@ const mapDetalleToForm = (detalle) => {
     form.factor_impacto = "";
     form.cuartil = "";
     form.sjr = "";
+    form.jcr = "";
     form.numero_revista = "";
   }
 };
@@ -1910,6 +1943,19 @@ watch(
   },
   {
     immediate: true,
+  }
+);
+
+watch(
+  () => form.factor_impacto,
+  (factor) => {
+    if (factor !== "sjr") {
+      form.sjr = "";
+    }
+
+    if (factor !== "jcr") {
+      form.jcr = "";
+    }
   }
 );
 
@@ -2030,6 +2076,7 @@ const allowedSpecificFields = computed(() => {
       "factor_impacto",
       "cuartil",
       "sjr",
+      "jcr",
     ];
   }
 
@@ -2306,6 +2353,18 @@ const validarEdicion = () => {
     ) {
       return (
         "Debe ingresar el valor SJR."
+      );
+    }
+
+    if (
+      !isArticuloRegional.value &&
+      form.factor_impacto === "jcr" &&
+      !String(
+        form.jcr || ""
+      ).trim()
+    ) {
+      return (
+        "Debe ingresar el valor JCR."
       );
     }
   }

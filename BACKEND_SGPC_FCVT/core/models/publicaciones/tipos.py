@@ -326,8 +326,15 @@ class Articulo(models.Model):
         blank=True,
     )
 
+    jcr = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
     class Meta:
         db_table = "articulos"
+
         ordering = [
             models.F(
                 "publicacion__anio_publicacion"
@@ -337,6 +344,7 @@ class Articulo(models.Model):
             ).desc(nulls_last=True),
             "-id",
         ]
+
         indexes = [
             models.Index(
                 fields=["tipo_articulo"],
@@ -366,46 +374,69 @@ class Articulo(models.Model):
 
         errors = {}
 
+        # ========================================================
+        # NORMALIZACIÓN
+        # ========================================================
+
         self.tipo_articulo = _norm_lower(
             self.tipo_articulo
         )
+
         self.nombre_articulo = _norm_text(
             self.nombre_articulo
         )
+
         self.base_datos_indexada = _norm_lower(
             self.base_datos_indexada
         )
+
         self.base_datos_otra = (
             _norm_optional_text(
                 self.base_datos_otra
             )
         )
+
         self.codigo_doi = _norm_optional_text(
             self.codigo_doi
         )
+
         self.codigo_issn = _norm_text(
             self.codigo_issn
         )
+
         self.nombre_revista = _norm_text(
             self.nombre_revista
         )
+
         self.link_revista = _norm_optional_text(
             self.link_revista
         )
+
         self.link_publicacion = (
             _norm_optional_text(
                 self.link_publicacion
             )
         )
+
         self.factor_impacto = _norm_lower(
             self.factor_impacto
         )
+
         self.cuartil = _norm_lower(
             self.cuartil
         )
+
         self.sjr = _norm_optional_text(
             self.sjr
         )
+
+        self.jcr = _norm_optional_text(
+            self.jcr
+        )
+
+        # ========================================================
+        # VALIDACIONES GENERALES
+        # ========================================================
 
         valid_article_types = {
             value
@@ -413,7 +444,10 @@ class Articulo(models.Model):
             in self.TIPO_ARTICULO
         }
 
-        if self.tipo_articulo not in valid_article_types:
+        if (
+            self.tipo_articulo
+            not in valid_article_types
+        ):
             errors["tipo_articulo"] = (
                 "El tipo de artículo es inválido."
             )
@@ -442,6 +476,10 @@ class Articulo(models.Model):
                 "mayor o igual a 1."
             )
 
+        # ========================================================
+        # COHERENCIA CON TIPO DE PUBLICACIÓN
+        # ========================================================
+
         if self.publicacion_id:
             category = _norm_lower(
                 getattr(
@@ -457,10 +495,17 @@ class Articulo(models.Model):
                     "ser de categoría artículo."
                 )
 
+        # ========================================================
+        # ARTÍCULO REGIONAL
+        # ========================================================
+
         if self.tipo_articulo == "regional":
+            # Los artículos regionales utilizan
+            # base de datos/indexación, no SJR/JCR.
             self.factor_impacto = None
             self.cuartil = None
             self.sjr = None
+            self.jcr = None
 
             valid_bases = {
                 value
@@ -473,6 +518,7 @@ class Articulo(models.Model):
                     "Debe seleccionar una base de datos "
                     "o indexación."
                 )
+
             elif (
                 self.base_datos_indexada
                 not in valid_bases
@@ -491,10 +537,21 @@ class Articulo(models.Model):
                         "Debe especificar la base de datos "
                         "cuando seleccione 'Otra'."
                     )
+
             else:
                 self.base_datos_otra = None
 
-        elif self.tipo_articulo == "alto_impacto":
+        # ========================================================
+        # ARTÍCULO DE ALTO IMPACTO
+        # ========================================================
+
+        elif (
+            self.tipo_articulo
+            == "alto_impacto"
+        ):
+            # Los artículos de alto impacto utilizan
+            # factor de impacto/cuartil y no las bases
+            # regionales.
             self.base_datos_indexada = None
             self.base_datos_otra = None
 
@@ -503,6 +560,7 @@ class Articulo(models.Model):
                 for value, _label
                 in self.FACTOR_IMPACTO
             }
+
             valid_quartiles = {
                 value
                 for value, _label
@@ -527,31 +585,66 @@ class Articulo(models.Model):
                     "El cuartil es inválido."
                 )
 
-            if (
-                self.factor_impacto == "sjr"
-                and not self.sjr
-            ):
-                errors["sjr"] = (
-                    "Debe ingresar el valor SJR "
-                    "cuando el factor es SJR."
-                )
+            # ----------------------------------------------------
+            # SJR
+            # ----------------------------------------------------
 
-            if self.factor_impacto != "sjr":
+            if self.factor_impacto == "sjr":
+                if not self.sjr:
+                    errors["sjr"] = (
+                        "Debe ingresar el valor SJR "
+                        "cuando el factor es SJR."
+                    )
+
+                # Solo puede existir el valor correspondiente
+                # al indicador seleccionado.
+                self.jcr = None
+
+            # ----------------------------------------------------
+            # JCR
+            # ----------------------------------------------------
+
+            elif self.factor_impacto == "jcr":
+                if not self.jcr:
+                    errors["jcr"] = (
+                        "Debe ingresar el valor JCR "
+                        "cuando el factor es JCR."
+                    )
+
+                # Solo puede existir el valor correspondiente
+                # al indicador seleccionado.
                 self.sjr = None
 
-        if errors:
-            raise ValidationError(errors)
+            # ----------------------------------------------------
+            # SIN FACTOR
+            # ----------------------------------------------------
 
-    def save(self, *args, **kwargs):
+            else:
+                self.sjr = None
+                self.jcr = None
+
+        if errors:
+            raise ValidationError(
+                errors
+            )
+
+    def save(
+        self,
+        *args,
+        **kwargs,
+    ):
         self.full_clean()
-        return super().save(*args, **kwargs)
+
+        return super().save(
+            *args,
+            **kwargs,
+        )
 
     def __str__(self):
         return (
             self.nombre_articulo
             or f"Artículo #{self.pk}"
         )
-
 
 class Libro(models.Model):
     SI_NO = [

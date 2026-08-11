@@ -11,8 +11,7 @@ Admite:
 
 La modificación de una publicación está limitada a:
 - administradores;
-- usuario creador;
-- autores vinculados con permiso de edición.
+- usuario creador de la publicación.
 """
 
 from django.db.models import Prefetch
@@ -126,6 +125,35 @@ class PublicacionDetailAPIView(
             "esta publicación."
         )
 
+    def _attach_edit_metadata(
+        self,
+        *,
+        request,
+        publicacion,
+        data,
+    ):
+        """
+        Añade al detalle los metadatos necesarios para que el
+        frontend use la misma regla de autorización del backend.
+        """
+
+        payload = dict(
+            data or {}
+        )
+
+        payload["usuario_creador_id"] = (
+            publicacion.usuario_creador_id
+        )
+
+        payload["puede_editar"] = bool(
+            can_edit_publicacion(
+                request.user,
+                publicacion,
+            )
+        )
+
+        return payload
+
     # =========================================================
     # REQUEST DATA
     # =========================================================
@@ -183,6 +211,12 @@ class PublicacionDetailAPIView(
         id,
     ):
         try:
+            publicacion = (
+                self._get_publicacion(
+                    id
+                )
+            )
+
             data = (
                 construir_detalle_publicacion(
                     publicacion_id=id
@@ -200,6 +234,12 @@ class PublicacionDetailAPIView(
                     status.HTTP_404_NOT_FOUND
                 ),
             )
+
+        data = self._attach_edit_metadata(
+            request=request,
+            publicacion=publicacion,
+            data=data,
+        )
 
         return Response(
             data,
@@ -315,6 +355,12 @@ class PublicacionDetailAPIView(
                     status.HTTP_404_NOT_FOUND
                 ),
             )
+
+        data = self._attach_edit_metadata(
+            request=request,
+            publicacion=publicacion,
+            data=data,
+        )
 
         return Response(
             data,

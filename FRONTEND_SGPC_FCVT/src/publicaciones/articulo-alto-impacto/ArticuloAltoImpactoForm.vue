@@ -884,6 +884,49 @@
                     {{ fieldErrors.sjr }}
                   </p>
                 </div>
+
+                <!-- JCR -->
+
+                <div
+                  v-if="form.factor_impacto === 'jcr'"
+                  class="sgpc-field sgpc-col-span-12"
+                >
+                  <label
+                    class="sgpc-label"
+                    for="ai-jcr"
+                  >
+                    JCR (valor)
+
+                    <span
+                      class="req"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
+                  </label>
+
+                  <input
+                    id="ai-jcr"
+                    v-model.trim="form.jcr"
+                    class="sgpc-input"
+                    type="text"
+                    inputmode="decimal"
+                    maxlength="100"
+                    :aria-invalid="hasFieldError('jcr')"
+                    :aria-describedby="errorDescriptionId('jcr')"
+                    placeholder="Ej. 3.25"
+                    required
+                  />
+
+                  <p
+                    v-if="fieldErrors.jcr"
+                    :id="fieldErrorId('jcr')"
+                    class="sgpc-hint sgpc-hint-error"
+                    role="alert"
+                  >
+                    {{ fieldErrors.jcr }}
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -1294,6 +1337,7 @@ const FIELD_LIMITS = Object.freeze({
   link_revista: 500,
   link_publicacion: 500,
   sjr: 100,
+  jcr: 100,
 });
 
 
@@ -1353,6 +1397,7 @@ const FIELD_LABELS = Object.freeze({
   factor_impacto: "Factor de impacto",
   cuartil: "Cuartil",
   sjr: "SJR",
+  jcr: "JCR",
   origen_tipo: "Origen de la publicación",
   origen_grado: "Grado / programa u otro origen",
   autores: "Autores",
@@ -1382,6 +1427,7 @@ const ERROR_FIELD_ORDER = Object.freeze([
   "factor_impacto",
   "cuartil",
   "sjr",
+  "jcr",
   "autores",
   "archivos",
   "general",
@@ -1417,6 +1463,7 @@ function createEmptyForm() {
     factor_impacto: "",
     cuartil: "",
     sjr: "",
+    jcr: "",
 
     autores: [],
     archivos: [],
@@ -1973,6 +2020,19 @@ export default {
         return false;
       }
 
+      if (
+        this.form
+          .factor_impacto ===
+          "jcr" &&
+
+        !String(
+          this.form.jcr ||
+          ""
+        ).trim()
+      ) {
+        return false;
+      }
+
       return true;
     },
 
@@ -2132,8 +2192,8 @@ export default {
        * cuartil y adjuntos.
        *
        * La subárea solamente aplica si se seleccionó un área.
-       * SJR no se cuenta como opcional: cuando factor_impacto ===
-       * "sjr" se convierte en requisito condicional.
+       * SJR/JCR no se cuentan como opcionales: el valor del indicador
+       * seleccionado se convierte en requisito condicional.
        */
       return 10 + (hasArea ? 1 : 0);
     },
@@ -2459,6 +2519,13 @@ export default {
         value !== "sjr"
       ) {
         this.form.sjr =
+          "";
+      }
+
+      if (
+        value !== "jcr"
+      ) {
+        this.form.jcr =
           "";
       }
     },
@@ -2902,6 +2969,9 @@ export default {
           sjr:
             value.sjr,
 
+          jcr:
+            value.jcr,
+
           autores:
             value.autores,
 
@@ -3135,6 +3205,9 @@ export default {
 
         sjr:
           "ai-sjr",
+
+        jcr:
+          "ai-jcr",
 
         origen_tipo:
           "ai-origen_tipo",
@@ -3595,6 +3668,30 @@ export default {
           `El valor SJR no puede superar ${FIELD_LIMITS.sjr} caracteres.`;
       }
 
+      if (
+        this.form
+          .factor_impacto ===
+          "jcr" &&
+
+        !String(
+          this.form.jcr ||
+          ""
+        ).trim()
+      ) {
+        errors.jcr =
+          "Ingrese el valor JCR o seleccione otro factor.";
+      }
+
+      if (
+        exceedsLength(
+          this.form.jcr,
+          FIELD_LIMITS.jcr
+        )
+      ) {
+        errors.jcr =
+          `El valor JCR no puede superar ${FIELD_LIMITS.jcr} caracteres.`;
+      }
+
       // ------------------------------------------------------
       // Autores
       // ------------------------------------------------------
@@ -3835,6 +3932,7 @@ export default {
           "factor_impacto",
           "cuartil",
           "sjr",
+          "jcr",
         ].forEach(
           (key) => {
             const value =
