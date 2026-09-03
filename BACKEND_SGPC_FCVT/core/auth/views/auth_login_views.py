@@ -45,11 +45,17 @@ from rest_framework_simplejwt.tokens import (
 from core.auth.serializers.auth_login_serializers import (
     LoginSerializer,
 )
+from core.auditoria.services.auditoria_services import (
+    registrar_evento_auditoria,
+)
 from core.auth.services.auth_author_sync_services import (
     asegurar_autor_para_usuario,
 )
 from core.auth.services.auth_profile_services import (
     get_profile_edit_status,
+)
+from core.auth.services.auth_token_cookie_services import (
+    set_refresh_cookie,
 )
 
 
@@ -188,43 +194,32 @@ def _has_valid_cedula(user):
 
 def _calculate_profile_complete(user):
     """
-    Calcula la completitud efectiva del perfil.
-
-    Cuenta externa:
-        Cédula válida.
-
-    Cuenta institucional:
-        Cédula válida y Carrera.
-
-    Combinación inconsistente:
-        Perfil incompleto.
+    Calcula la completitud efectiva del perfil utilizando, cuando está
+    disponible, la regla central del modelo Usuario.
     """
     if user is None:
         return False
 
-    if not _has_valid_cedula(
-        user
-    ):
-        return False
+    calcular = getattr(
+        user,
+        "calcular_perfil_completo",
+        None,
+    )
 
-    if _is_external_user(
-        user
-    ):
+    if callable(calcular):
+        return bool(calcular())
+
+    if _is_external_user(user):
         return True
 
-    if _is_institutional_user(
-        user
-    ):
+    if _is_institutional_user(user):
         return bool(
-            getattr(
-                user,
-                "carrera_id",
-                None,
-            )
+            _has_valid_cedula(user)
+            and getattr(user, "sede_id", None)
+            and getattr(user, "carrera_id", None)
         )
 
     return False
-
 
 def _get_user_queryset():
     """
@@ -234,6 +229,7 @@ def _get_user_queryset():
     select_for_update().
     """
     return User.objects.select_related(
+        "sede",
         "carrera",
         "carrera__facultad",
         "autor",
@@ -278,6 +274,19 @@ def _get_user_by_email(email):
         )
         .first()
     )
+
+
+def _get_site(user):
+    """
+    Obtiene la Sede únicamente cuando el usuario es institucional.
+    """
+    if not _is_institutional_user(user):
+        return None
+
+    if not getattr(user, "sede_id", None):
+        return None
+
+    return getattr(user, "sede", None)
 
 
 def _get_career(user):
@@ -490,6 +499,10 @@ def build_local_auth_user_payload(
         _is_institutional_user(
             user
         )
+    )
+
+    site = _get_site(
+        user
     )
 
     career = _get_career(
@@ -720,6 +733,18 @@ def build_local_auth_user_payload(
         # ====================================================
         # RELACIÓN ACADÉMICA
         # ====================================================
+
+        "sede_id": getattr(
+            site,
+            "pk",
+            None,
+        ),
+
+        "sede": getattr(
+            site,
+            "nombre",
+            None,
+        ),
 
         "facultad_id": getattr(
             career,
@@ -1143,13 +1168,23 @@ class LoginView(APIView):
             authenticated_user
         )
 
+        refresh_token = tokens.get(
+            "refresh",
+            "",
+        )
+
         response = Response(
             {
                 "message": (
                     "Inicio de sesión correcto."
                 ),
 
-                "tokens": tokens,
+                "tokens": {
+                    "access": tokens.get(
+                        "access",
+                        "",
+                    ),
+                },
 
                 "user": (
                     build_local_auth_user_payload(
@@ -1161,6 +1196,11 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
+        set_refresh_cookie(
+            response,
+            refresh_token,
+        )
+
         # Evita que navegadores o proxies almacenen los tokens.
         response[
             "Cache-Control"
@@ -1170,4 +1210,14 @@ class LoginView(APIView):
             "Pragma"
         ] = "no-cache"
 
-        return response
+        registrar_evento_auditoria(
+            actor=authenticated_user,
+            accion="login",
+            modulo="autenticacion",
+            entidad=authenticated_user,
+            descripcion="Inicio de sesión local correcto.",
+            contexto={"origen": "local"},
+            request=request,
+        )
+
+        return response 

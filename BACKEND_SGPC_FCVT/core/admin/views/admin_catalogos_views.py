@@ -12,9 +12,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.admin.serializers.admin_catalogos_serializers import (
     AdminCarreraSerializer,
+    AdminCarreraSedeSerializer,
     AdminFacultadSerializer,
+    AdminSedeSerializer,
 )
-from core.models import Carrera, Facultad
+from core.models import Carrera, CarreraSede, Facultad, Sede
 from core.permisos.es_admin import EsAdmin
 
 
@@ -157,3 +159,68 @@ class AdminCarreraViewSet(
             )
 
         return queryset.order_by("nombre", "id")
+
+
+class AdminSedeViewSet(
+    _SafeCatalogMixin,
+    viewsets.ModelViewSet,
+):
+    serializer_class = AdminSedeSerializer
+    queryset = Sede.objects.all().order_by("nombre", "id")
+
+    def get_queryset(self):
+        queryset = Sede.objects.all()
+        if self.action != "list":
+            return queryset
+        params = self.request.query_params
+        query = str(params.get("q", "")).strip()
+        activa = str(params.get("activa", "")).strip().lower()
+        if activa in {"1", "true", "yes", "si", "sí"}:
+            queryset = queryset.filter(activa=True)
+        elif activa in {"0", "false", "no"}:
+            queryset = queryset.filter(activa=False)
+        if query:
+            queryset = queryset.filter(
+                Q(nombre__icontains=query)
+                | Q(codigo__icontains=query)
+                | Q(ciudad__icontains=query)
+            )
+        return queryset.order_by("nombre", "id")
+
+
+class AdminCarreraSedeViewSet(
+    _SafeCatalogMixin,
+    viewsets.ModelViewSet,
+):
+    serializer_class = AdminCarreraSedeSerializer
+    queryset = CarreraSede.objects.select_related(
+        "sede", "carrera", "carrera__facultad"
+    ).order_by("sede__nombre", "carrera__nombre", "id")
+
+    def get_queryset(self):
+        queryset = CarreraSede.objects.select_related(
+            "sede", "carrera", "carrera__facultad"
+        )
+        if self.action != "list":
+            return queryset
+        params = self.request.query_params
+        sede_id = params.get("sede_id") or params.get("sede")
+        carrera_id = params.get("carrera_id") or params.get("carrera")
+        activa = str(params.get("activa", "")).strip().lower()
+        if sede_id:
+            try:
+                sede_id = int(sede_id)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError({"sede_id": "Debe ser un entero positivo."}) from exc
+            queryset = queryset.filter(sede_id=sede_id)
+        if carrera_id:
+            try:
+                carrera_id = int(carrera_id)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError({"carrera_id": "Debe ser un entero positivo."}) from exc
+            queryset = queryset.filter(carrera_id=carrera_id)
+        if activa in {"1", "true", "yes", "si", "sí"}:
+            queryset = queryset.filter(activa=True)
+        elif activa in {"0", "false", "no"}:
+            queryset = queryset.filter(activa=False)
+        return queryset.order_by("sede__nombre", "carrera__nombre", "id")

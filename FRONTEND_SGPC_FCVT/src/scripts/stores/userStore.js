@@ -3,6 +3,10 @@ import { defineStore } from "pinia";
 import api from "../api/axios";
 
 import { isAdminUser } from "../utils/auth";
+import {
+  beginPendingUpdateLoginSession,
+  clearPendingUpdateLoginSession,
+} from "../utils/actualizacionesSession";
 
 import {
   AUTH_STORAGE_KEYS,
@@ -143,6 +147,27 @@ const hasOwn = (obj, key) => {
 };
 
 
+const normalizeRelationId = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "boolean"
+  ) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  return (
+    Number.isInteger(parsed) &&
+    parsed > 0
+  )
+    ? parsed
+    : null;
+};
+
+
 const hasAvatarField = (data = {}) => {
   return AVATAR_KEYS.some(
     (key) => hasOwn(data, key)
@@ -232,13 +257,26 @@ const hasValidCedula = (user = {}) => {
 };
 
 
+const hasSite = (user = {}) => {
+  const siteId =
+    user?.sede_id ??
+    (
+      typeof user?.sede === "object"
+        ? user.sede?.id
+        : user?.sede
+    );
+
+  return Boolean(siteId);
+};
+
+
 const hasCareer = (user = {}) => {
   const careerId =
     user?.carrera_id ??
     (
       typeof user?.carrera === "object"
         ? user.carrera?.id
-        : null
+        : user?.carrera
     );
 
   return Boolean(
@@ -250,16 +288,24 @@ const hasCareer = (user = {}) => {
 const calculateProfileComplete = (
   user = {}
 ) => {
-  if (!hasValidCedula(user)) {
-    return false;
-  }
+  /*
+    Regla alineada con el backend actual:
 
+    - Externo local: no requiere cédula para considerarse completo
+      y nunca conserva clasificación institucional.
+    - Institucional Microsoft: requiere cédula válida, Sede y
+      Carrera. La relación CarreraSede activa se valida en backend.
+  */
   if (isExternalAccount(user)) {
     return true;
   }
 
   if (isInstitutionalAccount(user)) {
-    return hasCareer(user);
+    return Boolean(
+      hasValidCedula(user) &&
+      hasSite(user) &&
+      hasCareer(user)
+    );
   }
 
   return false;
@@ -267,6 +313,10 @@ const calculateProfileComplete = (
 
 
 const clearAcademicData = (user) => {
+  user.sede_id = null;
+  user.sede = null;
+  user.sede_nombre = null;
+
   user.facultad_id = null;
   user.facultad = null;
   user.facultad_nombre = null;
@@ -322,6 +372,82 @@ const normalizeUser = (
   user.identificacion =
     normalizeNullableString(
       user.identificacion
+    );
+
+  const rawSite = user.sede;
+  const rawCareer = user.carrera;
+  const rawFaculty = user.facultad;
+
+  user.sede_id =
+    normalizeRelationId(
+      user.sede_id ??
+      (
+        typeof rawSite === "object"
+          ? rawSite?.id
+          : rawSite
+      )
+    );
+
+  user.sede_nombre =
+    normalizeNullableString(
+      user.sede_nombre ??
+      (
+        typeof rawSite === "object"
+          ? rawSite?.nombre ?? rawSite?.label
+          : (
+              user.sede_id
+                ? null
+                : rawSite
+            )
+      )
+    );
+
+  user.carrera_id =
+    normalizeRelationId(
+      user.carrera_id ??
+      (
+        typeof rawCareer === "object"
+          ? rawCareer?.id
+          : rawCareer
+      )
+    );
+
+  user.carrera_nombre =
+    normalizeNullableString(
+      user.carrera_nombre ??
+      (
+        typeof rawCareer === "object"
+          ? rawCareer?.nombre ?? rawCareer?.label
+          : (
+              user.carrera_id
+                ? null
+                : rawCareer
+            )
+      )
+    );
+
+  user.facultad_id =
+    normalizeRelationId(
+      user.facultad_id ??
+      (
+        typeof rawFaculty === "object"
+          ? rawFaculty?.id
+          : rawFaculty
+      )
+    );
+
+  user.facultad_nombre =
+    normalizeNullableString(
+      user.facultad_nombre ??
+      (
+        typeof rawFaculty === "object"
+          ? rawFaculty?.nombre ?? rawFaculty?.label
+          : (
+              user.facultad_id
+                ? null
+                : rawFaculty
+            )
+      )
     );
 
   user.is_active =
@@ -581,6 +707,30 @@ export const useUserStore = defineStore(
           state.user?.tipo_cuenta_label ||
           "Cuenta sin clasificación válida"
         );
+      },
+
+      siteId(state) {
+        return state.user?.sede_id || null;
+      },
+
+      siteName(state) {
+        return (
+          state.user?.sede_nombre ||
+          (
+            typeof state.user?.sede === "object"
+              ? state.user?.sede?.nombre
+              : null
+          ) ||
+          ""
+        );
+      },
+
+      careerId(state) {
+        return state.user?.carrera_id || null;
+      },
+
+      facultyId(state) {
+        return state.user?.facultad_id || null;
       },
     },
 
@@ -943,14 +1093,17 @@ export const useUserStore = defineStore(
 
       setSession({
         access = "",
-        refresh = "",
         user = null,
       } = {}) {
         this.accessToken =
           normalizeText(access);
 
+        /*
+         * El refresh real vive exclusivamente en una cookie
+         * HttpOnly. El store conserva únicamente un marcador.
+         */
         this.refreshToken =
-          normalizeText(refresh);
+          getRefreshToken();
 
         this.persistTokens();
 
@@ -965,6 +1118,10 @@ export const useUserStore = defineStore(
         }
 
         this.hydrated = true;
+
+        if (this.accessToken) {
+          beginPendingUpdateLoginSession();
+        }
       },
 
       /* ======================================================
@@ -1023,6 +1180,20 @@ export const useUserStore = defineStore(
          CERRAR SESIÓN
       ====================================================== */
 
+      async logout() {
+        try {
+          await api.post(
+            "auth/logout/",
+            {},
+            {
+              withCredentials: true,
+            }
+          );
+        } finally {
+          this.clearUser();
+        }
+      },
+
       clearUser() {
         this.accessToken = "";
         this.refreshToken = "";
@@ -1035,7 +1206,8 @@ export const useUserStore = defineStore(
         this.hydrated = true;
 
         clearAuthStorage();
+        clearPendingUpdateLoginSession();
       },
     },
   }
-);
+);// ============================================================

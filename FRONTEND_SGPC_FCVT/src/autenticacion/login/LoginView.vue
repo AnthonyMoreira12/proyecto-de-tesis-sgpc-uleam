@@ -566,12 +566,10 @@ const clearError = (field) => {
 
 const saveSession = ({
   access,
-  refresh,
   user,
 }) => {
   userStore.setSession({
     access,
-    refresh,
     user,
   });
 };
@@ -579,12 +577,10 @@ const saveSession = ({
 
 const ensureAuthenticatedSession = async ({
   access,
-  refresh,
   user,
 }) => {
   saveSession({
     access,
-    refresh,
     user,
   });
 
@@ -752,16 +748,10 @@ const loginBD = async () => {
     const access =
       response.data?.tokens?.access;
 
-    const refresh =
-      response.data?.tokens?.refresh;
-
     const user =
       response.data?.user ?? null;
 
-    if (
-      !access
-      || !refresh
-    ) {
+    if (!access) {
       error.value =
         "No se pudo iniciar sesión. Inténtelo nuevamente.";
 
@@ -771,7 +761,6 @@ const loginBD = async () => {
     const sessionReady =
       await ensureAuthenticatedSession({
         access,
-        refresh,
         user,
       });
 
@@ -910,12 +899,6 @@ const extractTokens = (data) => {
     ?? data?.access_token
     ?? null;
 
-  const refresh =
-    data?.tokens?.refresh
-    ?? data?.refresh
-    ?? data?.refresh_token
-    ?? null;
-
   const user =
     data?.user
     ?? data?.usuario
@@ -924,7 +907,6 @@ const extractTokens = (data) => {
 
   return {
     access,
-    refresh,
     user,
   };
 };
@@ -1022,16 +1004,12 @@ const finishMicrosoftLogin =
 
       const {
         access,
-        refresh,
         user,
       } = extractTokens(
         response.data
       );
 
-      if (
-        !access
-        || !refresh
-      ) {
+      if (!access) {
         msError.value =
           "No se pudo completar el acceso con Microsoft.";
 
@@ -1043,7 +1021,6 @@ const finishMicrosoftLogin =
       const sessionReady =
         await ensureAuthenticatedSession({
           access,
-          refresh,
           user,
         });
 

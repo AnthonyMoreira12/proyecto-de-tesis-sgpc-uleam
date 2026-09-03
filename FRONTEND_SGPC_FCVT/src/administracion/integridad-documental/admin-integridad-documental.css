@@ -1,0 +1,714 @@
+/* ============================================================
+   SGPC ULEAM
+   INTEGRIDAD DOCUMENTAL · ADMINISTRACIÓN
+============================================================ */
+
+
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.pdfi-page {
+  padding-bottom: 72px;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+}
+
+
+.pdfi-shell {
+  width: min(1360px, 100%);
+
+  margin: 0 auto;
+
+  display: grid;
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.pdfi-hero {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 24px;
+
+  min-height: 92px;
+
+  padding: 20px 4px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: transparent;
+}
+
+
+.pdfi-hero__copy {
+  display: grid;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+
+.pdfi-hero__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+}
+
+
+.pdfi-hero h1 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.75rem,
+      1.5rem + 0.75vw,
+      2.2rem
+    );
+
+  font-weight: 780;
+
+  line-height: 1.08;
+
+  letter-spacing: -0.035em;
+}
+
+
+.pdfi-hero p {
+  max-width: 760px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.pdfi-hero button,
+.pdfi-actions button,
+.pdfi-result button {
+  appearance: none;
+
+  min-height: 40px;
+
+  padding: 0 13px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+
+  font-size: 0.74rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.pdfi-hero button:hover:not(:disabled),
+.pdfi-actions button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+
+  background: var(--bg-soft);
+
+  color: var(--color-primary);
+}
+
+
+.pdfi-hero button:disabled,
+.pdfi-actions button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+.pdfi-actions button.primary {
+  border-color: var(--color-primary);
+
+  background: var(--color-primary);
+
+  color: var(--text-on-primary);
+}
+
+
+.pdfi-actions button.primary:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-primary) 88%,
+      var(--text-primary)
+    );
+
+  color: var(--text-on-primary);
+}
+
+
+/* ============================================================
+   MÉTRICAS
+============================================================ */
+
+.pdfi-metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+
+.pdfi-metrics article {
+  display: grid;
+
+  align-content: space-between;
+
+  gap: 9px;
+
+  min-width: 0;
+
+  min-height: 132px;
+
+  padding: 18px 19px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-top:
+    3px solid
+    var(--color-primary);
+
+  border-radius: 13px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-fast),
+    transform var(--t-fast),
+    background var(--t-fast);
+}
+
+
+.pdfi-metrics article:hover {
+  border-color: var(--border-strong);
+
+  transform:
+    translateY(-2px);
+}
+
+
+.pdfi-metrics article[data-state="warning"] {
+  border-top-color:
+    var(--warning);
+}
+
+
+.pdfi-metrics article[data-state="success"] {
+  border-top-color:
+    var(--success);
+}
+
+
+.pdfi-metrics span {
+  display: block;
+
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 760;
+
+  line-height: 1.4;
+}
+
+
+.pdfi-metrics strong {
+  display: block;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.55rem,
+      1.35rem + 0.6vw,
+      2rem
+    );
+
+  font-weight: 790;
+
+  line-height: 1;
+
+  letter-spacing: -0.03em;
+}
+
+
+.pdfi-metrics small {
+  color: var(--text-secondary);
+
+  font-size: 0.67rem;
+
+  line-height: 1.35;
+}
+
+
+/* ============================================================
+   PANEL
+============================================================ */
+
+.pdfi-panel {
+  padding: 20px 22px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+}
+
+
+.pdfi-panel__head {
+  display: grid;
+
+  gap: 8px;
+}
+
+
+.pdfi-panel h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 1.04rem;
+
+  font-weight: 760;
+
+  letter-spacing: -0.018em;
+}
+
+
+.pdfi-panel p {
+  max-width: 980px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   ACCIONES
+============================================================ */
+
+.pdfi-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 16px;
+
+  padding-top: 14px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+/* ============================================================
+   RESULTADO
+============================================================ */
+
+.pdfi-result {
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+}
+
+
+.pdfi-result__head {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  min-height: 66px;
+
+  padding: 14px 18px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+}
+
+
+.pdfi-result__head > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.pdfi-result__head span {
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  font-weight: 750;
+}
+
+
+.pdfi-result__head h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 0.92rem;
+
+  font-weight: 780;
+}
+
+
+.pdfi-result__close {
+  width: 34px;
+
+  min-width: 34px;
+
+  min-height: 34px !important;
+
+  padding: 0 !important;
+
+  border-color: transparent !important;
+
+  background: transparent !important;
+
+  font-size: 1.15rem !important;
+}
+
+
+.pdfi-result__close:hover {
+  background:
+    var(--bg-soft) !important;
+}
+
+
+.pdfi-result__metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(180px, 1fr)
+    );
+
+  gap: 10px;
+
+  padding: 16px 18px;
+}
+
+
+.pdfi-result__metrics article {
+  display: grid;
+
+  gap: 5px;
+
+  min-width: 0;
+
+  padding: 12px 13px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+}
+
+
+.pdfi-result__metrics span {
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  font-weight: 750;
+}
+
+
+.pdfi-result__metrics strong {
+  color: var(--text-primary);
+
+  font-size: 1.15rem;
+
+  font-weight: 790;
+}
+
+
+.pdfi-result__message {
+  margin:
+    0 18px 16px;
+
+  padding: 12px 13px;
+
+  border:
+    1px solid
+    var(--info-line);
+
+  border-radius: 9px;
+
+  background: var(--info-soft);
+
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   DETALLE TÉCNICO
+============================================================ */
+
+.pdfi-result__technical {
+  margin: 0 18px 18px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+.pdfi-result__technical summary {
+  padding:
+    13px 0;
+
+  color: var(--color-primary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+
+.pdfi-result__technical pre {
+  margin: 0;
+
+  max-height: 320px;
+
+  padding: 14px;
+
+  overflow: auto;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-primary);
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  font-size: 0.68rem;
+
+  line-height: 1.55;
+
+  white-space: pre-wrap;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.pdfi-error {
+  margin: 0;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid
+    var(--danger-line);
+
+  border-radius: 11px;
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+
+  font-size: 0.74rem;
+
+  line-height: 1.45;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 920px) {
+
+  .pdfi-hero {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pdfi-metrics {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .pdfi-hero button {
+    width: fit-content;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .pdfi-shell {
+    gap: 14px;
+  }
+
+  .pdfi-hero {
+    padding:
+      14px 2px;
+  }
+
+  .pdfi-hero button {
+    width: 100%;
+  }
+
+  .pdfi-panel {
+    padding: 16px;
+  }
+
+  .pdfi-actions {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pdfi-actions button {
+    width: 100%;
+  }
+
+  .pdfi-result__metrics {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+}
+
+
+@media (max-width: 480px) {
+
+  .pdfi-metrics {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .pdfi-page *,
+  .pdfi-page *::before,
+  .pdfi-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

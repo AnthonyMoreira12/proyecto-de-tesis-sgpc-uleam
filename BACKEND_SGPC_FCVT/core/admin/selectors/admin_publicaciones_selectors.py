@@ -13,6 +13,7 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Coalesce, NullIf
+from rest_framework.exceptions import ValidationError
 
 from core.models import (
     Publicacion,
@@ -46,6 +47,33 @@ ORDERING_MAP = {
 
 def _text(value):
     return str(value or "").strip()
+
+
+def _publication_state(value):
+    state = _text(
+        value
+    ).lower()
+
+    if not state:
+        return None
+
+    valid_states = {
+        item
+        for item, _label
+        in Publicacion.ESTADOS
+    }
+
+    if state not in valid_states:
+        raise ValidationError(
+            {
+                "estado": [
+                    "El estado de la publicación "
+                    "seleccionado no es válido."
+                ]
+            }
+        )
+
+    return state
 
 
 def _positive_int(value):
@@ -221,8 +249,10 @@ def admin_publicaciones_base_queryset(
             "tipo",
             "usuario_creador",
             "admin_registrador",
+            "sede",
             "carrera__facultad",
             "proyecto",
+            "proyecto__sede",
             "area",
             "subarea",
             "pais",
@@ -293,6 +323,8 @@ def filter_admin_publicaciones_queryset(
     usuario_objetivo_id=None,
     autor_objetivo_id=None,
     admin_registrador_id=None,
+    estado=None,
+    sede_id=None,
     facultad_id=None,
     carrera_id=None,
     anio=None,
@@ -320,6 +352,16 @@ def filter_admin_publicaciones_queryset(
 
     admin_id = _positive_int(
         admin_registrador_id
+    )
+
+    publication_state = (
+        _publication_state(
+            estado
+        )
+    )
+
+    site_id = _positive_int(
+        sede_id
     )
 
     faculty_id = _positive_int(
@@ -363,6 +405,16 @@ def filter_admin_publicaciones_queryset(
     if admin_id is not None:
         queryset = queryset.filter(
             admin_registrador_id=admin_id
+        )
+
+    if publication_state is not None:
+        queryset = queryset.filter(
+            estado=publication_state
+        )
+
+    if site_id is not None:
+        queryset = queryset.filter(
+            sede_id=site_id
         )
 
     if faculty_id is not None:
@@ -438,6 +490,9 @@ def filter_admin_publicaciones_queryset(
             )
             | Q(
                 titulo_admin__icontains=query
+            )
+            | Q(
+                estado__icontains=query
             )
             | Q(
                 proyecto__nombre__icontains=query

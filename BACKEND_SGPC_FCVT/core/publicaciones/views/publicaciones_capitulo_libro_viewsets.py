@@ -132,8 +132,11 @@ class CapituloLibroViewSet(
         return Response(
             {
                 "message": (
-                    "Capítulo registrado correctamente"
+                    "La publicación se guardó correctamente y quedó "
+                    "en estado Borrador."
                 ),
+                "estado": publicacion.estado,
+                "estado_label": publicacion.get_estado_display(),
                 "id": capitulo.id,
                 "publicacion_id": (
                     capitulo.publicacion_id

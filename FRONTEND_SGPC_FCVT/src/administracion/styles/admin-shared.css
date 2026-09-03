@@ -1,15 +1,16 @@
 /* ============================================================
    SGPC ULEAM — ADMIN SHARED CSS
    Base visual compartida para interfaces administrativas
+   D1: lenguaje visual sobrio, plano y orientado a gestión
 ============================================================ */
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) {
   /* Radios */
-  --adm-radius-2xl: 24px;
-  --adm-radius-xl: 20px;
-  --adm-radius-lg: 16px;
-  --adm-radius-md: 13px;
-  --adm-radius-sm: 10px;
+  --adm-radius-2xl: 16px;
+  --adm-radius-xl: 14px;
+  --adm-radius-lg: 12px;
+  --adm-radius-md: 10px;
+  --adm-radius-sm: 8px;
   --adm-radius-pill: 999px;
 
   /* Superficies */
@@ -23,7 +24,17 @@
   /* Textos */
   --adm-text: var(--text-primary, #172033);
   --adm-muted: var(--text-secondary, #667085);
-  --adm-text-inverse: var(--text-inverse, #ffffff);
+
+  /* Contraste de acciones.
+     --adm-text-inverse se conserva como alias por compatibilidad
+     con las vistas existentes, pero deja de depender de
+     --text-inverse porque ese token no siempre representa el
+     texto correcto sobre el color primario. */
+  --adm-primary-contrast: var(
+    --text-on-primary,
+    var(--button-text, var(--accent-contrast, #ffffff))
+  );
+  --adm-text-inverse: var(--adm-primary-contrast);
 
   /* Líneas */
   --adm-line: var(--border-color, rgba(23, 32, 51, 0.1));
@@ -42,6 +53,27 @@
   --adm-warning: var(--warning, #9a6700);
   --adm-danger: var(--danger, #b42318);
   --adm-info: var(--info, var(--adm-primary));
+
+  --adm-success-contrast: var(--success-contrast, #ffffff);
+  --adm-warning-contrast: var(--warning-contrast, #ffffff);
+  --adm-danger-contrast: var(--danger-contrast, #ffffff);
+  --adm-info-contrast: var(--info-contrast, var(--adm-primary-contrast));
+
+  /* Controles y capas: una sola escala para toda Administración. */
+  --adm-control-sm: var(--control-height-sm, 36px);
+  --adm-control-md: var(--control-height-md, 42px);
+  --adm-control-lg: var(--control-height-lg, 48px);
+  --adm-z-overlay: var(--z-admin-overlay, var(--z-overlay, 80));
+  --adm-z-modal: var(--z-admin-modal, var(--z-modal, 100));
+  --adm-z-notice: var(--z-notice, var(--z-toast, 120));
+
+  /* Accesibilidad y áreas seguras. */
+  --adm-target-min: 40px;
+  --adm-target-touch: 44px;
+  --adm-safe-top: env(safe-area-inset-top, 0px);
+  --adm-safe-right: env(safe-area-inset-right, 0px);
+  --adm-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --adm-safe-left: env(safe-area-inset-left, 0px);
 
   /* Fondos semánticos */
   --adm-primary-soft: var(
@@ -114,17 +146,17 @@
   /* Sombras */
   --adm-shadow-soft: var(
     --shadow-soft,
-    0 10px 30px rgba(15, 23, 42, 0.06)
+    0 1px 2px rgba(15, 23, 42, 0.04)
   );
 
   --adm-shadow-hover: var(
     --shadow-hover,
-    0 14px 34px rgba(15, 23, 42, 0.09)
+    0 4px 12px rgba(15, 23, 42, 0.07)
   );
 
   --adm-shadow-modal: var(
     --shadow-modal,
-    0 24px 70px rgba(15, 23, 42, 0.22)
+    var(--shadow-strong, 0 24px 70px rgba(15, 23, 42, 0.22))
   );
 
   --adm-ring: var(
@@ -134,7 +166,7 @@
 
   /* Overlay */
   --adm-overlay: var(--overlay, rgba(15, 23, 42, 0.58));
-  --adm-overlay-blur: 2px;
+  --adm-overlay-blur: var(--overlay-blur, 0px);
 
   /* Tipografía */
   --adm-font-ui: var(
@@ -167,6 +199,47 @@
   box-sizing: border-box;
 }
 
+/* Utilidad accesible compartida para etiquetas, captions y ayudas. */
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) .sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(button, [role="button"], [role="tab"]) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fallback de foco para controles que no tengan una regla local. */
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(
+    button,
+    [role="button"],
+    [role="tab"],
+    a[href],
+    input:not([type="hidden"]),
+    select,
+    textarea
+  ):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--adm-primary) 68%, transparent);
+  outline-offset: 2px;
+}
+
+/* Evita que contenido largo rompa layouts a 200 % o en móvil. */
+:where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+  :is(h1, h2, h3, h4, p, dd, td) {
+  overflow-wrap: anywhere;
+}
+
 /* =========================================================
    PÁGINAS
 ========================================================= */
@@ -174,14 +247,8 @@
 .sgpc-admin-page {
   width: 100%;
   min-height: 100%;
-  padding: 26px 28px 72px;
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      color-mix(in srgb, var(--adm-primary) 4%, transparent),
-      transparent 30rem
-    ),
-    var(--adm-bg);
+  padding: 22px 24px 60px;
+  background: var(--adm-bg);
   color: var(--adm-text);
   font-family: var(--adm-font-body);
 }
@@ -189,14 +256,8 @@
 .sgpc-config-page {
   width: 100%;
   min-height: 100%;
-  padding: 24px 20px 56px;
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      color-mix(in srgb, var(--adm-primary) 4%, transparent),
-      transparent 28rem
-    ),
-    var(--adm-bg);
+  padding: 22px 20px 48px;
+  background: var(--adm-bg);
   color: var(--adm-text);
   font-family: var(--adm-font-body);
 }
@@ -211,14 +272,12 @@
 .sgpc-admin-modal .modal,
 :where(.sgpc-admin-page, .sgpc-config-page) .adm-toolbar {
   border: 1px solid var(--adm-line-soft);
-  border-radius: var(--adm-radius-2xl);
+  border-radius: var(--adm-radius-lg);
   background: var(--adm-card);
-  box-shadow: var(--adm-shadow-soft);
+  box-shadow: none;
   transition:
     border-color calc(150ms * var(--animate-speed, 1)) ease,
-    box-shadow calc(150ms * var(--animate-speed, 1)) ease,
-    background calc(150ms * var(--animate-speed, 1)) ease,
-    transform calc(150ms * var(--animate-speed, 1)) ease;
+    background calc(150ms * var(--animate-speed, 1)) ease;
 }
 
 /*
@@ -227,13 +286,16 @@
 */
 :where(.sgpc-admin-page, .sgpc-config-page)
   .adm-surface--interactive:hover {
-  transform: translateY(-1px);
   border-color: color-mix(
     in srgb,
     var(--adm-primary) 18%,
     var(--adm-line)
   );
-  box-shadow: var(--adm-shadow-hover);
+  background: color-mix(
+    in srgb,
+    var(--adm-primary) 2%,
+    var(--adm-card)
+  );
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page) .adm-toolbar:hover {
@@ -250,17 +312,7 @@
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page) .adm-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--adm-primary) 24%, transparent),
-    transparent 72%
-  );
-  pointer-events: none;
+  content: none;
 }
 
 /* =========================================================
@@ -271,22 +323,14 @@
   .adm-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   width: fit-content;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid color-mix(
-    in srgb,
-    var(--adm-primary) 22%,
-    var(--adm-line)
-  );
-  border-radius: var(--adm-radius-pill);
-  background: var(--adm-primary-soft);
-  color: color-mix(
-    in srgb,
-    var(--adm-primary) 84%,
-    var(--adm-text)
-  );
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--adm-muted);
   font-family: var(--adm-font-ui);
   font-size: 11px;
   font-weight: 700;
@@ -300,20 +344,20 @@
   margin: 0;
   color: var(--adm-text);
   font-family: var(--adm-font-heading);
-  font-size: clamp(1.75rem, 1.35rem + 1.25vw, 2.45rem);
-  font-weight: 740;
-  line-height: 1.08;
+  font-size: clamp(1.6rem, 1.35rem + 0.8vw, 2.05rem);
+  font-weight: 720;
+  line-height: 1.12;
   letter-spacing: -0.035em;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .adm-subtitle {
   max-width: 72ch;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--adm-muted);
   font-family: var(--adm-font-body);
   font-size: 0.95rem;
-  line-height: 1.62;
+  line-height: 1.5;
 }
 
 /* =========================================================
@@ -331,9 +375,9 @@
   :is(.adm-chip, .badge) {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 0 11px;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 9px;
   border: 1px solid color-mix(
     in srgb,
     var(--adm-line) 88%,
@@ -347,7 +391,7 @@
   );
   color: var(--adm-muted);
   font-family: var(--adm-font-ui);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 650;
   line-height: 1;
 }
@@ -395,29 +439,25 @@
   .adm-tabs {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   width: fit-content;
   max-width: 100%;
-  padding: 6px;
+  padding: 3px;
   border: 1px solid color-mix(
     in srgb,
     var(--adm-line) 88%,
     transparent
   );
-  border-radius: var(--adm-radius-lg);
-  background: color-mix(
-    in srgb,
-    var(--adm-card) 88%,
-    var(--adm-soft)
-  );
+  border-radius: var(--adm-radius-md);
+  background: var(--adm-card);
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .adm-tab {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--adm-radius-sm);
   background: transparent;
   color: var(--adm-muted);
   font-family: var(--adm-font-ui);
@@ -430,13 +470,11 @@
     background calc(140ms * var(--animate-speed, 1)) ease,
     color calc(140ms * var(--animate-speed, 1)) ease,
     border-color calc(140ms * var(--animate-speed, 1)) ease,
-    box-shadow calc(140ms * var(--animate-speed, 1)) ease,
-    transform calc(140ms * var(--animate-speed, 1)) ease;
+    box-shadow calc(140ms * var(--animate-speed, 1)) ease;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .adm-tab:hover:not(:disabled) {
-  transform: translateY(-1px);
   border-color: color-mix(
     in srgb,
     var(--adm-primary) 14%,
@@ -467,8 +505,7 @@
     var(--adm-primary) 88%,
     var(--adm-text)
   );
-  box-shadow: 0 1px 3px
-    color-mix(in srgb, var(--adm-primary) 10%, transparent);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -495,8 +532,8 @@
     .btn-toggle,
     .panel-quick__btn
   ) {
-  min-height: 42px;
-  padding: 0 14px;
+  min-height: var(--adm-control-md);
+  padding: 0 13px;
   border-radius: var(--adm-radius-md);
   font-family: var(--adm-font-ui);
   font-size: 13px;
@@ -504,7 +541,6 @@
   line-height: 1;
   cursor: pointer;
   transition:
-    transform calc(140ms * var(--animate-speed, 1)) ease,
     box-shadow calc(140ms * var(--animate-speed, 1)) ease,
     border-color calc(140ms * var(--animate-speed, 1)) ease,
     background calc(140ms * var(--animate-speed, 1)) ease,
@@ -541,7 +577,6 @@
     .btn-toggle,
     .panel-quick__btn
   ):hover:not(:disabled) {
-  transform: translateY(-1px);
   border-color: color-mix(
     in srgb,
     var(--adm-primary) 18%,
@@ -552,7 +587,7 @@
     var(--adm-primary) 5%,
     var(--adm-card)
   );
-  box-shadow: var(--adm-shadow-soft);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -562,23 +597,16 @@
     color-mix(in srgb, var(--adm-primary) 78%, #000000)
   );
   background: var(--button-bg, var(--adm-primary));
-  color: var(--button-text, #ffffff);
-  box-shadow:
-    0 6px 14px
-      color-mix(in srgb, var(--adm-primary) 18%, transparent),
-    var(--adm-shadow-soft);
+  color: var(--adm-primary-contrast);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.btn-primary, .btn-crear, .btn-buscar, .btn-guardar):hover:not(
     :disabled
   ) {
-  transform: translateY(-1px);
-  filter: brightness(1.025);
-  box-shadow:
-    0 8px 18px
-      color-mix(in srgb, var(--adm-primary) 22%, transparent),
-    var(--adm-shadow-soft);
+  filter: brightness(0.98);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -590,13 +618,12 @@
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .btn-editar:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: color-mix(
     in srgb,
     var(--adm-warning) 14%,
     var(--adm-card)
   );
-  box-shadow: var(--adm-shadow-soft);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -608,13 +635,12 @@
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .btn-eliminar:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: color-mix(
     in srgb,
     var(--adm-danger) 14%,
     var(--adm-card)
   );
-  box-shadow: var(--adm-shadow-soft);
+  box-shadow: none;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -660,7 +686,7 @@
 :where(.sgpc-admin-page, .sgpc-admin-modal) .btn-mini {
   min-height: 34px;
   padding: 0 10px;
-  border-radius: 11px;
+  border-radius: var(--adm-radius-sm);
   font-size: 12px;
   font-weight: 700;
 }
@@ -673,8 +699,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -720,19 +746,19 @@
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .adm-search__input {
-  min-height: 44px;
+  min-height: var(--adm-control-md);
   padding: 0 42px 0 39px;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.field-control, .select) {
-  min-height: 46px;
-  padding: 0 13px;
+  min-height: var(--adm-control-md);
+  padding: 0 12px;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   textarea.field-control {
-  min-height: 112px;
+  min-height: 104px;
   padding-top: 12px;
   padding-bottom: 12px;
   line-height: 1.55;
@@ -865,7 +891,7 @@
     var(--adm-line) 80%,
     transparent
   );
-  border-radius: 18px;
+  border-radius: var(--adm-radius-lg);
   background: var(--adm-card);
 }
 
@@ -874,6 +900,8 @@
   width: 100%;
   overflow: auto;
   overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
@@ -899,7 +927,7 @@
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .adm-table
   :is(th, td) {
-  padding: 13px 12px;
+  padding: 11px 12px;
   text-align: left;
 }
 
@@ -950,7 +978,7 @@
 
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   .empty-row {
-  padding: 24px 12px;
+  padding: 20px 12px;
   color: var(--adm-muted);
   text-align: center;
 }
@@ -962,9 +990,9 @@
 :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
   :is(.adm-alert, .alerta) {
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--adm-info-border);
-  border-radius: 14px;
+  border-radius: var(--adm-radius-md);
   background: var(--adm-info-soft);
   color: var(--adm-info-ink);
   font-family: var(--adm-font-body);
@@ -1000,10 +1028,12 @@
 .sgpc-admin-modal {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: var(--adm-z-modal);
+  isolation: isolate;
   display: grid;
   place-items: center;
-  width: 100%;
+  width: 100vw;
+  height: 100dvh;
   min-height: 100dvh;
   padding: clamp(12px, 2vw, 24px);
   overflow: auto;
@@ -1014,6 +1044,8 @@
   content: "";
   position: fixed;
   inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background: var(--adm-overlay);
   backdrop-filter: blur(var(--adm-overlay-blur));
   -webkit-backdrop-filter: blur(var(--adm-overlay-blur));
@@ -1027,7 +1059,7 @@
   width: min(920px, 100%);
   max-height: min(92dvh, 860px);
   margin: auto;
-  padding: 22px;
+  padding: 20px;
   overflow: hidden;
   border: 1px solid color-mix(
     in srgb,
@@ -1039,6 +1071,7 @@
   color: var(--adm-text);
   box-shadow: var(--adm-shadow-modal);
   opacity: 1;
+  outline: none;
 }
 
 .sgpc-admin-modal .modal__header {
@@ -1092,19 +1125,16 @@
 
 .sgpc-admin-modal .modal__section {
   display: grid;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid color-mix(
+  gap: 10px;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid color-mix(
     in srgb,
-    var(--adm-line) 90%,
+    var(--adm-line) 78%,
     transparent
   );
-  border-radius: var(--adm-radius-xl);
-  background: color-mix(
-    in srgb,
-    var(--adm-card) 96%,
-    var(--adm-soft)
-  );
+  border-radius: 0;
+  background: transparent;
 }
 
 .sgpc-admin-modal .modal__footer {
@@ -1130,7 +1160,32 @@
   height: 40px;
   min-height: 40px;
   padding: 0;
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--adm-radius-sm);
+  background: transparent;
+  color: var(--adm-muted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color calc(120ms * var(--animate-speed, 1)) ease,
+    background calc(120ms * var(--animate-speed, 1)) ease,
+    color calc(120ms * var(--animate-speed, 1)) ease;
+}
+
+.sgpc-admin-modal .modal__close:hover:not(:disabled) {
+  border-color: var(--adm-line);
+  background: var(--adm-soft);
+  color: var(--adm-text);
+}
+
+.sgpc-admin-modal .modal__close:focus-visible {
+  outline: none;
+  box-shadow: var(--adm-ring);
+}
+
+.sgpc-admin-modal .modal__close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* =========================================================
@@ -1164,11 +1219,27 @@ body.dark
 
 @media (max-width: 760px) {
   .sgpc-admin-page {
-    padding: 18px 14px 56px;
+    padding-top: max(18px, var(--adm-safe-top));
+    padding-right: max(14px, var(--adm-safe-right));
+    padding-bottom: max(56px, calc(44px + var(--adm-safe-bottom)));
+    padding-left: max(14px, var(--adm-safe-left));
   }
 
   .sgpc-config-page {
-    padding: 18px 14px 44px;
+    padding-top: max(18px, var(--adm-safe-top));
+    padding-right: max(14px, var(--adm-safe-right));
+    padding-bottom: max(44px, calc(36px + var(--adm-safe-bottom)));
+    padding-left: max(14px, var(--adm-safe-left));
+  }
+
+  /* Evita zoom automático de formularios en navegadores móviles. */
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+      select,
+      textarea
+    ) {
+    font-size: 16px;
   }
 
   :where(.sgpc-admin-page, .sgpc-config-page)
@@ -1195,19 +1266,22 @@ body.dark
 
   .sgpc-admin-modal {
     align-items: center;
-    padding: 10px;
+    padding-top: max(10px, var(--adm-safe-top));
+    padding-right: max(10px, var(--adm-safe-right));
+    padding-bottom: max(10px, var(--adm-safe-bottom));
+    padding-left: max(10px, var(--adm-safe-left));
   }
 
   .sgpc-admin-modal .modal {
     width: 100%;
     max-height: calc(100dvh - 20px);
     padding: 18px;
-    border-radius: 20px;
+    border-radius: var(--adm-radius-2xl);
   }
 
   .sgpc-admin-modal .modal__section {
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 0;
   }
 
   .sgpc-admin-modal .modal__footer {
@@ -1244,6 +1318,57 @@ body.dark
 
   .sgpc-admin-modal .modal__footer > button {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   TÁCTIL Y CONTRASTE
+========================================================= */
+
+@media (pointer: coarse) {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    :is(button, [role="button"], [role="tab"]) {
+    min-height: var(--adm-target-touch);
+  }
+
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+      select
+    ) {
+    min-height: var(--adm-target-touch);
+  }
+
+  .sgpc-admin-modal .modal__close,
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    .adm-search__clear {
+    width: var(--adm-target-touch);
+    min-width: var(--adm-target-touch);
+    height: var(--adm-target-touch);
+    min-height: var(--adm-target-touch);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal) {
+    --adm-line: var(--adm-line-strong);
+    --adm-line-soft: var(--adm-line-strong);
+  }
+
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    :is(button, [role="button"], [role="tab"], a[href]):focus-visible {
+    outline-width: 3px;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(.sgpc-admin-page, .sgpc-config-page, .sgpc-admin-modal)
+    :is(button, [role="button"], [role="tab"], input, select, textarea, a[href]) {
+    forced-color-adjust: auto;
+  }
+
+  .sgpc-admin-modal::before {
+    background: rgba(0, 0, 0, 0.72);
   }
 }
 

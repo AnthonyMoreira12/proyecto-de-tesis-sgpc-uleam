@@ -1,0 +1,22 @@
+/* SGPC ULEAM · Administración · Etapa 4
+   Feedback de carga/acciones y simplificación del detalle. */
+
+.asm-inline-loader,
+.asm-action-feedback {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.asm-inline-loader {
+  margin-top: -4px;
+}
+
+.asm-action-feedback {
+  margin-top: -4px;
+}
+
+.asm-card__actions button:disabled,
+.asm-modal__footer button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}

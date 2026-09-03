@@ -3140,19 +3140,8 @@ body.dark
 ========================================================= */
 
 .sgpc-form-page .sgpc-card-head {
-  /*
-   * Cabecera de sección = número + contenido + estado.
-   * Antes conservaba las 2 columnas originales y el badge de
-   * estado caía a una segunda fila debajo del número.
-   */
-  grid-template-columns:
-    auto
-    minmax(0, 1fr)
-    auto;
-
   align-items: flex-start;
-  column-gap: 14px;
-  row-gap: 8px;
+  gap: 14px;
 }
 
 .sgpc-form-page .sgpc-section-state {
@@ -3431,16 +3420,11 @@ body.dark
 }
 
 @media (max-width: 720px) {
-  .sgpc-form-page .sgpc-card-head {
-    /* En pantallas pequeñas el estado baja debajo del título,
-       nunca debajo del número de sección. */
-    grid-template-columns:
-      auto
-      minmax(0, 1fr);
+  .sgpc-card-head {
+    display: grid;
   }
 
-  .sgpc-form-page .sgpc-section-state {
-    grid-column: 2;
+  .sgpc-section-state {
     margin-left: 0;
     justify-self: start;
     white-space: normal;
@@ -3500,5 +3484,2926 @@ body.dark
   .sgpc-status-item:hover,
   .sgpc-file-chip__move:hover {
     transform: none !important;
+  }
+}
+
+/* =========================================================
+   26. ALINEACIÓN VISUAL FINAL · FASE 2.2
+   AAI · AR · LIB · CAP · PON
+
+   Estas reglas son deliberadamente compartidas. Los cinco
+   formularios mantienen una sola identidad visual y heredan
+   el color/acento activo del SGPC.
+========================================================= */
+
+.sgpc-form-page--alto-impacto,
+.sgpc-form-page--articulo-regional,
+.sgpc-form-page--libro,
+.sgpc-form-page--capitulo-libro,
+.sgpc-form-page--ponencia {
+  --sgpc-primary: var(
+    --color-primary,
+    var(--adm-primary, #315fcb)
+  );
+}
+
+/* La cabecera y las tarjetas siguen la misma jerarquía que
+   el resto de las vistas de gestión: acento lateral, radios
+   moderados y superficies sin exceso de elevación. */
+.sgpc-form-page .sgpc-form-header,
+.sgpc-form-page .sgpc-card,
+.sgpc-form-page .sgpc-summary-card {
+  box-shadow: var(--sgpc-shadow-sm);
+}
+
+.sgpc-form-page .sgpc-card:not(:focus-within) {
+  box-shadow: var(--sgpc-shadow-xs);
+}
+
+/* Evita que los encabezados de sección queden desalineados
+   cuando incorporan el estado de completitud. */
+.sgpc-form-page .sgpc-card-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.sgpc-form-page
+  .sgpc-card--admin-context
+  .sgpc-card-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.sgpc-form-page .sgpc-card-head > .sgpc-section-state {
+  grid-column: 3;
+  align-self: center;
+}
+
+.sgpc-form-page
+  .sgpc-card--admin-context
+  .sgpc-card-head
+  > .sgpc-section-state {
+  grid-column: 2;
+}
+
+/* Asegura que ayudas, errores y controles mantengan la misma
+   escala vertical, evitando saltos entre tipos de publicación. */
+.sgpc-form-page .sgpc-field {
+  align-content: start;
+}
+
+.sgpc-form-page .sgpc-input,
+.sgpc-form-page .sgpc-select,
+.sgpc-form-page .sgpc-textarea {
+  width: 100%;
+}
+
+.sgpc-form-page .sgpc-alert.warning,
+.sgpc-form-page .sgpc-alert.is-warning {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--sgpc-warning) 25%,
+      transparent
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-warning) 7%,
+      var(--sgpc-surface)
+    );
+  color: var(--sgpc-warning);
+}
+
+/* El resumen lateral funciona como panel de avance, no como
+   una segunda página: altura contenida y acciones accesibles. */
+.sgpc-form-page .sgpc-summary-card {
+  border-radius: var(--sgpc-radius-xl);
+}
+
+.sgpc-form-page .sgpc-summary-actions {
+  gap: 9px;
+}
+
+.sgpc-form-page .sgpc-publication-submit {
+  min-height: 46px;
+  font-weight: 720;
+}
+
+/* En pantallas medianas el resumen se integra al flujo sin
+   competir visualmente con el formulario principal. */
+@media (max-width: 1160px) {
+  .sgpc-form-page .sgpc-form-aside {
+    order: 0;
+  }
+
+  .sgpc-form-page .sgpc-summary-card {
+    margin-top: 2px;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page .sgpc-card-head,
+  .sgpc-form-page
+    .sgpc-card--admin-context
+    .sgpc-card-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sgpc-form-page .sgpc-card-head > .sgpc-section-state,
+  .sgpc-form-page
+    .sgpc-card--admin-context
+    .sgpc-card-head
+    > .sgpc-section-state {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: 0;
+  }
+}
+
+/* =========================================================
+   27. DEPURACIÓN VISUAL · INTERFAZ ORIENTADA AL USUARIO
+   D7 — Formularios de publicaciones
+========================================================= */
+
+.sgpc-form-page {
+  --sgpc-radius-xl: 14px;
+  --sgpc-radius-lg: 12px;
+  --sgpc-radius-md: 10px;
+  --sgpc-radius-sm: 8px;
+
+  background: var(--sgpc-bg);
+}
+
+.sgpc-form-shell {
+  padding: clamp(14px, 1.8vw, 22px);
+}
+
+.sgpc-form {
+  gap: 16px;
+}
+
+.sgpc-form--with-aside {
+  gap: 16px;
+}
+
+.sgpc-form-main {
+  gap: 12px;
+}
+
+/* Cabecera más compacta: el título ya identifica el formulario. */
+.sgpc-form-page .sgpc-form-header {
+  margin-bottom: 12px;
+  overflow: visible;
+  border: 0;
+  border-bottom: 1px solid var(--sgpc-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-form-header::before,
+.sgpc-form-page .sgpc-form-header::after {
+  display: none;
+}
+
+.sgpc-form-page .sgpc-publication-header {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 4px 2px 14px;
+}
+
+.sgpc-form-page .sgpc-form-heading {
+  max-width: 900px;
+}
+
+.sgpc-form-page .sgpc-form-title {
+  margin-bottom: 5px;
+  font-size: clamp(1.4rem, 2vw, 1.72rem);
+  letter-spacing: -0.025em;
+}
+
+.sgpc-form-page .sgpc-form-subtitle {
+  max-width: 760px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.sgpc-form-page .sgpc-banner-info {
+  margin-top: 10px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  font-size: 0.72rem;
+}
+
+/* Secciones: borde y jerarquía, sin elevación decorativa. */
+.sgpc-form-page .sgpc-card,
+.sgpc-form-page .sgpc-summary-card,
+.sgpc-form-page .sgpc-card:not(:focus-within) {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-card:focus-within {
+  border-color: var(--sgpc-primary-line);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sgpc-primary) 8%, transparent);
+}
+
+.sgpc-form-page .sgpc-card-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 13px 16px;
+  background: transparent;
+}
+
+.sgpc-form-page
+  .sgpc-form-main
+  > .sgpc-card:not(.sgpc-card--admin-context)
+  > .sgpc-card-head::before {
+  display: none;
+}
+
+.sgpc-form-page .sgpc-card-head > .sgpc-section-state {
+  grid-column: 2;
+  align-self: center;
+}
+
+.sgpc-form-page .sgpc-card-title {
+  font-size: 0.92rem;
+}
+
+.sgpc-form-page .sgpc-card-desc {
+  margin-top: 2px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.sgpc-form-page .sgpc-card-body {
+  padding: 16px;
+}
+
+/* El estado de una sección se comunica sin otra cápsula visual. */
+.sgpc-form-page .sgpc-section-state {
+  min-height: auto;
+  margin-left: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.67rem;
+}
+
+.sgpc-form-page .sgpc-section-state.is-complete,
+.sgpc-form-page .sgpc-section-state.is-complete.has-optional-gap,
+.sgpc-form-page .sgpc-section-state.is-pending,
+.sgpc-form-page .sgpc-section-state.is-optional {
+  border: 0;
+  background: transparent;
+}
+
+.sgpc-form-page .sgpc-section-state::before {
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+}
+
+/* Usuario seleccionado por el administrador. */
+.sgpc-form-page .sgpc-card.sgpc-card--admin-context {
+  border-color: var(--sgpc-line);
+  background: var(--sgpc-surface);
+}
+
+.sgpc-form-page .sgpc-card--admin-context .sgpc-card-body {
+  padding: 11px 14px;
+}
+
+.sgpc-form-page .sgpc-admin-context {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.sgpc-form-page .sgpc-admin-context__label {
+  margin: 0;
+  color: var(--sgpc-text-soft);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.sgpc-form-page .sgpc-admin-context__value {
+  color: var(--sgpc-text);
+  font-size: 0.8rem;
+  font-weight: 720;
+}
+
+.sgpc-form-page .sgpc-card--admin-context .sgpc-hint-error {
+  margin-top: 7px;
+}
+
+/* Resumen lateral: útil para navegación, no como tarjeta protagonista. */
+.sgpc-form-page .sgpc-summary-card {
+  border-color: var(--sgpc-line);
+}
+
+.sgpc-form-page .sgpc-status-item {
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-status-item:hover {
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-optional-summary,
+.sgpc-form-page .sgpc-ready-notice {
+  border-radius: 9px;
+}
+
+/* Los modales sí conservan profundidad porque flotan sobre la página. */
+.sgpc-form-page .sgpc-review-modal {
+  backdrop-filter: none;
+}
+
+.sgpc-form-page .sgpc-review-modal__dialog {
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page .sgpc-card-head,
+  .sgpc-form-page
+    .sgpc-card--admin-context
+    .sgpc-card-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sgpc-form-page .sgpc-card-head > .sgpc-section-state,
+  .sgpc-form-page
+    .sgpc-card--admin-context
+    .sgpc-card-head
+    > .sgpc-section-state {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .sgpc-form-page .sgpc-admin-context {
+    display: grid;
+    gap: 2px;
+  }
+}
+
+
+/* =========================================================
+   27. DOCUMENTOS — EXPERIENCIA SIMPLIFICADA
+========================================================= */
+
+.sgpc-form-page .sgpc-upload {
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-upload.is-dragover {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-upload__head {
+  gap: 3px;
+}
+
+.sgpc-form-page .sgpc-upload__title {
+  font-size: 0.88rem;
+  font-weight: 720;
+}
+
+.sgpc-form-page .sgpc-upload__desc {
+  max-width: 760px;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.sgpc-form-page .sgpc-upload__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 6px;
+  color: var(--sgpc-text-soft);
+  font-size: 0.67rem;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+.sgpc-form-page .sgpc-upload__chips {
+  display: none;
+}
+
+.sgpc-form-page .sgpc-upload__trigger {
+  min-height: 76px;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px dashed var(--sgpc-line-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sgpc-surface-2) 48%, var(--sgpc-surface));
+  box-shadow: none;
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-upload__trigger:hover,
+.sgpc-form-page .sgpc-upload__trigger.is-dragover {
+  border-color: var(--sgpc-primary);
+  background: color-mix(in srgb, var(--sgpc-primary) 4%, var(--sgpc-surface));
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-upload__trigger-icon {
+  width: 38px;
+  height: 38px;
+  border-color: var(--sgpc-line);
+  border-radius: 9px;
+  background: var(--sgpc-surface);
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-upload__trigger-title {
+  font-size: 0.79rem;
+  font-weight: 720;
+}
+
+.sgpc-form-page .sgpc-upload__trigger-meta {
+  font-size: 0.68rem;
+}
+
+.sgpc-form-page .sgpc-upload__foot {
+  gap: 3px;
+}
+
+.sgpc-form-page .sgpc-upload__hint,
+.sgpc-form-page .sgpc-upload__warning,
+.sgpc-form-page .sgpc-upload__error {
+  font-size: 0.68rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page .sgpc-file-list {
+  gap: 7px;
+}
+
+.sgpc-form-page .sgpc-file-chip {
+  gap: 9px;
+  padding: 10px 11px;
+  border-color: var(--sgpc-line);
+  border-radius: 10px;
+  background: var(--sgpc-surface);
+  box-shadow: none;
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-file-chip:hover {
+  border-color: var(--sgpc-primary-line);
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-file-chip.is-dragging,
+.sgpc-form-page .sgpc-file-chip.is-dragover {
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-file-chip__top {
+  align-items: center;
+  gap: 10px;
+}
+
+.sgpc-form-page .sgpc-file-chip__main {
+  align-items: center;
+  gap: 9px;
+}
+
+.sgpc-form-page .sgpc-file-chip__icon {
+  width: 34px;
+  height: 34px;
+  border-color: var(--sgpc-line);
+  border-radius: 8px;
+  background: var(--sgpc-surface-2);
+  box-shadow: none;
+}
+
+.sgpc-form-page .sgpc-file-chip__body {
+  gap: 2px;
+}
+
+.sgpc-form-page .sgpc-file-chip__name {
+  font-size: 0.77rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page .sgpc-file-chip__meta {
+  font-size: 0.66rem;
+}
+
+.sgpc-form-page .sgpc-file-chip__badges {
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.sgpc-form-page .sgpc-file-chip__badge {
+  min-height: 21px;
+  padding: 0 6px;
+  font-size: 0.61rem;
+  font-weight: 680;
+}
+
+.sgpc-form-page .sgpc-file-chip__actions {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.sgpc-form-page .sgpc-file-chip__actions .sgpc-file-chip__order-btn {
+  min-height: 31px;
+  padding: 0 7px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.66rem;
+}
+
+.sgpc-form-page .sgpc-file-chip__actions .sgpc-file-chip__order-btn:hover:not(:disabled) {
+  border-color: var(--sgpc-line);
+  background: var(--sgpc-surface-2);
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-file-chip__remove {
+  min-height: 31px;
+  padding: 0 7px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.66rem;
+}
+
+.sgpc-form-page .sgpc-file-chip__remove:hover {
+  border-color: color-mix(in srgb, var(--sgpc-danger) 18%, var(--sgpc-line));
+  transform: none;
+}
+
+.sgpc-form-page .sgpc-file-chip__form {
+  gap: 5px;
+  padding-top: 9px;
+  border-top: 1px solid var(--sgpc-line);
+}
+
+.sgpc-form-page .sgpc-file-chip__form .sgpc-label {
+  font-size: 0.69rem;
+}
+
+.sgpc-form-page .sgpc-file-chip__optional {
+  color: var(--sgpc-text-soft);
+  font-weight: 500;
+}
+
+.sgpc-form-page .sgpc-file-chip__form .sgpc-input {
+  min-height: 39px;
+  font-size: 0.74rem;
+}
+
+.sgpc-form-page .sgpc-file-chip__form .sgpc-hint {
+  margin-top: 0;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.sgpc-form-page .sgpc-file-chip__move {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page .sgpc-file-chip__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .sgpc-form-page .sgpc-file-chip__actions {
+    justify-content: flex-start;
+    padding-left: 43px;
+  }
+
+  .sgpc-form-page .sgpc-file-chip__actions .sgpc-btn,
+  .sgpc-form-page .sgpc-file-chip__actions .sgpc-file-chip__remove {
+    width: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .sgpc-form-page .sgpc-upload__trigger {
+    align-items: flex-start;
+    min-height: 70px;
+    padding: 12px;
+  }
+
+  .sgpc-form-page .sgpc-file-chip {
+    padding: 10px;
+  }
+
+  .sgpc-form-page .sgpc-file-chip__actions {
+    padding-left: 0;
+  }
+}
+
+
+/* =========================================================
+   28. ARTÍCULO DE ALTO IMPACTO — EXPERIENCIA DE USUARIO FINAL
+========================================================= */
+
+/* El formulario usa la misma escala de ancho que Administración,
+   Reportes y Edición de usuario. */
+.sgpc-form-page--alto-impacto .sgpc-form-shell {
+  width: min(1320px, 100%);
+  padding:
+    4px
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+/* Cabecera institucional plana. */
+.sgpc-form-page--alto-impacto .sgpc-form-header {
+  margin-bottom: 14px;
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+
+  background: transparent;
+}
+
+/* El contexto delegado se presenta como una franja informativa,
+   no como una tarjeta protagonista. */
+.sgpc-form-page--alto-impacto
+  .sgpc-card--admin-context {
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-card--admin-context
+  .sgpc-card-body {
+  padding: 10px 13px;
+}
+
+/* Las secciones son superficies simples y consistentes. */
+.sgpc-form-page--alto-impacto
+  .sgpc-card {
+  border-radius: 14px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-card-head {
+  padding:
+    13px
+    15px
+    12px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-card-body {
+  padding: 15px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-section-state {
+  font-weight: 700;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-section-state.is-complete {
+  color:
+    var(--sgpc-success);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-section-state.is-pending {
+  color:
+    var(--sgpc-warning);
+}
+
+/* Agrupaciones internas de Revista e indicadores.
+   Son separadores de contenido, no tarjetas anidadas. */
+.sgpc-form-page--alto-impacto
+  .sgpc-form-subsection {
+  display: grid;
+  gap: 2px;
+
+  margin-top: 2px;
+  padding:
+    0
+    0
+    7px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-form-subsection:not(:first-child) {
+  margin-top: 8px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-form-subsection strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.73rem;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-form-subsection span {
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+/* El segundo campo de Origen solo aparece cuando es necesario. */
+.sgpc-form-page--alto-impacto
+  .sgpc-origin-extra {
+  padding-top: 2px;
+}
+
+/* AutoresSelector ya está dentro de una sección llamada Autores.
+   Se conserva su botón pero no vuelve a repetir título y explicación. */
+.sgpc-form-page--alto-impacto
+  #sec-autores
+  .as-head-left {
+  display: none;
+}
+
+.sgpc-form-page--alto-impacto
+  #sec-autores
+  .as-head {
+  justify-content: flex-end;
+  padding:
+    0
+    0
+    10px;
+}
+
+.sgpc-form-page--alto-impacto
+  #sec-autores
+  .as-head-right {
+  margin-left: auto;
+}
+
+/* AdjuntosPdfUploader también hereda la cabecera de la sección. */
+.sgpc-form-page--alto-impacto
+  #sec-adjuntos
+  .sgpc-upload__head {
+  display: none;
+}
+
+/* =========================================================
+   RESUMEN LATERAL SIMPLIFICADO
+========================================================= */
+
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-card {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-card::before,
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-icon,
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-kicker {
+  display: none;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-head {
+  padding: 0 0 10px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-head h2 {
+  margin: 0;
+
+  color: var(--sgpc-text);
+
+  font-family: var(--sgpc-font-title);
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-progress {
+  margin-top: 11px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-progress-bar {
+  height: 6px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-progress-caption {
+  margin-top: 6px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary {
+  display: grid;
+  gap: 7px;
+
+  margin-top: 13px;
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary > strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.7rem;
+  font-weight: 740;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary__list {
+  display: grid;
+  gap: 5px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary__item {
+  width: 100%;
+
+  display: grid;
+  gap: 2px;
+
+  padding: 8px 9px;
+
+  border:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-surface);
+
+  color:
+    var(--sgpc-text);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary__item:hover {
+  border-color:
+    var(--sgpc-primary-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary__item span {
+  font-size: 0.69rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-pending-summary__item small {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-ready-notice {
+  margin-top: 13px;
+  padding: 9px 10px;
+
+  border-radius: 9px;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-optional-summary--compact {
+  display: grid;
+  gap: 5px;
+
+  margin-top: 11px;
+  padding: 10px 0 0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-optional-summary--compact p {
+  font-size: 0.67rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-optional-summary--compact
+  p
+  strong {
+  color: var(--sgpc-text);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-summary-actions {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 13px;
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-draft-note {
+  margin: 0;
+
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.63rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-discard-draft-btn {
+  min-height: 36px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color:
+    var(--sgpc-text-soft);
+}
+
+.sgpc-form-page--alto-impacto
+  .sgpc-discard-draft-btn:hover:not(:disabled) {
+  border-color:
+    var(--sgpc-line);
+
+  background:
+    var(--sgpc-surface-2);
+
+  color:
+    var(--sgpc-danger);
+
+  transform: none;
+}
+
+/* Botón destructivo del diálogo de descarte. */
+.sgpc-form-page
+  .sgpc-btn-danger {
+  min-height: 40px;
+
+  padding: 0 13px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--sgpc-danger) 34%,
+      transparent
+    );
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-danger);
+
+  color: #ffffff;
+
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 730;
+
+  cursor: pointer;
+}
+
+.sgpc-form-page
+  .sgpc-btn-danger:hover {
+  filter: brightness(0.97);
+}
+
+/* El diálogo se mantiene simple y sin lenguaje de sistema. */
+.sgpc-form-page
+  .sgpc-review-modal--discard
+  .sgpc-review-modal__dialog {
+  width:
+    min(
+      500px,
+      100%
+    );
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1160px) {
+  .sgpc-form-page--alto-impacto
+    .sgpc-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-form-page--alto-impacto
+    .sgpc-form-aside {
+    order: -1;
+  }
+
+  .sgpc-form-page--alto-impacto
+    .sgpc-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page--alto-impacto
+    .sgpc-form-shell {
+    padding-inline: 8px;
+  }
+
+  .sgpc-form-page--alto-impacto
+    #sec-autores
+    .as-head-right {
+    width: 100%;
+  }
+
+  .sgpc-form-page--alto-impacto
+    #sec-autores
+    .as-head-right
+    .as-btn {
+    width: 100%;
+  }
+}
+
+
+
+/* =========================================================
+   29. ARTÍCULO REGIONAL — EXPERIENCIA DE USUARIO FINAL
+========================================================= */
+
+.sgpc-form-page--articulo-regional .sgpc-form-shell {
+  width: min(1320px, 100%);
+  padding:
+    4px
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+/* Cabecera plana y alineada con el resto del sistema. */
+.sgpc-form-page--articulo-regional .sgpc-form-header {
+  margin-bottom: 14px;
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+
+  background: transparent;
+}
+
+/* Contexto de registro delegado discreto. */
+.sgpc-form-page--articulo-regional
+  .sgpc-card--admin-context {
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-card--admin-context
+  .sgpc-card-body {
+  padding: 10px 13px;
+}
+
+/* Tarjetas principales. */
+.sgpc-form-page--articulo-regional
+  .sgpc-card {
+  border-radius: 14px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-card-head {
+  padding:
+    13px
+    15px
+    12px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-card-body {
+  padding: 15px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-section-state {
+  font-weight: 700;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-section-state.is-complete {
+  color: var(--sgpc-success);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-section-state.is-pending {
+  color: var(--sgpc-warning);
+}
+
+/* El campo adicional de origen solo aparece cuando corresponde. */
+.sgpc-form-page--articulo-regional
+  .sgpc-origin-extra {
+  padding-top: 2px;
+}
+
+/* Separadores simples dentro de Revista y enlaces. */
+.sgpc-form-page--articulo-regional
+  .sgpc-form-subsection {
+  display: grid;
+  gap: 2px;
+
+  margin-top: 2px;
+  padding:
+    0
+    0
+    7px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-form-subsection:not(:first-child) {
+  margin-top: 8px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-form-subsection strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.73rem;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-form-subsection span {
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+/* Autores: una sola cabecera. */
+.sgpc-form-page--articulo-regional
+  #sec-autores
+  .as-head-left {
+  display: none;
+}
+
+.sgpc-form-page--articulo-regional
+  #sec-autores
+  .as-head {
+  justify-content: flex-end;
+  padding:
+    0
+    0
+    10px;
+}
+
+.sgpc-form-page--articulo-regional
+  #sec-autores
+  .as-head-right {
+  margin-left: auto;
+}
+
+/* Documentos: una sola cabecera. */
+.sgpc-form-page--articulo-regional
+  #sec-adjuntos
+  .sgpc-upload__head {
+  display: none;
+}
+
+/* =========================================================
+   RESUMEN LATERAL
+========================================================= */
+
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-card {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-card::before,
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-icon,
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-kicker {
+  display: none;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-head {
+  padding: 0 0 10px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-head h2 {
+  margin: 0;
+
+  color: var(--sgpc-text);
+
+  font-family: var(--sgpc-font-title);
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-progress {
+  margin-top: 11px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-progress-bar {
+  height: 6px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-progress-caption {
+  margin-top: 6px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary {
+  display: grid;
+  gap: 7px;
+
+  margin-top: 13px;
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary > strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.7rem;
+  font-weight: 740;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary__list {
+  display: grid;
+  gap: 5px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary__item {
+  width: 100%;
+
+  display: grid;
+  gap: 2px;
+
+  padding: 8px 9px;
+
+  border:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-surface);
+
+  color:
+    var(--sgpc-text);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary__item:hover {
+  border-color:
+    var(--sgpc-primary-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary__item span {
+  font-size: 0.69rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-pending-summary__item small {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-ready-notice {
+  margin-top: 13px;
+  padding: 9px 10px;
+
+  border-radius: 9px;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-optional-summary--compact {
+  display: grid;
+  gap: 5px;
+
+  margin-top: 11px;
+  padding: 10px 0 0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-optional-summary--compact p {
+  font-size: 0.67rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-summary-actions {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 13px;
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-draft-note {
+  margin: 0;
+
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.63rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-discard-draft-btn {
+  min-height: 36px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color:
+    var(--sgpc-text-soft);
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-discard-draft-btn:hover:not(:disabled) {
+  border-color:
+    var(--sgpc-line);
+
+  background:
+    var(--sgpc-surface-2);
+
+  color:
+    var(--sgpc-danger);
+
+  transform: none;
+}
+
+.sgpc-form-page--articulo-regional
+  .sgpc-review-modal--discard
+  .sgpc-review-modal__dialog {
+  width:
+    min(
+      500px,
+      100%
+    );
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1160px) {
+  .sgpc-form-page--articulo-regional
+    .sgpc-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-form-page--articulo-regional
+    .sgpc-form-aside {
+    order: -1;
+  }
+
+  .sgpc-form-page--articulo-regional
+    .sgpc-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page--articulo-regional
+    .sgpc-form-shell {
+    padding-inline: 8px;
+  }
+
+  .sgpc-form-page--articulo-regional
+    #sec-autores
+    .as-head-right {
+    width: 100%;
+  }
+
+  .sgpc-form-page--articulo-regional
+    #sec-autores
+    .as-head-right
+    .as-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   30. CAPÍTULO DE LIBRO — EXPERIENCIA DE USUARIO FINAL
+========================================================= */
+
+.sgpc-form-page--capitulo-libro .sgpc-form-shell {
+  width: min(1320px, 100%);
+
+  padding:
+    4px
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+.sgpc-form-page--capitulo-libro .sgpc-form-header {
+  margin-bottom: 14px;
+
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+
+  background: transparent;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-card--admin-context {
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-card--admin-context
+  .sgpc-card-body {
+  padding: 10px 13px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-card {
+  border-radius: 14px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-card-head {
+  padding:
+    13px
+    15px
+    12px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-card-body {
+  padding: 15px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-section-state {
+  font-weight: 700;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-section-state.is-complete {
+  color: var(--sgpc-success);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-section-state.is-pending {
+  color: var(--sgpc-warning);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-origin-extra {
+  padding-top: 2px;
+}
+
+/* Separadores de contenido, no tarjetas anidadas. */
+.sgpc-form-page--capitulo-libro
+  .sgpc-form-subsection {
+  display: grid;
+  gap: 2px;
+
+  margin-top: 2px;
+
+  padding:
+    0
+    0
+    7px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-form-subsection:not(:first-child) {
+  margin-top: 8px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-form-subsection strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.73rem;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-form-subsection span {
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+/* Autores: una sola cabecera. */
+.sgpc-form-page--capitulo-libro
+  #sec-autores
+  .as-head-left {
+  display: none;
+}
+
+.sgpc-form-page--capitulo-libro
+  #sec-autores
+  .as-head {
+  justify-content: flex-end;
+
+  padding:
+    0
+    0
+    10px;
+}
+
+.sgpc-form-page--capitulo-libro
+  #sec-autores
+  .as-head-right {
+  margin-left: auto;
+}
+
+/* Documentos: una sola cabecera. */
+.sgpc-form-page--capitulo-libro
+  #sec-adjuntos
+  .sgpc-upload__head {
+  display: none;
+}
+
+/* =========================================================
+   RESUMEN LATERAL
+========================================================= */
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-card {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-card::before,
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-icon,
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-kicker {
+  display: none;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-head {
+  padding: 0 0 10px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-head h2 {
+  margin: 0;
+
+  color: var(--sgpc-text);
+
+  font-family: var(--sgpc-font-title);
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-progress {
+  margin-top: 11px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-progress-bar {
+  height: 6px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-progress-caption {
+  margin-top: 6px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary {
+  display: grid;
+  gap: 7px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary > strong {
+  color: var(--sgpc-text);
+
+  font-size: 0.7rem;
+  font-weight: 740;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary__list {
+  display: grid;
+  gap: 5px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary__item {
+  width: 100%;
+
+  display: grid;
+  gap: 2px;
+
+  padding: 8px 9px;
+
+  border:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-surface);
+
+  color:
+    var(--sgpc-text);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary__item:hover {
+  border-color:
+    var(--sgpc-primary-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary__item span {
+  font-size: 0.69rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-pending-summary__item small {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-ready-notice {
+  margin-top: 13px;
+
+  padding: 9px 10px;
+
+  border-radius: 9px;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-optional-summary--compact {
+  display: grid;
+  gap: 5px;
+
+  margin-top: 11px;
+
+  padding: 10px 0 0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-optional-summary--compact p {
+  font-size: 0.67rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-summary-actions {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-draft-note {
+  margin: 0;
+
+  color: var(--sgpc-text-soft);
+
+  font-size: 0.63rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-discard-draft-btn {
+  min-height: 36px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color: var(--sgpc-text-soft);
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-discard-draft-btn:hover:not(:disabled) {
+  border-color:
+    var(--sgpc-line);
+
+  background:
+    var(--sgpc-surface-2);
+
+  color:
+    var(--sgpc-danger);
+
+  transform: none;
+}
+
+.sgpc-form-page--capitulo-libro
+  .sgpc-review-modal--discard
+  .sgpc-review-modal__dialog {
+  width:
+    min(
+      500px,
+      100%
+    );
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1160px) {
+  .sgpc-form-page--capitulo-libro
+    .sgpc-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-form-page--capitulo-libro
+    .sgpc-form-aside {
+    order: -1;
+  }
+
+  .sgpc-form-page--capitulo-libro
+    .sgpc-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page--capitulo-libro
+    .sgpc-form-shell {
+    padding-inline: 8px;
+  }
+
+  .sgpc-form-page--capitulo-libro
+    #sec-autores
+    .as-head-right {
+    width: 100%;
+  }
+
+  .sgpc-form-page--capitulo-libro
+    #sec-autores
+    .as-head-right
+    .as-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   31. LIBRO — EXPERIENCIA DE USUARIO FINAL
+========================================================= */
+
+.sgpc-form-page--libro .sgpc-form-shell {
+  width: min(1320px, 100%);
+
+  padding:
+    4px
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+/* Cabecera plana y consistente con los demás formularios. */
+.sgpc-form-page--libro .sgpc-form-header {
+  margin-bottom: 14px;
+
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+
+  background: transparent;
+}
+
+/* Contexto administrativo como franja informativa. */
+.sgpc-form-page--libro
+  .sgpc-card--admin-context {
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--libro
+  .sgpc-card--admin-context
+  .sgpc-card-body {
+  padding: 10px 13px;
+}
+
+/* Secciones principales. */
+.sgpc-form-page--libro
+  .sgpc-card {
+  border-radius: 14px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-card-head {
+  padding:
+    13px
+    15px
+    12px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-card-body {
+  padding: 15px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-section-state {
+  font-weight: 700;
+}
+
+.sgpc-form-page--libro
+  .sgpc-section-state.is-complete {
+  color:
+    var(--sgpc-success);
+}
+
+.sgpc-form-page--libro
+  .sgpc-section-state.is-pending {
+  color:
+    var(--sgpc-warning);
+}
+
+.sgpc-form-page--libro
+  .sgpc-origin-extra {
+  padding-top: 2px;
+}
+
+/* Agrupaciones internas: separadores, no tarjetas. */
+.sgpc-form-page--libro
+  .sgpc-form-subsection {
+  display: grid;
+  gap: 2px;
+
+  margin-top: 2px;
+
+  padding:
+    0
+    0
+    7px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--libro
+  .sgpc-form-subsection:not(:first-child) {
+  margin-top: 8px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-form-subsection strong {
+  color:
+    var(--sgpc-text);
+
+  font-size: 0.73rem;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--libro
+  .sgpc-form-subsection span {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+/* Autores: una sola cabecera. */
+.sgpc-form-page--libro
+  #sec-autores
+  .as-head-left {
+  display: none;
+}
+
+.sgpc-form-page--libro
+  #sec-autores
+  .as-head {
+  justify-content: flex-end;
+
+  padding:
+    0
+    0
+    10px;
+}
+
+.sgpc-form-page--libro
+  #sec-autores
+  .as-head-right {
+  margin-left: auto;
+}
+
+/* Documentos: una sola cabecera. */
+.sgpc-form-page--libro
+  #sec-adjuntos
+  .sgpc-upload__head {
+  display: none;
+}
+
+/* =========================================================
+   ESTADO DEL REGISTRO
+========================================================= */
+
+.sgpc-form-page--libro
+  .sgpc-summary-card {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--libro
+  .sgpc-summary-card::before,
+.sgpc-form-page--libro
+  .sgpc-summary-icon,
+.sgpc-form-page--libro
+  .sgpc-summary-kicker {
+  display: none;
+}
+
+.sgpc-form-page--libro
+  .sgpc-summary-head {
+  padding:
+    0
+    0
+    10px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--libro
+  .sgpc-summary-head h2 {
+  margin: 0;
+
+  color:
+    var(--sgpc-text);
+
+  font-family:
+    var(--sgpc-font-title);
+
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+.sgpc-form-page--libro
+  .sgpc-progress {
+  margin-top: 11px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--libro
+  .sgpc-progress-bar {
+  height: 6px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-progress-caption {
+  margin-top: 6px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary {
+  display: grid;
+  gap: 7px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary > strong {
+  color:
+    var(--sgpc-text);
+
+  font-size: 0.7rem;
+  font-weight: 740;
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary__list {
+  display: grid;
+  gap: 5px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary__item {
+  width: 100%;
+
+  display: grid;
+  gap: 2px;
+
+  padding:
+    8px
+    9px;
+
+  border:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-surface);
+
+  color:
+    var(--sgpc-text);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary__item:hover {
+  border-color:
+    var(--sgpc-primary-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary__item span {
+  font-size: 0.69rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page--libro
+  .sgpc-pending-summary__item small {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--libro
+  .sgpc-ready-notice {
+  margin-top: 13px;
+
+  padding:
+    9px
+    10px;
+
+  border-radius: 9px;
+}
+
+.sgpc-form-page--libro
+  .sgpc-optional-summary--compact {
+  display: grid;
+  gap: 5px;
+
+  margin-top: 11px;
+
+  padding:
+    10px
+    0
+    0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--libro
+  .sgpc-optional-summary--compact p {
+  font-size: 0.67rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page--libro
+  .sgpc-summary-actions {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--libro
+  .sgpc-draft-note {
+  margin: 0;
+
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.63rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sgpc-form-page--libro
+  .sgpc-discard-draft-btn {
+  min-height: 36px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color:
+    var(--sgpc-text-soft);
+}
+
+.sgpc-form-page--libro
+  .sgpc-discard-draft-btn:hover:not(:disabled) {
+  border-color:
+    var(--sgpc-line);
+
+  background:
+    var(--sgpc-surface-2);
+
+  color:
+    var(--sgpc-danger);
+
+  transform: none;
+}
+
+.sgpc-form-page--libro
+  .sgpc-review-modal--discard
+  .sgpc-review-modal__dialog {
+  width:
+    min(
+      500px,
+      100%
+    );
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1160px) {
+  .sgpc-form-page--libro
+    .sgpc-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-form-page--libro
+    .sgpc-form-aside {
+    order: -1;
+  }
+
+  .sgpc-form-page--libro
+    .sgpc-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page--libro
+    .sgpc-form-shell {
+    padding-inline: 8px;
+  }
+
+  .sgpc-form-page--libro
+    #sec-autores
+    .as-head-right {
+    width: 100%;
+  }
+
+  .sgpc-form-page--libro
+    #sec-autores
+    .as-head-right
+    .as-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   32. PONENCIA — EXPERIENCIA DE USUARIO FINAL
+========================================================= */
+
+.sgpc-form-page--ponencia .sgpc-form-shell {
+  width: min(1320px, 100%);
+
+  padding:
+    4px
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+/* Cabecera plana y consistente. */
+.sgpc-form-page--ponencia .sgpc-form-header {
+  margin-bottom: 14px;
+
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+
+  background: transparent;
+}
+
+/* Contexto administrativo discreto. */
+.sgpc-form-page--ponencia
+  .sgpc-card--admin-context {
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-card--admin-context
+  .sgpc-card-body {
+  padding: 10px 13px;
+}
+
+/* Secciones principales. */
+.sgpc-form-page--ponencia
+  .sgpc-card {
+  border-radius: 14px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-card-head {
+  padding:
+    13px
+    15px
+    12px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-card-body {
+  padding: 15px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-section-state {
+  font-weight: 700;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-section-state.is-complete {
+  color:
+    var(--sgpc-success);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-section-state.is-pending {
+  color:
+    var(--sgpc-warning);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-origin-extra {
+  padding-top: 2px;
+}
+
+/* Evento / Presentación / Acceso:
+   separadores de contenido, no tarjetas anidadas. */
+.sgpc-form-page--ponencia
+  .sgpc-form-subsection {
+  display: grid;
+  gap: 2px;
+
+  margin-top: 2px;
+
+  padding:
+    0
+    0
+    7px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-form-subsection:not(:first-child) {
+  margin-top: 8px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-form-subsection strong {
+  color:
+    var(--sgpc-text);
+
+  font-size: 0.73rem;
+  font-weight: 740;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-form-subsection span {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+/* Autores: una sola cabecera. */
+.sgpc-form-page--ponencia
+  #sec-autores
+  .as-head-left {
+  display: none;
+}
+
+.sgpc-form-page--ponencia
+  #sec-autores
+  .as-head {
+  justify-content: flex-end;
+
+  padding:
+    0
+    0
+    10px;
+}
+
+.sgpc-form-page--ponencia
+  #sec-autores
+  .as-head-right {
+  margin-left: auto;
+}
+
+/* Documentos: una sola cabecera. */
+.sgpc-form-page--ponencia
+  #sec-adjuntos
+  .sgpc-upload__head {
+  display: none;
+}
+
+/* =========================================================
+   ESTADO DEL REGISTRO
+========================================================= */
+
+.sgpc-form-page--ponencia
+  .sgpc-summary-card {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-summary-card::before,
+.sgpc-form-page--ponencia
+  .sgpc-summary-icon,
+.sgpc-form-page--ponencia
+  .sgpc-summary-kicker {
+  display: none;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-summary-head {
+  padding:
+    0
+    0
+    10px;
+
+  border-bottom:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-summary-head h2 {
+  margin: 0;
+
+  color:
+    var(--sgpc-text);
+
+  font-family:
+    var(--sgpc-font-title);
+
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-progress {
+  margin-top: 11px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-progress-bar {
+  height: 6px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-progress-caption {
+  margin-top: 6px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary {
+  display: grid;
+  gap: 7px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary > strong {
+  color:
+    var(--sgpc-text);
+
+  font-size: 0.7rem;
+  font-weight: 740;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary__list {
+  display: grid;
+  gap: 5px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary__item {
+  width: 100%;
+
+  display: grid;
+  gap: 2px;
+
+  padding:
+    8px
+    9px;
+
+  border:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 9px;
+
+  background:
+    var(--sgpc-surface);
+
+  color:
+    var(--sgpc-text);
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow: none;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary__item:hover {
+  border-color:
+    var(--sgpc-primary-line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--sgpc-primary) 3%,
+      var(--sgpc-surface)
+    );
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary__item span {
+  font-size: 0.69rem;
+  font-weight: 710;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-pending-summary__item small {
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-ready-notice {
+  margin-top: 13px;
+
+  padding:
+    9px
+    10px;
+
+  border-radius: 9px;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-optional-summary--compact {
+  display: grid;
+  gap: 5px;
+
+  margin-top: 11px;
+
+  padding:
+    10px
+    0
+    0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--sgpc-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-optional-summary--compact p {
+  font-size: 0.67rem;
+  line-height: 1.42;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-summary-actions {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 13px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--sgpc-line);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-draft-note {
+  margin: 0;
+
+  color:
+    var(--sgpc-text-soft);
+
+  font-size: 0.63rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-discard-draft-btn {
+  min-height: 36px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color:
+    var(--sgpc-text-soft);
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-discard-draft-btn:hover:not(:disabled) {
+  border-color:
+    var(--sgpc-line);
+
+  background:
+    var(--sgpc-surface-2);
+
+  color:
+    var(--sgpc-danger);
+
+  transform: none;
+}
+
+.sgpc-form-page--ponencia
+  .sgpc-review-modal--discard
+  .sgpc-review-modal__dialog {
+  width:
+    min(
+      500px,
+      100%
+    );
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1160px) {
+  .sgpc-form-page--ponencia
+    .sgpc-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .sgpc-form-page--ponencia
+    .sgpc-form-aside {
+    order: -1;
+  }
+
+  .sgpc-form-page--ponencia
+    .sgpc-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .sgpc-form-page--ponencia
+    .sgpc-form-shell {
+    padding-inline: 8px;
+  }
+
+  .sgpc-form-page--ponencia
+    #sec-autores
+    .as-head-right {
+    width: 100%;
+  }
+
+  .sgpc-form-page--ponencia
+    #sec-autores
+    .as-head-right
+    .as-btn {
+    width: 100%;
   }
 }

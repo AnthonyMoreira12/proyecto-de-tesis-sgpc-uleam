@@ -1,4 +1,3 @@
-from django.db.models import Q
 from rest_framework import (
     permissions,
     status,
@@ -28,8 +27,10 @@ from core.publicaciones.serializers.base.publicaciones_archivos_serializers impo
 )
 from core.publicaciones.utils.publicaciones_permissions_utils import (
     can_edit_publicacion,
-    is_admin_user,
-    resolve_user_autor_id,
+    get_publicacion_edit_block_reason,
+)
+from core.publicaciones.utils.publicaciones_visibilidad_utils import (
+    apply_user_visible_publicaciones_scope,
 )
 
 
@@ -52,6 +53,17 @@ def _assert_user_can_access_publicacion(
         publicacion,
     ):
         return
+
+    block_reason = (
+        get_publicacion_edit_block_reason(
+            publicacion
+        )
+    )
+
+    if block_reason:
+        raise PermissionDenied(
+            block_reason
+        )
 
     raise PermissionDenied(
         "No tiene permisos para gestionar "
@@ -79,6 +91,30 @@ class PublicacionArchivoViewSet(
         "options",
     ]
 
+    def get_permissions(self):
+        """
+        Permite lectura anónima solo sobre archivos de
+        publicaciones Aprobadas. La restricción se aplica en
+        get_queryset mediante la política central de visibilidad.
+
+        Crear, eliminar y cargar archivos continúa requiriendo
+        autenticación y los permisos de edición existentes.
+        """
+
+        if self.request.method in permissions.SAFE_METHODS:
+            permission_classes = [
+                permissions.AllowAny
+            ]
+        else:
+            permission_classes = [
+                permissions.IsAuthenticated
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
+
     # =========================================================
     # QUERYSET
     # =========================================================
@@ -90,6 +126,7 @@ class PublicacionArchivoViewSet(
                 "publicacion",
                 "publicacion__tipo",
                 "publicacion__usuario_creador",
+                "publicacion__sede",
                 "publicacion__carrera",
                 "publicacion__carrera__facultad",
             )
@@ -142,34 +179,12 @@ class PublicacionArchivoViewSet(
                 )
             )
 
-        user = self.request.user
-
-        if is_admin_user(
-            user
-        ):
-            return queryset
-
-        autor_id = (
-            resolve_user_autor_id(
-                user
-            )
-        )
-
-        filters = Q(
-            publicacion__usuario_creador=user
-        )
-
-        if autor_id:
-            filters |= Q(
-                publicacion__participaciones__autor_id=(
-                    autor_id
-                )
-            )
-
         return (
-            queryset
-            .filter(filters)
-            .distinct()
+            apply_user_visible_publicaciones_scope(
+                queryset,
+                user=self.request.user,
+                prefix="publicacion__",
+            )
         )
 
     # =========================================================

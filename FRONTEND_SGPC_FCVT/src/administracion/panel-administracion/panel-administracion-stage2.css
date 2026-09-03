@@ -1,0 +1,305 @@
+/* ============================================================
+   SGPC · PANEL ADMINISTRATIVO · ETAPA 2
+   Jerarquía operativa, menos redundancia y accesos frecuentes.
+============================================================ */
+
+.adm-dashboard-sectioneyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.69rem;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   REQUIERE ATENCIÓN
+============================================================ */
+
+.adm-dashboard-attention {
+  border-color: var(--adm-line-strong, var(--border-color));
+}
+
+.adm-dashboard-attention__side {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.adm-dashboard-priority-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adm-dashboard-priority {
+  min-width: 0;
+  min-height: 100px;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--adm-line, var(--border-color));
+  border-radius: 11px;
+  background: var(--adm-card, var(--bg-card));
+  color: var(--adm-text, var(--text-primary));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.adm-dashboard-priority:hover {
+  border-color: var(--adm-line-strong, var(--border-color));
+  background: var(--adm-soft, var(--bg-soft));
+  transform: translateY(-1px);
+}
+
+.adm-dashboard-priority > span {
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.adm-dashboard-priority > strong {
+  color: var(--adm-text, var(--text-primary));
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.adm-dashboard-priority > small {
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.adm-dashboard-priority[data-tone="warning"] {
+  border-top: 3px solid var(--adm-warning, var(--color-warning));
+}
+
+.adm-dashboard-priority[data-tone="info"] {
+  border-top: 3px solid var(--adm-primary, var(--color-primary));
+}
+
+.adm-dashboard-priority[data-tone="success"] {
+  border-top: 3px solid var(--adm-success, var(--color-success));
+}
+
+.adm-dashboard-quality {
+  overflow: hidden;
+  border: 1px solid var(--adm-line, var(--border-color));
+  border-radius: 11px;
+  background: var(--adm-card, var(--bg-card));
+}
+
+.adm-dashboard-quality__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--adm-line, var(--border-color));
+}
+
+.adm-dashboard-quality__head strong {
+  color: var(--adm-text, var(--text-primary));
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.adm-dashboard-quality__head span {
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.67rem;
+}
+
+.adm-dashboard-quality__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.adm-dashboard-quality__item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 0;
+  border-right: 1px solid var(--adm-line, var(--border-color));
+  background: transparent;
+  color: var(--adm-text, var(--text-primary));
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.adm-dashboard-quality__item:last-child {
+  border-right: 0;
+}
+
+.adm-dashboard-quality__item:hover {
+  background: var(--adm-soft, var(--bg-soft));
+}
+
+.adm-dashboard-quality__item span {
+  min-width: 0;
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.adm-dashboard-quality__item strong {
+  flex: 0 0 auto;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+/* ============================================================
+   RESUMEN GENERAL
+============================================================ */
+
+.adm-dashboard-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.adm-dashboard-summary .adm-dashboard-sectionhead {
+  margin: 0;
+  min-height: 0;
+}
+
+.adm-dashboard-summary .adm-dashboard-kpis {
+  gap: 10px;
+}
+
+.adm-dashboard-summary .adm-dashboard-kpi {
+  min-height: 108px;
+  padding: 15px 16px;
+  gap: 7px;
+  box-shadow: none;
+}
+
+.adm-dashboard-summary .adm-dashboard-kpi:hover {
+  transform: none;
+}
+
+.adm-dashboard-summary .adm-dashboard-kpi__value {
+  font-size: clamp(1.55rem, 1.35rem + 0.55vw, 1.95rem);
+}
+
+.adm-dashboard-summary .adm-dashboard-kpi__meta {
+  font-size: 0.68rem;
+}
+
+/* ============================================================
+   ACCESOS FRECUENTES
+============================================================ */
+
+.adm-dashboard-modules--primary {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-sectionhead {
+  margin-bottom: 10px;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-modulegrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-module {
+  min-height: 66px;
+  padding: 11px 12px;
+  gap: 9px;
+  border-radius: 11px;
+  box-shadow: none;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-module:hover {
+  transform: translateY(-1px);
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-module__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-module__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.adm-dashboard-modules--primary .adm-dashboard-module__topline strong {
+  font-size: 0.77rem;
+  line-height: 1.25;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1180px) {
+  .adm-dashboard-priority-list,
+  .adm-dashboard-modules--primary .adm-dashboard-modulegrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adm-dashboard-priority-list .adm-dashboard-priority:last-child {
+    grid-column: 1 / -1;
+    min-height: 82px;
+  }
+}
+
+@media (max-width: 820px) {
+  .adm-dashboard-priority-list,
+  .adm-dashboard-quality__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm-dashboard-priority-list .adm-dashboard-priority:last-child {
+    grid-column: auto;
+  }
+
+  .adm-dashboard-priority {
+    min-height: 84px;
+  }
+
+  .adm-dashboard-quality__head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .adm-dashboard-quality__item {
+    border-right: 0;
+    border-bottom: 1px solid var(--adm-line, var(--border-color));
+  }
+
+  .adm-dashboard-quality__item:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .adm-dashboard-modules--primary .adm-dashboard-modulegrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-dashboard-priority,
+  .adm-dashboard-quality__item,
+  .adm-dashboard-modules--primary .adm-dashboard-module {
+    transition: none !important;
+  }
+}

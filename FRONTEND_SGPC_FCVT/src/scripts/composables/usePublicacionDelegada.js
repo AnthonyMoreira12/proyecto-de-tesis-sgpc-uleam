@@ -2,11 +2,20 @@ import { computed, ref } from "vue";
 
 import {
   actualizarAdminPublicacion,
+  aprobarAdminPublicacion,
   crearAdminPublicacionDelegada,
   eliminarAdminPublicacion,
   listarAdminPublicaciones,
+  observarAdminPublicacion,
   obtenerAdminPublicacion,
+  obtenerAdminPublicacionHistorial,
+  rechazarAdminPublicacion,
 } from "../api/publicacionesAdminApi";
+
+import {
+  enviarPublicacionRevision,
+  reenviarPublicacionRevision,
+} from "../api/publicacionesApi";
 
 /**
  * Composable para gestionar publicaciones administrativas
@@ -216,6 +225,54 @@ function normalizarUsuarioObjetivo(
       normalizeBoolean(
         usuario.es_externo
       ),
+
+    sede_id:
+      Number(
+        usuario.sede_id ||
+        usuario.sede?.id ||
+        usuario.sede ||
+        0
+      ) || null,
+
+    sede_nombre: toText(
+      usuario.sede_nombre ||
+      usuario.sede?.nombre ||
+      (typeof usuario.sede === "string"
+        ? usuario.sede
+        : "")
+    ),
+
+    carrera_id:
+      Number(
+        usuario.carrera_id ||
+        usuario.carrera?.id ||
+        usuario.carrera ||
+        0
+      ) || null,
+
+    carrera_nombre: toText(
+      usuario.carrera_nombre ||
+      usuario.carrera?.nombre ||
+      (typeof usuario.carrera === "string"
+        ? usuario.carrera
+        : "")
+    ),
+
+    facultad_id:
+      Number(
+        usuario.facultad_id ||
+        usuario.facultad?.id ||
+        usuario.facultad ||
+        0
+      ) || null,
+
+    facultad_nombre: toText(
+      usuario.facultad_nombre ||
+      usuario.facultad?.nombre ||
+      (typeof usuario.facultad === "string"
+        ? usuario.facultad
+        : "")
+    ),
   };
 }
 
@@ -264,6 +321,39 @@ function mergeCreatedPublication(
   };
 }
 
+function extraerPublicacionRespuesta(response) {
+  return (
+    response?.publicacion ||
+    response?.data?.publicacion ||
+    (response?.id ? response : null)
+  );
+}
+
+function actualizarPublicacionEnLista(
+  list,
+  publicacion
+) {
+  if (!publicacion?.id) {
+    return Array.isArray(list)
+      ? list
+      : [];
+  }
+
+  const current = Array.isArray(list)
+    ? list
+    : [];
+
+  return current.map((item) =>
+    Number(item?.id) ===
+    Number(publicacion.id)
+      ? {
+          ...item,
+          ...publicacion,
+        }
+      : item
+  );
+}
+
 export function usePublicacionDelegada() {
   const usuarioObjetivo = ref(null);
 
@@ -272,11 +362,14 @@ export function usePublicacionDelegada() {
   const next = ref(null);
   const previous = ref(null);
   const detalle = ref(null);
+  const historial = ref([]);
 
   const loading = ref(false);
   const loadingDetalle = ref(false);
+  const loadingHistorial = ref(false);
   const saving = ref(false);
   const deleting = ref(false);
+  const workflowLoading = ref(false);
 
   const error = ref("");
   const validationErrors = ref(null);
@@ -284,9 +377,12 @@ export function usePublicacionDelegada() {
   const filtros = ref({
     q: "",
     tipo: "",
+    estado: "",
+    sede_id: "",
     facultad_id: "",
     carrera_id: "",
     anio: "",
+    mes: "",
     solo_delegadas: "",
     solo_con_pdf: "",
     solo_con_adjuntos: "",
@@ -337,15 +433,28 @@ export function usePublicacionDelegada() {
   function setUsuarioObjetivo(
     usuario
   ) {
-    usuarioObjetivo.value =
+    const nextUser =
       normalizarUsuarioObjetivo(
         usuario
       );
+
+    const changed =
+      Number(usuarioObjetivo.value?.id || 0) !==
+      Number(nextUser?.id || 0);
+
+    usuarioObjetivo.value = nextUser;
+
+    if (changed) {
+      detalle.value = null;
+      historial.value = [];
+      resetListado();
+    }
   }
 
   function clearUsuarioObjetivo() {
     usuarioObjetivo.value = null;
     detalle.value = null;
+    historial.value = [];
     resetListado();
   }
 
@@ -362,9 +471,12 @@ export function usePublicacionDelegada() {
     filtros.value = {
       q: "",
       tipo: "",
+      estado: "",
+      sede_id: "",
       facultad_id: "",
       carrera_id: "",
       anio: "",
+      mes: "",
       solo_delegadas: "",
       solo_con_pdf: "",
       solo_con_adjuntos: "",
@@ -467,6 +579,13 @@ export function usePublicacionDelegada() {
           publicacionId
         );
 
+      if (
+        Number(detalle.value?.id) !==
+        Number(response?.id)
+      ) {
+        historial.value = [];
+      }
+
       detalle.value = response;
 
       return response;
@@ -485,6 +604,220 @@ export function usePublicacionDelegada() {
     } finally {
       loadingDetalle.value = false;
     }
+  }
+
+  async function cargarHistorial(
+    publicacionId
+  ) {
+    limpiarEstados();
+    loadingHistorial.value = true;
+
+    try {
+      const response =
+        await obtenerAdminPublicacionHistorial(
+          publicacionId
+        );
+
+      historial.value = Array.isArray(
+        response?.items
+      )
+        ? response.items
+        : [];
+
+      return response;
+    } catch (err) {
+      historial.value = [];
+
+      error.value = normalizarError(
+        err,
+        "No se pudo cargar el historial de la publicación."
+      );
+
+      validationErrors.value =
+        extraerErroresValidacion(err);
+
+      throw err;
+    } finally {
+      loadingHistorial.value = false;
+    }
+  }
+
+  function aplicarRespuestaWorkflow(
+    publicacionId,
+    response
+  ) {
+    const publicacion =
+      extraerPublicacionRespuesta(
+        response
+      );
+
+    if (publicacion?.id) {
+      items.value =
+        actualizarPublicacionEnLista(
+          items.value,
+          publicacion
+        );
+
+      if (
+        Number(detalle.value?.id) ===
+        Number(publicacion.id)
+      ) {
+        detalle.value = {
+          ...detalle.value,
+          ...publicacion,
+        };
+      }
+    } else {
+      const nextState = toText(
+        response?.estado
+      );
+
+      if (nextState) {
+        items.value = items.value.map(
+          (item) =>
+            Number(item?.id) ===
+            Number(publicacionId)
+              ? {
+                  ...item,
+                  estado: nextState,
+                  estado_label:
+                    response?.estado_label ||
+                    item?.estado_label,
+                }
+              : item
+        );
+
+        if (
+          Number(detalle.value?.id) ===
+          Number(publicacionId)
+        ) {
+          detalle.value = {
+            ...detalle.value,
+            estado: nextState,
+            estado_label:
+              response?.estado_label ||
+              detalle.value?.estado_label,
+          };
+        }
+      }
+    }
+
+    return publicacion;
+  }
+
+  async function ejecutarWorkflow(
+    publicacionId,
+    operation,
+    fallback
+  ) {
+    limpiarEstados();
+    workflowLoading.value = true;
+
+    try {
+      const response =
+        await operation();
+
+      aplicarRespuestaWorkflow(
+        publicacionId,
+        response
+      );
+
+      if (
+        Number(detalle.value?.id) ===
+        Number(publicacionId)
+      ) {
+        try {
+          await cargarHistorial(
+            publicacionId
+          );
+        } catch (historyError) {
+          console.warn(
+            "El estado cambió, pero no se pudo refrescar el historial.",
+            historyError
+          );
+        }
+      }
+
+      return response;
+    } catch (err) {
+      error.value = normalizarError(
+        err,
+        fallback
+      );
+
+      validationErrors.value =
+        extraerErroresValidacion(err);
+
+      throw err;
+    } finally {
+      workflowLoading.value = false;
+    }
+  }
+
+  async function enviarARevision(
+    publicacionId
+  ) {
+    return ejecutarWorkflow(
+      publicacionId,
+      () => enviarPublicacionRevision(
+        publicacionId
+      ),
+      "No se pudo enviar la publicación a revisión."
+    );
+  }
+
+  async function reenviarARevision(
+    publicacionId
+  ) {
+    return ejecutarWorkflow(
+      publicacionId,
+      () => reenviarPublicacionRevision(
+        publicacionId
+      ),
+      "No se pudo reenviar la publicación a revisión."
+    );
+  }
+
+  async function aprobarPublicacion(
+    publicacionId,
+    comentario = ""
+  ) {
+    return ejecutarWorkflow(
+      publicacionId,
+      () => aprobarAdminPublicacion(
+        publicacionId,
+        comentario
+      ),
+      "No se pudo aprobar la publicación."
+    );
+  }
+
+  async function observarPublicacion(
+    publicacionId,
+    comentario
+  ) {
+    return ejecutarWorkflow(
+      publicacionId,
+      () => observarAdminPublicacion(
+        publicacionId,
+        comentario
+      ),
+      "No se pudo observar la publicación."
+    );
+  }
+
+  async function rechazarPublicacion(
+    publicacionId,
+    comentario
+  ) {
+    return ejecutarWorkflow(
+      publicacionId,
+      () => rechazarAdminPublicacion(
+        publicacionId,
+        comentario
+      ),
+      "No se pudo rechazar la publicación."
+    );
   }
 
   function buildDelegatedPayload(
@@ -670,6 +1003,7 @@ export function usePublicacionDelegada() {
         Number(publicacionId)
       ) {
         detalle.value = null;
+        historial.value = [];
       }
 
       return response;
@@ -698,12 +1032,15 @@ export function usePublicacionDelegada() {
     next,
     previous,
     detalle,
+    historial,
 
     filtros,
     loading,
     loadingDetalle,
+    loadingHistorial,
     saving,
     deleting,
+    workflowLoading,
     error,
     validationErrors,
 
@@ -716,6 +1053,12 @@ export function usePublicacionDelegada() {
 
     cargarPublicaciones,
     cargarDetalle,
+    cargarHistorial,
+    enviarARevision,
+    reenviarARevision,
+    aprobarPublicacion,
+    observarPublicacion,
+    rechazarPublicacion,
     crearPublicacionDelegada,
     actualizarPublicacion,
     eliminarPublicacion,

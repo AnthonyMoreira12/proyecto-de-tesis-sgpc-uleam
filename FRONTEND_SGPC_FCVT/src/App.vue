@@ -64,19 +64,32 @@
       }"
     />
 
-    <!-- Una sola instancia global del sistema de avisos -->
-    <AvisosGlobalHost v-if="showGlobalAvisos" />
+    <!-- Notificaciones en vivo para interfaces privadas -->
+    <NotificacionesLiveHost v-if="showNavbar" />
+
+    <!-- Aviso de información pendiente: una vez por inicio de sesión -->
+    <InformacionPendienteLoginHost
+      v-if="showNavbar"
+      @visibility-change="pendingUpdateModalVisible = $event"
+    />
+
+    <!-- Evita superponer dos sistemas de modal global al mismo tiempo -->
+    <AvisosGlobalHost
+      v-if="showGlobalAvisos && !pendingUpdateModalVisible"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 
 import BarraNavegacion from "./inicio/componentes/BarraNavegacion.vue";
 import FooterInstitucional from "./inicio/componentes/FooterInstitucional.vue";
 import AvisosGlobalHost from "./inicio/avisos-global-host/AvisosGlobalHost.vue";
+import NotificacionesLiveHost from "./notificaciones/componentes/NotificacionesLiveHost.vue";
+import InformacionPendienteLoginHost from "./actualizaciones/componentes/InformacionPendienteLoginHost.vue";
 
 import { useThemeStore } from "./scripts/stores/themeStore";
 
@@ -84,6 +97,7 @@ const route = useRoute();
 const themeStore = useThemeStore();
 
 const { animations } = storeToRefs(themeStore);
+const pendingUpdateModalVisible = ref(false);
 
 /*
  * Mantiene las clases de entrada el tiempo suficiente para que

@@ -1,5 +1,4 @@
 // src/scripts/api/adminApi.js
-
 import api from "./axios";
 
 
@@ -305,13 +304,13 @@ const buildCreateUserPayload = (
   }
 
   if (
-    !identificacion ||
+    identificacion &&
     !/^\d{10}$/.test(
       identificacion
     )
   ) {
     throw new Error(
-      "La cédula debe contener exactamente 10 dígitos numéricos."
+      "La cédula debe contener exactamente 10 dígitos numéricos cuando se proporciona."
     );
   }
 
@@ -320,6 +319,7 @@ const buildCreateUserPayload = (
 
     - rol
     - auth_source
+    - sede
     - carrera
     - is_active
     - is_staff
@@ -383,10 +383,24 @@ const buildEditUserPayload = (
       "identificacion"
     )
   ) {
-    output.identificacion =
+    const identificacion =
       normalizeCedula(
         payload.identificacion
       );
+
+    if (
+      identificacion &&
+      !/^\d{10}$/.test(
+        identificacion
+      )
+    ) {
+      throw new Error(
+        "La cédula debe contener exactamente 10 dígitos numéricos cuando se proporciona."
+      );
+    }
+
+    output.identificacion =
+      identificacion;
   }
 
   if (
@@ -410,6 +424,18 @@ const buildEditUserPayload = (
     output.is_staff =
       normalizeBoolean(
         payload.is_staff
+      );
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "sede"
+    )
+  ) {
+    output.sede =
+      normalizePositiveInteger(
+        payload.sede
       );
   }
 
@@ -513,7 +539,8 @@ export const adminApi = {
    *
    * - inactiva;
    * - sin contraseña utilizable;
-   * - sin Carrera;
+   * - sin Sede ni Carrera institucional;
+   * - con identificación opcional;
    * - sin permisos administrativos.
    */
   crearUsuario: async (
@@ -796,6 +823,65 @@ export const adminApi = {
   /* ==========================================================
      SELECTORES
   ========================================================== */
+
+  /**
+   * Obtiene las Sedes institucionales activas.
+   */
+  selectsSedes: async () => {
+    return getData(
+      api.get(
+        "selects/sedes/"
+      )
+    );
+  },
+
+
+  /**
+   * Obtiene Carreras filtradas por Sede.
+   */
+  selectsCarrerasBySede: async (
+    sedeId
+  ) => {
+    const id = ensureId(
+      sedeId,
+      "sedeId"
+    );
+
+    return getData(
+      api.get(
+        `selects/carreras/sede/${id}/`
+      )
+    );
+  },
+
+
+  /**
+   * Selector flexible de Carreras. El backend admite
+   * sede_id, facultad_id o ambos filtros simultáneamente.
+   */
+  selectsCarreras: async ({
+    sedeId = null,
+    facultadId = null,
+  } = {}) => {
+    return getData(
+      api.get(
+        "selects/carreras/",
+        {
+          params: buildOptionalParams({
+            sede_id:
+              normalizePositiveInteger(
+                sedeId
+              ) || undefined,
+            facultad_id:
+              normalizePositiveInteger(
+                facultadId
+              ) || undefined,
+          }),
+        }
+      )
+    );
+  },
+
 
   /**
    * Obtiene las Facultades disponibles.

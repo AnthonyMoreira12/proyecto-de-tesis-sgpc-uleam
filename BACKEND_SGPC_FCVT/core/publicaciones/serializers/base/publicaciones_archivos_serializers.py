@@ -96,6 +96,9 @@ class PublicacionArchivoSerializer(
             "nombre",
             "archivo",
             "archivo_url",
+            "nombre_original",
+            "tamano_bytes",
+            "sha256",
             "orden",
             "created_at",
         ]
@@ -104,6 +107,9 @@ class PublicacionArchivoSerializer(
             "id",
             "publicacion_id",
             "archivo_url",
+            "nombre_original",
+            "tamano_bytes",
+            "sha256",
             "created_at",
         ]
 
@@ -182,12 +188,18 @@ class PublicacionArchivoCreateSerializer(
             "publicacion",
             "nombre",
             "archivo",
+            "nombre_original",
+            "tamano_bytes",
+            "sha256",
             "orden",
             "created_at",
         ]
 
         read_only_fields = [
             "id",
+            "nombre_original",
+            "tamano_bytes",
+            "sha256",
             "created_at",
         ]
 

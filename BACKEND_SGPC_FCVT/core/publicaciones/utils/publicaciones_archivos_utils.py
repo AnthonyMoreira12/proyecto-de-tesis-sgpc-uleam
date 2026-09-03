@@ -2,108 +2,75 @@ import os
 
 from rest_framework.exceptions import ValidationError
 
+from core.models.publicaciones.archivos import (
+    MAX_ADJUNTO_PDF_BYTES,
+)
+from core.utils.files import validate_pdf_file
 
-PDF_SIGNATURE = b"%PDF-"
-PDF_SIGNATURE_SCAN_BYTES = 1024
+
 MAX_ATTACHMENT_NAME_LENGTH = 150
-
-
-def _read_prefix(
-    uploaded_file,
-    max_bytes=PDF_SIGNATURE_SCAN_BYTES,
-):
-    if not uploaded_file:
-        return b""
-
-    file_obj = getattr(
-        uploaded_file,
-        "file",
-        uploaded_file,
-    )
-
-    if (
-        file_obj is None
-        or not hasattr(file_obj, "read")
-    ):
-        return b""
-
-    original_position = 0
-
-    try:
-        if hasattr(file_obj, "tell"):
-            original_position = file_obj.tell()
-    except (OSError, ValueError):
-        original_position = 0
-
-    try:
-        if hasattr(file_obj, "seek"):
-            file_obj.seek(0)
-
-        content = file_obj.read(max_bytes)
-
-        if isinstance(content, str):
-            content = content.encode(
-                "utf-8",
-                errors="ignore",
-            )
-
-        return bytes(content or b"")
-
-    except (OSError, ValueError, TypeError):
-        return b""
-
-    finally:
-        try:
-            if hasattr(file_obj, "seek"):
-                file_obj.seek(original_position)
-        except (OSError, ValueError):
-            pass
 
 
 def validar_firma_pdf(uploaded_file):
     """
-    Comprueba que la firma real de PDF (%PDF-) aparezca
-    dentro de los primeros 1024 bytes.
-
-    Esto mantiene la comprobación de contenido sin exigir
-    que la cabecera se encuentre exactamente en el byte 0.
+    Mantiene el nombre histórico de la utilidad, pero aplica la
+    validación PDF reforzada y compartida por todo el backend.
     """
 
-    if not uploaded_file:
-        raise ValidationError(
-            "No se proporcionó ningún archivo."
+    try:
+        return validate_pdf_file(
+            uploaded_file,
+            max_bytes=MAX_ADJUNTO_PDF_BYTES,
+            field_name="archivo",
+            label="El archivo adjunto",
         )
 
-    prefix = _read_prefix(
-        uploaded_file,
-        max_bytes=PDF_SIGNATURE_SCAN_BYTES,
-    )
+    except ValidationError as exc:
+        detail = exc.detail
 
-    if not prefix or PDF_SIGNATURE not in prefix:
+        if isinstance(detail, dict):
+            detail = detail.get(
+                "archivo",
+                detail,
+            )
+
+        if isinstance(detail, (list, tuple)):
+            detail = detail[0] if detail else (
+                "El archivo adjunto no es un PDF válido."
+            )
+
         raise ValidationError(
-            "El archivo adjunto no contiene "
-            "una firma PDF válida."
-        )
-
-    return uploaded_file
+            str(detail)
+        ) from exc
 
 
 def default_nombre_from_file(uploaded_file):
-    """
-    Genera un nombre válido para PublicacionArchivo.nombre
-    a partir del nombre original del archivo.
-    """
+    """Genera el nombre visible del adjunto desde el archivo original."""
 
     raw_name = str(
-        getattr(uploaded_file, "name", "")
+        getattr(
+            uploaded_file,
+            "name",
+            "",
+        )
         or ""
     ).strip()
 
     if not raw_name:
         return "Archivo PDF"
 
-    raw_name = os.path.basename(raw_name)
-    base, _ext = os.path.splitext(raw_name)
-    resolved = str(base or raw_name or "Archivo PDF").strip()
+    raw_name = os.path.basename(
+        raw_name
+    )
+
+    base, _extension = os.path.splitext(
+        raw_name
+    )
+
+    resolved = str(
+        base
+        or raw_name
+        or "Archivo PDF"
+    ).strip()
 
     return resolved[:MAX_ATTACHMENT_NAME_LENGTH]

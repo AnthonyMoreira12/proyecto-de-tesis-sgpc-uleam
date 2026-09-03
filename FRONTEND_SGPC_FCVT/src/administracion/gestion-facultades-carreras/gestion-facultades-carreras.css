@@ -1,48 +1,46 @@
 /* ============================================================
-   SGPC ULEAM — GESTIÓN DE FACULTADES Y CARRERAS
-   Contenedor principal de catálogos académicos
+   SGPC ULEAM — ESTRUCTURA ACADÉMICA
+   Navegación plana, responsive y alineada con el sistema
 ============================================================ */
 
 .catalogos-manager {
-  --catalog-card: var(
-    --adm-card,
-    var(--bg-card, #ffffff)
-  );
-
-  --catalog-soft: var(
-    --adm-soft,
-    var(--bg-elevated, #f5f7fb)
-  );
-
-  --catalog-text: var(
-    --adm-text,
-    var(--text-primary, #172033)
-  );
-
-  --catalog-muted: var(
-    --adm-muted,
-    var(--text-secondary, #667085)
-  );
-
+  --catalog-card: var(--adm-card, var(--bg-card, #ffffff));
+  --catalog-soft: var(--adm-soft, var(--bg-elevated, #f5f7fb));
+  --catalog-soft-2: var(--adm-soft-2, var(--surface-3, #eef2f7));
+  --catalog-text: var(--adm-text, var(--text-primary, #172033));
+  --catalog-muted: var(--adm-muted, var(--text-secondary, #667085));
   --catalog-line: var(
     --adm-line,
-    var(
-      --border-color,
-      rgba(23, 32, 51, 0.1)
-    )
+    var(--border-color, rgba(23, 32, 51, 0.1))
+  );
+  --catalog-line-soft: var(
+    --adm-line-soft,
+    color-mix(in srgb, var(--catalog-line) 70%, transparent)
+  );
+  --catalog-primary: var(--adm-primary, var(--color-primary, #315fcb));
+  --catalog-primary-soft: var(
+    --adm-primary-soft,
+    var(--primary-soft, #edf3ff)
+  );
+  --catalog-radius-md: var(--adm-radius-md, 10px);
+  --catalog-radius-lg: var(--adm-radius-lg, 14px);
+  --catalog-ring: var(
+    --adm-ring,
+    0 0 0 3px color-mix(in srgb, var(--catalog-primary) 16%, transparent)
   );
 
-  --catalog-primary: var(
-    --adm-primary,
-    var(--color-primary, #315fcb)
-  );
-
-  width: min(1320px, 100%);
+  width: min(1440px, 100%);
+  min-width: 0;
   margin: 0 auto;
   display: grid;
-  gap: 18px;
+  align-content: start;
+  gap: clamp(14px, 1.25vw, 18px);
+  padding: 4px clamp(10px, 1.25vw, 18px) 42px;
+  overflow-x: clip;
   color: var(--catalog-text);
   font-family: var(--adm-font-body);
+  container-name: academic-structure;
+  container-type: inline-size;
 }
 
 .catalogos-manager,
@@ -52,88 +50,96 @@
   box-sizing: border-box;
 }
 
+.catalogos-manager > *,
+.catalogos-manager header,
+.catalogos-manager nav,
+.catalogos-manager section,
+.catalogos-manager div {
+  min-width: 0;
+}
+
 /* ============================================================
-   ENCABEZADO
+   CABECERA / NAVEGACIÓN
 ============================================================ */
 
-.catalog-head {
-  position: relative;
-  display: grid;
-  gap: 18px;
-  padding: 22px 24px;
-  overflow: hidden;
-}
-
-.catalog-head::before {
-  content: "";
-  position: absolute;
-  top: -150px;
-  right: -120px;
-  width: 330px;
-  height: 330px;
-  border-radius: 50%;
-  background: color-mix(
-    in srgb,
-    var(--catalog-primary) 5%,
-    transparent
-  );
-  pointer-events: none;
-}
-
-.catalog-head > * {
-  position: relative;
-  z-index: 1;
-}
-
-.catalog-head__main {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
-  align-items: flex-start;
-  gap: 22px;
-}
-
-.catalog-head__copy {
+.catalog-modulebar {
   min-width: 0;
-  max-width: 880px;
   display: grid;
-  gap: 8px;
+  gap: 0;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--catalog-line-soft);
 }
 
-.catalog-head__title {
-  max-width: 22ch;
-  margin: 0;
-  text-wrap: balance;
-}
-
-.catalog-head__subtitle {
-  max-width: 70ch;
-  margin: 0;
-  color: var(--catalog-muted);
-  text-wrap: pretty;
-}
-
-.catalog-head__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+.catalog-modulebar__top {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  padding: 0 0 14px;
 }
 
 .catalog-back {
-  min-height: 42px;
-  padding: 0 14px;
+  width: fit-content;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
+  margin-left: -7px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--catalog-muted);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
   white-space: nowrap;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.catalog-back:hover {
+  background: var(--catalog-soft);
+  color: var(--catalog-primary);
 }
 
 .catalog-back svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
+}
+
+.catalog-modulebar__copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.catalog-modulebar__title {
+  margin: 0;
+  color: var(--catalog-text);
+  font-family: var(--adm-font-heading);
+  font-size: clamp(1.55rem, 1.3rem + 0.7vw, 1.95rem);
+  font-weight: 790;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.catalog-modulebar__subtitle {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--catalog-muted);
+  font-size: 0.8rem;
+  line-height: 1.48;
+}
+
+.catalog-back:focus-visible,
+.catalog-tabs__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--catalog-ring);
 }
 
 /* ============================================================
@@ -141,31 +147,66 @@
 ============================================================ */
 
 .catalog-tabs {
-  width: fit-content;
-  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .catalog-tabs__btn {
-  min-width: 148px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.catalog-tabs__icon {
-  width: 17px;
-  height: 17px;
+  position: relative;
   flex: 0 0 auto;
+  min-height: 43px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0 11px;
+  border: 0;
+  background: transparent;
+  color: var(--catalog-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
 }
 
-.catalog-tabs__icon svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+.catalog-tabs__btn::after {
+  content: "";
+  position: absolute;
+  right: 11px;
+  bottom: -1px;
+  left: 11px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+}
+
+.catalog-tabs__btn:hover {
+  color: var(--catalog-text);
+  background: color-mix(
+    in srgb,
+    var(--catalog-primary) 2.5%,
+    transparent
+  );
+}
+
+.catalog-tabs__btn.active {
+  color: var(--catalog-primary);
+}
+
+.catalog-tabs__btn.active::after {
+  background: var(--catalog-primary);
 }
 
 /* ============================================================
@@ -174,136 +215,77 @@
 
 .catalog-content {
   min-width: 0;
+  width: 100%;
   display: grid;
-  gap: 16px;
-  outline: none;
 }
-
-.catalog-content:focus-visible {
-  border-radius: 20px;
-  box-shadow: var(--adm-ring);
-}
-
-/* ============================================================
-   TRANSICIÓN ENTRE CATÁLOGOS
-============================================================ */
 
 .catalog-switch-enter-active,
 .catalog-switch-leave-active {
-  transition:
-    opacity
-      calc(150ms * var(--animate-speed, 1))
-      ease,
-    transform
-      calc(150ms * var(--animate-speed, 1))
-      ease;
+  transition: opacity calc(120ms * var(--animate-speed, 1)) ease;
 }
 
-.catalog-switch-enter-from {
-  opacity: 0;
-  transform: translateY(5px);
-}
-
+.catalog-switch-enter-from,
 .catalog-switch-leave-to {
   opacity: 0;
-  transform: translateY(-3px);
-}
-
-/* ============================================================
-   MODO OSCURO
-============================================================ */
-
-html.dark .catalogos-manager,
-body.dark .catalogos-manager,
-.dark .catalogos-manager,
-[data-theme="dark"] .catalogos-manager {
-  color-scheme: dark;
 }
 
 /* ============================================================
    RESPONSIVE
 ============================================================ */
 
-@media (max-width: 900px) {
-  .catalog-head {
-    padding: 20px;
-  }
-
-  .catalog-head__main {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .catalog-head__actions {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 760px) {
+@container academic-structure (max-width: 760px) {
   .catalogos-manager {
-    gap: 14px;
+    padding-inline: 8px;
+    gap: 13px;
   }
 
-  .catalog-head {
-    gap: 15px;
-    padding: 18px 16px;
-    border-radius: 20px;
+  .catalog-modulebar {
+    padding-inline: 0;
   }
 
-  .catalog-head__title {
-    max-width: none;
+  .catalog-modulebar__top {
+    padding-bottom: 11px;
   }
 
-  .catalog-head__subtitle {
-    max-width: none;
-    font-size: 0.91rem;
-    line-height: 1.56;
+  .catalog-modulebar__title {
+    font-size: clamp(1.42rem, 6.6vw, 1.72rem);
   }
 
-  .catalog-head__actions,
-  .catalog-back {
-    width: 100%;
+  .catalog-modulebar__subtitle {
+    font-size: 0.76rem;
   }
 
   .catalog-tabs {
-    width: 100%;
-    display: grid;
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    gap: 2px;
   }
 
   .catalog-tabs__btn {
-    width: 100%;
-    min-width: 0;
+    min-height: 42px;
+    padding-inline: 9px;
+    font-size: 0.72rem;
+  }
+
+  .catalog-tabs__btn::after {
+    right: 9px;
+    left: 9px;
   }
 }
 
-@media (max-width: 480px) {
-  .catalog-head {
-    padding: 16px 14px;
-  }
-
-  .catalog-tabs {
-    grid-template-columns: 1fr;
-  }
-
+@container academic-structure (max-width: 460px) {
   .catalog-tabs__btn {
-    justify-content: flex-start;
+    padding-inline: 8px;
+    font-size: 0.7rem;
+  }
+
+  .catalog-tabs__btn::after {
+    right: 8px;
+    left: 8px;
   }
 }
-
-/* ============================================================
-   MOVIMIENTO REDUCIDO
-============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   .catalog-switch-enter-active,
   .catalog-switch-leave-active {
     transition: none;
-  }
-
-  .catalog-switch-enter-from,
-  .catalog-switch-leave-to {
-    transform: none;
   }
 }

@@ -1923,3 +1923,1799 @@ html.dark.dark-crimson-black
     transition: none !important;
   }
 }
+
+
+/* =========================================================
+   CIERRE VISUAL POST-HISTORIAL
+   Apariencia y notificaciones.
+========================================================= */
+
+.settings-card--appearance {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pref-primary) 14%,
+      var(--pref-line)
+    );
+}
+
+.notification-settings-card {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pref-primary) 14%,
+      var(--pref-line)
+    );
+}
+
+.notification-sound-state {
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.95em 1em;
+  border: 1px solid var(--pref-line);
+  border-radius: 0.85em;
+  background: var(--pref-soft);
+}
+
+.notification-sound-state__copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8em;
+}
+
+.notification-sound-state__copy > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.3em;
+}
+
+.notification-sound-state__copy strong {
+  color: var(--pref-text);
+  font-size: 0.82em;
+  line-height: 1.35;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.notification-sound-state__copy small {
+  color: var(--pref-muted);
+  font-size: 0.74em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.notification-sound-test {
+  min-height: 2.45em;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0.55em 0.85em;
+  border: 1px solid var(--pref-line-strong);
+  border-radius: 0.72em;
+  background: var(--pref-card);
+  color: var(--pref-text);
+  font-size: 0.75em;
+  line-height: 1;
+  font-weight: 760;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.notification-sound-test svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex: 0 0 auto;
+}
+
+.notification-sound-test:hover:not(:disabled) {
+  border-color: var(--pref-primary);
+  background: var(--pref-primary-soft);
+  color: var(--pref-primary);
+  transform: translateY(-1px);
+}
+
+.notification-sound-test:focus-visible {
+  outline: 2px solid var(--pref-primary);
+  outline-offset: 3px;
+}
+
+.notification-sound-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.notification-volume-control {
+  width: min(220px, 34vw);
+  flex: 0 1 220px;
+  display: grid;
+  gap: 0.48em;
+}
+
+.notification-volume-control label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  color: var(--pref-muted);
+  font-size: 0.73em;
+  font-weight: 720;
+}
+
+.notification-volume-control label strong {
+  color: var(--pref-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-volume-control__range {
+  width: 100%;
+  accent-color: var(--pref-primary);
+  cursor: pointer;
+}
+
+.notification-volume-control__range:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.notification-volume-control__range:focus-visible {
+  outline: 2px solid var(--pref-primary);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+@media (max-width: 640px) {
+  .notification-sound-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-volume-control {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .notification-sound-test {
+    width: 100%;
+  }
+}
+
+/* ==========================================================
+   REFINAMIENTO VISUAL EQUILIBRADO · PREFERENCIAS
+========================================================== */
+
+.preferences-page {
+  padding-top: clamp(24px, 2.4vw, 38px) !important;
+  padding-right: clamp(16px, 2vw, 30px) !important;
+  padding-bottom: 34px !important;
+  padding-left: clamp(16px, 2vw, 30px) !important;
+}
+
+.preferences-shell {
+  width: min(1460px, 100%) !important;
+  gap: 18px !important;
+}
+
+.preferences-hero {
+  padding: 16px 18px !important;
+  border: 1px solid color-mix(in srgb, var(--pref-line) 88%, transparent) !important;
+  border-radius: 13px !important;
+  background: color-mix(in srgb, var(--pref-card) 98%, var(--pref-primary) 2%) !important;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+.preferences-hero__icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 11px !important;
+  background: color-mix(in srgb, var(--pref-primary) 9%, var(--pref-card)) !important;
+}
+
+.preferences-title {
+  font-size: clamp(1.25rem, 1.5vw, 1.55rem) !important;
+}
+
+.preferences-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px) !important;
+  align-items: start !important;
+  gap: clamp(18px, 2vw, 26px) !important;
+}
+
+.preferences-main,
+.preferences-sidebar {
+  gap: 16px !important;
+}
+
+.settings-card,
+.preview-card,
+.reset-card {
+  border-radius: 14px !important;
+  border-color: color-mix(in srgb, var(--pref-line) 90%, transparent) !important;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, 0.04) !important;
+}
+
+.settings-card {
+  padding: clamp(17px, 1.5vw, 22px) !important;
+}
+
+.settings-card__header,
+.preview-card__header {
+  padding-bottom: 12px !important;
+  margin-bottom: 14px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--pref-line) 78%, transparent) !important;
+}
+
+.settings-card__icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--pref-primary) 8%, var(--pref-card)) !important;
+}
+
+.appearance-grid {
+  gap: 10px !important;
+}
+
+.appearance-option,
+.font-size-option {
+  border-radius: 11px !important;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.appearance-option:hover,
+.font-size-option:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+.appearance-option.is-selected,
+.font-size-option.is-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pref-primary) 12%, transparent) !important;
+}
+
+.preview-card {
+  position: sticky;
+  top: 18px;
+  overflow: hidden;
+}
+
+.interface-preview {
+  border-radius: 11px !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pref-line) 70%, transparent) !important;
+}
+
+.reset-card {
+  padding: 16px !important;
+}
+
+.reset-button {
+  border-radius: 9px !important;
+}
+
+.switch-control__track {
+  transition: background 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+@media (min-width: 1550px) {
+  .preferences-shell {
+    width: min(1540px, 100%) !important;
+  }
+
+  .preferences-layout {
+    grid-template-columns: minmax(0, 1fr) 380px !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .preferences-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .preview-card {
+    position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .preferences-page {
+    padding-top: 20px !important;
+  }
+
+  .preferences-hero {
+    padding: 14px !important;
+  }
+}
+
+
+/* ==========================================================
+   AJUSTE FINAL DE TEMA · PREFERENCIAS
+   Conserva las opciones existentes y armoniza el modo oscuro.
+========================================================== */
+:root.dark .preferences-page,
+html.dark .preferences-page,
+body.dark .preferences-page,
+:root[data-theme="dark"] .preferences-page,
+html[data-theme="dark"] .preferences-page,
+body[data-theme="dark"] .preferences-page,
+[data-theme="dark"] .preferences-page {
+  --pref-primary-soft: color-mix(in srgb, var(--pref-primary) 12%, var(--pref-card));
+}
+
+:root.dark .preferences-hero,
+html.dark .preferences-hero,
+body.dark .preferences-hero,
+[data-theme="dark"] .preferences-hero {
+  background: color-mix(in srgb, var(--pref-card) 96%, var(--pref-primary) 4%) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14) !important;
+}
+
+:root.dark .settings-card,
+:root.dark .preview-card,
+:root.dark .reset-card,
+html.dark .settings-card,
+html.dark .preview-card,
+html.dark .reset-card,
+body.dark .settings-card,
+body.dark .preview-card,
+body.dark .reset-card,
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .preview-card,
+[data-theme="dark"] .reset-card {
+  box-shadow: 0 7px 22px rgba(0, 0, 0, 0.13) !important;
+}
+
+
+/* =========================================================
+   PREFERENCIAS — USUARIO FINAL / ESPACIO EQUILIBRADO
+   ---------------------------------------------------------
+   Menos texto y menos superficies decorativas, sin reducir
+   el tamaño de los controles ni de las vistas previas.
+========================================================= */
+
+.preferences-page {
+  padding:
+    calc(var(--sgpc-nav-offset, 78px) + 16px)
+    clamp(16px, 1.8vw, 28px)
+    38px !important;
+
+  background:
+    var(--pref-bg) !important;
+}
+
+.preferences-page
+  .preferences-shell {
+  width:
+    min(
+      1440px,
+      100%
+    ) !important;
+
+  gap:
+    16px !important;
+
+  container-name:
+    preferencias-usuario;
+
+  container-type:
+    inline-size;
+}
+
+/* =========================================================
+   CABECERA
+========================================================= */
+
+.preferences-page
+  .preferences-hero {
+  min-height:
+    68px;
+
+  padding:
+    5px
+    2px
+    14px !important;
+
+  border:
+    0 !important;
+
+  border-bottom:
+    1px solid
+    var(--pref-line) !important;
+
+  border-radius:
+    0 !important;
+
+  background:
+    transparent !important;
+
+  box-shadow:
+    none !important;
+}
+
+.preferences-page
+  .preferences-hero__identity {
+  gap:
+    12px !important;
+}
+
+.preferences-page
+  .preferences-hero__icon {
+  width:
+    46px !important;
+
+  min-width:
+    46px !important;
+
+  height:
+    46px !important;
+
+  border-radius:
+    11px !important;
+
+  background:
+    var(--pref-card) !important;
+}
+
+.preferences-page
+  .preferences-hero__icon
+  svg {
+  width:
+    22px !important;
+
+  height:
+    22px !important;
+}
+
+.preferences-page
+  .preferences-eyebrow,
+.preferences-page
+  .preferences-lead {
+  display:
+    none !important;
+}
+
+.preferences-page
+  .preferences-title {
+  font-size:
+    clamp(
+      1.7rem,
+      1.5rem + 0.65vw,
+      2.1rem
+    ) !important;
+
+  font-weight:
+    770 !important;
+}
+
+.preferences-page
+  .autosave-status {
+  min-height:
+    38px !important;
+
+  padding:
+    0
+    11px !important;
+
+  border-radius:
+    9px !important;
+
+  background:
+    var(--pref-card) !important;
+
+  font-size:
+    0.68rem !important;
+}
+
+/* =========================================================
+   LAYOUT
+========================================================= */
+
+.preferences-page
+  .preferences-layout {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(360px, 410px) !important;
+
+  gap:
+    18px !important;
+}
+
+.preferences-page
+  .preferences-main {
+  display:
+    grid !important;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important;
+
+  align-items:
+    start;
+
+  gap:
+    16px !important;
+}
+
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(1),
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(2) {
+  grid-column:
+    1 / -1;
+}
+
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(3),
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(4) {
+  min-height:
+    210px;
+}
+
+.preferences-page
+  .preferences-sidebar {
+  gap:
+    16px !important;
+}
+
+@media (min-width: 1101px) {
+  .preferences-page
+    .preferences-sidebar {
+    top:
+      calc(
+        var(--sgpc-nav-offset, 78px)
+        + 16px
+      ) !important;
+  }
+}
+
+/* =========================================================
+   TARJETAS
+========================================================= */
+
+.preferences-page
+  .settings-card,
+.preferences-page
+  .preview-card,
+.preferences-page
+  .reset-card {
+  border:
+    1px solid
+    var(--pref-line) !important;
+
+  border-radius:
+    14px !important;
+
+  background:
+    var(--pref-card) !important;
+
+  box-shadow:
+    none !important;
+}
+
+.preferences-page
+  .settings-card {
+  padding:
+    20px
+    22px !important;
+}
+
+.preferences-page
+  .settings-card__header {
+  min-height:
+    46px;
+
+  align-items:
+    center !important;
+
+  margin-bottom:
+    16px !important;
+
+  padding-bottom:
+    13px !important;
+
+  border-bottom:
+    1px solid
+    var(--pref-line) !important;
+}
+
+.preferences-page
+  .settings-card__header--compact {
+  margin-bottom:
+    14px !important;
+}
+
+.preferences-page
+  .settings-card__heading {
+  align-items:
+    center !important;
+
+  gap:
+    10px !important;
+}
+
+.preferences-page
+  .settings-card__icon {
+  width:
+    40px !important;
+
+  min-width:
+    40px !important;
+
+  height:
+    40px !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    var(--pref-soft) !important;
+}
+
+.preferences-page
+  .settings-card__icon
+  svg {
+  width:
+    20px !important;
+
+  height:
+    20px !important;
+}
+
+.preferences-page
+  .section-kicker,
+.preferences-page
+  .settings-card__heading
+  p {
+  display:
+    none !important;
+}
+
+.preferences-page
+  .settings-card__heading
+  h2,
+.preferences-page
+  .preview-card__header
+  h2,
+.preferences-page
+  .reset-card
+  h2 {
+  font-size:
+    1rem !important;
+
+  font-weight:
+    750 !important;
+}
+
+.preferences-page
+  .current-setting {
+  min-height:
+    32px !important;
+
+  padding:
+    0
+    9px !important;
+
+  border-radius:
+    8px !important;
+
+  background:
+    var(--pref-soft) !important;
+
+  font-size:
+    0.66rem !important;
+}
+
+/* =========================================================
+   TEMA
+========================================================= */
+
+.preferences-page
+  .appearance-grid {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap:
+    12px !important;
+}
+
+.preferences-page
+  .appearance-option:first-child {
+  grid-column:
+    auto !important;
+}
+
+.preferences-page
+  .appearance-option {
+  min-height:
+    190px !important;
+
+  border-radius:
+    11px !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+.preferences-page
+  .appearance-option:hover {
+  transform:
+    none !important;
+
+  border-color:
+    var(--pref-line-strong) !important;
+
+  box-shadow:
+    none !important;
+}
+
+.preferences-page
+  .appearance-option.is-selected {
+  border-color:
+    var(--pref-primary) !important;
+
+  box-shadow:
+    0
+    0
+    0
+    2px
+    color-mix(
+      in srgb,
+      var(--pref-primary) 10%,
+      transparent
+    ) !important;
+}
+
+.preferences-page
+  .appearance-option__preview,
+.preferences-page
+  .appearance-option:first-child
+  .appearance-option__preview {
+  padding:
+    10px !important;
+}
+
+.preferences-page
+  .theme-preview,
+.preferences-page
+  .appearance-option:first-child
+  .theme-preview {
+  min-height:
+    128px !important;
+
+  aspect-ratio:
+    16 / 7.4 !important;
+}
+
+.preferences-page
+  .appearance-option__footer {
+  min-height:
+    56px;
+
+  padding:
+    10px
+    11px !important;
+}
+
+.preferences-page
+  .appearance-option__copy {
+  gap:
+    1px !important;
+}
+
+.preferences-page
+  .appearance-option__copy
+  strong {
+  font-size:
+    0.78rem !important;
+}
+
+.preferences-page
+  .appearance-option__copy
+  span {
+  font-size:
+    0.64rem !important;
+}
+
+/* =========================================================
+   TAMAÑO DEL TEXTO
+========================================================= */
+
+.preferences-page
+  .font-size-grid {
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap:
+    10px !important;
+}
+
+.preferences-page
+  .font-size-option {
+  min-height:
+    118px !important;
+
+  align-content:
+    center !important;
+
+  gap:
+    12px !important;
+
+  padding:
+    14px !important;
+
+  border-radius:
+    10px !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+.preferences-page
+  .font-size-option:hover {
+  transform:
+    none !important;
+
+  border-color:
+    var(--pref-line-strong) !important;
+
+  box-shadow:
+    none !important;
+}
+
+.preferences-page
+  .font-size-option__sample {
+  min-height:
+    34px;
+
+  display:
+    flex !important;
+
+  align-items:
+    center;
+}
+
+.preferences-page
+  .font-size-option__copy
+  span {
+  display:
+    none !important;
+}
+
+.preferences-page
+  .font-size-option__copy
+  strong {
+  font-size:
+    0.75rem !important;
+}
+
+/* =========================================================
+   ANIMACIONES / NOTIFICACIONES
+========================================================= */
+
+.preferences-page
+  .switch-control__track {
+  width:
+    52px !important;
+
+  min-width:
+    52px !important;
+
+  height:
+    30px !important;
+}
+
+.preferences-page
+  .switch-control__thumb {
+  width:
+    22px !important;
+}
+
+.preferences-page
+  .switch-control
+  input:checked
+  + .switch-control__track
+  .switch-control__thumb {
+  left:
+    calc(
+      100% - 25px
+    ) !important;
+}
+
+.preferences-page
+  .preference-inline-status {
+  min-height:
+    58px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  padding:
+    11px
+    12px;
+
+  border:
+    1px solid
+    var(--pref-line);
+
+  border-radius:
+    10px;
+
+  background:
+    var(--pref-soft);
+}
+
+.preferences-page
+  .preference-inline-status
+  > span {
+  color:
+    var(--pref-muted);
+
+  font-size:
+    0.68rem;
+
+  font-weight:
+    680;
+}
+
+.preferences-page
+  .preference-inline-status
+  > strong {
+  color:
+    var(--pref-text);
+
+  font-size:
+    0.74rem;
+
+  font-weight:
+    760;
+}
+
+.preferences-page
+  .notification-sound-state {
+  min-height:
+    116px;
+
+  display:
+    grid !important;
+
+  grid-template-columns:
+    minmax(110px, 0.55fr)
+    minmax(180px, 1fr)
+    auto !important;
+
+  align-items:
+    center !important;
+
+  gap:
+    14px !important;
+
+  padding:
+    13px !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    var(--pref-soft) !important;
+}
+
+.preferences-page
+  .notification-sound-state__status {
+  min-height:
+    0;
+
+  padding:
+    0;
+
+  border:
+    0;
+
+  border-radius:
+    0;
+
+  background:
+    transparent;
+}
+
+.preferences-page
+  .notification-volume-control {
+  width:
+    100% !important;
+
+  flex:
+    1 1 auto !important;
+}
+
+.preferences-page
+  .notification-volume-control
+  label {
+  font-size:
+    0.68rem !important;
+}
+
+.preferences-page
+  .notification-sound-test {
+  min-height:
+    40px !important;
+
+  padding:
+    0
+    11px !important;
+
+  border-radius:
+    8px !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+.preferences-page
+  .notification-sound-test:hover:not(:disabled) {
+  transform:
+    none !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* =========================================================
+   LATERAL / VISTA PREVIA
+========================================================= */
+
+.preferences-page
+  .preview-card {
+  min-height:
+    610px;
+
+  padding:
+    18px !important;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  overflow:
+    visible !important;
+}
+
+.preferences-page
+  .preview-card__header {
+  min-height:
+    42px;
+
+  align-items:
+    center !important;
+
+  margin-bottom:
+    14px !important;
+
+  padding-bottom:
+    12px !important;
+
+  border-bottom:
+    1px solid
+    var(--pref-line) !important;
+}
+
+.preferences-page
+  .preview-live {
+  display:
+    none !important;
+}
+
+.preferences-page
+  .interface-preview {
+  padding:
+    8px !important;
+
+  border-radius:
+    11px !important;
+
+  box-shadow:
+    none !important;
+}
+
+.preferences-page
+  .preview-dashboard {
+  min-height:
+    300px !important;
+
+  aspect-ratio:
+    4 / 3 !important;
+}
+
+.preferences-page
+  .current-summary {
+  margin-top:
+    16px !important;
+
+  border:
+    1px solid
+    var(--pref-line);
+
+  border-radius:
+    10px;
+
+  overflow:
+    hidden;
+}
+
+.preferences-page
+  .current-summary
+  > div {
+  min-height:
+    48px !important;
+
+  grid-template-columns:
+    minmax(90px, 0.45fr)
+    minmax(0, 1fr) !important;
+
+  align-items:
+    center !important;
+
+  padding:
+    9px
+    11px !important;
+
+  border:
+    0 !important;
+
+  border-bottom:
+    1px solid
+    var(--pref-line) !important;
+
+  background:
+    transparent !important;
+}
+
+.preferences-page
+  .current-summary
+  > div:last-child {
+  border-bottom:
+    0 !important;
+}
+
+.preferences-page
+  .current-summary
+  dt {
+  font-size:
+    0.64rem !important;
+}
+
+.preferences-page
+  .current-summary
+  dd {
+  font-size:
+    0.69rem !important;
+
+  text-align:
+    right;
+}
+
+/* =========================================================
+   RESTAURAR
+========================================================= */
+
+.preferences-page
+  .reset-card {
+  min-height:
+    92px;
+
+  display:
+    grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto !important;
+
+  align-items:
+    center !important;
+
+  gap:
+    12px !important;
+
+  padding:
+    16px
+    18px !important;
+}
+
+.preferences-page
+  .reset-card__copy {
+  align-items:
+    center !important;
+}
+
+.preferences-page
+  .reset-card__icon {
+  width:
+    38px !important;
+
+  min-width:
+    38px !important;
+
+  height:
+    38px !important;
+
+  border-radius:
+    9px !important;
+}
+
+.preferences-page
+  .reset-card
+  p {
+  display:
+    none !important;
+}
+
+.preferences-page
+  .reset-button {
+  min-height:
+    40px !important;
+
+  padding:
+    0
+    11px !important;
+
+  border-radius:
+    8px !important;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   RESPONSIVE POR CONTENEDOR
+========================================================= */
+
+@container preferencias-usuario (max-width: 1120px) {
+  .preferences-page
+    .preferences-layout {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .preferences-sidebar {
+    position:
+      static !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(280px, 0.45fr) !important;
+
+    align-items:
+      start;
+  }
+
+  .preferences-page
+    .preview-card {
+    min-height:
+      0;
+  }
+}
+
+@container preferencias-usuario (max-width: 820px) {
+  .preferences-page
+    .preferences-main {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .preferences-main
+    > .settings-card:nth-child(1),
+  .preferences-page
+    .preferences-main
+    > .settings-card:nth-child(2),
+  .preferences-page
+    .preferences-main
+    > .settings-card:nth-child(3),
+  .preferences-page
+    .preferences-main
+    > .settings-card:nth-child(4) {
+    grid-column:
+      1;
+  }
+
+  .preferences-page
+    .appearance-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .font-size-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+  }
+
+  .preferences-page
+    .notification-sound-state {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .preferences-sidebar {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+}
+
+@container preferencias-usuario (max-width: 560px) {
+  .preferences-page {
+    padding:
+      calc(var(--sgpc-nav-offset, 78px) + 10px)
+      10px
+      26px !important;
+  }
+
+  .preferences-page
+    .preferences-hero {
+    min-height:
+      0;
+
+    align-items:
+      stretch !important;
+
+    flex-direction:
+      column;
+  }
+
+  .preferences-page
+    .autosave-status {
+    width:
+      100%;
+  }
+
+  .preferences-page
+    .settings-card {
+    padding:
+      16px !important;
+  }
+
+  .preferences-page
+    .settings-card__header {
+    align-items:
+      flex-start !important;
+  }
+
+  .preferences-page
+    .font-size-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .reset-card {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .preferences-page
+    .reset-button {
+    width:
+      100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preferences-page
+    .appearance-option,
+  .preferences-page
+    .font-size-option,
+  .preferences-page
+    .notification-sound-test {
+    transition:
+      none !important;
+  }
+}
+
+
+
+/* =========================================================
+   PREFERENCIAS · CORRECCIÓN DE ALINEACIÓN
+   SONIDO DE NOTIFICACIONES
+   ---------------------------------------------------------
+   La tarjeta se adapta a SU PROPIO ancho. De esta forma,
+   Estado, Volumen y Probar sonido nunca compiten por una
+   misma fila ni generan overflow.
+========================================================= */
+
+.preferences-page
+  .notification-settings-card {
+  min-width: 0;
+
+  container-name:
+    notification-preference-card;
+
+  container-type:
+    inline-size;
+}
+
+/* ---------------------------------------------------------
+   Distribución principal
+   Fila 1: Estado | Probar sonido
+   Fila 2: Volumen a todo el ancho
+--------------------------------------------------------- */
+
+.preferences-page
+  .notification-settings-card
+  .notification-sound-state {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 116px !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto !important;
+
+  grid-template-areas:
+    "status action"
+    "volume volume" !important;
+
+  align-items: center !important;
+
+  column-gap: 16px !important;
+  row-gap: 13px !important;
+
+  padding:
+    14px
+    15px !important;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--pref-line) !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    var(--pref-soft) !important;
+}
+
+/* Estado */
+.preferences-page
+  .notification-settings-card
+  .notification-sound-state__status {
+  grid-area: status;
+
+  min-width: 0;
+  min-height: 38px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 12px;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  border-radius: 0 !important;
+
+  background:
+    transparent !important;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-sound-state__status
+  > span {
+  color:
+    var(--pref-muted);
+
+  font-size:
+    0.68rem !important;
+
+  font-weight:
+    680;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-sound-state__status
+  > strong {
+  color:
+    var(--pref-text);
+
+  font-size:
+    0.74rem !important;
+
+  font-weight:
+    760;
+}
+
+/* Botón */
+.preferences-page
+  .notification-settings-card
+  .notification-sound-test {
+  grid-area: action;
+
+  width: auto !important;
+  min-width: max-content;
+  min-height: 40px !important;
+
+  display: inline-flex !important;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  padding:
+    0
+    11px !important;
+
+  margin: 0 !important;
+
+  border-radius:
+    8px !important;
+
+  font-size:
+    0.69rem !important;
+
+  line-height: 1 !important;
+
+  white-space: nowrap !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-sound-test
+  svg {
+  width: 17px !important;
+  height: 17px !important;
+
+  flex:
+    0
+    0
+    17px;
+}
+
+/* Volumen */
+.preferences-page
+  .notification-settings-card
+  .notification-volume-control {
+  grid-area: volume;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr);
+
+  gap: 7px !important;
+
+  margin: 0 !important;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-volume-control
+  label {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin: 0;
+
+  font-size:
+    0.68rem !important;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-volume-control
+  label
+  strong {
+  flex:
+    0
+    0
+    auto;
+}
+
+.preferences-page
+  .notification-settings-card
+  .notification-volume-control__range {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+}
+
+/* ---------------------------------------------------------
+   La tarjeta Animaciones mantiene una geometría equivalente.
+--------------------------------------------------------- */
+
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(3),
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(4) {
+  min-height: 260px !important;
+
+  height: 100%;
+}
+
+.preferences-page
+  .preferences-main
+  > .settings-card:nth-child(3)
+  .preference-inline-status {
+  min-height: 72px;
+}
+
+/* ---------------------------------------------------------
+   Si LA PROPIA tarjeta de notificaciones se vuelve estrecha,
+   no esperamos al breakpoint general de la página.
+--------------------------------------------------------- */
+
+@container notification-preference-card (max-width: 390px) {
+  .preferences-page
+    .notification-settings-card
+    .notification-sound-state {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    grid-template-areas:
+      "status"
+      "volume"
+      "action" !important;
+
+    align-items:
+      stretch !important;
+  }
+
+  .preferences-page
+    .notification-settings-card
+    .notification-sound-test {
+    width: 100% !important;
+
+    min-width: 0;
+  }
+}
+
+/* ---------------------------------------------------------
+   Móvil
+--------------------------------------------------------- */
+
+@container preferencias-usuario (max-width: 560px) {
+  .preferences-page
+    .notification-settings-card
+    .notification-sound-state {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    grid-template-areas:
+      "status"
+      "volume"
+      "action" !important;
+
+    row-gap: 12px !important;
+
+    overflow: visible;
+  }
+
+  .preferences-page
+    .notification-settings-card
+    .notification-sound-test {
+    width: 100% !important;
+
+    min-width: 0;
+  }
+}
+
+  /* =========================================================
+   PREFERENCIAS · CORRECCIÓN FINAL DE SOLAPAMIENTO LATERAL
+========================================================= */
+
+.preferences-page .preferences-sidebar {
+  min-width: 0;
+  align-content: start;
+}
+
+/* La vista previa NO debe ser sticky individualmente */
+.preferences-page .preview-card {
+  position: static !important;
+  top: auto !important;
+  align-self: start !important;
+  overflow: hidden !important;
+}
+
+/* Restaurar permanece siempre debajo */
+.preferences-page .reset-card {
+  position: relative;
+  z-index: 0;
+  align-self: start;
+}
+
+/* En escritorio se mueve la columna completa */
+@media (min-width: 1101px) {
+  .preferences-page .preferences-sidebar {
+    position: sticky !important;
+    top: calc(var(--sgpc-nav-offset, 78px) + 16px) !important;
+    align-self: start !important;
+  }
+}
+
+/* Cuando la interfaz pasa a una sola columna deja de ser sticky */
+@container preferencias-usuario (max-width: 1120px) {
+  .preferences-page .preferences-sidebar {
+    position: static !important;
+    top: auto !important;
+  }
+}

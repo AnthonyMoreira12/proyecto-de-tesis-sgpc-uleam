@@ -2681,3 +2681,383 @@
       none !important;
   }
 }
+
+/* =========================================================
+   18. EXPERIENCIA SIMPLIFICADA PARA USUARIO FINAL
+========================================================= */
+
+.as {
+  gap: 10px;
+}
+
+.as-head {
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 12px;
+}
+
+.as-title-wrap {
+  gap: 3px;
+}
+
+.as-title {
+  font-size: 0.94rem;
+  font-weight: 740;
+}
+
+.as-subtitle {
+  max-width: 760px;
+  font-size: 0.74rem;
+  line-height: 1.46;
+}
+
+.as-btn,
+.as-icon,
+.as-select-action,
+.as-fav-btn,
+.as-drag-handle,
+.as-remove-action {
+  box-shadow: none;
+  transform: none;
+}
+
+.as-btn:hover:not(:disabled),
+.as-icon:hover:not(:disabled),
+.as-select-action:hover:not(:disabled),
+.as-fav-btn:hover:not(:disabled),
+.as-drag-handle:hover {
+  transform: none;
+}
+
+.as-empty-card {
+  min-height: 104px;
+  gap: 4px;
+  padding: 15px;
+  border-color: var(--as-line);
+  border-radius: var(--as-radius-md);
+  background: color-mix(in srgb, var(--as-surface-2) 55%, var(--as-surface));
+}
+
+.as-empty-title {
+  font-size: 0.82rem;
+}
+
+.as-empty-text {
+  font-size: 0.72rem;
+}
+
+.as-selected {
+  gap: 9px;
+}
+
+.as-selected-bar {
+  min-height: 38px;
+  padding: 0 0 9px;
+  border: 0;
+  border-bottom: 1px solid var(--as-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.as-count,
+.as-mini-count {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--as-text-soft);
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+.as-list-selected {
+  gap: 7px;
+}
+
+.as-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 11px;
+  border-color: var(--as-line);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .as-row--draggable:hover {
+    border-color: var(--as-primary-line);
+    background: color-mix(in srgb, var(--as-primary) 2.5%, var(--as-surface));
+    box-shadow: none;
+  }
+}
+
+.as-row-main {
+  gap: 0;
+}
+
+.as-row-identity {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.as-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.as-row-name {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 710;
+}
+
+.as-row-order {
+  flex: 0 0 auto;
+  color: var(--as-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 780;
+}
+
+.as-row-sub {
+  gap: 4px 7px;
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.as-row-sub span + span::before,
+.as-ci-sub span + span::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--as-line-strong);
+}
+
+.as-drag-handle {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.86rem;
+}
+
+.as-drag-handle:hover {
+  border-color: var(--as-line);
+  background: var(--as-surface-2);
+}
+
+.as-row-actions {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.as-row-actions .as-icon {
+  width: 31px;
+  height: 31px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.as-row-actions .as-icon:hover:not(:disabled) {
+  border-color: var(--as-line);
+  background: var(--as-surface-2);
+}
+
+.as-remove-action {
+  appearance: none;
+  min-height: 31px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--as-radius-sm);
+  background: transparent;
+  color: var(--as-danger);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.as-remove-action:hover {
+  background: color-mix(in srgb, var(--as-danger) 7%, var(--as-surface));
+}
+
+.as-remove-action:focus-visible {
+  outline: none;
+  box-shadow: var(--as-focus);
+}
+
+.as-order-help {
+  margin: 0;
+  padding-left: 2px;
+  color: var(--as-text-soft);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.as-modal-overlay {
+  background: rgba(15, 23, 42, 0.54);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.as-modal {
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.as-modal-head {
+  padding: 15px 17px 13px;
+}
+
+.as-modal-title {
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.as-modal-sub {
+  max-width: 640px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.as-modal-body {
+  padding: 14px 17px;
+}
+
+.as-modal-foot {
+  padding: 12px 17px;
+}
+
+.as-picker-group {
+  gap: 7px;
+}
+
+.as-picker-group__head {
+  padding-inline: 1px;
+}
+
+.as-picker-group__title {
+  font-size: 0.69rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.as-picker-group__count {
+  min-width: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.as-catalog {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--as-line);
+  border-radius: 10px;
+  background: var(--as-surface);
+}
+
+.as-catalog-item {
+  border: 0;
+  border-bottom: 1px solid var(--as-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.as-catalog-item:last-child {
+  border-bottom: 0;
+}
+
+.as-catalog-item:hover {
+  background: color-mix(in srgb, var(--as-primary) 2.5%, var(--as-surface));
+}
+
+.as-ci-name {
+  font-size: 0.76rem;
+}
+
+.as-ci-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 7px;
+  font-size: 0.66rem;
+}
+
+.as-fav-btn {
+  border-color: transparent;
+  background: transparent;
+}
+
+.as-fav-btn:hover,
+.as-fav-btn.is-on {
+  border-color: var(--as-line);
+}
+
+.as-select-action {
+  min-height: 32px;
+  padding-inline: 9px;
+  border-radius: var(--as-radius-sm);
+}
+
+.as-create-form .as-hint,
+.as-create-form .as-help {
+  font-size: 0.68rem;
+  line-height: 1.42;
+}
+
+@media (max-width: 720px) {
+  .as-head {
+    align-items: stretch;
+  }
+
+  .as-head-right {
+    width: 100%;
+  }
+
+  .as-head-right .as-btn {
+    width: 100%;
+  }
+
+  .as-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .as-row-actions {
+    justify-content: flex-start;
+    padding-left: 39px;
+  }
+}
+
+@media (max-width: 520px) {
+  .as-row {
+    padding: 10px;
+  }
+
+  .as-row-identity {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .as-row-actions {
+    padding-left: 37px;
+  }
+
+  .as-row-sub span + span::before,
+  .as-ci-sub span + span::before {
+    display: none;
+    content: "";
+  }
+
+  .as-row-sub,
+  .as-ci-sub {
+    display: grid;
+    gap: 1px;
+  }
+}

@@ -1,0 +1,1091 @@
+/* ============================================================
+   SGPC ULEAM
+   INFORMACIÓN PENDIENTE
+============================================================ */
+
+
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.pending-page {
+  padding-bottom: 72px;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+}
+
+
+.pending-shell {
+  width: min(1180px, 100%);
+
+  margin: 0 auto;
+
+  display: grid;
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.pending-hero {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 24px;
+
+  min-height: 92px;
+
+  padding: 20px 4px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: transparent;
+}
+
+
+.pending-hero__copy {
+  display: grid;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+
+.pending-hero__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+
+  line-height: 1.3;
+}
+
+
+.pending-hero h1 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.75rem,
+      1.5rem + 0.75vw,
+      2.2rem
+    );
+
+  font-weight: 780;
+
+  line-height: 1.08;
+
+  letter-spacing: -0.035em;
+}
+
+
+.pending-hero p {
+  max-width: 720px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.pending-hero button,
+.pending-record button,
+.pending-link {
+  appearance: none;
+
+  min-height: 40px;
+
+  padding: 0 13px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.74rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.pending-hero button,
+.pending-record button {
+  border-color: var(--color-primary);
+
+  background: var(--color-primary);
+
+  color: var(--text-on-primary);
+}
+
+
+.pending-hero button:hover:not(:disabled),
+.pending-record button:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-primary) 88%,
+      var(--text-primary)
+    );
+}
+
+
+.pending-hero button:disabled,
+.pending-record button:disabled,
+.pending-link:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   RESUMEN
+============================================================ */
+
+.pending-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+
+.pending-summary article {
+  display: grid;
+
+  align-content: space-between;
+
+  gap: 9px;
+
+  min-width: 0;
+
+  min-height: 132px;
+
+  padding: 18px 19px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-top:
+    3px solid
+    var(--color-primary);
+
+  border-radius: 13px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-fast),
+    transform var(--t-fast);
+}
+
+
+.pending-summary article:hover {
+  border-color: var(--border-strong);
+
+  transform:
+    translateY(-2px);
+}
+
+
+.pending-summary article[data-state="warning"] {
+  border-top-color: var(--warning);
+}
+
+
+.pending-summary article[data-state="success"] {
+  border-top-color: var(--success);
+}
+
+
+.pending-summary span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 760;
+}
+
+
+.pending-summary strong {
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.55rem,
+      1.35rem + 0.6vw,
+      2rem
+    );
+
+  font-weight: 790;
+
+  line-height: 1;
+
+  letter-spacing: -0.03em;
+}
+
+
+.pending-summary small {
+  color: var(--text-secondary);
+
+  font-size: 0.66rem;
+
+  line-height: 1.35;
+}
+
+
+/* ============================================================
+   CAMPAÑAS
+============================================================ */
+
+.pending-campaigns {
+  display: grid;
+
+  gap: 14px;
+}
+
+
+.pending-card {
+  min-width: 0;
+
+  padding: 20px 22px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
+}
+
+
+.pending-card:hover {
+  border-color: var(--border-strong);
+}
+
+
+.pending-card[data-state="completada"] {
+  border-top:
+    3px solid
+    var(--success);
+}
+
+
+/* ============================================================
+   CABECERA CAMPAÑA
+============================================================ */
+
+.pending-card__head {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+
+.pending-card__identity {
+  display: grid;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+
+.pending-kind {
+  color: var(--text-secondary);
+
+  font-size: 0.66rem;
+
+  font-weight: 750;
+}
+
+
+.pending-card h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 1.04rem;
+
+  font-weight: 760;
+
+  line-height: 1.35;
+
+  letter-spacing: -0.018em;
+}
+
+
+.pending-card__identity p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.69rem;
+
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   ESTADOS
+============================================================ */
+
+.pending-state,
+.pending-fields span,
+.pending-record__fields span,
+.pending-complete-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 26px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 7px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 0.63rem;
+
+  font-weight: 760;
+}
+
+
+.pending-state[data-state="pendiente"] {
+  border-color: var(--warning-line);
+
+  background: var(--warning-soft);
+
+  color: var(--warning);
+}
+
+
+.pending-state[data-state="en_progreso"] {
+  border-color: var(--info-line);
+
+  background: var(--info-soft);
+
+  color: var(--info);
+}
+
+
+.pending-state[data-state="completada"] {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+
+  color: var(--success);
+}
+
+
+.pending-complete-badge {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+
+  color: var(--success);
+}
+
+
+/* ============================================================
+   RESUMEN DE CAMPAÑA
+============================================================ */
+
+.pending-card__summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 9px;
+
+  margin-top: 14px;
+}
+
+
+.pending-card__summary article {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 10px 12px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+}
+
+
+.pending-card__summary span {
+  color: var(--text-secondary);
+
+  font-size: 0.67rem;
+
+  font-weight: 700;
+}
+
+
+.pending-card__summary strong {
+  color: var(--text-primary);
+
+  font-size: 0.82rem;
+
+  font-weight: 790;
+}
+
+
+/* ============================================================
+   CAMPOS
+============================================================ */
+
+.pending-fields-section {
+  margin-top: 14px;
+}
+
+
+.pending-fields-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  font-weight: 750;
+}
+
+
+.pending-fields,
+.pending-record__fields {
+  display: flex;
+
+  gap: 6px;
+
+  flex-wrap: wrap;
+}
+
+
+/* ============================================================
+   REGISTROS
+============================================================ */
+
+.pending-records {
+  display: grid;
+
+  gap: 0;
+
+  margin-top: 14px;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+
+  background: var(--bg-card);
+}
+
+
+.pending-record {
+  min-height: 72px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 12px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  transition:
+    background var(--t-fast);
+}
+
+
+.pending-record:last-child {
+  border-bottom: 0;
+}
+
+
+.pending-record:hover {
+  background: var(--bg-soft);
+}
+
+
+.pending-record--profile {
+  margin-top: 14px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+}
+
+
+.pending-record__copy {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.pending-record__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+
+  font-weight: 750;
+}
+
+
+.pending-record strong {
+  max-width: 760px;
+
+  overflow: hidden;
+
+  display: -webkit-box;
+
+  -webkit-box-orient: vertical;
+
+  -webkit-line-clamp: 2;
+
+  color: var(--text-primary);
+
+  font-size: 0.82rem;
+
+  font-weight: 760;
+
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+}
+
+
+.pending-record__meta {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  line-height: 1.35;
+}
+
+
+.pending-record__meta span + span::before {
+  content: "·";
+
+  margin: 0 6px;
+
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+
+.pending-record p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+
+  line-height: 1.4;
+}
+
+
+.pending-record__fields {
+  margin-top: 5px;
+}
+
+
+.pending-record__fields span {
+  min-height: 23px;
+
+  font-size: 0.59rem;
+}
+
+
+/* ============================================================
+   COMPLETADO
+============================================================ */
+
+.pending-complete {
+  display: grid;
+
+  gap: 4px;
+
+  margin-top: 14px;
+
+  padding: 13px 14px;
+
+  border:
+    1px solid
+    var(--success-line);
+
+  border-radius: 9px;
+
+  background: var(--success-soft);
+}
+
+
+.pending-complete strong {
+  color: var(--success);
+
+  font-size: 0.73rem;
+
+  font-weight: 760;
+}
+
+
+.pending-complete span {
+  color: var(--text-secondary);
+
+  font-size: 0.67rem;
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.pending-card__footer {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-top: 14px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+
+  color: var(--text-secondary);
+
+  font-size: 0.69rem;
+}
+
+
+.pending-link {
+  min-height: 36px;
+
+  padding: 0 8px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  color: var(--color-primary);
+}
+
+
+.pending-link:hover:not(:disabled) {
+  border-color: var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+/* ============================================================
+   ESTADOS VACÍOS / CARGA
+============================================================ */
+
+.pending-empty,
+.pending-loading {
+  min-height: 96px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+
+  background: var(--bg-card);
+
+  color: var(--text-secondary);
+}
+
+
+.pending-empty {
+  display: grid;
+
+  align-content: center;
+
+  gap: 4px;
+
+  text-align: center;
+}
+
+
+.pending-empty--success {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+}
+
+
+.pending-empty strong,
+.pending-loading strong {
+  color: var(--text-primary);
+
+  font-size: 0.77rem;
+
+  font-weight: 760;
+}
+
+
+.pending-empty span,
+.pending-loading span {
+  font-size: 0.68rem;
+
+  line-height: 1.4;
+}
+
+
+.pending-loading {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+}
+
+
+.pending-loading > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.pending-spinner {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  border:
+    3px solid
+    color-mix(
+      in srgb,
+      var(--color-primary) 18%,
+      transparent
+    );
+
+  border-top-color:
+    var(--color-primary);
+
+  border-radius: 50%;
+
+  animation:
+    pending-spin
+    800ms
+    linear
+    infinite;
+}
+
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.pending-alert--error {
+  margin: 0;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid
+    var(--danger-line);
+
+  border-radius: 11px;
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+
+  font-size: 0.74rem;
+
+  line-height: 1.45;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 920px) {
+
+  .pending-hero {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pending-hero button {
+    width: fit-content;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .pending-shell {
+    gap: 14px;
+  }
+
+  .pending-hero {
+    padding: 14px 2px;
+  }
+
+  .pending-hero button {
+    width: 100%;
+  }
+
+  .pending-summary {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pending-card {
+    padding: 16px;
+  }
+
+  .pending-card__head,
+  .pending-record,
+  .pending-card__footer {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .pending-card__summary {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pending-record button {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   ANIMACIÓN
+============================================================ */
+
+@keyframes pending-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .pending-page *,
+  .pending-page *::before,
+  .pending-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* ============================================================
+   SELECTOR DE VISTA PARA ADMINISTRADORES
+============================================================ */
+
+.pending-view-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: var(--bg-card);
+}
+
+.pending-view-switch__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.pending-view-switch__copy strong {
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+.pending-view-switch__copy span {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.pending-view-switch__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-soft);
+}
+
+.pending-view-switch__actions button {
+  appearance: none;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 760;
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast);
+}
+
+.pending-view-switch__actions button:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.pending-view-switch__actions button.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+@media (max-width: 700px) {
+  .pending-view-switch {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pending-view-switch__actions {
+    width: 100%;
+  }
+
+  .pending-view-switch__actions button {
+    flex: 1 1 0;
+  }
+}

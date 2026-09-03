@@ -31,10 +31,10 @@ class ProyectoStateMachineTests(TestCase):
     def test_transicion_manual_valida(self):
         """
         El usuario administrador puede forzar el paso a un estado válido,
-        como pasar de 'nuevo' a 'cierre' directamente.
+        como pasar de 'nuevo' a 'arrastre' directamente.
         """
-        nuevo_estado = resolver_estado_destino(self.proyecto, estado_solicitado="cierre")
-        self.assertEqual(nuevo_estado, "cierre")
+        nuevo_estado = resolver_estado_destino(self.proyecto, estado_solicitado="arrastre")
+        self.assertEqual(nuevo_estado, "arrastre")
 
     def test_transicion_invalida_lanza_error(self):
         """

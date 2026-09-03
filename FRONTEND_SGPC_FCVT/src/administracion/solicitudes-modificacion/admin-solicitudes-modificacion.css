@@ -1,0 +1,1591 @@
+/* ============================================================
+   SGPC ULEAM
+   SOLICITUDES DE MODIFICACIÓN · ADMINISTRACIÓN
+============================================================ */
+
+
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.asm-page {
+  padding-bottom: 72px;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+}
+
+
+.asm-shell {
+  width: min(1360px, 100%);
+
+  margin: 0 auto;
+
+  display: grid;
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.asm-hero {
+  display: grid;
+
+  min-height: 92px;
+
+  padding: 20px 4px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: transparent;
+}
+
+
+.asm-hero__copy {
+  display: grid;
+
+  gap: 8px;
+
+  align-content: center;
+
+  min-width: 0;
+}
+
+
+.asm-hero__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+}
+
+
+.asm-hero h1 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.75rem,
+      1.5rem + 0.75vw,
+      2.2rem
+    );
+
+  font-weight: 780;
+
+  line-height: 1.08;
+
+  letter-spacing: -0.035em;
+}
+
+
+.asm-hero p {
+  max-width: 760px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   FILTROS
+============================================================ */
+
+.asm-filters {
+  display: grid;
+
+  grid-template-columns:
+    minmax(260px, 1fr)
+    220px
+    auto;
+
+  align-items: end;
+
+  gap: 10px;
+
+  padding: 18px 20px 20px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+}
+
+
+.asm-field {
+  display: grid;
+
+  gap: 6px;
+
+  min-width: 0;
+}
+
+
+.asm-field > span {
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+
+  font-weight: 750;
+}
+
+
+.asm-field input,
+.asm-field select,
+.asm-comment-field textarea {
+  width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-input);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.76rem;
+
+  outline: none;
+
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+
+.asm-field input,
+.asm-field select {
+  height: 44px;
+
+  padding: 0 11px;
+}
+
+
+.asm-field input:hover,
+.asm-field select:hover,
+.asm-comment-field textarea:hover {
+  border-color: var(--border-strong);
+}
+
+
+.asm-field input:focus,
+.asm-field select:focus,
+.asm-comment-field textarea:focus {
+  border-color: var(--color-primary);
+
+  box-shadow: var(--ring-primary);
+}
+
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.asm-page button,
+.asm-modal button {
+  appearance: none;
+
+  min-height: 40px;
+
+  padding: 0 13px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.74rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.asm-page button:hover:not(:disabled),
+.asm-modal button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+
+  background: var(--bg-soft);
+
+  color: var(--color-primary);
+}
+
+
+.asm-page button:disabled,
+.asm-modal button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+.asm-page button.approve,
+.asm-modal button.approve {
+  border-color: var(--success);
+
+  background: var(--success);
+
+  color: var(--success-contrast);
+}
+
+
+.asm-page button.approve:hover:not(:disabled),
+.asm-modal button.approve:hover:not(:disabled) {
+  border-color: var(--success);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--success) 88%,
+      var(--text-primary)
+    );
+
+  color: var(--success-contrast);
+}
+
+
+.asm-page button.reject,
+.asm-modal button.reject {
+  border-color: var(--danger-line);
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+}
+
+
+.asm-page button.reject:hover:not(:disabled),
+.asm-modal button.reject:hover:not(:disabled) {
+  border-color: var(--danger);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--danger-soft) 82%,
+      var(--danger)
+    );
+
+  color: var(--danger);
+}
+
+
+/* ============================================================
+   LISTA
+============================================================ */
+
+.asm-list {
+  display: grid;
+
+  gap: 14px;
+}
+
+
+.asm-card {
+  min-width: 0;
+
+  padding: 20px 22px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
+}
+
+
+.asm-card:hover {
+  border-color: var(--border-strong);
+}
+
+
+.asm-card__head {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+
+.asm-card__identity {
+  display: grid;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+
+.asm-card__identity > span {
+  color: var(--text-secondary);
+
+  font-size: 0.66rem;
+
+  font-weight: 750;
+}
+
+
+.asm-card h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 1.04rem;
+
+  font-weight: 760;
+
+  line-height: 1.35;
+
+  letter-spacing: -0.018em;
+}
+
+
+.asm-card__identity p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   ESTADOS
+============================================================ */
+
+.asm-state {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 27px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 7px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  font-weight: 760;
+
+  white-space: nowrap;
+}
+
+
+.asm-state[data-state="pendiente"] {
+  border-color: var(--warning-line);
+
+  background: var(--warning-soft);
+
+  color: var(--warning);
+}
+
+
+.asm-state[data-state="aprobada"] {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+
+  color: var(--success);
+}
+
+
+.asm-state[data-state="rechazada"] {
+  border-color: var(--danger-line);
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+}
+
+
+.asm-state[data-state="cancelada"] {
+  border-color: var(--border-strong);
+
+  background: var(--bg-soft);
+
+  color: var(--text-secondary);
+}
+
+
+/* ============================================================
+   MOTIVO
+============================================================ */
+
+.asm-reason {
+  display: grid;
+
+  gap: 4px;
+
+  margin-top: 14px;
+
+  padding: 11px 12px;
+
+  border-left:
+    3px solid
+    var(--border-strong);
+
+  background: var(--bg-soft);
+}
+
+
+.asm-reason > span {
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  font-weight: 750;
+}
+
+
+.asm-reason p {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   CAMBIOS DEL LISTADO
+============================================================ */
+
+.asm-changes {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(280px, 1fr)
+    );
+
+  gap: 10px;
+
+  margin-top: 14px;
+}
+
+
+.asm-change {
+  min-width: 0;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+
+  background: var(--bg-card);
+}
+
+
+.asm-change > header {
+  padding: 9px 11px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+.asm-change > header strong {
+  color: var(--text-primary);
+
+  font-size: 0.68rem;
+
+  font-weight: 760;
+}
+
+
+.asm-change__comparison {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 10px;
+}
+
+
+.asm-change__value {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 4px;
+
+  padding: 9px 10px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 8px;
+
+  background: var(--bg-soft);
+}
+
+
+.asm-change__value--requested {
+  border-color: var(--info-line);
+
+  background: var(--info-soft);
+}
+
+
+.asm-change__value span {
+  color: var(--text-secondary);
+
+  font-size: 0.6rem;
+
+  font-weight: 750;
+}
+
+
+.asm-change__value strong {
+  color: var(--text-primary);
+
+  font-size: 0.69rem;
+
+  font-weight: 700;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+.asm-change__arrow {
+  color: var(--text-secondary);
+
+  font-size: 0.92rem;
+
+  font-weight: 800;
+}
+
+
+/* ============================================================
+   ACCIONES DE TARJETA
+============================================================ */
+
+.asm-card__actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  margin-top: 16px;
+
+  padding-top: 14px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+/* ============================================================
+   VACÍO / CARGA
+============================================================ */
+
+.asm-empty,
+.asm-loading {
+  min-height: 90px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+
+  background: var(--bg-card);
+
+  color: var(--text-secondary);
+}
+
+
+.asm-empty {
+  display: grid;
+
+  gap: 4px;
+
+  text-align: center;
+}
+
+
+.asm-empty strong,
+.asm-loading strong {
+  color: var(--text-primary);
+
+  font-size: 0.76rem;
+
+  font-weight: 760;
+}
+
+
+.asm-empty span,
+.asm-loading span {
+  font-size: 0.7rem;
+
+  line-height: 1.4;
+}
+
+
+.asm-spinner {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  border:
+    3px solid
+    color-mix(
+      in srgb,
+      var(--color-primary) 18%,
+      transparent
+    );
+
+  border-top-color: var(--color-primary);
+
+  border-radius: 50%;
+
+  animation:
+    asm-spin
+    800ms
+    linear
+    infinite;
+}
+
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.asm-error {
+  margin: 0;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid
+    var(--danger-line);
+
+  border-radius: 11px;
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+
+  font-size: 0.74rem;
+
+  line-height: 1.45;
+}
+
+
+/* ============================================================
+   MODALES
+============================================================ */
+
+.asm-overlay {
+  --sgpc-modal-width: 820px;
+}
+
+
+.asm-modal {
+  padding: 0;
+
+  overflow: hidden;
+
+  background: var(--bg-elevated);
+
+  color: var(--text-primary);
+}
+
+
+.asm-modal--resolve {
+  --sgpc-modal-width: 720px;
+}
+
+
+/* ============================================================
+   CABECERA DEL MODAL
+============================================================ */
+
+.asm-modal__header {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 2;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  min-height: 66px;
+
+  padding: 14px 18px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-elevated);
+}
+
+
+.asm-modal__header > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.asm-modal__header > div > span {
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  font-weight: 750;
+}
+
+
+.asm-modal__header h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 1.04rem;
+
+  font-weight: 780;
+}
+
+
+.asm-modal__close {
+  width: 36px;
+
+  min-width: 36px;
+
+  min-height: 36px !important;
+
+  padding: 0 !important;
+
+  border-color: transparent !important;
+
+  background: transparent !important;
+
+  font-size: 1.2rem !important;
+}
+
+
+.asm-modal__close:hover:not(:disabled) {
+  background: var(--bg-soft) !important;
+}
+
+
+/* ============================================================
+   RESUMEN
+============================================================ */
+
+.asm-detail-summary,
+.asm-resolve-intro {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin: 16px 18px 0;
+
+  padding: 13px 14px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+
+  background: var(--bg-soft);
+}
+
+
+.asm-detail-summary > div,
+.asm-resolve-intro {
+  min-width: 0;
+}
+
+
+.asm-detail-summary > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.asm-detail-summary strong,
+.asm-resolve-intro strong {
+  color: var(--text-primary);
+
+  font-size: 0.78rem;
+
+  font-weight: 760;
+}
+
+
+.asm-detail-summary > div > span,
+.asm-resolve-intro > span {
+  color: var(--text-secondary);
+
+  font-size: 0.67rem;
+}
+
+
+.asm-resolve-intro {
+  display: grid;
+
+  justify-content: stretch;
+}
+
+
+/* ============================================================
+   SECCIONES MODAL
+============================================================ */
+
+.asm-modal-section {
+  padding: 17px 18px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+}
+
+
+.asm-modal-section > h3,
+.asm-sectionhead h3 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 0.84rem;
+
+  font-weight: 760;
+}
+
+
+.asm-sectionhead {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-bottom: 12px;
+}
+
+
+.asm-sectionhead > div {
+  display: grid;
+
+  gap: 4px;
+}
+
+
+.asm-sectionhead p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+
+  line-height: 1.4;
+}
+
+
+.asm-change-count {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 26px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--info-line);
+
+  border-radius: 7px;
+
+  background: var(--info-soft);
+
+  color: var(--info);
+
+  font-size: 0.62rem;
+
+  font-weight: 760;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   INFORMACIÓN
+============================================================ */
+
+.asm-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px 18px;
+
+  margin: 12px 0 0;
+}
+
+
+.asm-info-grid > div {
+  min-width: 0;
+}
+
+
+.asm-info-grid dt {
+  margin-bottom: 4px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  font-weight: 750;
+}
+
+
+.asm-info-grid dd {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+
+.asm-detail-text {
+  margin: 9px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.72rem;
+
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   DETALLE DE CAMBIOS
+============================================================ */
+
+.asm-detail-changes {
+  display: grid;
+
+  gap: 9px;
+}
+
+
+.asm-detail-change {
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+
+  background: var(--bg-card);
+}
+
+
+.asm-detail-change > header {
+  padding: 9px 11px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+.asm-detail-change > header strong {
+  font-size: 0.69rem;
+
+  font-weight: 760;
+}
+
+
+.asm-detail-change__body {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 11px;
+}
+
+
+.asm-detail-value {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 5px;
+
+  padding: 10px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 8px;
+
+  background: var(--bg-soft);
+}
+
+
+.asm-detail-value--requested {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+}
+
+
+.asm-detail-value span {
+  color: var(--text-secondary);
+
+  font-size: 0.61rem;
+
+  font-weight: 750;
+}
+
+
+.asm-detail-value strong {
+  color: var(--text-primary);
+
+  font-size: 0.71rem;
+
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+
+.asm-detail-arrow {
+  color: var(--text-secondary);
+
+  font-weight: 800;
+}
+
+
+/* ============================================================
+   RESOLUCIÓN
+============================================================ */
+
+.asm-resolution-comment {
+  margin: 13px 0 0;
+
+  padding: 11px 12px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 0.71rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   CAMBIOS EN RESOLUCIÓN
+============================================================ */
+
+.asm-resolve-changes {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 9px;
+}
+
+
+.asm-resolve-changes article {
+  display: grid;
+
+  gap: 5px;
+
+  padding: 10px 11px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 8px;
+
+  background: var(--bg-soft);
+}
+
+
+.asm-resolve-changes span {
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+
+  font-weight: 750;
+}
+
+
+.asm-resolve-changes strong {
+  color: var(--text-primary);
+
+  font-size: 0.7rem;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   COMENTARIO
+============================================================ */
+
+.asm-comment-field {
+  display: grid;
+
+  gap: 6px;
+}
+
+
+.asm-comment-field > span {
+  color: var(--text-primary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+}
+
+
+.asm-comment-field textarea {
+  min-height: 110px;
+
+  padding: 10px 11px;
+
+  resize: vertical;
+
+  line-height: 1.45;
+}
+
+
+.asm-comment-field small {
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   DATOS TÉCNICOS
+============================================================ */
+
+.asm-technical {
+  padding: 0 18px 18px;
+}
+
+
+.asm-technical__toggle {
+  width: 100%;
+
+  min-height: 44px !important;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  border-radius: 0 !important;
+
+  background: transparent !important;
+}
+
+
+.asm-technical__toggle:hover {
+  color: var(--color-primary) !important;
+}
+
+
+.asm-technical__body {
+  padding-top: 4px;
+}
+
+
+.asm-json-details {
+  margin-top: 12px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+.asm-json-details summary {
+  padding: 12px 0 5px;
+
+  color: var(--color-primary);
+
+  font-size: 0.68rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+
+.asm-json-grid {
+  display: grid;
+
+  gap: 10px;
+
+  padding-top: 8px;
+}
+
+
+.asm-json-grid h4 {
+  margin: 0 0 6px;
+
+  font-size: 0.67rem;
+
+  font-weight: 750;
+}
+
+
+.asm-json-grid pre {
+  margin: 0;
+
+  max-height: 250px;
+
+  padding: 12px;
+
+  overflow: auto;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-primary);
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size: 0.66rem;
+
+  line-height: 1.5;
+
+  white-space: pre-wrap;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   FOOTER MODAL
+============================================================ */
+
+.asm-modal__footer {
+  position: sticky;
+
+  bottom: 0;
+
+  z-index: 2;
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  padding: 13px 18px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-elevated);
+}
+
+
+/* ============================================================
+   SIN CAMBIOS
+============================================================ */
+
+.asm-nochanges {
+  margin-top: 14px;
+
+  padding: 12px 13px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 900px) {
+
+  .asm-filters {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+  }
+
+  .asm-clear {
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .asm-shell {
+    gap: 14px;
+  }
+
+  .asm-hero {
+    padding: 14px 2px;
+  }
+
+  .asm-filters {
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    padding: 16px;
+  }
+
+  .asm-card {
+    padding: 16px;
+  }
+
+  .asm-card__head,
+  .asm-detail-summary,
+  .asm-sectionhead {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .asm-card__actions,
+  .asm-modal__footer {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .asm-card__actions button,
+  .asm-modal__footer button {
+    width: 100%;
+  }
+
+  .asm-change__comparison,
+  .asm-detail-change__body {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .asm-change__arrow,
+  .asm-detail-arrow {
+    justify-self: center;
+
+    transform: rotate(90deg);
+  }
+
+  .asm-info-grid,
+  .asm-resolve-changes {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+}
+
+
+/* ============================================================
+   ANIMACIONES
+============================================================ */
+
+@keyframes asm-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .asm-page *,
+  .asm-page *::before,
+  .asm-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

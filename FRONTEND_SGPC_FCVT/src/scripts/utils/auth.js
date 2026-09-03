@@ -287,6 +287,23 @@ export const hasValidCedula = (user) => {
 };
 
 
+export const hasInstitutionalSite = (user) => {
+  if (!isInstitutionalUser(user)) {
+    return false;
+  }
+
+  const siteId =
+    user?.sede_id ??
+    (
+      typeof user?.sede === "object"
+        ? user.sede?.id
+        : user?.sede
+    );
+
+  return Boolean(siteId);
+};
+
+
 export const hasInstitutionalCareer = (user) => {
   if (!isInstitutionalUser(user)) {
     return false;
@@ -297,7 +314,7 @@ export const hasInstitutionalCareer = (user) => {
     (
       typeof user?.carrera === "object"
         ? user.carrera?.id
-        : null
+        : user?.carrera
     );
 
   return Boolean(careerId);
@@ -307,16 +324,25 @@ export const hasInstitutionalCareer = (user) => {
 export const calculateProfileComplete = (
   user
 ) => {
-  if (!hasValidCedula(user)) {
-    return false;
-  }
-
+  /*
+   * Regla vigente del backend:
+   *
+   * - una cuenta externa local puede tener el perfil completo
+   *   sin cédula y nunca posee Sede/Carrera institucional;
+   * - una cuenta institucional Microsoft requiere cédula válida,
+   *   Sede y Carrera. La coherencia Sede-Carrera la valida el
+   *   backend mediante CarreraSede activa.
+   */
   if (isExternalUser(user)) {
     return true;
   }
 
   if (isInstitutionalUser(user)) {
-    return hasInstitutionalCareer(user);
+    return Boolean(
+      hasValidCedula(user) &&
+      hasInstitutionalSite(user) &&
+      hasInstitutionalCareer(user)
+    );
   }
 
   return false;
@@ -344,6 +370,7 @@ export default {
   isPendingExternalUser,
 
   hasValidCedula,
+  hasInstitutionalSite,
   hasInstitutionalCareer,
   calculateProfileComplete,
 };

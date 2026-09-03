@@ -1,19 +1,21 @@
 """
-View para renovar tokens JWT.
+View para renovar el access token JWT mediante cookie HttpOnly.
 
 Responsabilidades:
 
-- Validar la presencia y estructura del refresh token.
+- Recuperar el refresh token exclusivamente desde una cookie HttpOnly.
 - Comprobar firma, tipo, expiración y lista negra.
-- Verificar que el usuario asociado continúe existiendo.
-- Impedir la renovación de cuentas inactivas.
-- Respetar la rotación de refresh tokens configurada en SimpleJWT.
-- Evitar que las respuestas con tokens sean almacenadas en caché.
+- Verificar que el usuario asociado continúe existiendo y activo.
+- Respetar la rotación configurada en SimpleJWT.
+- Reemplazar la cookie cuando SimpleJWT rote el refresh token.
+- No exponer nunca el refresh token en el cuerpo de la respuesta.
+- Eliminar la cookie cuando el refresh sea inválido o haya expirado.
+- Evitar que las respuestas con credenciales sean almacenadas en caché.
 """
 
 from django.contrib.auth import get_user_model
 
-from rest_framework import permissions, serializers, status
+from rest_framework import permissions, status
 from rest_framework.exceptions import (
     ValidationError as DRFValidationError,
 )
@@ -30,69 +32,20 @@ from rest_framework_simplejwt.serializers import (
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from core.auth.services.auth_token_cookie_services import (
+    delete_refresh_cookie,
+    get_refresh_token_from_request,
+    set_refresh_cookie,
+)
+
 
 User = get_user_model()
 
 
 # ============================================================
-# CONFIGURACIÓN
-# ============================================================
-
-MAX_REFRESH_TOKEN_LENGTH = 4096
-
-
-# ============================================================
-# SERIALIZER DE ENTRADA
-# ============================================================
-
-class RefreshTokenInputSerializer(
-    serializers.Serializer
-):
-    """
-    Valida la estructura básica de la solicitud.
-
-    La validación criptográfica se realiza posteriormente
-    mediante SimpleJWT.
-    """
-
-    refresh = serializers.CharField(
-        required=True,
-        allow_blank=False,
-        trim_whitespace=True,
-        max_length=MAX_REFRESH_TOKEN_LENGTH,
-        write_only=True,
-        error_messages={
-            "required": (
-                "El refresh token es obligatorio."
-            ),
-            "blank": (
-                "El refresh token es obligatorio."
-            ),
-            "max_length": (
-                "El refresh token recibido no es válido."
-            ),
-        },
-    )
-
-    def validate_refresh(
-        self,
-        value,
-    ):
-        normalized_token = str(
-            value or ""
-        ).strip()
-
-        if not normalized_token:
-            raise serializers.ValidationError(
-                "El refresh token es obligatorio."
-            )
-
-        return normalized_token
-
-
-# ============================================================
 # RESPUESTAS
 # ============================================================
+
 
 def _no_store_response(
     payload,
@@ -108,9 +61,8 @@ def _no_store_response(
     )
 
     response["Cache-Control"] = (
-        "no-store, no-cache, must-revalidate"
+        "no-store, no-cache, must-revalidate, max-age=0"
     )
-
     response["Pragma"] = "no-cache"
     response["Expires"] = "0"
 
@@ -119,34 +71,39 @@ def _no_store_response(
 
 def _invalid_refresh_response():
     """
-    Respuesta genérica para tokens inválidos, vencidos,
-    revocados o pertenecientes a cuentas no disponibles.
+    Respuesta genérica para refresh tokens inválidos, vencidos,
+    revocados o asociados a cuentas no disponibles.
+
+    La cookie se elimina para impedir intentos repetidos con una
+    credencial que ya no puede utilizarse.
     """
-    return _no_store_response(
+    response = _no_store_response(
         {
             "detail": (
-                "El refresh token es inválido, "
-                "ha expirado o ya no está disponible."
+                "La sesión ha expirado o ya no está disponible."
             )
         },
         status_code=status.HTTP_401_UNAUTHORIZED,
     )
+
+    delete_refresh_cookie(
+        response
+    )
+
+    return response
 
 
 # ============================================================
 # USUARIO DEL TOKEN
 # ============================================================
 
+
 def _get_user_from_refresh_token(
     refresh_token,
 ):
     """
-    Recupera el usuario asociado utilizando las configuraciones:
-
-    - USER_ID_CLAIM
-    - USER_ID_FIELD
-
-    Esto evita asumir que el identificador siempre es `id`.
+    Recupera el usuario asociado utilizando USER_ID_CLAIM y
+    USER_ID_FIELD de la configuración real de SimpleJWT.
     """
     user_id_claim = (
         api_settings.USER_ID_CLAIM
@@ -192,10 +149,8 @@ def _get_user_from_refresh_token(
 
 def _user_can_refresh(user):
     """
-    Comprueba que el usuario continúe habilitado.
-
     Una cuenta eliminada o inactiva no puede generar nuevos
-    access tokens aunque conserve un refresh token anterior.
+    access tokens aunque conserve una cookie anterior.
     """
     if user is None:
         return False
@@ -213,12 +168,14 @@ def _user_can_refresh(user):
 # VISTA
 # ============================================================
 
+
 class RefreshTokenView(APIView):
     """
-    Renueva el access token mediante un refresh token válido.
+    Renueva el access token utilizando la cookie HttpOnly.
 
-    El endpoint es público porque el refresh token constituye
-    la credencial utilizada en esta operación.
+    El frontend debe llamar al endpoint con credenciales habilitadas
+    (`withCredentials: true`). El cuerpo de la solicitud puede estar
+    vacío y el refresh token nunca debe enviarse desde JavaScript.
     """
 
     authentication_classes = []
@@ -228,52 +185,30 @@ class RefreshTokenView(APIView):
     ]
 
     def post(self, request):
-        # ====================================================
-        # VALIDACIÓN DE LA SOLICITUD
-        # ====================================================
-
-        input_serializer = (
-            RefreshTokenInputSerializer(
-                data=request.data,
-                context={
-                    "request": request,
-                },
-            )
-        )
-
-        if not input_serializer.is_valid():
-            return _no_store_response(
-                input_serializer.errors,
-                status_code=(
-                    status.HTTP_400_BAD_REQUEST
-                ),
-            )
-
         raw_refresh_token = (
-            input_serializer.validated_data[
-                "refresh"
-            ]
+            get_refresh_token_from_request(
+                request
+            )
         )
+
+        if not raw_refresh_token:
+            return _invalid_refresh_response()
 
         try:
-            # ================================================
-            # VALIDACIÓN INICIAL DEL TOKEN
-            # ================================================
+            # ==================================================
+            # VALIDACIÓN INICIAL DEL REFRESH
+            # ==================================================
 
             refresh_token = RefreshToken(
                 raw_refresh_token
             )
 
-            # RefreshToken comprueba:
-            #
-            # - Firma.
-            # - Expiración.
-            # - Tipo de token.
-            # - Lista negra cuando está habilitada.
+            # RefreshToken valida firma, expiración, tipo de token
+            # y blacklist cuando esa aplicación está habilitada.
 
-            # ================================================
+            # ==================================================
             # VALIDACIÓN DEL USUARIO
-            # ================================================
+            # ==================================================
 
             user = _get_user_from_refresh_token(
                 refresh_token
@@ -284,9 +219,9 @@ class RefreshTokenView(APIView):
             ):
                 return _invalid_refresh_response()
 
-            # ================================================
-            # RENOVACIÓN OFICIAL DE SIMPLEJWT
-            # ================================================
+            # ==================================================
+            # ROTACIÓN OFICIAL DE SIMPLEJWT
+            # ==================================================
 
             token_serializer = (
                 TokenRefreshSerializer(
@@ -305,7 +240,7 @@ class RefreshTokenView(APIView):
                 raise_exception=True
             )
 
-            response_payload = dict(
+            token_data = dict(
                 token_serializer.validated_data
             )
 
@@ -316,15 +251,33 @@ class RefreshTokenView(APIView):
         ):
             return _invalid_refresh_response()
 
-        # TokenRefreshSerializer siempre devuelve access.
-        # Cuando ROTATE_REFRESH_TOKENS=True también puede
-        # devolver un refresh token nuevo.
-        if not response_payload.get(
-            "access"
-        ):
+        access_token = token_data.get(
+            "access",
+            "",
+        )
+
+        if not access_token:
             return _invalid_refresh_response()
 
-        return _no_store_response(
-            response_payload,
+        # Cuando ROTATE_REFRESH_TOKENS=True, SimpleJWT devuelve
+        # un refresh nuevo y, con BLACKLIST_AFTER_ROTATION=True,
+        # invalida el anterior.
+        rotated_refresh_token = token_data.get(
+            "refresh",
+            "",
+        )
+
+        response = _no_store_response(
+            {
+                "access": access_token,
+            },
             status_code=status.HTTP_200_OK,
         )
+
+        if rotated_refresh_token:
+            set_refresh_cookie(
+                response,
+                rotated_refresh_token,
+            )
+
+        return response

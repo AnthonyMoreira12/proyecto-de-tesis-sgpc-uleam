@@ -2,38 +2,15 @@
   <div class="pr-page">
     <div class="pr-shell">
       <header
-        class="pr-hero page-stage page-stage-1"
+        class="pr-context page-stage page-stage-1"
         :aria-label="mensajesVista.heroAriaLabel"
       >
-        <div class="pr-hero__main">
-          <div class="pr-hero__copy">
-            <span class="pr-eyebrow">{{ mensajesVista.eyebrow }}</span>
-
-            <h1 class="pr-title">{{ mensajesVista.titulo }}</h1>
-
-            <p class="pr-subtitle">
-              {{ mensajesVista.subtitulo }}
-            </p>
-          </div>
-
-          <div class="pr-pills" aria-label="Resumen de proyectos">
-            <span class="pr-pill">
-              Total: <strong>{{ totalRegistros }}</strong>
-            </span>
-
-            <span class="pr-pill">
-              Página: <strong>{{ paginaActual }}</strong>
-            </span>
-
-            <span class="pr-pill">
-              Visibles: <strong>{{ resultadosPagina }}</strong>
-            </span>
-
-            <span v-if="filtrosActivosCount" class="pr-pill pr-pill--active">
-              Filtros: <strong>{{ filtrosActivosCount }}</strong>
-            </span>
-          </div>
+        <div class="pr-context__main">
+          <h1 class="pr-context__title">
+            Proyectos
+          </h1>
         </div>
+
       </header>
 
       <section
@@ -67,6 +44,27 @@
             >
               ✕
             </button>
+          </label>
+
+          <label class="pr-field pr-field--sm pr-field--select">
+            <span class="pr-sr-only">Filtrar por sede</span>
+            <select
+              v-model="filtroSede"
+              class="pr-control pr-control--native"
+              :disabled="loadingSedes"
+              aria-label="Filtrar proyectos por sede"
+            >
+              <option value="">
+                {{ loadingSedes ? "Cargando sedes..." : "Todas las sedes" }}
+              </option>
+              <option
+                v-for="sede in sedes"
+                :key="sede.id"
+                :value="String(sede.id)"
+              >
+                {{ sede.nombre }}
+              </option>
+            </select>
           </label>
 
           <div
@@ -223,24 +221,39 @@
         {{ feedbackMessage }}
       </div>
 
-      <section class="pr-card page-stage page-stage-3">
+      <section
+        class="pr-card page-stage page-stage-3"
+        :aria-busy="loadingProyectos"
+      >
         <div class="pr-card-head">
-          <div class="pr-card-head__info">
-            <h2 class="pr-card-title">{{ mensajesVista.cardTitulo }}</h2>
-          </div>
-
           <div class="pr-card-meta">
-            <span>{{ totalRegistros }} resultados</span>
-            <span>{{ resultadosPagina }} visibles</span>
+            <span>
+              <strong class="pr-card-meta__count">{{ totalRegistros }}</strong>
+              {{ totalRegistros === 1 ? "proyecto encontrado" : "proyectos encontrados" }}
+            </span>
           </div>
         </div>
 
-        <div v-if="loadingProyectos" class="pr-state pr-state--loading">
+        <div
+          v-if="initialProjectsLoading"
+          class="pr-state pr-state--loading"
+          role="status"
+        >
           {{ mensajesVista.loading }}
         </div>
 
         <div
-          v-else-if="errorProyectos"
+          v-if="refreshingProjects"
+          class="pr-refresh-state"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="pr-refresh-state__spinner" aria-hidden="true"></span>
+          <span>Actualizando proyectos…</span>
+        </div>
+
+        <div
+          v-if="errorProyectos && !proyectos.length"
           class="pr-state pr-state--error"
           role="alert"
         >
@@ -248,47 +261,97 @@
         </div>
 
         <div
-          v-else
-          class="pr-table-wrap"
-          role="region"
+          v-if="errorProyectos && proyectos.length"
+          class="pr-refresh-error"
+          role="status"
+        >
+          No pudimos actualizar la lista. Se mantienen los últimos proyectos disponibles.
+        </div>
+
+        <div
+          v-if="!initialProjectsLoading && !errorProyectos && proyectosFiltrados.length === 0"
+          class="pr-state pr-state--empty"
+          role="status"
+        >
+          {{ mensajesVista.empty }}
+        </div>
+
+        <div
+          v-if="proyectosFiltrados.length"
+          class="pr-results-grid"
           :aria-label="mensajesVista.tablaAriaLabel"
         >
-          <table class="pr-table" :class="{ 'pr-table--admin': esAdmin }">
-            <thead>
-              <tr>
-                <th>Proyecto</th>
-                <th>Profesores</th>
-                <th>Carrera / Facultad</th>
-                <th class="pr-th-center">Periodo</th>
-                <th class="pr-th-center">Fecha final</th>
-                <th class="pr-th-center">Estado</th>
-                <th class="pr-th-center">PDF</th>
-                <th v-if="esAdmin" class="pr-th-right">Acciones</th>
-              </tr>
-            </thead>
+          <article
+            v-for="p in proyectosFiltrados"
+            :key="p.id"
+            class="pr-project-card"
+            :data-estado="p.estado || 'nuevo'"
+          >
+            <header class="pr-project-card__head">
+              <div class="pr-project-card__badges">
+                <span
+                  class="pr-badge"
+                  :class="estadoBadgeClass(p.estado)"
+                  :data-estado="p.estado || 'nuevo'"
+                >
+                  {{ labelEstadoProyecto(p.estado) }}
+                </span>
 
-            <tbody>
-              <tr v-if="proyectosFiltrados.length === 0">
-                <td class="pr-empty" :colspan="esAdmin ? 8 : 7">
-                  {{ mensajesVista.empty }}
-                </td>
-              </tr>
+                <span class="pr-year">
+                  {{ periodoProyecto(p) }}
+                </span>
+              </div>
 
-              <tr v-for="p in proyectosFiltrados" :key="p.id" class="pr-row">
-                <td class="pr-strong">
-                  <div class="pr-name" :title="p.nombre || '—'">
-                    {{ p.nombre || "—" }}
-                  </div>
+              <span class="pr-project-card__end">
+                Finaliza {{ fechaFinalProyecto(p) }}
+              </span>
+            </header>
 
-                  <p v-if="p.descripcion" class="pr-description">
-                    {{ truncateText(p.descripcion, 110) }}
-                  </p>
-                </td>
+            <div class="pr-project-card__body">
+              <h3
+                class="pr-project-card__title"
+                :title="p.nombre || 'Proyecto'"
+              >
+                {{ p.nombre || "Proyecto" }}
+              </h3>
 
-                <td>
-                  <div v-if="autoresResumen(p).length" class="pr-authors-mini">
+              <p
+                v-if="p.descripcion"
+                class="pr-project-card__description"
+              >
+                {{ truncateText(p.descripcion, 120) }}
+              </p>
+
+              <div class="pr-project-card__meta">
+                <div class="pr-project-card__meta-block">
+                  <span class="pr-project-card__label">
+                    Unidad académica
+                  </span>
+
+                  <strong :title="p.carrera_nombre || '—'">
+                    {{ p.carrera_nombre || "—" }}
+                  </strong>
+
+                  <span :title="p.facultad || '—'">
+                    {{ p.facultad || "—" }}
+                  </span>
+
+                  <span class="pr-location-site">
+                    {{ p.sede_nombre || "Sin sede" }}
+                  </span>
+                </div>
+
+                <div class="pr-project-card__meta-block">
+                  <span class="pr-project-card__label">
+                    Profesores
+                  </span>
+
+                  <div
+                    v-if="autoresResumen(p).length"
+                    class="pr-project-card__authors"
+                  >
                     <span
-                      v-for="autor in autoresResumen(p).slice(0, 2)"
+                      v-for="autor in autoresResumen(p).slice(0, 3)"
                       :key="autor.id"
                       class="pr-author-chip"
                       :title="autor.nombre"
@@ -297,10 +360,10 @@
                     </span>
 
                     <span
-                      v-if="autoresResumen(p).length > 2"
+                      v-if="autoresResumen(p).length > 3"
                       class="pr-author-chip pr-author-chip--more"
                     >
-                      +{{ autoresResumen(p).length - 2 }}
+                      +{{ autoresResumen(p).length - 3 }}
                     </span>
                   </div>
 
@@ -317,81 +380,66 @@
                   >
                     Sin investigador principal
                   </span>
-                </td>
+                </div>
+              </div>
+            </div>
 
-                <td>
-                  <div class="pr-stack">
-                    <strong :title="p.carrera_nombre || '—'">
-                      {{ p.carrera_nombre || "—" }}
-                    </strong>
+            <footer class="pr-project-card__footer">
+              <a
+                v-if="p.archivo_pdf_url"
+                class="pr-pdf-link"
+                :href="p.archivo_pdf_url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                PDF
+              </a>
 
-                    <span :title="p.facultad || '—'">
-                      {{ p.facultad || "—" }}
-                    </span>
-                  </div>
-                </td>
+              <span v-else class="pr-muted-text">
+                Sin documento
+              </span>
 
-                <td class="pr-td-center">
-                  <span class="pr-year">
-                    {{ periodoProyecto(p) }}
-                  </span>
-                </td>
+              <div v-if="esAdmin" class="pr-actions">
+                <button
+                  class="pr-btn-mini"
+                  type="button"
+                  :disabled="processingProjectId === p.id || savingExtension"
+                  @click="editarProyecto(p)"
+                >
+                  Editar
+                </button>
 
-                <td class="pr-td-center">
-                  <span class="pr-date">
-                    {{ fechaFinalProyecto(p) }}
-                  </span>
-                </td>
+                <details class="pr-more-menu">
+                  <summary class="pr-btn-mini pr-btn-mini--more">
+                    Más
+                    <span aria-hidden="true">⌄</span>
+                  </summary>
 
-                <td class="pr-td-center">
-                  <span
-                    class="pr-badge"
-                    :class="estadoBadgeClass(p.estado)"
-                    :data-estado="p.estado || 'nuevo'"
-                  >
-                    {{ labelEstadoProyecto(p.estado) }}
-                  </span>
-                </td>
-
-                <td class="pr-td-center">
-                  <a
-                    v-if="p.archivo_pdf_url"
-                    class="pr-pdf-link"
-                    :href="p.archivo_pdf_url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Ver PDF
-                  </a>
-
-                  <span v-else class="pr-muted-text">
-                    —
-                  </span>
-                </td>
-
-                <td v-if="esAdmin" class="pr-td-right">
-                  <div class="pr-actions">
+                  <div class="pr-more-menu__panel">
                     <button
-                      class="pr-btn-mini"
                       type="button"
-                      :disabled="processingProjectId === p.id || savingExtension"
-                      @click="editarProyecto(p)"
+                      :disabled="
+                        loadingProduccionProyecto &&
+                        proyectoProduccion?.id === p.id
+                      "
+                      @click="abrirProduccionProyecto(p)"
                     >
-                      Editar
+                      Ver producción
                     </button>
 
                     <button
                       v-if="puedeExtenderProyecto(p)"
-                      class="pr-btn-mini"
                       type="button"
-                      :disabled="processingProjectId === p.id || savingExtension"
+                      :disabled="
+                        processingProjectId === p.id ||
+                        savingExtension
+                      "
                       @click="abrirExtensionFecha(p)"
                     >
-                      Extender
+                      Extender plazo
                     </button>
 
                     <button
-                      class="pr-btn-mini"
                       type="button"
                       :class="estadoActionClass(p.estado)"
                       :disabled="
@@ -404,26 +452,39 @@
                     >
                       {{
                         processingProjectId === p.id
-                          ? "Procesando..."
+                          ? "Actualizando estado…"
                           : textoAccionEstado(p.estado)
                       }}
                     </button>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </details>
+              </div>
+
+              <button
+                v-else
+                class="pr-btn-mini"
+                type="button"
+                :disabled="
+                  loadingProduccionProyecto &&
+                  proyectoProduccion?.id === p.id
+                "
+                @click="abrirProduccionProyecto(p)"
+              >
+                Ver producción
+              </button>
+            </footer>
+          </article>
         </div>
 
         <footer
-          v-if="!loadingProyectos && !errorProyectos && totalPaginas > 1"
+          v-if="!errorProyectos && totalPaginas > 1"
           class="pr-pagination"
           aria-label="Paginación de proyectos"
         >
           <button
             class="pr-btn pr-btn--ghost"
             type="button"
-            :disabled="!puedeIrAnterior"
+            :disabled="loadingProyectos || !puedeIrAnterior"
             @click="paginaAnterior"
           >
             Anterior
@@ -437,12 +498,131 @@
           <button
             class="pr-btn pr-btn--ghost"
             type="button"
-            :disabled="!puedeIrSiguiente"
+            :disabled="loadingProyectos || !puedeIrSiguiente"
             @click="paginaSiguiente"
           >
             Siguiente
           </button>
         </footer>
+      </section>
+    </div>
+
+    <Teleport to="body">
+    <div
+      v-if="produccionModalAbierto"
+      class="pr-prod-overlay"
+      role="presentation"
+      @mousedown.self="cerrarProduccionProyecto"
+    >
+      <section
+        class="pr-prod-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pr-prod-title"
+      >
+        <header class="pr-prod-head">
+          <div>
+            <h2 id="pr-prod-title" class="pr-prod-title">
+              {{ proyectoProduccion?.nombre || "Proyecto" }}
+            </h2>
+            <p class="pr-prod-subtitle">
+              {{ produccionProyectoLocation }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="pr-ext-close"
+            @click="cerrarProduccionProyecto"
+            aria-label="Cerrar información del proyecto"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="pr-prod-body">
+          <div v-if="loadingProduccionProyecto" class="pr-production__state">
+            Cargando información...
+          </div>
+
+          <div
+            v-else-if="errorProduccionProyecto"
+            class="pr-production__state pr-production__state--error"
+            role="alert"
+          >
+            {{ errorProduccionProyecto }}
+            <button type="button" class="pr-link-action" @click="recargarProduccionProyecto">
+              Reintentar
+            </button>
+          </div>
+
+          <template v-else-if="produccionProyectoData">
+            <div class="pr-prod-metrics">
+              <article><span>Total</span><strong>{{ produccionResumen.total_publicaciones }}</strong></article>
+              <article><span>Aprobadas</span><strong>{{ produccionResumen.aprobada }}</strong></article>
+              <article><span>En revisión</span><strong>{{ produccionResumen.en_revision }}</strong></article>
+              <article><span>Observadas</span><strong>{{ produccionResumen.observada }}</strong></article>
+              <article><span>Rechazadas</span><strong>{{ produccionResumen.rechazada }}</strong></article>
+              <article><span>Cobertura PDF</span><strong>{{ formatPercent(produccionResumen.cobertura_pdf) }}</strong></article>
+            </div>
+
+            <div class="pr-prod-grid">
+              <article class="pr-prod-section">
+                <header><h3>Producción por tipo</h3></header>
+                <div v-if="produccionPorTipo.length" class="pr-prod-table-wrap">
+                  <table class="pr-prod-table">
+                    <thead><tr><th>Tipo</th><th>Total</th><th>Aprobadas</th></tr></thead>
+                    <tbody>
+                      <tr v-for="item in produccionPorTipo" :key="item.tipo_id || item.codigo">
+                        <td>{{ item.nombre || item.codigo || "Sin tipo" }}</td>
+                        <td>{{ item.total }}</td>
+                        <td>{{ item.aprobadas }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p v-else class="pr-production-empty">Sin datos por tipo.</p>
+              </article>
+
+              <article class="pr-prod-section">
+                <header><h3>Evolución anual</h3></header>
+                <div v-if="produccionPorAnio.length" class="pr-prod-table-wrap">
+                  <table class="pr-prod-table">
+                    <thead><tr><th>Año</th><th>Total</th><th>Aprobadas</th><th>Observadas</th></tr></thead>
+                    <tbody>
+                      <tr v-for="item in produccionPorAnio" :key="item.anio">
+                        <td>{{ item.anio }}</td>
+                        <td>{{ item.total }}</td>
+                        <td>{{ item.aprobadas }}</td>
+                        <td>{{ item.observadas }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p v-else class="pr-production-empty">Sin datos por año.</p>
+              </article>
+            </div>
+
+            <article class="pr-prod-section">
+              <header>
+                <h3>Autores</h3>
+                <span>{{ produccionAutores.length }}</span>
+              </header>
+              <div v-if="produccionAutores.length" class="pr-prod-authors">
+                <div v-for="autor in produccionAutores" :key="autor.autor_id">
+                  <span>
+                    <strong>{{ autor.nombre_completo || "Autor" }}</strong>
+                    <small>{{ autor.institucion || autor.correo || "Sin institución" }}</small>
+                  </span>
+                  <span>
+                    <strong>{{ autor.total_publicaciones }}</strong>
+                    <small>{{ autor.aprobadas }} aprobadas</small>
+                  </span>
+                </div>
+              </div>
+              <p v-else class="pr-production-empty">Sin autores.</p>
+            </article>
+          </template>
+        </div>
       </section>
     </div>
 
@@ -460,8 +640,6 @@
       >
         <header class="pr-ext-head">
           <div>
-            <span class="pr-eyebrow">Extensión de proyecto</span>
-
             <h2 id="pr-ext-title" class="pr-ext-title">
               Extender fecha final
             </h2>
@@ -491,41 +669,63 @@
               v-model="extensionFecha"
               type="date"
               :min="extensionFechaMin || undefined"
-              :disabled="savingExtension"
+              :disabled="savingExtension || Boolean(extensionSuccess)"
             />
           </label>
-
-          <p class="pr-ext-help">
-            La fecha se guardará como fecha prorrogada y el proyecto pasará a
-            estado Arrastre.
-          </p>
 
           <p v-if="extensionError" class="pr-ext-error" role="alert">
             {{ extensionError }}
           </p>
+
+          <div
+            v-if="extensionSuccess"
+            class="pr-ext-success"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="pr-ext-success__icon" aria-hidden="true">✓</span>
+
+            <div>
+              <strong>Fecha final actualizada</strong>
+              <p>{{ extensionSuccess }}</p>
+            </div>
+          </div>
         </div>
 
         <footer class="pr-ext-actions">
-          <button
-            type="button"
-            class="pr-btn pr-btn--ghost"
-            :disabled="savingExtension"
-            @click="cerrarExtensionFecha"
-          >
-            Cancelar
-          </button>
+          <template v-if="extensionSuccess">
+            <button
+              type="button"
+              class="pr-btn pr-btn--primary"
+              @click="cerrarExtensionFecha"
+            >
+              Cerrar
+            </button>
+          </template>
 
-          <button
-            type="button"
-            class="pr-btn pr-btn--primary"
-            :disabled="savingExtension"
-            @click="confirmarExtensionFecha"
-          >
-            {{ savingExtension ? "Guardando..." : "Guardar extensión" }}
-          </button>
+          <template v-else>
+            <button
+              type="button"
+              class="pr-btn pr-btn--ghost"
+              :disabled="savingExtension"
+              @click="cerrarExtensionFecha"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="pr-btn pr-btn--primary"
+              :disabled="savingExtension"
+              @click="confirmarExtensionFecha"
+            >
+              {{ savingExtension ? "Guardando plazo…" : "Guardar" }}
+            </button>
+          </template>
         </footer>
       </section>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -545,10 +745,13 @@ import {
 
 import {
   cambiarEstadoProyecto,
+  compararProduccionProyectos,
   consultarAniosProyectos,
+  consultarSedesProyecto,
   extenderFechaProyecto,
   getProyectoApiErrorMessage,
   listarProyectos,
+  obtenerProduccionProyecto,
 } from "../../scripts/api/proyectosApi";
 
 import {
@@ -601,20 +804,16 @@ const mensajesVista =
       esAdmin.value
         ? {
             heroAriaLabel:
-              "Gestión de proyectos institucionales",
+              "Administración de proyectos",
 
             eyebrow:
-              "Gestión académica",
+              "Proyectos",
 
             titulo:
-              "Proyectos institucionales",
+              "Proyectos",
 
             subtitulo:
-              (
-                "Revise, registre y actualice proyectos "
-                + "institucionales con profesores vinculados, "
-                + "periodo, estado y documento PDF."
-              ),
+              "Proyectos institucionales.",
 
             toolbarAriaLabel:
               "Filtros y acciones",
@@ -623,42 +822,32 @@ const mensajesVista =
               "Buscar proyecto",
 
             cardTitulo:
-              "Listado de proyectos",
+              "Proyectos",
 
             tablaAriaLabel:
-              "Tabla de proyectos institucionales",
+              "Lista de proyectos",
 
             loading:
               "Cargando proyectos...",
 
             empty:
-              (
-                "No se encontraron proyectos con los "
-                + "filtros actuales."
-              ),
+              "Sin proyectos para estos filtros.",
 
             placeholderBusqueda:
-              (
-                "Buscar por proyecto, profesor, "
-                + "carrera o facultad"
-              ),
+              "Buscar proyectos",
           }
         : {
             heroAriaLabel:
-              "Consulta de proyectos institucionales",
+              "Consulta de proyectos",
 
             eyebrow:
-              "Consulta académica",
+              "Proyectos",
 
             titulo:
-              "Consulta de proyectos institucionales",
+              "Consulta de proyectos",
 
             subtitulo:
-              (
-                "Revise los proyectos institucionales activos, "
-                + "sus profesores vinculados y su información "
-                + "principal."
-              ),
+              "Proyectos institucionales.",
 
             toolbarAriaLabel:
               "Filtros de consulta",
@@ -670,22 +859,16 @@ const mensajesVista =
               "Proyectos registrados",
 
             tablaAriaLabel:
-              "Tabla de consulta de proyectos",
+              "Lista de proyectos",
 
             loading:
               "Cargando proyectos...",
 
             empty:
-              (
-                "No se encontraron proyectos con los "
-                + "filtros actuales."
-              ),
+              "Sin proyectos para estos filtros.",
 
             placeholderBusqueda:
-              (
-                "Buscar por proyecto, profesor, "
-                + "carrera o facultad"
-              ),
+              "Buscar proyectos",
           }
     )
   );
@@ -704,6 +887,24 @@ const loadingProyectos =
 const errorProyectos =
   ref("");
 
+const hasLoadedProjects =
+  ref(false);
+
+const initialProjectsLoading =
+  computed(
+    () =>
+      loadingProyectos.value &&
+      !hasLoadedProjects.value &&
+      proyectos.value.length === 0
+  );
+
+const refreshingProjects =
+  computed(
+    () =>
+      loadingProyectos.value &&
+      hasLoadedProjects.value
+  );
+
 
 /* ============================================================
    FILTROS
@@ -714,6 +915,15 @@ const searchQuery =
 
 const debouncedSearch =
   ref("");
+
+const filtroSede =
+  ref("");
+
+const sedes =
+  ref([]);
+
+const loadingSedes =
+  ref(false);
 
 const filtroAnio =
   ref("");
@@ -726,6 +936,35 @@ const listaAnios =
 
 const loadingAnios =
   ref(false);
+
+
+/* ============================================================
+   PRODUCCIÓN CIENTÍFICA
+============================================================ */
+
+const comparativaProduccion =
+  ref(null);
+
+const loadingComparativa =
+  ref(false);
+
+const errorComparativa =
+  ref("");
+
+const produccionModalAbierto =
+  ref(false);
+
+const proyectoProduccion =
+  ref(null);
+
+const produccionProyectoData =
+  ref(null);
+
+const loadingProduccionProyecto =
+  ref(false);
+
+const errorProduccionProyecto =
+  ref("");
 
 
 /* ============================================================
@@ -753,6 +992,9 @@ const extensionFecha =
   ref("");
 
 const extensionError =
+  ref("");
+
+const extensionSuccess =
   ref("");
 
 const savingExtension =
@@ -798,6 +1040,9 @@ let searchTimer = null;
 let feedbackTimer = null;
 let abortController = null;
 let yearsAbortController = null;
+let sitesAbortController = null;
+let comparisonAbortController = null;
+let productionAbortController = null;
 let suspendFilterWatchers = false;
 
 
@@ -1463,6 +1708,82 @@ function fechaReferenciaExtension(
 }
 
 
+function extractCatalogArray(
+  payload
+) {
+  if (
+    Array.isArray(
+      payload
+    )
+  ) {
+    return payload;
+  }
+
+  const candidates = [
+    payload?.results,
+    payload?.items,
+    payload?.data,
+  ];
+
+  return (
+    candidates.find(
+      Array.isArray
+    )
+    || []
+  );
+}
+
+
+function formatMetric(
+  value
+) {
+  const number =
+    Number(
+      value || 0
+    );
+
+  return Number.isFinite(
+    number
+  )
+    ? new Intl.NumberFormat(
+        "es-EC",
+        {
+          maximumFractionDigits: 2,
+        }
+      ).format(
+        number
+      )
+    : "0";
+}
+
+
+function formatPercent(
+  value
+) {
+  return `${formatMetric(
+    value
+  )}%`;
+}
+
+
+function productionLocationLabel(
+  item
+) {
+  const values = [
+    item?.sede?.nombre,
+    item?.facultad?.nombre,
+    item?.carrera?.nombre,
+  ].filter(Boolean);
+
+  return (
+    values.join(
+      " · "
+    )
+    || "Sin información académica"
+  );
+}
+
+
 /* ============================================================
    COMPUTEDS
 ============================================================ */
@@ -1500,6 +1821,12 @@ const filtrosActivosCount =
 
       if (
         debouncedSearch.value
+      ) {
+        total += 1;
+      }
+
+      if (
+        filtroSede.value
       ) {
         total += 1;
       }
@@ -1564,6 +1891,114 @@ const textoFiltroEstado =
   );
 
 
+const comparativaResumen =
+  computed(
+    () => (
+      comparativaProduccion.value?.resumen
+      || {}
+    )
+  );
+
+const rankingProductividad =
+  computed(
+    () => (
+      Array.isArray(
+        comparativaProduccion.value?.ranking_productividad
+      )
+        ? comparativaProduccion.value.ranking_productividad
+        : []
+    )
+  );
+
+const proyectosSinProduccion =
+  computed(
+    () => (
+      Array.isArray(
+        comparativaProduccion.value?.proyectos_sin_produccion
+      )
+        ? comparativaProduccion.value.proyectos_sin_produccion
+        : []
+    )
+  );
+
+const comparativaPorSede =
+  computed(
+    () => (
+      Array.isArray(
+        comparativaProduccion.value?.por_sede
+      )
+        ? comparativaProduccion.value.por_sede
+        : []
+    )
+  );
+
+const produccionResumen =
+  computed(
+    () => (
+      produccionProyectoData.value?.resumen
+      || {}
+    )
+  );
+
+const produccionPorTipo =
+  computed(
+    () => (
+      Array.isArray(
+        produccionProyectoData.value?.por_tipo
+      )
+        ? produccionProyectoData.value.por_tipo
+        : []
+    )
+  );
+
+const produccionPorAnio =
+  computed(
+    () => (
+      Array.isArray(
+        produccionProyectoData.value?.por_anio
+      )
+        ? produccionProyectoData.value.por_anio
+        : []
+    )
+  );
+
+const produccionAutores =
+  computed(
+    () => (
+      Array.isArray(
+        produccionProyectoData.value?.autores_produccion
+      )
+        ? produccionProyectoData.value.autores_produccion
+        : []
+    )
+  );
+
+const produccionProyectoLocation =
+  computed(
+    () => {
+      const project =
+        produccionProyectoData.value?.proyecto;
+
+      if (
+        project
+      ) {
+        return productionLocationLabel(
+          project
+        );
+      }
+
+      return [
+        proyectoProduccion.value?.sede_nombre,
+        proyectoProduccion.value?.facultad,
+        proyectoProduccion.value?.carrera_nombre,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+        || "Sin información académica";
+    }
+  );
+
+
 const totalPaginas =
   computed(
     () => {
@@ -1611,6 +2046,356 @@ const extensionFechaMin =
 
 
 /* ============================================================
+   SEDES Y PRODUCCIÓN CIENTÍFICA
+============================================================ */
+
+async function cargarSedesDisponibles() {
+  sitesAbortController
+    ?.abort?.();
+
+  const controller =
+    new AbortController();
+
+  sitesAbortController =
+    controller;
+
+  loadingSedes.value =
+    true;
+
+  try {
+    const payload =
+      await consultarSedesProyecto({
+        signal:
+          controller.signal,
+      });
+
+    if (
+      sitesAbortController
+      !== controller
+    ) {
+      return;
+    }
+
+    sedes.value =
+      extractCatalogArray(
+        payload
+      )
+        .map(
+          (item) => ({
+            id:
+              item?.id,
+            nombre:
+              item?.nombre
+              || item?.label
+              || item?.name
+              || "",
+          })
+        )
+        .filter(
+          (item) => (
+            item.id
+            && item.nombre
+          )
+        );
+  } catch (
+    error
+  ) {
+    if (
+      error?.code
+      === "ERR_CANCELED"
+      || error?.name
+        === "CanceledError"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando sedes de proyectos:",
+      error
+    );
+
+    sedes.value = [];
+  } finally {
+    if (
+      sitesAbortController
+      === controller
+    ) {
+      loadingSedes.value =
+        false;
+    }
+  }
+}
+
+
+async function cargarComparativaProduccion() {
+  if (
+    !esAdmin.value
+  ) {
+    comparativaProduccion.value =
+      null;
+    return;
+  }
+
+  comparisonAbortController
+    ?.abort?.();
+
+  const controller =
+    new AbortController();
+
+  comparisonAbortController =
+    controller;
+
+  loadingComparativa.value =
+    true;
+
+  errorComparativa.value =
+    "";
+
+  const params = {
+    limite: 5,
+  };
+
+  if (
+    filtroSede.value
+  ) {
+    params.sede =
+      filtroSede.value;
+  }
+
+  if (
+    filtroEstado.value
+  ) {
+    params.estado_proyecto =
+      filtroEstado.value;
+  }
+
+  if (
+    filtroAnio.value
+  ) {
+    params.anio =
+      filtroAnio.value;
+  }
+
+  try {
+    const payload =
+      await compararProduccionProyectos(
+        params,
+        {
+          signal:
+            controller.signal,
+        }
+      );
+
+    if (
+      comparisonAbortController
+      !== controller
+    ) {
+      return;
+    }
+
+    comparativaProduccion.value =
+      payload || {};
+  } catch (
+    error
+  ) {
+    if (
+      error?.code
+      === "ERR_CANCELED"
+      || error?.name
+        === "CanceledError"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando comparativa de producción:",
+      error
+    );
+
+    comparativaProduccion.value =
+      null;
+
+    errorComparativa.value =
+      getProyectoApiErrorMessage(
+        error,
+        "No pudimos cargar el resumen de producción."
+      );
+  } finally {
+    if (
+      comparisonAbortController
+      === controller
+    ) {
+      loadingComparativa.value =
+        false;
+    }
+  }
+}
+
+
+async function cargarProduccionProyecto(
+  proyectoId
+) {
+  if (
+    !esAdmin.value
+    || !proyectoId
+  ) {
+    return;
+  }
+
+  productionAbortController
+    ?.abort?.();
+
+  const controller =
+    new AbortController();
+
+  productionAbortController =
+    controller;
+
+  loadingProduccionProyecto.value =
+    true;
+
+  errorProduccionProyecto.value =
+    "";
+
+  try {
+    const payload =
+      await obtenerProduccionProyecto(
+        proyectoId,
+        {},
+        {
+          signal:
+            controller.signal,
+        }
+      );
+
+    if (
+      productionAbortController
+      !== controller
+    ) {
+      return;
+    }
+
+    produccionProyectoData.value =
+      payload || {};
+  } catch (
+    error
+  ) {
+    if (
+      error?.code
+      === "ERR_CANCELED"
+      || error?.name
+        === "CanceledError"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando producción del proyecto:",
+      error
+    );
+
+    produccionProyectoData.value =
+      null;
+
+    errorProduccionProyecto.value =
+      getProyectoApiErrorMessage(
+        error,
+        "No pudimos cargar la producción del proyecto."
+      );
+  } finally {
+    if (
+      productionAbortController
+      === controller
+    ) {
+      loadingProduccionProyecto.value =
+        false;
+    }
+  }
+}
+
+
+async function abrirProduccionProyecto(
+  proyecto
+) {
+  if (
+    !proyecto?.id
+    || !esAdmin.value
+  ) {
+    return;
+  }
+
+  proyectoProduccion.value =
+    proyecto;
+
+  produccionProyectoData.value =
+    null;
+
+  errorProduccionProyecto.value =
+    "";
+
+  produccionModalAbierto.value =
+    true;
+
+  await cargarProduccionProyecto(
+    proyecto.id
+  );
+}
+
+
+async function abrirProduccionDesdeComparativa(
+  item
+) {
+  if (
+    !item?.proyecto_id
+  ) {
+    return;
+  }
+
+  await abrirProduccionProyecto({
+    id:
+      item.proyecto_id,
+    nombre:
+      item.nombre,
+    sede_nombre:
+      item?.sede?.nombre || "",
+    facultad:
+      item?.facultad?.nombre || "",
+    carrera_nombre:
+      item?.carrera?.nombre || "",
+  });
+}
+
+
+function cerrarProduccionProyecto() {
+  productionAbortController
+    ?.abort?.();
+
+  produccionModalAbierto.value =
+    false;
+
+  proyectoProduccion.value =
+    null;
+
+  produccionProyectoData.value =
+    null;
+
+  errorProduccionProyecto.value =
+    "";
+}
+
+
+async function recargarProduccionProyecto() {
+  if (
+    proyectoProduccion.value?.id
+  ) {
+    await cargarProduccionProyecto(
+      proyectoProduccion.value.id
+    );
+  }
+}
+
+
+/* ============================================================
    AÑOS DISPONIBLES
 ============================================================ */
 
@@ -1628,6 +2413,13 @@ async function cargarAniosDisponibles() {
 
   try {
     const params = {};
+
+    if (
+      filtroSede.value
+    ) {
+      params.sede =
+        filtroSede.value;
+    }
 
     if (
       debouncedSearch.value
@@ -1730,6 +2522,7 @@ async function recargarAniosYProyectosPorFiltros({
   await cargarProyectos({
     silent,
   });
+
 }
 
 
@@ -1837,6 +2630,13 @@ function handleGlobalKeydown(
   cerrarDropdownEstado();
 
   if (
+    produccionModalAbierto.value
+  ) {
+    cerrarProduccionProyecto();
+    return;
+  }
+
+  if (
     extensionModalAbierto.value
   ) {
     cerrarExtensionFecha();
@@ -1873,6 +2673,13 @@ async function cargarProyectos({
       page_size:
         PAGE_SIZE,
     };
+
+    if (
+      filtroSede.value
+    ) {
+      params.sede =
+        filtroSede.value;
+    }
 
     if (
       debouncedSearch.value
@@ -1933,6 +2740,9 @@ async function cargarProyectos({
         ?? 0
       ) || 0;
 
+    hasLoadedProjects.value =
+      true;
+
     const maxPage =
       Math.max(
         1,
@@ -1968,8 +2778,8 @@ async function cargarProyectos({
       error
     );
 
-    proyectos.value = [];
-    totalRegistros.value = 0;
+    hasLoadedProjects.value =
+      true;
 
     errorProyectos.value =
       getProyectoApiErrorMessage(
@@ -2100,8 +2910,7 @@ async function cambiarEstado(
 
     setFeedback(
       (
-        "El estado del proyecto se "
-        + "actualizó correctamente."
+        "Estado actualizado."
       ),
       "success"
     );
@@ -2149,6 +2958,9 @@ function abrirExtensionFecha(
   extensionError.value =
     "";
 
+  extensionSuccess.value =
+    "";
+
   extensionModalAbierto.value =
     true;
 
@@ -2182,17 +2994,24 @@ function cerrarExtensionFecha() {
 
   extensionError.value =
     "";
+
+  extensionSuccess.value =
+    "";
 }
 
 
 async function confirmarExtensionFecha() {
   if (
     !proyectoExtension.value?.id
+    || extensionSuccess.value
   ) {
     return;
   }
 
   extensionError.value =
+    "";
+
+  extensionSuccess.value =
     "";
 
   if (
@@ -2261,15 +3080,22 @@ async function confirmarExtensionFecha() {
 
     await cargarAniosDisponibles();
 
+    const fechaGuardada =
+      formatFecha(
+        extensionFecha.value
+      );
+
+    extensionSuccess.value = (
+      "La nueva fecha de finalización se guardó correctamente: "
+      + `${fechaGuardada}.`
+    );
+
     setFeedback(
       (
-        "La fecha final del proyecto "
-        + "se extendió correctamente."
+        "Fecha final actualizada correctamente."
       ),
       "success"
     );
-
-    cerrarExtensionFecha();
   } catch (
     error
   ) {
@@ -2305,6 +3131,9 @@ async function limpiarFiltros() {
     "";
 
   debouncedSearch.value =
+    "";
+
+  filtroSede.value =
     "";
 
   filtroAnio.value =
@@ -2483,6 +3312,25 @@ watch(
 
 
 watch(
+  filtroSede,
+  async () => {
+    if (
+      suspendFilterWatchers
+    ) {
+      return;
+    }
+
+    paginaActual.value =
+      1;
+
+    await recargarAniosYProyectosPorFiltros({
+      silent: true,
+    });
+  }
+);
+
+
+watch(
   filtroEstado,
   async () => {
     if (
@@ -2516,6 +3364,7 @@ watch(
     await cargarProyectos({
       silent: true,
     });
+
   }
 );
 
@@ -2537,6 +3386,8 @@ onMounted(
     );
 
     await limpiarQueryLegacy();
+
+    await cargarSedesDisponibles();
 
     await recargarAniosYProyectosPorFiltros({
       silent: true,
@@ -2604,6 +3455,9 @@ onBeforeUnmount(
 
     abortController?.abort?.();
     yearsAbortController?.abort?.();
+    sitesAbortController?.abort?.();
+    comparisonAbortController?.abort?.();
+    productionAbortController?.abort?.();
 
     document.removeEventListener(
       "click",
@@ -2619,3 +3473,4 @@ onBeforeUnmount(
 </script>
 
 <style src="./proyectos-listado.css" lang="css"></style>
+<style src="./proyectos-listado-stage5.css" lang="css"></style>

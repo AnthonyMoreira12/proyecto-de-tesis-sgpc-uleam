@@ -1,0 +1,2431 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap");
+
+/* ============================================================
+   SGPC ULEAM — SISTEMA GLOBAL DE INTERFAZ
+============================================================ */
+
+/* ============================================================
+   1. TOKENS ESTRUCTURALES
+============================================================ */
+
+:root {
+  color-scheme: light;
+
+  --sgpc-nav-offset: 78px;
+  --container-max: 1320px;
+
+  --layout-gap: 24px;
+  --layout-gap-sm: 16px;
+
+  --font-ui:
+    "Geist",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+  --font-serif:
+    Georgia,
+    "Times New Roman",
+    Times,
+    serif;
+
+  --font-body: var(--font-ui);
+  --font-heading: var(--font-ui);
+  --font-control: var(--font-ui);
+  --font-label: var(--font-ui);
+  --font-nav: var(--font-ui);
+  --font-document: var(--font-serif);
+
+  --font-base: 16px;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  --radius-pill: 999px;
+
+  --card-radius: var(--radius-xl);
+  --panel-radius: var(--radius-lg);
+  --input-radius: var(--radius-md);
+
+  --control-height-sm: 36px;
+  --control-height-md: 42px;
+  --control-height-lg: 48px;
+
+  --t-fast: 150ms ease;
+  --t-med: 220ms ease;
+  --t-slow: 300ms ease;
+
+  --animate-speed: 1;
+
+  --z-base: 1;
+  --z-navbar: 40;
+  --z-dropdown: 60;
+  --z-overlay: 80;
+  --z-modal: 100;
+  --z-toast: 120;
+
+  /* Capas semánticas reutilizables.
+     Administración y avisos deben consumir estos tokens en vez
+     de inventar z-index locales. */
+  --z-admin-overlay: var(--z-overlay);
+  --z-admin-modal: var(--z-modal);
+  --z-notice: var(--z-toast);
+
+  /* Contraste sobre acciones primarias y comportamiento de overlays. */
+  --text-on-primary: var(--button-text, var(--accent-contrast, #ffffff));
+  --overlay-blur: 0px;
+  --shadow-modal: var(--shadow-strong);
+
+  /*
+   * Las duraciones finales consumen los valores "-base"
+   * escritos por transicionesRuta.js mediante themeStore.
+   *
+   * De esta forma, el preset seleccionado sí controla la
+   * transición real y --animate-speed puede neutralizarla.
+   */
+  --page-shell-enter-duration:
+    calc(
+      var(
+        --page-shell-enter-duration-base,
+        220ms
+      ) *
+      var(--animate-speed)
+    );
+
+  /*
+   * La salida queda en 0 ms por defecto para impedir que la
+   * ruta anterior desaparezca con una segunda animación.
+   */
+  --page-shell-leave-duration:
+    calc(
+      var(
+        --page-shell-leave-duration-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-shell-enter-ease:
+    cubic-bezier(
+      0.22,
+      1,
+      0.36,
+      1
+    );
+
+  --page-shell-leave-ease:
+    linear;
+
+  --page-shell-enter-x: 0px;
+  --page-shell-enter-y: 0px;
+
+  --page-shell-leave-x: 0px;
+  --page-shell-leave-y: 0px;
+
+  --page-shell-enter-scale: 0.998;
+  --page-shell-leave-scale: 1;
+
+  /*
+   * Los bloques internos conservan sus tokens por
+   * compatibilidad, pero la animación escalonada queda
+   * desactivada. Solo se anima el contenedor de la ruta.
+   */
+  --page-stage-duration:
+    calc(
+      var(
+        --page-stage-duration-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-stage-x: 0px;
+  --page-stage-y: 0px;
+  --page-stage-scale: 1;
+
+  --page-delay-1:
+    calc(
+      var(
+        --page-delay-1-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-delay-2:
+    calc(
+      var(
+        --page-delay-2-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-delay-3:
+    calc(
+      var(
+        --page-delay-3-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-delay-4:
+    calc(
+      var(
+        --page-delay-4-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-delay-5:
+    calc(
+      var(
+        --page-delay-5-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+
+  --page-delay-6:
+    calc(
+      var(
+        --page-delay-6-base,
+        0ms
+      ) *
+      var(--animate-speed)
+    );
+}
+
+/* ============================================================
+   2. TEMA CLARO
+============================================================ */
+
+:root {
+  --color-primary-default: #1d4ed8;
+
+  --color-primary:
+    var(
+      --accent-user,
+      var(--color-primary-default)
+    );
+
+  --color-primary-effective:
+    var(--color-primary);
+
+  --accent-contrast: #ffffff;
+
+  --bg-main: #f4f6f8;
+  --bg-card: #ffffff;
+  --bg-navbar: #ffffff;
+  --bg-input: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #eef2f6;
+
+  --overlay:
+    rgba(
+      15,
+      23,
+      42,
+      0.55
+    );
+
+  --text-primary: #111827;
+  --text-secondary: #5f6b7a;
+  --text-inverse: #ffffff;
+  --text-disabled: #9aa3af;
+
+  --border-color: #d9e0e8;
+  --border-strong: #bdc8d5;
+  --line-soft: #e8edf2;
+
+  --shadow-soft:
+    0 6px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.06
+    );
+
+  --shadow-strong:
+    0 18px 40px
+    rgba(
+      15,
+      23,
+      42,
+      0.12
+    );
+
+  --shadow-hover:
+    0 10px 24px
+    rgba(
+      15,
+      23,
+      42,
+      0.09
+    );
+
+  --hover: #f1f5f9;
+  --active: #e7eef8;
+
+  --focus-outline: #1d4ed8;
+
+  --focus-ring:
+    rgba(
+      29,
+      78,
+      216,
+      0.18
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --success: #16794d;
+  --warning: #9a5d00;
+  --danger: #b42318;
+  --info: #1d4ed8;
+
+  /* Texto legible sobre botones semánticos rellenos. */
+  --success-contrast: #ffffff;
+  --warning-contrast: #ffffff;
+  --danger-contrast: #ffffff;
+  --info-contrast: #ffffff;
+
+  --success-soft: #e9f7ef;
+  --warning-soft: #fff4dd;
+  --danger-soft: #fdeceb;
+  --info-soft: #eaf1ff;
+
+  --success-line: #a9d9bf;
+  --warning-line: #e7c784;
+  --danger-line: #efb2ad;
+  --info-line: #a9c2f5;
+
+  --link: #1d4ed8;
+  --link-hover: #173ea7;
+
+  --button-bg: #1d4ed8;
+  --button-text: #ffffff;
+  --button-border: #1d4ed8;
+  --button-hover-bg: #173ea7;
+
+  --button-secondary-bg: #ffffff;
+  --button-secondary-text: #111827;
+  --button-secondary-border: #cbd5e1;
+  --button-secondary-hover-bg: #f1f5f9;
+
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --surface-4: #e9eef4;
+
+  --primary-soft: #eaf1ff;
+  --primary-soft-strong: #c8d8fb;
+  --primary-ink-soft: #173ea7;
+
+  --footer-bg: #12233d;
+  --footer-text: #ffffff;
+  --footer-muted: #c5d0df;
+
+  --card-hover-bg: #ffffff;
+
+  --selection-bg: #cddcff;
+  --selection-text: #111827;
+
+  --background: var(--bg-main);
+  --surface: var(--bg-card);
+  --surface-card: var(--bg-card);
+  --surface-panel: var(--bg-elevated);
+  --panel-bg: var(--bg-card);
+  --sidebar-bg: var(--bg-navbar);
+  --topbar-bg: var(--bg-navbar);
+  --input-bg: var(--bg-input);
+  --text-color: var(--text-primary);
+  --muted-color: var(--text-secondary);
+  --border: var(--border-color);
+  --primary: var(--color-primary);
+
+  --pub-aai: #315fc9;
+  --pub-ar: #3f7a52;
+  --pub-pon: #7652b5;
+  --pub-cap: #b05d32;
+  --pub-lib: #23736d;
+  --pub-otro: #64748b;
+}
+
+/* ============================================================
+   3. BASE OSCURA
+============================================================ */
+
+:root.dark,
+html.dark,
+body.dark {
+  color-scheme: dark;
+
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8b8;
+  --text-inverse: #000000;
+  --text-disabled: #737373;
+
+  --success: #4fc98a;
+  --warning: #f0b85b;
+  --danger: #ef7f78;
+  --info: var(--color-primary);
+
+  /* Los estados son más luminosos en oscuro; usan tinta oscura
+     para conservar contraste AA en botones compactos. */
+  --success-contrast: #07110c;
+  --warning-contrast: #111111;
+  --danger-contrast: #111111;
+  --info-contrast: var(--accent-contrast, #ffffff);
+
+  --success-soft: #10291d;
+  --warning-soft: #2b210f;
+  --danger-soft: #2d1514;
+  --info-soft: #101d35;
+
+  --success-line: #285c43;
+  --warning-line: #6d5427;
+  --danger-line: #6b3532;
+  --info-line: #2c4d86;
+
+  --link:
+    var(--color-primary);
+
+  --link-hover:
+    var(--color-primary);
+
+  --button-bg:
+    var(--color-primary);
+
+  --button-text:
+    var(--accent-contrast);
+
+  --button-border:
+    var(--color-primary);
+
+  --button-hover-bg:
+    var(--color-primary);
+
+  --button-secondary-bg:
+    var(--bg-input);
+
+  --button-secondary-text:
+    var(--text-primary);
+
+  --button-secondary-border:
+    var(--border-color);
+
+  --button-secondary-hover-bg:
+    var(--bg-elevated);
+
+  --selection-bg:
+    var(--active);
+
+  --selection-text:
+    var(--text-primary);
+
+  --background: var(--bg-main);
+  --surface: var(--bg-card);
+  --surface-card: var(--bg-card);
+  --surface-panel: var(--bg-elevated);
+  --panel-bg: var(--bg-card);
+  --sidebar-bg: var(--bg-navbar);
+  --topbar-bg: var(--bg-navbar);
+  --input-bg: var(--bg-input);
+  --text-color: var(--text-primary);
+  --muted-color: var(--text-secondary);
+  --border: var(--border-color);
+  --primary: var(--color-primary);
+
+  --pub-aai: #8fb0ff;
+  --pub-ar: #8bc39b;
+  --pub-pon: #c1a3ef;
+  --pub-cap: #e5a073;
+  --pub-lib: #79c8c0;
+  --pub-otro: #b8c1cf;
+}
+
+/* ============================================================
+   4. NEGRO Y BLANCO
+============================================================ */
+
+:root.dark.dark-black-white,
+html.dark.dark-black-white,
+body.dark.dark-black-white {
+  --color-primary-default: #ffffff;
+
+  --color-primary:
+    var(
+      --accent-user,
+      #ffffff
+    );
+
+  --accent-contrast: #000000;
+
+  --bg-main: #000000;
+  --bg-card: #0b0b0b;
+  --bg-navbar: #000000;
+  --bg-input: #161616;
+  --bg-elevated: #111111;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #151515;
+
+  --overlay:
+    rgba(
+      0,
+      0,
+      0,
+      0.82
+    );
+
+  --border-color: #292929;
+  --border-strong: #444444;
+  --line-soft: #1d1d1d;
+
+  --shadow-soft: none;
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.8
+    );
+
+  --shadow-hover: none;
+
+  --hover: #151515;
+  --active: #242424;
+
+  --focus-outline: #ffffff;
+
+  --focus-ring:
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #050505;
+  --surface-3: #0b0b0b;
+  --surface-4: #111111;
+
+  --primary-soft: #181818;
+  --primary-soft-strong: #2d2d2d;
+  --primary-ink-soft: #ffffff;
+
+  --footer-bg: #000000;
+  --footer-text: #ffffff;
+  --footer-muted: #b8b8b8;
+
+  --card-hover-bg: #111111;
+}
+
+/* ============================================================
+   5. GRIS OSCURO
+============================================================ */
+
+:root.dark.dark-dark-gray,
+html.dark.dark-dark-gray,
+body.dark.dark-dark-gray {
+  --color-primary-default: #ffffff;
+
+  --color-primary:
+    var(
+      --accent-user,
+      #ffffff
+    );
+
+  --accent-contrast: #111111;
+
+  --bg-main: #121212;
+  --bg-card: #1b1b1b;
+  --bg-navbar: #171717;
+  --bg-input: #242424;
+  --bg-elevated: #202020;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #252525;
+
+  --overlay:
+    rgba(
+      0,
+      0,
+      0,
+      0.76
+    );
+
+  --border-color: #373737;
+  --border-strong: #505050;
+  --line-soft: #2a2a2a;
+
+  --shadow-soft: none;
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.62
+    );
+
+  --shadow-hover: none;
+
+  --hover: #292929;
+  --active: #343434;
+
+  --focus-outline: #ffffff;
+
+  --focus-ring:
+    rgba(
+      255,
+      255,
+      255,
+      0.18
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #171717;
+  --surface-3: #1d1d1d;
+  --surface-4: #242424;
+
+  --primary-soft: #292929;
+  --primary-soft-strong: #3b3b3b;
+  --primary-ink-soft: #ffffff;
+
+  --footer-bg: #0d0d0d;
+  --footer-text: #ffffff;
+  --footer-muted: #bdbdbd;
+
+  --card-hover-bg: #202020;
+}
+
+/* ============================================================
+   6. AZUL ELÉCTRICO
+============================================================ */
+
+:root.dark.dark-electric-blue,
+html.dark.dark-electric-blue,
+body.dark.dark-electric-blue {
+  --color-primary-default: #0066ff;
+
+  --color-primary:
+    var(
+      --accent-user,
+      #0066ff
+    );
+
+  --accent-contrast: #ffffff;
+
+  --bg-main: #000000;
+  --bg-card: #0d0d0d;
+  --bg-navbar: #000000;
+  --bg-input: #171717;
+  --bg-elevated: #121212;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #151515;
+
+  --overlay:
+    rgba(
+      0,
+      0,
+      0,
+      0.82
+    );
+
+  --border-color: #2d2d2d;
+  --border-strong: #484848;
+  --line-soft: #1d1d1d;
+
+  --shadow-soft: none;
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.8
+    );
+
+  --shadow-hover: none;
+
+  --hover: #101722;
+  --active: #112440;
+
+  --focus-outline: #0066ff;
+
+  --focus-ring:
+    rgba(
+      0,
+      102,
+      255,
+      0.25
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #05080d;
+  --surface-3: #0b1018;
+  --surface-4: #101722;
+
+  --primary-soft: #07162e;
+  --primary-soft-strong: #0f326b;
+  --primary-ink-soft: #79adff;
+
+  --footer-bg: #000000;
+  --footer-text: #ffffff;
+  --footer-muted: #b8b8b8;
+
+  --card-hover-bg: #121212;
+}
+
+/* ============================================================
+   7. AZUL INSTITUCIONAL
+============================================================ */
+
+:root.dark.dark-institutional-blue,
+html.dark.dark-institutional-blue,
+body.dark.dark-institutional-blue {
+  --color-primary-default: #1683ff;
+
+  --color-primary:
+    var(
+      --accent-user,
+      #1683ff
+    );
+
+  --accent-contrast: #ffffff;
+
+  --bg-main: #07111f;
+  --bg-card: #0d1a2b;
+  --bg-navbar: #091525;
+  --bg-input: #132238;
+  --bg-elevated: #102038;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #102038;
+
+  --overlay:
+    rgba(
+      0,
+      5,
+      14,
+      0.82
+    );
+
+  --border-color: #29405f;
+  --border-strong: #3c5d87;
+  --line-soft: #1a2d48;
+
+  --shadow-soft: none;
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      5,
+      14,
+      0.66
+    );
+
+  --shadow-hover: none;
+
+  --hover: #10233c;
+  --active: #153052;
+
+  --focus-outline: #1683ff;
+
+  --focus-ring:
+    rgba(
+      22,
+      131,
+      255,
+      0.26
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #091525;
+  --surface-3: #0d1c30;
+  --surface-4: #132238;
+
+  --primary-soft: #102b4c;
+  --primary-soft-strong: #17477d;
+  --primary-ink-soft: #83bdff;
+
+  --footer-bg: #030a13;
+  --footer-text: #ffffff;
+  --footer-muted: #b9c5d6;
+
+  --card-hover-bg: #102038;
+}
+
+/* ============================================================
+   8. NEGRO Y ROJO OSCURO
+============================================================ */
+
+:root.dark.dark-crimson-black,
+html.dark.dark-crimson-black,
+body.dark.dark-crimson-black {
+  --color-primary-default: #7a0b14;
+
+  --color-primary:
+    var(
+      --accent-user,
+      #7a0b14
+    );
+
+  --color-primary-effective:
+    var(--color-primary);
+
+  --accent-contrast: #ffffff;
+
+  /* Negro absoluto */
+  --bg-main: #000000;
+  --bg-card: #080808;
+  --bg-navbar: #000000;
+  --bg-input: #111111;
+  --bg-elevated: #0d0d0d;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #151515;
+
+  --overlay:
+    rgba(
+      0,
+      0,
+      0,
+      0.86
+    );
+
+  --text-primary: #ffffff;
+  --text-secondary: #c8c8c8;
+  --text-inverse: #ffffff;
+  --text-disabled: #777777;
+
+  --border-color: #4d080d;
+  --border-strong: #7a0b14;
+  --line-soft: #260407;
+
+  --shadow-soft: none;
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.84
+    );
+
+  --shadow-hover: none;
+
+  --hover: #160204;
+
+  /* Rojo intenso */
+  --active: #7a0b14;
+
+  --focus-outline: #e53935;
+
+  --focus-ring:
+    rgba(
+      122,
+      11,
+      20,
+      0.40
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #050505;
+  --surface-3: #0b0b0b;
+  --surface-4: #111111;
+
+  --primary-soft: #1d0306;
+  --primary-soft-strong: #4d080d;
+  --primary-ink-soft: #ef4444;
+
+  --footer-bg: #000000;
+  --footer-text: #ffffff;
+  --footer-muted: #c8c8c8;
+
+  --card-hover-bg: #101010;
+
+  --selection-bg: #7a0b14;
+  --selection-text: #ffffff;
+
+  --danger: #d32f2f;
+  --info: #7a0b14;
+  --danger-contrast: #ffffff;
+  --info-contrast: #ffffff;
+
+  --danger-soft: #1d0306;
+  --info-soft: #160204;
+
+  --danger-line: #7a0b14;
+  --info-line: #7a0b14;
+
+  --link: #d32f2f;
+  --link-hover: #ef4444;
+
+  --button-bg: #7a0b14;
+  --button-text: #ffffff;
+  --button-border: #7a0b14;
+  --button-hover-bg: #94111c;
+
+  --button-secondary-bg: #111111;
+  --button-secondary-text: #ffffff;
+  --button-secondary-border: #4d080d;
+  --button-secondary-hover-bg: #160204;
+
+  --pub-aai: #7a0b14;
+  --pub-ar: #7fb58d;
+  --pub-pon: #c19ef0;
+  --pub-cap: #ef9e74;
+  --pub-lib: #7ac7c0;
+  --pub-otro: #c8c8c8;
+}
+
+/* ============================================================
+   9. TOKENS DE PUBLICACIONES
+============================================================ */
+
+:root {
+  --pub-aai-soft: #edf2ff;
+  --pub-aai-line: #bfccf3;
+  --pub-aai-ink: #274ca3;
+
+  --pub-ar-soft: #edf6ef;
+  --pub-ar-line: #b8d7c1;
+  --pub-ar-ink: #316140;
+
+  --pub-pon-soft: #f3eefb;
+  --pub-pon-line: #d2c2e8;
+  --pub-pon-ink: #5e4190;
+
+  --pub-cap-soft: #fbf0ea;
+  --pub-cap-line: #e5c5b3;
+  --pub-cap-ink: #8d4828;
+
+  --pub-lib-soft: #eaf6f5;
+  --pub-lib-line: #b4d9d5;
+  --pub-lib-ink: #1f5d58;
+
+  --pub-otro-soft: #f1f5f9;
+  --pub-otro-line: #cbd5e1;
+  --pub-otro-ink: #475569;
+}
+
+:root.dark,
+html.dark,
+body.dark {
+  --pub-aai-soft: #17213b;
+  --pub-aai-line: #354c83;
+  --pub-aai-ink: #b4c8ff;
+
+  --pub-ar-soft: #17271c;
+  --pub-ar-line: #3e6549;
+  --pub-ar-ink: #acd8b6;
+
+  --pub-pon-soft: #271d38;
+  --pub-pon-line: #604882;
+  --pub-pon-ink: #d7c2f5;
+
+  --pub-cap-soft: #302018;
+  --pub-cap-line: #76513b;
+  --pub-cap-ink: #efbd9a;
+
+  --pub-lib-soft: #162a28;
+  --pub-lib-line: #3d6965;
+  --pub-lib-ink: #a8ded9;
+
+  --pub-otro-soft: #242a33;
+  --pub-otro-line: #4a5565;
+  --pub-otro-ink: #d3dae4;
+}
+
+/* ============================================================
+   10. NORMALIZACIÓN
+============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   10.1 CAMBIO INSTANTÁNEO ENTRE TEMAS
+   Solo neutraliza las transiciones durante los dos fotogramas
+   utilizados para sustituir las variables de apariencia.
+   Las animaciones normales del sistema permanecen activas.
+============================================================ */
+
+html.sgpc-theme-switching,
+html.sgpc-theme-switching *,
+html.sgpc-theme-switching *::before,
+html.sgpc-theme-switching *::after {
+  transition: none !important;
+  transition-delay: 0s !important;
+}
+
+html {
+  min-height: 100%;
+
+  background:
+    var(--bg-main);
+
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-body);
+
+  /*
+   * Única fuente de verdad para la escala tipográfica global.
+   * Mantener los tokens estructurales (px) separados de esta
+   * variable evita que una vista tenga que rediseñarse al cambiar
+   * entre 15 / 16 / 18 / 20 px.
+   */
+  font-size:
+    var(--font-base, 16px);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  -webkit-font-smoothing:
+    antialiased;
+
+  -moz-osx-font-smoothing:
+    grayscale;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+
+  background:
+    var(--bg-main);
+
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-body);
+
+  font-size: 1rem;
+  line-height: 1.55;
+
+  transition:
+    background var(--t-slow),
+    color var(--t-slow);
+}
+
+#app {
+  min-height: 100vh;
+
+  background:
+    var(--bg-main);
+
+  color:
+    var(--text-primary);
+}
+
+/* ============================================================
+   SUPERFICIE ESTABLE DEL ROUTER
+============================================================ */
+
+.route-transition-stage,
+.route-transition-shell {
+  background:
+    var(--bg-main);
+
+  color:
+    var(--text-primary);
+}
+
+.route-transition-shell {
+  isolation: isolate;
+}
+
+
+:where(
+  button,
+  input,
+  select,
+  textarea
+) {
+  font: inherit;
+
+  font-family:
+    var(--font-control);
+}
+
+:where(
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea
+) {
+  -webkit-tap-highlight-color:
+    transparent;
+}
+
+:where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6
+) {
+  margin-block:
+    0 0.5em;
+
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-heading);
+
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+:where(p) {
+  margin-block:
+    0 1em;
+
+  color:
+    var(--text-secondary);
+}
+
+:where(
+  small,
+  .muted,
+  .text-muted
+) {
+  color:
+    var(--text-secondary);
+}
+
+:where(label) {
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-label);
+}
+
+:where(a) {
+  color:
+    var(--link);
+
+  text-decoration: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+
+  transition:
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+:where(a:hover) {
+  color:
+    var(--link-hover);
+
+  text-decoration: underline;
+}
+
+:where(
+  img,
+  svg,
+  video,
+  canvas
+) {
+  max-width: 100%;
+}
+
+:where(
+  img,
+  svg
+) {
+  vertical-align: middle;
+}
+
+::selection {
+  background:
+    var(--selection-bg);
+
+  color:
+    var(--selection-text);
+}
+
+:where(:focus-visible) {
+  outline:
+    2px solid
+    var(--focus-outline);
+
+  outline-offset: 2px;
+}
+
+:where(
+  .documento-formal,
+  .reporte-pdf,
+  .contenido-academico,
+  .print-document,
+  .pdf-document
+) {
+  font-family:
+    var(--font-document);
+}
+
+/* ============================================================
+   11. NAVEGACIÓN
+============================================================ */
+
+:where(
+  .navbar,
+  .navbar *
+) {
+  font-family:
+    var(--font-nav);
+}
+
+:where(.navbar) {
+  background:
+    var(--bg-navbar);
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  box-shadow: none;
+
+  transition:
+    background var(--t-med),
+    border-color var(--t-med);
+}
+
+:where(
+  .navbar a,
+  .navbar .nav-link,
+  .navbar .router-link-active,
+  .navbar .router-link-exact-active
+) {
+  color:
+    var(--text-primary);
+}
+
+/* ============================================================
+   12. TARJETAS
+============================================================ */
+
+:where(
+  .card,
+  .config-card,
+  .form-container,
+  .admin-panel-container,
+  .detalle-card,
+  .surface-card,
+  .surface-panel,
+  .surface-elevated
+) {
+  background:
+    var(--bg-card);
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius:
+    var(--card-radius);
+
+  box-shadow:
+    var(--shadow-soft);
+
+  color:
+    var(--text-primary);
+
+  transition:
+    background var(--t-med),
+    border-color var(--t-med),
+    box-shadow var(--t-med),
+    color var(--t-med),
+    transform var(--t-fast);
+}
+
+:where(
+  .card,
+  .config-card,
+  .form-container,
+  .admin-panel-container,
+  .detalle-card,
+  .surface-card,
+  .surface-panel,
+  .surface-elevated
+):hover {
+  background:
+    var(--card-hover-bg);
+
+  border-color:
+    var(--border-strong);
+
+  box-shadow:
+    var(--shadow-hover);
+}
+
+/* ============================================================
+   13. FORMULARIOS
+============================================================ */
+
+:where(
+  input,
+  select,
+  textarea
+) {
+  min-height:
+    var(--control-height-md);
+
+  background:
+    var(--bg-input);
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius:
+    var(--input-radius);
+
+  color:
+    var(--text-primary);
+
+  caret-color:
+    var(--color-primary);
+
+  transition:
+    background var(--t-med),
+    border-color var(--t-med),
+    box-shadow var(--t-med),
+    color var(--t-med);
+}
+
+:where(
+  input,
+  select,
+  textarea
+)::placeholder {
+  color:
+    var(--text-secondary);
+
+  opacity: 0.8;
+}
+
+:where(
+  input,
+  select,
+  textarea
+):hover:not(:disabled) {
+  border-color:
+    var(--border-strong);
+}
+
+:where(
+  input,
+  select,
+  textarea
+):focus {
+  border-color:
+    var(--color-primary);
+
+  box-shadow:
+    var(--ring-primary);
+
+  outline: none;
+}
+
+:where(
+  button,
+  input,
+  select,
+  textarea
+):disabled {
+  cursor:
+    not-allowed;
+
+  color:
+    var(--text-disabled);
+
+  opacity: 0.65;
+}
+
+:where(
+  input[type="checkbox"],
+  input[type="radio"]
+) {
+  min-height: auto;
+
+  accent-color:
+    var(--color-primary);
+}
+
+/* ============================================================
+   14. TABLAS
+============================================================ */
+
+:where(table) {
+  width: 100%;
+
+  background:
+    var(--bg-card);
+
+  border-collapse:
+    collapse;
+
+  color:
+    var(--text-primary);
+}
+
+:where(thead th) {
+  background:
+    var(--surface-2);
+
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-heading);
+
+  font-weight: 600;
+}
+
+:where(
+  tbody tr:nth-child(even)
+) {
+  background:
+    var(--surface-2);
+}
+
+:where(tbody tr:hover) {
+  background:
+    var(--primary-soft);
+}
+
+:where(
+  td,
+  th
+) {
+  border-color:
+    var(--border-color);
+}
+
+/* ============================================================
+   15. BOTONES
+============================================================ */
+
+:where(
+  .btn-primary,
+  .sgpc-btn-primary
+) {
+  min-height:
+    var(--control-height-md);
+
+  background:
+    var(--button-bg);
+
+  border:
+    1px solid
+    var(--button-border);
+
+  border-radius:
+    var(--radius-md);
+
+  color:
+    var(--button-text);
+
+  font-family:
+    var(--font-control);
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast);
+}
+
+:where(
+  .btn-primary,
+  .sgpc-btn-primary
+):hover:not(:disabled) {
+  background:
+    var(--button-hover-bg);
+
+  border-color:
+    var(--button-hover-bg);
+
+  box-shadow:
+    var(--shadow-hover);
+
+  color:
+    var(--button-text);
+
+  transform:
+    translateY(-1px);
+}
+
+:where(
+  .btn-primary,
+  .sgpc-btn-primary
+):active:not(:disabled) {
+  transform:
+    translateY(0);
+}
+
+:where(
+  .btn-secondary,
+  .btn-ghost,
+  .sgpc-btn-secondary,
+  .sgpc-btn-ghost
+) {
+  min-height:
+    var(--control-height-md);
+
+  background:
+    var(--button-secondary-bg);
+
+  border:
+    1px solid
+    var(--button-secondary-border);
+
+  border-radius:
+    var(--radius-md);
+
+  color:
+    var(--button-secondary-text);
+
+  font-family:
+    var(--font-control);
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast);
+}
+
+:where(
+  .btn-secondary,
+  .btn-ghost,
+  .sgpc-btn-secondary,
+  .sgpc-btn-ghost
+):hover:not(:disabled) {
+  background:
+    var(--button-secondary-hover-bg);
+
+  border-color:
+    var(--border-strong);
+}
+
+/* ============================================================
+   16. MODALES
+============================================================ */
+
+:where(.modal-overlay) {
+  background:
+    var(--overlay);
+}
+
+:where(
+  .modal-card,
+  .dropdown-panel,
+  .popover-panel
+) {
+  background:
+    var(--bg-elevated);
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius:
+    var(--panel-radius);
+
+  box-shadow:
+    var(--shadow-strong);
+
+  color:
+    var(--text-primary);
+}
+
+/* ============================================================
+   17. FOOTER
+============================================================ */
+
+:where(
+  .footer,
+  .site-footer,
+  footer.footer,
+  footer.site-footer
+) {
+  background:
+    var(--footer-bg);
+
+  color:
+    var(--footer-text);
+}
+
+:where(
+  .footer,
+  .site-footer,
+  footer.footer,
+  footer.site-footer
+)
+:is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  a,
+  span,
+  label,
+  strong
+) {
+  color:
+    var(--footer-text);
+}
+
+:where(
+  .footer,
+  .site-footer,
+  footer.footer,
+  footer.site-footer
+)
+:is(
+  p,
+  small,
+  .muted,
+  .text-muted
+) {
+  color:
+    var(--footer-muted);
+}
+
+/* ============================================================
+   18. TRANSICIONES DE RUTAS
+   INDICADOR INSTITUCIONAL SIN PARPADEO
+============================================================ */
+
+/*
+ * La página completa no se anima.
+ *
+ * No se aplican transformaciones, opacidad, filtros ni
+ * will-change sobre .route-transition-shell. Esto evita que el
+ * navegador cree y destruya una capa de composición para toda
+ * la interfaz al finalizar la navegación.
+ *
+ * La única señal visual es una línea institucional muy breve
+ * situada en la parte superior de la nueva ruta.
+ */
+
+.page-assembly-enter-active,
+.page-premium-enter-active {
+  position: relative;
+
+  z-index: 2;
+
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  transition: none !important;
+}
+
+.page-assembly-enter-from,
+.page-premium-enter-from,
+.page-assembly-enter-to,
+.page-premium-enter-to {
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+}
+
+/* ============================================================
+   INDICADOR VISUAL DE LA NUEVA RUTA
+============================================================ */
+
+.page-assembly-enter-active::before,
+.page-premium-enter-active::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  z-index: 3;
+
+  height:
+    var(--page-route-indicator-height, 2px);
+
+  pointer-events: none;
+
+  background:
+    var(--color-primary, #1d4ed8);
+
+  transform-origin: left center;
+
+  animation:
+    sgpc-route-indicator
+    var(--page-route-indicator-duration, 220ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+@keyframes sgpc-route-indicator {
+  from {
+    opacity: 0.85;
+    transform: scaleX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+/* ============================================================
+   SALIDA INMEDIATA DE LA RUTA ANTERIOR
+============================================================ */
+
+.page-assembly-leave-active,
+.page-premium-leave-active,
+.page-assembly-leave-from,
+.page-premium-leave-from,
+.page-assembly-leave-to,
+.page-premium-leave-to {
+  z-index: 1;
+
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  pointer-events: none !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ============================================================
+   BLOQUES INTERNOS ESTABLES
+============================================================ */
+
+/*
+ * Las clases page-stage se conservan por compatibilidad con las
+ * vistas existentes, pero no ejecutan animaciones de entrada.
+ * De esta forma no aparece una segunda fase después de montar la
+ * ruta principal.
+ */
+
+.route-transition-shell
+  :is(
+    .page-stage,
+    .page-stagger > *
+  ) {
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  transform: none !important;
+  filter: none !important;
+
+  backface-visibility: visible !important;
+  will-change: auto !important;
+
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0ms !important;
+  animation-delay: 0ms !important;
+
+  transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+}
+
+.page-stage-1,
+.page-stage-2,
+.page-stage-3,
+.page-stage-4,
+.page-stage-5,
+.page-stage-6 {
+  --page-stage-delay: 0ms;
+}
+
+/* ============================================================
+   19. MODAL Y DROPDOWN
+============================================================ */
+
+.modal-fade-enter-active,
+.dropdown-fade-enter-active {
+  transition:
+    opacity
+      calc(
+        170ms *
+        var(--animate-speed)
+      )
+      ease,
+    transform
+      calc(
+        170ms *
+        var(--animate-speed)
+      )
+      ease;
+}
+
+.modal-fade-leave-active,
+.dropdown-fade-leave-active {
+  transition:
+    opacity
+      calc(
+        130ms *
+        var(--animate-speed)
+      )
+      ease,
+    transform
+      calc(
+        130ms *
+        var(--animate-speed)
+      )
+      ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to,
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+
+  transform:
+    translateY(4px);
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave-from,
+.dropdown-fade-enter-to,
+.dropdown-fade-leave-from {
+  opacity: 1;
+
+  transform:
+    translateY(0);
+}
+
+/* ============================================================
+   20. REFUERZO NEGRO Y ROJO OSCURO
+============================================================ */
+
+/* Fondo negro absoluto */
+html.dark.dark-crimson-black,
+html.dark.dark-crimson-black body,
+html.dark.dark-crimson-black #app,
+html.dark.dark-crimson-black .app-main,
+html.dark.dark-crimson-black
+.route-transition-shell,
+html.dark.dark-crimson-black
+.ivbi-page,
+html.dark.dark-crimson-black
+.preferences-page,
+html.dark.dark-crimson-black
+.preferencias-page {
+  background:
+    #000000 !important;
+
+  background-color:
+    #000000 !important;
+
+  background-image:
+    none !important;
+}
+
+/* Sidebar y topbar */
+html.dark.dark-crimson-black
+:is(
+  .navbar,
+  .sidebar,
+  .app-sidebar,
+  .navigation-sidebar,
+  .barra-navegacion,
+  .topbar,
+  .app-topbar,
+  .navbar-top,
+  .sidebar-shell
+) {
+  background:
+    #000000 !important;
+
+  background-color:
+    #000000 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #4d080d !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Tarjetas negras */
+html.dark.dark-crimson-black
+:is(
+  .card,
+  .config-card,
+  .form-container,
+  .admin-panel-container,
+  .detalle-card,
+  .surface-card,
+  .surface-panel,
+  .surface-elevated,
+  .ivbi-header__top,
+  .ivbi-header__navigation,
+  .ivbi-filterbar,
+  .ivbi-kpi-card,
+  .ivbi-card,
+  .ivbi-alert,
+  .ivbi-empty,
+  .ivbi-dashboard-note
+) {
+  background:
+    #080808 !important;
+
+  background-color:
+    #080808 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #4d080d !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Inputs negros */
+html.dark.dark-crimson-black
+:is(
+  input,
+  select,
+  textarea,
+  .dropdown-panel,
+  .popover-panel,
+  .modal-card
+) {
+  background:
+    #111111 !important;
+
+  background-color:
+    #111111 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #4d080d !important;
+
+  color:
+    #ffffff !important;
+}
+
+/* Navegación activa roja */
+html.dark.dark-crimson-black
+:is(
+  .router-link-active,
+  .router-link-exact-active,
+  .nav-link.is-active,
+  .nav-item.is-active,
+  .sidebar-link.is-active,
+  .sidebar-item.is-active,
+  .menu-link.is-active,
+  .menu-item.is-active,
+  .ivbi-segmented__btn.is-active
+) {
+  background:
+    #7a0b14 !important;
+
+  background-color:
+    #7a0b14 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #7a0b14 !important;
+
+  color:
+    #ffffff !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Botones principales rojos */
+html.dark.dark-crimson-black
+:is(
+  .btn-primary,
+  .sgpc-btn-primary,
+  .ivbi-btn--primary,
+  .primary-button,
+  .action-primary
+) {
+  background:
+    #7a0b14 !important;
+
+  background-color:
+    #7a0b14 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #7a0b14 !important;
+
+  color:
+    #ffffff !important;
+
+  box-shadow:
+    none !important;
+}
+
+html.dark.dark-crimson-black
+:is(
+  .btn-primary,
+  .sgpc-btn-primary,
+  .ivbi-btn--primary,
+  .primary-button,
+  .action-primary
+):hover:not(:disabled) {
+  background:
+    #94111c !important;
+
+  background-color:
+    #94111c !important;
+
+  border-color:
+    #94111c !important;
+
+  color:
+    #ffffff !important;
+
+  filter:
+    none !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Etiquetas rojas */
+html.dark.dark-crimson-black
+:is(
+  .ivbi-header__kicker,
+  .ivbi-card__eyebrow,
+  .ivbi-filterbar__eyebrow,
+  .ivbi-field > span,
+  .ivbi-kpi-card__label,
+  .text-brand,
+  .brand-accent,
+  .section-kicker
+) {
+  color:
+    #e53935 !important;
+}
+
+/* Chips y estados */
+html.dark.dark-crimson-black
+:is(
+  .ivbi-insight-pill,
+  .ivbi-filterbar__status,
+  .badge-primary,
+  .status-primary,
+  .chip-primary
+) {
+  background:
+    #1d0306 !important;
+
+  background-color:
+    #1d0306 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #7a0b14 !important;
+
+  color:
+    #d32f2f !important;
+}
+
+/* Barras rojas */
+html.dark.dark-crimson-black
+:is(
+  .ivbi-vbars__bar,
+  .ivbi-rank__bar,
+  .progress-bar,
+  .chart-bar,
+  .bar-fill
+) {
+  background:
+    #7a0b14 !important;
+
+  background-color:
+    #7a0b14 !important;
+
+  background-image:
+    none !important;
+
+  box-shadow:
+    none !important;
+
+  filter:
+    none !important;
+}
+
+/* Pistas negras */
+html.dark.dark-crimson-black
+:is(
+  .ivbi-vbars__track,
+  .ivbi-rank__track,
+  .progress-track
+) {
+  background:
+    #151515 !important;
+
+  background-color:
+    #151515 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #260407 !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Iconos y contenedores rojos */
+html.dark.dark-crimson-black
+:is(
+  .ivbi-header__brandmark,
+  .ivbi-filterbar__icon,
+  .ivbi-info-tip
+) {
+  background:
+    #1d0306 !important;
+
+  background-color:
+    #1d0306 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #7a0b14 !important;
+
+  color:
+    #e53935 !important;
+
+  box-shadow:
+    none !important;
+}
+
+html.dark.dark-crimson-black
+.ivbi-kpi-card::before {
+  background:
+    #1d0306 !important;
+
+  background-color:
+    #1d0306 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #7a0b14 !important;
+
+  box-shadow:
+    none !important;
+}
+
+html.dark.dark-crimson-black
+.ivbi-kpi-card::after {
+  background:
+    #7a0b14 !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Footer negro */
+html.dark.dark-crimson-black
+:is(
+  .footer,
+  .site-footer,
+  footer.footer,
+  footer.site-footer
+) {
+  background:
+    #000000 !important;
+
+  background-color:
+    #000000 !important;
+
+  background-image:
+    none !important;
+
+  border-color:
+    #4d080d !important;
+
+  color:
+    #ffffff !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* ============================================================
+   21. MOVIMIENTO REDUCIDO
+============================================================ */
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation:
+    none !important;
+
+  scroll-behavior:
+    auto !important;
+
+  transition:
+    none !important;
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  *,
+  *::before,
+  *::after {
+    animation:
+      none !important;
+
+    scroll-behavior:
+      auto !important;
+
+    transition:
+      none !important;
+  }
+}
+/* ============================================================
+   21. CAPA GLOBAL DE MODALES DE CONTENIDO
+   Evita recortes por el router, choques con navegación y z-index locales.
+============================================================ */
+
+:root {
+  --z-page-overlay: calc(var(--z-modal) + 10);
+  --z-page-modal: calc(var(--z-modal) + 20);
+  --sgpc-modal-gutter: clamp(12px, 2vw, 24px);
+  --sgpc-modal-width: 760px;
+}
+
+html.sgpc-modal-open,
+html.sgpc-modal-open body,
+body.sgpc-modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.sgpc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-page-overlay);
+
+  display: grid;
+  align-items: start;
+  justify-items: center;
+
+  width: 100vw;
+  min-width: 0;
+  height: 100dvh;
+  min-height: 100vh;
+
+  padding:
+    max(var(--sgpc-modal-gutter), env(safe-area-inset-top))
+    max(var(--sgpc-modal-gutter), env(safe-area-inset-right))
+    max(var(--sgpc-modal-gutter), env(safe-area-inset-bottom))
+    max(var(--sgpc-modal-gutter), env(safe-area-inset-left));
+
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+
+  background: var(--overlay);
+  backdrop-filter: blur(var(--overlay-blur));
+}
+
+.sgpc-modal-card {
+  position: relative;
+  z-index: var(--z-page-modal);
+
+  width: min(var(--sgpc-modal-width), 100%);
+  min-width: 0;
+  max-width: 100%;
+  max-height: calc(100dvh - (var(--sgpc-modal-gutter) * 2));
+
+  margin: auto 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-modal);
+  color: var(--text-primary);
+}
+
+.sgpc-modal-card > header:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-elevated);
+}
+
+.sgpc-modal-card > footer:last-child {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg-elevated);
+}
+
+/* Las páginas nuevas nunca deben ensanchar el viewport del shell global. */
+:where(
+  .admin-updates,
+  .audit-page,
+  .asm-page,
+  .prep-page,
+  .pdfi-page,
+  .pending-page,
+  .record-update-page,
+  .solmod-page
+) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+:where(
+  .admin-updates,
+  .audit-page,
+  .asm-page,
+  .prep-page,
+  .pdfi-page,
+  .pending-page,
+  .record-update-page,
+  .solmod-page
+) *,
+:where(
+  .admin-updates,
+  .audit-page,
+  .asm-page,
+  .prep-page,
+  .pdfi-page,
+  .pending-page,
+  .record-update-page,
+  .solmod-page
+) *::before,
+:where(
+  .admin-updates,
+  .audit-page,
+  .asm-page,
+  .prep-page,
+  .pdfi-page,
+  .pending-page,
+  .record-update-page,
+  .solmod-page
+) *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --sgpc-modal-gutter: 10px;
+  }
+
+  .sgpc-modal-overlay {
+    align-items: stretch;
+  }
+
+  .sgpc-modal-card {
+    width: 100%;
+    margin: 0;
+    max-height: calc(100dvh - 20px);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sgpc-modal-overlay,
+  .sgpc-modal-card {
+    scroll-behavior: auto;
+  }
+}

@@ -1,8 +1,11 @@
 <template>
   <div class="preferences-page">
     <div class="preferences-shell">
+      <!-- =====================================================
+           ENCABEZADO
+      ====================================================== -->
       <header
-        class="preferences-hero"
+        class="preferences-hero page-stage page-stage-1"
         aria-labelledby="preferences-title"
       >
         <div class="preferences-hero__identity">
@@ -22,7 +25,6 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-
               <circle
                 cx="12"
                 cy="12"
@@ -35,20 +37,12 @@
           </span>
 
           <div class="preferences-hero__copy">
-            <span class="preferences-eyebrow">
-              Configuración personal
-            </span>
-
             <h1
               id="preferences-title"
               class="preferences-title"
             >
-              Preferencias de interfaz
+              Preferencias
             </h1>
-
-            <p class="preferences-lead">
-              Ajuste la apariencia, la legibilidad y el movimiento del sistema.
-            </p>
           </div>
         </div>
 
@@ -61,14 +55,18 @@
             class="autosave-status__dot"
             aria-hidden="true"
           ></span>
-
-          <span>Guardado automático</span>
+          <span>Se guarda automáticamente</span>
         </div>
       </header>
 
-      <main class="preferences-layout">
+      <!-- =====================================================
+           CONTENIDO
+      ====================================================== -->
+      <main class="preferences-layout page-stage page-stage-2">
         <div class="preferences-main">
-          <!-- APARIENCIA -->
+          <!-- =================================================
+               APARIENCIA
+          ================================================== -->
           <section
             class="settings-card settings-card--appearance"
             aria-labelledby="appearance-title"
@@ -91,50 +89,17 @@
                       stroke-linecap="round"
                       stroke-linejoin="round"
                     />
-
-                    <circle
-                      cx="7.5"
-                      cy="10"
-                      r="1"
-                      fill="currentColor"
-                    />
-
-                    <circle
-                      cx="10"
-                      cy="6.8"
-                      r="1"
-                      fill="currentColor"
-                    />
-
-                    <circle
-                      cx="14"
-                      cy="6.5"
-                      r="1"
-                      fill="currentColor"
-                    />
-
-                    <circle
-                      cx="17"
-                      cy="9"
-                      r="1"
-                      fill="currentColor"
-                    />
+                    <circle cx="7.5" cy="10" r="1" fill="currentColor" />
+                    <circle cx="10" cy="6.8" r="1" fill="currentColor" />
+                    <circle cx="14" cy="6.5" r="1" fill="currentColor" />
+                    <circle cx="17" cy="9" r="1" fill="currentColor" />
                   </svg>
                 </span>
 
                 <div>
-                  <span class="section-kicker">
-                    Apariencia
-                  </span>
-
                   <h2 id="appearance-title">
-                    Seleccione un tema
+                    Tema
                   </h2>
-
-                  <p>
-                    Cada opción utiliza colores sólidos, sin degradados ni
-                    superficies difuminadas.
-                  </p>
                 </div>
               </div>
 
@@ -227,7 +192,9 @@
             </div>
           </section>
 
-          <!-- LEGIBILIDAD -->
+          <!-- =================================================
+               LEGIBILIDAD
+          ================================================== -->
           <section
             class="settings-card"
             aria-labelledby="readability-title"
@@ -253,17 +220,9 @@
                 </span>
 
                 <div>
-                  <span class="section-kicker">
-                    Legibilidad
-                  </span>
-
                   <h2 id="readability-title">
                     Tamaño del texto
                   </h2>
-
-                  <p>
-                    Cambia el tamaño base de la tipografía en toda la aplicación.
-                  </p>
                 </div>
               </div>
 
@@ -299,13 +258,14 @@
 
                 <span class="font-size-option__copy">
                   <strong>{{ option.label }}</strong>
-                  <span>{{ option.detail }}</span>
                 </span>
               </button>
             </div>
           </section>
 
-          <!-- MOVIMIENTO -->
+          <!-- =================================================
+               MOVIMIENTO
+          ================================================== -->
           <section
             class="settings-card"
             aria-labelledby="motion-title"
@@ -332,18 +292,9 @@
                 </span>
 
                 <div>
-                  <span class="section-kicker">
-                    Movimiento
-                  </span>
-
                   <h2 id="motion-title">
-                    Animaciones de interfaz
+                    Animaciones
                   </h2>
-
-                  <p>
-                    Mantenga transiciones breves o desactívelas para una
-                    navegación inmediata.
-                  </p>
                 </div>
               </div>
 
@@ -366,37 +317,112 @@
               </label>
             </header>
 
-            <div class="motion-state">
-              <span
-                class="motion-state__indicator"
-                :class="{
-                  'is-enabled': uiAnimations,
-                }"
-                aria-hidden="true"
-              ></span>
+            <div class="preference-inline-status">
+              <span>Estado</span>
+              <strong>
+                {{ uiAnimations ? "Activadas" : "Desactivadas" }}
+              </strong>
+            </div>
+          </section>
 
-              <span>
+          <!-- =================================================
+               NOTIFICACIONES
+          ================================================== -->
+          <section
+            class="settings-card notification-settings-card"
+            aria-labelledby="notification-sound-title"
+          >
+            <header class="settings-card__header settings-card__header--compact">
+              <div class="settings-card__heading">
+                <span
+                  class="settings-card__icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    focusable="false"
+                  >
+                    <path
+                      d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-5v-5a7 7 0 0 0-5-6.71V4a2 2 0 1 0-4 0v1.29A7 7 0 0 0 5 12v5l-2 2h18l-2-2Zm-2 0H7v-5a5 5 0 0 1 10 0v5Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </span>
+
+                <div>
+                  <h2 id="notification-sound-title">
+                    Sonido de notificaciones
+                  </h2>
+                </div>
+              </div>
+
+              <label class="switch-control">
+                <span class="sr-only">
+                  Activar sonido de nuevas notificaciones
+                </span>
+
+                <input
+                  v-model="notificationSoundEnabled"
+                  type="checkbox"
+                />
+
+                <span
+                  class="switch-control__track"
+                  aria-hidden="true"
+                >
+                  <span class="switch-control__thumb"></span>
+                </span>
+              </label>
+            </header>
+
+            <div class="notification-sound-state">
+              <div class="preference-inline-status notification-sound-state__status">
+                <span>Estado</span>
                 <strong>
-                  {{
-                    uiAnimations
-                      ? "Animaciones activas"
-                      : "Movimiento reducido"
-                  }}
+                  {{ notificationSoundEnabled ? "Activado" : "Desactivado" }}
                 </strong>
+              </div>
 
-                <small>
-                  {{
-                    uiAnimations
-                      ? "Se aplican transiciones cortas y discretas."
-                      : "Los cambios de pantalla se muestran sin animación."
-                  }}
-                </small>
-              </span>
+              <div class="notification-volume-control">
+                <label for="notification-volume">
+                  <span>Volumen</span>
+                  <strong>{{ notificationSoundVolume }}%</strong>
+                </label>
+
+                <input
+                  id="notification-volume"
+                  v-model.number="notificationSoundVolume"
+                  class="notification-volume-control__range"
+                  type="range"
+                  min="25"
+                  max="100"
+                  step="5"
+                  :disabled="!notificationSoundEnabled"
+                  aria-label="Volumen del sonido de notificaciones"
+                />
+              </div>
+
+              <button
+                class="notification-sound-test"
+                type="button"
+                :disabled="!notificationSoundEnabled"
+                @click="testNotificationSound"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M5 9v6h4l5 4V5L9 9H5Zm11.5 3a4.5 4.5 0 0 0-1.5-3.35v6.7A4.5 4.5 0 0 0 16.5 12Zm0-7.1v2.05a7 7 0 0 1 0 10.1v2.05a9 9 0 0 0 0-14.2Z"
+                  />
+                </svg>
+                Probar sonido
+              </button>
             </div>
           </section>
         </div>
 
-        <!-- VISTA PREVIA -->
+        <!-- ===================================================
+             VISTA PREVIA Y RESUMEN
+        ==================================================== -->
         <aside class="preferences-sidebar">
           <section
             class="preview-card"
@@ -404,22 +430,10 @@
           >
             <header class="preview-card__header">
               <div>
-                <span class="section-kicker">
-                  Vista previa
-                </span>
-
                 <h2 id="preview-title">
-                  Resultado actual
+                  Vista previa
                 </h2>
               </div>
-
-              <span
-                class="preview-live"
-                aria-label="Vista previa actualizada"
-              >
-                <span aria-hidden="true"></span>
-                En vivo
-              </span>
             </header>
 
             <div
@@ -442,17 +456,14 @@
                       <i></i>
                       <b></b>
                     </span>
-
                     <span>
                       <i></i>
                       <b></b>
                     </span>
-
                     <span>
                       <i></i>
                       <b></b>
                     </span>
-
                     <span>
                       <i></i>
                       <b></b>
@@ -463,8 +474,8 @@
                 <div class="preview-dashboard__main">
                   <header class="preview-dashboard__topbar">
                     <div>
-                      <strong>Dashboard</strong>
-                      <span>Panel institucional</span>
+                      <strong>SGPC</strong>
+                      
                     </div>
 
                     <span class="preview-dashboard__avatar"></span>
@@ -473,14 +484,11 @@
                   <div class="preview-dashboard__content">
                     <div class="preview-dashboard__welcome">
                       <div>
-                        <span>Resumen institucional</span>
+                        
                         <strong>Producción científica</strong>
                       </div>
 
-                      <button
-                        type="button"
-                        tabindex="-1"
-                      >
+                      <button type="button">
                         Reporte
                       </button>
                     </div>
@@ -490,12 +498,10 @@
                         <span>Publicaciones</span>
                         <strong>128</strong>
                       </article>
-
                       <article>
                         <span>Autores</span>
                         <strong>64</strong>
                       </article>
-
                       <article>
                         <span>Proyectos</span>
                         <strong>24</strong>
@@ -526,22 +532,27 @@
                 <dt>Tema</dt>
                 <dd>{{ currentAppearance.label }}</dd>
               </div>
-
               <div>
                 <dt>Texto</dt>
                 <dd>{{ currentFont.label }}</dd>
               </div>
-
               <div>
                 <dt>Movimiento</dt>
+                <dd>{{ uiAnimations ? "Activo" : "Reducido" }}</dd>
+              </div>
+              <div>
+                <dt>Notificaciones</dt>
                 <dd>
-                  {{ uiAnimations ? "Activo" : "Reducido" }}
+                  {{
+                    notificationSoundEnabled
+                      ? `Activo · ${notificationSoundVolume}%`
+                      : "Silenciado"
+                  }}
                 </dd>
               </div>
             </dl>
           </section>
 
-          <!-- RESTAURAR -->
           <section
             class="reset-card"
             aria-labelledby="reset-title"
@@ -568,157 +579,51 @@
 
               <div>
                 <h2 id="reset-title">
-                  Restaurar preferencias
+                  Restaurar
                 </h2>
-
-                <p>
-                  Recupera el tema claro, el texto estándar y las animaciones.
-                </p>
               </div>
             </div>
 
             <button
-              ref="resetTrigger"
               class="reset-button"
               type="button"
-              @click="openResetConfirm"
+              @click="resetConfig"
             >
-              Restaurar valores iniciales
+              Restaurar preferencias
             </button>
           </section>
         </aside>
       </main>
     </div>
 
-    <!-- MODAL PERSONALIZADO -->
-    <Teleport to="body">
-      <Transition name="confirm-modal">
-        <div
-          v-if="showResetConfirm"
-          class="confirm-modal-backdrop"
-          role="presentation"
-          @click.self="closeResetConfirm"
-        >
-          <section
-            ref="resetDialog"
-            class="confirm-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reset-dialog-title"
-            aria-describedby="reset-dialog-description"
-            tabindex="-1"
-            @keydown="handleDialogKeydown"
-          >
-            <header class="confirm-dialog__header">
-              <span
-                class="confirm-dialog__icon"
-                aria-hidden="true"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  focusable="false"
-                >
-                  <path
-                    d="M4 4v6h6M4.8 9.4A8 8 0 1 1 6.2 17"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.9"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-
-              <div class="confirm-dialog__heading">
-                <span class="confirm-dialog__eyebrow">
-                  Confirmación
-                </span>
-
-                <h2 id="reset-dialog-title">
-                  Restaurar preferencias
-                </h2>
-              </div>
-
-              <button
-                class="confirm-dialog__close"
-                type="button"
-                aria-label="Cerrar ventana"
-                @click="closeResetConfirm"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  focusable="false"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m7 7 10 10M17 7 7 17"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.9"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-            </header>
-
-            <div class="confirm-dialog__body">
-              <p id="reset-dialog-description">
-                Se aplicará nuevamente la configuración inicial de la interfaz.
-              </p>
-
-              <ul class="confirm-dialog__changes">
-                <li>Tema claro estándar</li>
-                <li>Tamaño de texto estándar</li>
-                <li>Animaciones activadas</li>
-              </ul>
-
-              <p class="confirm-dialog__note">
-                El cambio se aplicará inmediatamente. Después podrá volver a
-                personalizar estas opciones.
-              </p>
-            </div>
-
-            <footer class="confirm-dialog__actions">
-              <button
-                ref="cancelResetButton"
-                class="confirm-dialog__button confirm-dialog__button--secondary"
-                type="button"
-                @click="closeResetConfirm"
-              >
-                Cancelar
-              </button>
-
-              <button
-                class="confirm-dialog__button confirm-dialog__button--danger"
-                type="button"
-                @click="confirmReset"
-              >
-                Restaurar preferencias
-              </button>
-            </footer>
-          </section>
-        </div>
-      </Transition>
-    </Teleport>
+    <NoticeDialog
+      :modelValue="notice"
+      @close="closeNotice"
+    />
   </div>
 </template>
 
 <script setup>
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-} from "vue";
-
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 
 import {
   APPEARANCE_PRESETS,
   useThemeStore,
 } from "../../scripts/stores/themeStore";
+import { useNotificacionesStore } from
+  "../../scripts/stores/notificacionesStore";
+import { useNotice } from "../../scripts/composables/useNotice";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
 
 const themeStore = useThemeStore();
+const notificationsStore = useNotificacionesStore();
+
+const {
+  notice,
+  openNotice,
+  closeNotice,
+} = useNotice();
 
 const {
   darkMode,
@@ -726,12 +631,12 @@ const {
   animations,
 } = storeToRefs(themeStore);
 
-const showResetConfirm = ref(false);
-const resetDialog = ref(null);
-const resetTrigger = ref(null);
-const cancelResetButton = ref(null);
-
-let previousBodyOverflow = "";
+const {
+  soundEnabled,
+  soundVolume,
+} = storeToRefs(
+  notificationsStore
+);
 
 const appearanceOptions = APPEARANCE_PRESETS;
 
@@ -776,28 +681,55 @@ const currentAppearance = computed(() => {
   );
 });
 
-const currentFont = computed(() => {
-  return (
-    fontOptions.find(
-      (option) => option.value === fontSize.value
-    ) || fontOptions[1]
-  );
-});
-
 const uiFontSize = computed({
   get: () => fontSize.value,
-
-  set: (value) => {
-    themeStore.setFontSize(value);
-  },
+  set: (value) => themeStore.setFontSize(value),
 });
 
 const uiAnimations = computed({
   get: () => animations.value,
+  set: (value) => themeStore.setAnimations(value),
+});
 
+const notificationSoundEnabled = computed({
+  get: () => soundEnabled.value,
+  set: (value) =>
+    notificationsStore.setSoundEnabled(value),
+});
+
+const notificationSoundVolume = computed({
+  get: () => Math.max(
+    25,
+    Math.round(
+      Number(soundVolume.value || 0) * 100
+    )
+  ),
   set: (value) => {
-    themeStore.setAnimations(value);
+    const normalized = Math.min(
+      100,
+      Math.max(25, Number(value) || 25)
+    );
+
+    notificationsStore.setSoundVolume(
+      normalized / 100
+    );
   },
+});
+
+const testNotificationSound = async () => {
+  if (!notificationSoundEnabled.value) {
+    return;
+  }
+
+  await notificationsStore.testSound();
+};
+
+const currentFont = computed(() => {
+  return (
+    fontOptions.find(
+      (option) => option.value === uiFontSize.value
+    ) || fontOptions[1]
+  );
 });
 
 const previewStyle = computed(() => {
@@ -829,105 +761,21 @@ const selectAppearance = (value) => {
   themeStore.setAppearance(value);
 };
 
-const lockPageScroll = () => {
-  if (typeof document === "undefined") return;
-
-  previousBodyOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
+const resetConfig = () => {
+  openNotice({
+    title: "Restaurar preferencias",
+    message:
+      "Se restaurarán todas las preferencias a sus valores iniciales.",
+    confirm: true,
+    confirmText: "Restaurar preferencias",
+    cancelText: "Cancelar",
+    onConfirm: () => {
+      themeStore.reset();
+      notificationsStore.resetPreferences();
+    },
+  });
 };
 
-const unlockPageScroll = () => {
-  if (typeof document === "undefined") return;
-
-  document.body.style.overflow = previousBodyOverflow;
-};
-
-const openResetConfirm = async () => {
-  if (showResetConfirm.value) return;
-
-  showResetConfirm.value = true;
-  lockPageScroll();
-
-  await nextTick();
-
-  cancelResetButton.value?.focus();
-};
-
-const closeResetConfirm = async () => {
-  if (!showResetConfirm.value) return;
-
-  showResetConfirm.value = false;
-  unlockPageScroll();
-
-  await nextTick();
-
-  resetTrigger.value?.focus();
-};
-
-const confirmReset = () => {
-  themeStore.reset();
-  closeResetConfirm();
-};
-
-const handleDialogKeydown = (event) => {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    closeResetConfirm();
-    return;
-  }
-
-  if (event.key !== "Tab") return;
-
-  const dialog = resetDialog.value;
-
-  if (!dialog) return;
-
-  const focusableElements = Array.from(
-    dialog.querySelectorAll(
-      [
-        "button:not([disabled])",
-        "[href]",
-        "input:not([disabled])",
-        "select:not([disabled])",
-        "textarea:not([disabled])",
-        '[tabindex]:not([tabindex="-1"])',
-      ].join(",")
-    )
-  );
-
-  if (!focusableElements.length) {
-    event.preventDefault();
-    dialog.focus();
-    return;
-  }
-
-  const firstElement = focusableElements[0];
-  const lastElement =
-    focusableElements[focusableElements.length - 1];
-
-  const activeElement = document.activeElement;
-
-  if (
-    event.shiftKey &&
-    activeElement === firstElement
-  ) {
-    event.preventDefault();
-    lastElement.focus();
-    return;
-  }
-
-  if (
-    !event.shiftKey &&
-    activeElement === lastElement
-  ) {
-    event.preventDefault();
-    firstElement.focus();
-  }
-};
-
-onBeforeUnmount(() => {
-  unlockPageScroll();
-});
 </script>
 
 <style

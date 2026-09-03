@@ -1,9 +1,13 @@
+import hashlib
 import os
+import re
+from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Q
+from django.utils.text import get_valid_filename
 
 
 MAX_PUBLICACION_PDF_BYTES = 5 * 1024 * 1024
@@ -14,6 +18,8 @@ ALLOWED_PDF_CONTENT_TYPES = {
 }
 PDF_SIGNATURE = b"%PDF-"
 PDF_SIGNATURE_SCAN_BYTES = 1024
+PDF_TRAILER = b"%%EOF"
+PDF_TRAILER_SCAN_BYTES = 4096
 
 
 def _norm_text(value):
@@ -96,22 +102,133 @@ def _read_header(
             pass
 
 
+def _read_tail(
+    field_file,
+    max_bytes=4096,
+):
+    file_obj = getattr(
+        field_file,
+        "file",
+        field_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+        or not hasattr(file_obj, "seek")
+    ):
+        return b""
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    try:
+        file_obj.seek(0, os.SEEK_END)
+        total = file_obj.tell()
+        start = max(0, int(total) - int(max_bytes))
+        file_obj.seek(start)
+        content = file_obj.read()
+
+        if isinstance(content, str):
+            content = content.encode(
+                "utf-8",
+                errors="ignore",
+            )
+
+        return bytes(content or b"")
+
+    except (OSError, ValueError, TypeError):
+        return b""
+
+    finally:
+        try:
+            file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _compute_sha256(field_file):
+    file_obj = getattr(
+        field_file,
+        "file",
+        field_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+    ):
+        return None
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    digest = hashlib.sha256()
+
+    try:
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+        while True:
+            chunk = file_obj.read(64 * 1024)
+
+            if not chunk:
+                break
+
+            if isinstance(chunk, str):
+                chunk = chunk.encode(
+                    "utf-8",
+                    errors="ignore",
+                )
+
+            digest.update(bytes(chunk))
+
+        return digest.hexdigest()
+
+    except (OSError, ValueError, TypeError):
+        return None
+
+    finally:
+        try:
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _safe_original_filename(field_file):
+    raw = os.path.basename(
+        str(
+            getattr(field_file, "name", "")
+            or ""
+        )
+    )
+
+    return raw[:255] or None
+
+
 def publicacion_pdf_upload_path(
     instance,
     filename,
 ):
-    filename = filename or "publicacion.pdf"
-    base, extension = os.path.splitext(filename)
-
-    safe_base = (
-        _norm_text(base)
-        or "publicacion"
-    )[:100]
-
-    if extension.lower() not in ALLOWED_PDF_EXTENSIONS:
-        extension = ".pdf"
-    else:
-        extension = extension.lower()
+    # El nombre original se conserva por separado. En almacenamiento
+    # se utiliza un nombre opaco para evitar path traversal, colisiones
+    # y exposición innecesaria del nombre suministrado por el cliente.
+    _ = get_valid_filename(
+        os.path.basename(
+            str(filename or "publicacion.pdf")
+        )
+    )
 
     publication_id = instance.pk or "tmp"
 
@@ -119,8 +236,9 @@ def publicacion_pdf_upload_path(
         "publicaciones",
         "pdf",
         str(publication_id),
-        f"{safe_base}{extension}",
+        f"{uuid4().hex}.pdf",
     )
+
 
 
 class TipoPublicacion(models.Model):
@@ -218,6 +336,39 @@ class TipoPublicacion(models.Model):
 
 
 class Publicacion(models.Model):
+    # =========================================================
+    # ESTADOS DEL CICLO DE GESTIÓN
+    # =========================================================
+
+    ESTADO_BORRADOR = "borrador"
+    ESTADO_EN_REVISION = "en_revision"
+    ESTADO_OBSERVADA = "observada"
+    ESTADO_APROBADA = "aprobada"
+    ESTADO_RECHAZADA = "rechazada"
+
+    ESTADOS = [
+        (
+            ESTADO_BORRADOR,
+            "Borrador",
+        ),
+        (
+            ESTADO_EN_REVISION,
+            "En revisión",
+        ),
+        (
+            ESTADO_OBSERVADA,
+            "Observada",
+        ),
+        (
+            ESTADO_APROBADA,
+            "Aprobada",
+        ),
+        (
+            ESTADO_RECHAZADA,
+            "Rechazada",
+        ),
+    ]
+
     ORIGEN_TIPO = [
         (
             "ninguno",
@@ -302,6 +453,18 @@ class Publicacion(models.Model):
         ),
     )
 
+    # =========================================================
+    # CLASIFICACIÓN INSTITUCIONAL
+    # =========================================================
+
+    sede = models.ForeignKey(
+        "core.Sede",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="publicaciones",
+    )
+
     carrera = models.ForeignKey(
         "core.Carrera",
         on_delete=models.PROTECT,
@@ -340,6 +503,17 @@ class Publicacion(models.Model):
         related_name="publicaciones",
     )
 
+    # =========================================================
+    # ESTADO DE GESTIÓN
+    # =========================================================
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default=ESTADO_BORRADOR,
+        db_index=True,
+    )
+
     origen_tipo = models.CharField(
         max_length=20,
         choices=ORIGEN_TIPO,
@@ -362,6 +536,27 @@ class Publicacion(models.Model):
         max_length=255,
         null=True,
         blank=True,
+    )
+
+    archivo_pdf_nombre_original = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    archivo_pdf_tamano_bytes = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    archivo_pdf_sha256 = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        editable=False,
     )
 
     anio_publicacion = models.PositiveIntegerField(
@@ -389,6 +584,7 @@ class Publicacion(models.Model):
 
     class Meta:
         db_table = "publicaciones"
+
         ordering = [
             "tipo",
             "numero",
@@ -422,11 +618,28 @@ class Publicacion(models.Model):
                     "anio_publicacion",
                 ],
             ),
+
+            # NUEVO:
+            # optimiza reportes/filtros por sede y año.
+            models.Index(
+                fields=[
+                    "sede",
+                    "anio_publicacion",
+                ],
+            ),
+
             models.Index(
                 fields=[
                     "tipo",
                     "anio_publicacion",
                 ],
+            ),
+            models.Index(
+                fields=[
+                    "estado",
+                    "anio_publicacion",
+                ],
+                name="pub_estado_anio_idx",
             ),
             models.Index(
                 fields=[
@@ -476,6 +689,28 @@ class Publicacion(models.Model):
 
         errors = {}
 
+        # =====================================================
+        # ESTADO
+        # =====================================================
+
+        self.estado = (
+            _norm_lower(
+                self.estado
+            )
+            or self.ESTADO_BORRADOR
+        )
+
+        valid_states = {
+            value
+            for value, _label
+            in self.ESTADOS
+        }
+
+        if self.estado not in valid_states:
+            errors["estado"] = (
+                "El estado de la publicación es inválido."
+            )
+
         self.origen_tipo = (
             _norm_lower(
                 self.origen_tipo
@@ -523,13 +758,15 @@ class Publicacion(models.Model):
                     "de la publicación."
                 )
 
-        # Para Ninguno, Maestría y Doctoral no se guarda
-        # contenido adicional en origen_grado.
         if self.origen_tipo not in {
             "tic",
             "otro",
         }:
             self.origen_grado = None
+
+        # =====================================================
+        # CAMPOS OBLIGATORIOS ACTUALES
+        # =====================================================
 
         if not self.tipo_id:
             errors["tipo"] = (
@@ -546,6 +783,101 @@ class Publicacion(models.Model):
                 "La carrera es obligatoria."
             )
 
+        # =====================================================
+        # SEDE
+        # =====================================================
+
+        # Si la publicación la registra un usuario institucional
+        # y el usuario ya tiene una sede, la publicación hereda
+        # automáticamente dicha sede cuando no se indicó otra.
+        if (
+            not self.sede_id
+            and self.usuario_creador_id
+        ):
+            creador_sede_id = getattr(
+                self.usuario_creador,
+                "sede_id",
+                None,
+            )
+
+            if creador_sede_id:
+                self.sede_id = creador_sede_id
+
+        # Los registros históricos pueden conservar sede NULL,
+        # pero toda publicación nueva debe quedar clasificada.
+        if (
+            self._state.adding
+            and not self.sede_id
+        ):
+            errors["sede"] = (
+                "La sede es obligatoria para registrar "
+                "una nueva publicación."
+            )
+
+        if (
+            self.sede_id
+            and not getattr(
+                self.sede,
+                "activa",
+                False,
+            )
+        ):
+            errors["sede"] = (
+                "La sede seleccionada no está activa."
+            )
+
+        # Cuando existen sede y carrera se verifica que la
+        # carrera realmente esté habilitada en esa sede.
+        if (
+            self.sede_id
+            and self.carrera_id
+        ):
+            relacion_activa = (
+                self.carrera
+                .sedes_carrera
+                .filter(
+                    sede_id=self.sede_id,
+                    activa=True,
+                    sede__activa=True,
+                )
+                .exists()
+            )
+
+            if not relacion_activa:
+                errors["carrera"] = (
+                    "La carrera seleccionada no está "
+                    "habilitada en la sede indicada."
+                )
+
+        # Si el usuario institucional tiene una sede asignada,
+        # una publicación normal debe conservar esa sede.
+        # Los registros administrativos pueden manejar casos
+        # excepcionales de manera controlada.
+        if (
+            self.usuario_creador_id
+            and self.sede_id
+            and not self.registrado_por_admin
+        ):
+            creador_sede_id = getattr(
+                self.usuario_creador,
+                "sede_id",
+                None,
+            )
+
+            if (
+                creador_sede_id
+                and creador_sede_id != self.sede_id
+            ):
+                errors["sede"] = (
+                    "La sede de la publicación debe "
+                    "corresponder con la sede asignada "
+                    "al usuario institucional."
+                )
+
+        # =====================================================
+        # NÚMERO
+        # =====================================================
+
         if (
             self.numero is not None
             and self.numero < 1
@@ -554,13 +886,23 @@ class Publicacion(models.Model):
                 "El número debe ser mayor o igual a 1."
             )
 
+        # =====================================================
+        # FECHA DE PUBLICACIÓN
+        # =====================================================
+
         if (
             self.anio_publicacion is None
-            or self.anio_publicacion < 1
+            or self.anio_publicacion < 1900
         ):
             errors["anio_publicacion"] = (
                 "El año de publicación es obligatorio "
-                "y debe ser mayor o igual a 1."
+                "y debe ser mayor o igual a 1900."
+            )
+
+        elif self.anio_publicacion > 2100:
+            errors["anio_publicacion"] = (
+                "El año de publicación no puede ser "
+                "mayor a 2100."
             )
 
         if (
@@ -572,6 +914,16 @@ class Publicacion(models.Model):
                 "entre 1 y 12."
             )
 
+        # =====================================================
+        # ÁREA / SUBÁREA
+        # =====================================================
+
+        if (
+            self.subarea_id
+            and not self.area_id
+        ):
+            self.area = self.subarea.area
+
         if (
             self.area_id
             and self.subarea_id
@@ -581,6 +933,19 @@ class Publicacion(models.Model):
             errors["subarea"] = (
                 "La subárea no pertenece al área "
                 "seleccionada."
+            )
+
+        # =====================================================
+        # PAÍS / CIUDAD
+        # =====================================================
+
+        if (
+            self.ciudad_id
+            and not self.pais_id
+        ):
+            errors["pais"] = (
+                "Debe seleccionar un país cuando "
+                "seleccione una ciudad."
             )
 
         if (
@@ -594,6 +959,10 @@ class Publicacion(models.Model):
                 "seleccionado."
             )
 
+        # =====================================================
+        # PROYECTO / CARRERA
+        # =====================================================
+
         if (
             self.proyecto_id
             and self.carrera_id
@@ -604,6 +973,36 @@ class Publicacion(models.Model):
                 "El proyecto no pertenece a la "
                 "carrera seleccionada."
             )
+
+        # =====================================================
+        # PROYECTO / SEDE
+        # =====================================================
+
+        if (
+            self.proyecto_id
+            and self.sede_id
+        ):
+            proyecto_sede_id = getattr(
+                self.proyecto,
+                "sede_id",
+                None,
+            )
+
+            # Los proyectos históricos todavía pueden tener
+            # sede NULL durante la migración.
+            if (
+                proyecto_sede_id
+                and proyecto_sede_id != self.sede_id
+            ):
+                errors["proyecto"] = (
+                    "El proyecto seleccionado pertenece "
+                    "a una sede diferente de la "
+                    "publicación."
+                )
+
+        # =====================================================
+        # REGISTRO ADMINISTRATIVO
+        # =====================================================
 
         if self.admin_registrador_id:
             self.registrado_por_admin = True
@@ -642,6 +1041,10 @@ class Publicacion(models.Model):
                 "La publicación debe marcarse como "
                 "registrada por administrador."
             )
+
+        # =====================================================
+        # PDF PRINCIPAL
+        # =====================================================
 
         if self.archivo_pdf:
             file_name = _norm_text(
@@ -719,13 +1122,41 @@ class Publicacion(models.Model):
             )
 
             if (
-                header
-                and PDF_SIGNATURE not in header
+                not header
+                or PDF_SIGNATURE not in header
             ):
                 errors["archivo_pdf"] = (
                     "El archivo no contiene una "
                     "firma PDF válida."
                 )
+
+            tail = _read_tail(
+                self.archivo_pdf,
+                max_bytes=PDF_TRAILER_SCAN_BYTES,
+            )
+
+            if (
+                "archivo_pdf" not in errors
+                and (
+                    not tail
+                    or PDF_TRAILER not in tail
+                )
+            ):
+                errors["archivo_pdf"] = (
+                    "El archivo PDF no contiene una estructura "
+                    "completa (marcador %%EOF ausente)."
+                )
+
+        if (
+            self.archivo_pdf_sha256
+            and not re.fullmatch(
+                r"[0-9a-f]{64}",
+                str(self.archivo_pdf_sha256).lower(),
+            )
+        ):
+            errors["archivo_pdf_sha256"] = (
+                "La huella SHA-256 del PDF no es válida."
+            )
 
         if errors:
             raise ValidationError(errors)
@@ -773,6 +1204,56 @@ class Publicacion(models.Model):
             except Publicacion.DoesNotExist:
                 old_pdf = None
 
+        old_name = getattr(
+            old_pdf,
+            "name",
+            None,
+        )
+
+        current_name = getattr(
+            self.archivo_pdf,
+            "name",
+            None,
+        )
+
+        pdf_changed = bool(
+            self.archivo_pdf
+        ) and (
+            not self.pk
+            or current_name != old_name
+            or not self.archivo_pdf_sha256
+        )
+
+        if pdf_changed:
+            self.archivo_pdf_nombre_original = (
+                _safe_original_filename(
+                    self.archivo_pdf
+                )
+            )
+
+            try:
+                self.archivo_pdf_tamano_bytes = int(
+                    getattr(
+                        self.archivo_pdf,
+                        "size",
+                        0,
+                    )
+                    or 0
+                )
+            except (TypeError, ValueError):
+                self.archivo_pdf_tamano_bytes = None
+
+            self.archivo_pdf_sha256 = (
+                _compute_sha256(
+                    self.archivo_pdf
+                )
+            )
+
+        elif not self.archivo_pdf:
+            self.archivo_pdf_nombre_original = None
+            self.archivo_pdf_tamano_bytes = None
+            self.archivo_pdf_sha256 = None
+
         if (
             self.numero is None
             and self.tipo_id
@@ -792,12 +1273,6 @@ class Publicacion(models.Model):
                 *args,
                 **kwargs,
             )
-
-        old_name = getattr(
-            old_pdf,
-            "name",
-            None,
-        )
 
         new_name = getattr(
             self.archivo_pdf,

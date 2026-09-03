@@ -3,9 +3,14 @@ from rest_framework import serializers
 from core.models import (
     Publicacion,
     PublicacionAutor,
+    PublicacionRevision,
 )
 from core.publicaciones.serializers.base.publicaciones_autores_serializers import (
     PublicacionAutorSerializer,
+)
+from core.publicaciones.services.publicaciones_estado_services import (
+    can_enviar_a_revision,
+    can_reenviar_a_revision,
 )
 from core.publicaciones.utils.publicaciones_permissions_utils import (
     can_edit_publicacion,
@@ -185,6 +190,14 @@ class PublicacionDetalleSerializer(
         serializers.SerializerMethodField()
     )
 
+    sede_id = (
+        serializers.SerializerMethodField()
+    )
+
+    sede = (
+        serializers.SerializerMethodField()
+    )
+
     facultad_id = (
         serializers.SerializerMethodField()
     )
@@ -238,6 +251,23 @@ class PublicacionDetalleSerializer(
     )
 
     ciudad = (
+        serializers.SerializerMethodField()
+    )
+
+    # Estado de gestión
+    estado_label = (
+        serializers.SerializerMethodField()
+    )
+
+    ultima_revision = (
+        serializers.SerializerMethodField()
+    )
+
+    puede_enviar_revision = (
+        serializers.SerializerMethodField()
+    )
+
+    puede_reenviar_revision = (
         serializers.SerializerMethodField()
     )
 
@@ -438,6 +468,15 @@ class PublicacionDetalleSerializer(
             "tipo_publicacion_final",
             "tipo_publicacion_final_label",
 
+            "estado",
+            "estado_label",
+            "ultima_revision",
+            "puede_enviar_revision",
+            "puede_reenviar_revision",
+
+            "sede_id",
+            "sede",
+
             "facultad_id",
             "facultad",
 
@@ -472,6 +511,9 @@ class PublicacionDetalleSerializer(
             "archivo_pdf",
             "archivo_pdf_url",
             "pdf_url",
+            "archivo_pdf_nombre_original",
+            "archivo_pdf_tamano_bytes",
+            "archivo_pdf_sha256",
 
             "tiene_pdf",
             "has_pdf",
@@ -862,6 +904,34 @@ class PublicacionDetalleSerializer(
             )
         )
 
+    def get_sede_id(
+        self,
+        obj,
+    ):
+        return self._obj_id(
+            getattr(
+                obj,
+                "sede",
+                None,
+            )
+        )
+
+    def get_sede(
+        self,
+        obj,
+    ):
+        return _to_str(
+            getattr(
+                getattr(
+                    obj,
+                    "sede",
+                    None,
+                ),
+                "nombre",
+                None,
+            )
+        )
+
     def get_facultad_id(
         self,
         obj,
@@ -1076,6 +1146,182 @@ class PublicacionDetalleSerializer(
             )
             or "ninguno"
         )
+
+    # ========================================================
+    # ESTADO
+    # ========================================================
+
+    def get_estado_label(
+        self,
+        obj,
+    ):
+        display = getattr(
+            obj,
+            "get_estado_display",
+            None,
+        )
+
+        if callable(display):
+            try:
+                value = display()
+            except Exception:
+                value = None
+
+            if value:
+                return str(value)
+
+        return str(
+            getattr(
+                obj,
+                "estado",
+                "",
+            )
+            or ""
+        )
+
+    def _get_latest_revision(
+        self,
+        obj,
+    ):
+        prefetched = getattr(
+            obj,
+            "revisiones_ordenadas",
+            None,
+        )
+
+        if prefetched is not None:
+            return (
+                prefetched[0]
+                if prefetched
+                else None
+            )
+
+        try:
+            return (
+                PublicacionRevision.objects
+                .select_related(
+                    "revisor"
+                )
+                .filter(
+                    publicacion=obj
+                )
+                .order_by(
+                    "-created_at",
+                    "-id",
+                )
+                .first()
+            )
+        except Exception:
+            return None
+
+    def get_ultima_revision(
+        self,
+        obj,
+    ):
+        revision = (
+            self._get_latest_revision(
+                obj
+            )
+        )
+
+        if revision is None:
+            return None
+
+        reviewer = getattr(
+            revision,
+            "revisor",
+            None,
+        )
+
+        reviewer_name = ""
+
+        if reviewer is not None:
+            try:
+                reviewer_name = (
+                    reviewer.get_full_name()
+                    or ""
+                ).strip()
+            except Exception:
+                reviewer_name = ""
+
+            if not reviewer_name:
+                reviewer_name = _to_str(
+                    getattr(
+                        reviewer,
+                        "email",
+                        None,
+                    )
+                )
+
+        return {
+            "id": revision.id,
+            "decision": (
+                revision.decision
+            ),
+            "decision_label": (
+                revision.get_decision_display()
+            ),
+            "comentario": (
+                revision.comentario
+            ),
+            "estado_anterior": (
+                revision.estado_anterior
+            ),
+            "estado_resultante": (
+                revision.estado_resultante
+            ),
+            "revisor_id": (
+                revision.revisor_id
+            ),
+            "revisor": (
+                reviewer_name
+                or None
+            ),
+            "created_at": (
+                revision.created_at
+            ),
+        }
+
+    def _request_user(
+        self,
+    ):
+        request = self.context.get(
+            "request"
+        )
+
+        return getattr(
+            request,
+            "user",
+            None,
+        )
+
+    def get_puede_enviar_revision(
+        self,
+        obj,
+    ):
+        try:
+            return bool(
+                can_enviar_a_revision(
+                    self._request_user(),
+                    obj,
+                )
+            )
+        except Exception:
+            return False
+
+    def get_puede_reenviar_revision(
+        self,
+        obj,
+    ):
+        try:
+            return bool(
+                can_reenviar_a_revision(
+                    self._request_user(),
+                    obj,
+                )
+            )
+        except Exception:
+            return False
 
     def get_origen_tipo_label(
         self,

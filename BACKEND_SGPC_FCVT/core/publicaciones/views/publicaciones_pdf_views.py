@@ -16,7 +16,7 @@ from django.http import (
     Http404,
 )
 from rest_framework.permissions import (
-    IsAuthenticated,
+    AllowAny,
 )
 from rest_framework.renderers import (
     BaseRenderer,
@@ -29,6 +29,9 @@ from rest_framework_simplejwt.authentication import (
 from core.models import (
     Publicacion,
     PublicacionArchivo,
+)
+from core.publicaciones.utils.publicaciones_visibilidad_utils import (
+    apply_user_visible_publicaciones_scope,
 )
 
 
@@ -56,42 +59,20 @@ class PDFRenderer(BaseRenderer):
         return data
 
 
-def _user_can_view_publicacion(
-    user,
-    publicacion,
-):
-    """
-    La vista ya está protegida por IsAuthenticated.
-
-    Por tanto, cualquier usuario autenticado puede
-    consultar el PDF de una publicación accesible
-    dentro del sistema.
-
-    La edición/eliminación sigue teniendo controles
-    de permisos independientes.
-    """
-
-    return bool(
-        user
-        and getattr(
-            user,
-            "is_authenticated",
-            False,
-        )
-        and publicacion
-    )
-
-
 def _safe_filename(
-    file_field,
+    value,
 ):
-    name = str(
-        getattr(
-            file_field,
+    if isinstance(value, str):
+        name = value
+    else:
+        name = getattr(
+            value,
             "name",
             "",
         )
-        or ""
+
+    name = str(
+        name or ""
     ).strip()
 
     if not name:
@@ -99,7 +80,13 @@ def _safe_filename(
 
     filename = os.path.basename(
         name
-    )
+    ).replace(
+        "\r",
+        "",
+    ).replace(
+        "\n",
+        "",
+    ).strip()
 
     return (
         filename
@@ -213,6 +200,109 @@ def _get_pdf_file(
     return None
 
 
+def _get_pdf_filename(
+    publicacion,
+    pdf_file,
+):
+    pdf_name = str(
+        getattr(
+            pdf_file,
+            "name",
+            "",
+        )
+        or ""
+    ).strip()
+
+    principal = getattr(
+        publicacion,
+        "archivo_pdf",
+        None,
+    )
+
+    principal_name = str(
+        getattr(
+            principal,
+            "name",
+            "",
+        )
+        or ""
+    ).strip()
+
+    if (
+        pdf_name
+        and principal_name
+        and pdf_name == principal_name
+    ):
+        return _safe_filename(
+            getattr(
+                publicacion,
+                "archivo_pdf_nombre_original",
+                None,
+            )
+            or pdf_file
+        )
+
+    prefetched = getattr(
+        publicacion,
+        "_prefetched_objects_cache",
+        {},
+    )
+
+    if "archivos" in prefetched:
+        adjuntos = prefetched["archivos"]
+    else:
+        adjuntos = (
+            PublicacionArchivo.objects
+            .filter(
+                publicacion=publicacion
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
+        )
+
+    for adjunto in adjuntos:
+        archivo = getattr(
+            adjunto,
+            "archivo",
+            None,
+        )
+
+        archivo_name = str(
+            getattr(
+                archivo,
+                "name",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if (
+            not pdf_name
+            or archivo_name != pdf_name
+        ):
+            continue
+
+        return _safe_filename(
+            getattr(
+                adjunto,
+                "nombre_original",
+                None,
+            )
+            or getattr(
+                adjunto,
+                "nombre",
+                None,
+            )
+            or pdf_file
+        )
+
+    return _safe_filename(
+        pdf_file
+    )
+
+
 class PublicacionPdfInlineAPIView(
     APIView
 ):
@@ -221,7 +311,7 @@ class PublicacionPdfInlineAPIView(
     ]
 
     permission_classes = [
-        IsAuthenticated
+        AllowAny
     ]
 
     renderer_classes = [
@@ -231,9 +321,11 @@ class PublicacionPdfInlineAPIView(
     def _get_publicacion(
         self,
         publicacion_id,
+        *,
+        user,
     ):
         try:
-            return (
+            queryset = (
                 Publicacion.objects
                 .select_related(
                     "tipo",
@@ -244,9 +336,17 @@ class PublicacionPdfInlineAPIView(
                 .prefetch_related(
                     "archivos"
                 )
-                .get(
-                    pk=publicacion_id
+            )
+
+            queryset = (
+                apply_user_visible_publicaciones_scope(
+                    queryset,
+                    user=user,
                 )
+            )
+
+            return queryset.get(
+                pk=publicacion_id
             )
 
         except Publicacion.DoesNotExist:
@@ -261,17 +361,10 @@ class PublicacionPdfInlineAPIView(
     ):
         publicacion = (
             self._get_publicacion(
-                id
+                id,
+                user=request.user,
             )
         )
-
-        if not _user_can_view_publicacion(
-            request.user,
-            publicacion,
-        ):
-            raise Http404(
-                "Archivo no encontrado."
-            )
 
         pdf_file = _get_pdf_file(
             publicacion
@@ -283,8 +376,9 @@ class PublicacionPdfInlineAPIView(
                 "un PDF asociado."
             )
 
-        filename = _safe_filename(
-            pdf_file
+        filename = _get_pdf_filename(
+            publicacion,
+            pdf_file,
         )
 
         try:
@@ -314,12 +408,6 @@ class PublicacionPdfInlineAPIView(
         response[
             "Content-Type"
         ] = "application/pdf"
-
-        response[
-            "Content-Disposition"
-        ] = (
-            f'inline; filename="{filename}"'
-        )
 
         response[
             "X-Content-Type-Options"

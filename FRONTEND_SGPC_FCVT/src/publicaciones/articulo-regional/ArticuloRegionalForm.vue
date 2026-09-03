@@ -9,27 +9,6 @@
         class="sgpc-form-header sgpc-publication-header page-stage page-header"
       >
         <div class="sgpc-form-heading">
-          <div class="sgpc-publication-header__topline">
-            <p class="sgpc-form-kicker">
-              {{ pageKicker }}
-            </p>
-
-            <div
-              class="sgpc-publication-header__chips"
-              aria-label="Clasificación del formulario"
-            >
-              <span class="sgpc-publication-chip">
-                Publicación científica
-              </span>
-
-              <span
-                class="sgpc-publication-chip sgpc-publication-chip--accent"
-              >
-                Regional
-              </span>
-            </div>
-          </div>
-
           <h1 class="sgpc-form-title">
             {{ pageTitle }}
           </h1>
@@ -46,27 +25,6 @@
           >
             {{ draftInfo }}
           </p>
-        </div>
-
-        <div
-          class="sgpc-publication-header__mark"
-          aria-hidden="true"
-        >
-          <div class="sgpc-publication-header__mark-icon">
-            <svg
-              viewBox="0 0 24 24"
-              width="30"
-              height="30"
-            >
-              <path
-                fill="currentColor"
-                d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h6v2H8v-2Zm0 4h4v2H8v-2Z"
-              />
-            </svg>
-          </div>
-
-          <span>AR</span>
-          <small>Artículo regional</small>
         </div>
       </header>
 
@@ -91,18 +49,6 @@
             class="sgpc-card sgpc-card--admin-context"
             data-section="ADMIN"
           >
-            <div class="sgpc-card-head">
-              <div>
-                <h2 class="sgpc-card-title">
-                  Contexto del registro
-                </h2>
-
-                <p class="sgpc-card-desc">
-                  Este registro se guardará para el usuario seleccionado.
-                </p>
-              </div>
-            </div>
-
             <div class="sgpc-card-body">
               <div
                 id="ar-admin-context-anchor"
@@ -110,34 +56,14 @@
               ></div>
 
               <div class="sgpc-admin-context">
-                <article class="sgpc-admin-context__item">
-                  <span class="sgpc-admin-context__label">
-                    Usuario objetivo
-                  </span>
+                <span class="sgpc-admin-context__label">
+                  Registrando para
+                </span>
 
-                  <strong class="sgpc-admin-context__value">
-                    {{ adminDisplayUsuario }}
-                  </strong>
-                </article>
-
-                <article
-                  v-if="showAutorObjetivo"
-                  class="sgpc-admin-context__item"
-                >
-                  <span class="sgpc-admin-context__label">
-                    Autor objetivo
-                  </span>
-
-                  <strong class="sgpc-admin-context__value">
-                    {{ adminDisplayAutor }}
-                  </strong>
-                </article>
+                <strong class="sgpc-admin-context__value">
+                  {{ adminDisplayUsuario }}
+                </strong>
               </div>
-
-              <p class="sgpc-hint">
-                El autor objetivo se agregará automáticamente a la autoría del
-                registro.
-              </p>
 
               <p
                 v-if="fieldErrors.admin_context"
@@ -162,11 +88,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Datos generales
+                  Información académica
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Información institucional para la clasificación del registro.
+                  Indique dónde se desarrolló o a qué área corresponde la publicación.
                 </p>
               </div>
 
@@ -203,12 +129,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Origen de la publicación
+                  Origen académico
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Indique si el artículo proviene de un trabajo académico o si
-                  no aplica.
+                  Indique si el artículo se originó a partir de otro trabajo académico.
                 </p>
               </div>
 
@@ -222,12 +147,12 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
-                <div class="sgpc-field sgpc-col-span-6">
+                <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="ar-origen_tipo"
                   >
-                    Origen
+                    ¿Esta publicación se originó a partir de otro trabajo académico?
                     <span
                       class="req"
                       aria-hidden="true"
@@ -256,7 +181,7 @@
                     </option>
 
                     <option value="ninguno">
-                      Ninguno
+                      No
                     </option>
 
                     <option value="tic">
@@ -286,7 +211,10 @@
                   </p>
                 </div>
 
-                <div class="sgpc-field sgpc-col-span-6">
+                <div
+                  v-if="['tic', 'otro'].includes(form.origen_tipo)"
+                  class="sgpc-field sgpc-col-span-12 sgpc-origin-extra"
+                >
                   <label
                     class="sgpc-label"
                     for="ar-origen_grado"
@@ -294,11 +222,10 @@
                     {{
                       form.origen_tipo === "otro"
                         ? "Especifique el origen"
-                        : "Grado / programa"
+                        : "Carrera o programa relacionado"
                     }}
 
                     <span
-                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                       aria-hidden="true"
                     >
@@ -312,8 +239,7 @@
                     class="sgpc-input"
                     type="text"
                     maxlength="120"
-                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
-                    :required="['tic', 'otro'].includes(form.origen_tipo)"
+                    required
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="
                       fieldErrors.origen_grado
@@ -323,17 +249,15 @@
                     :placeholder="
                       form.origen_tipo === 'otro'
                         ? 'Ej. Proyecto de investigación institucional'
-                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                        : 'Ej. Ingeniería en Tecnologías de la Información'
                     "
                   />
 
                   <p class="sgpc-hint">
                     {{
                       form.origen_tipo === "otro"
-                        ? "Escriba el origen específico de la publicación."
-                        : form.origen_tipo === "tic"
-                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
-                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                        ? "Indique de qué trabajo, proyecto o proceso se originó."
+                        : "Indique la carrera o programa relacionado con el trabajo."
                     }}
                   </p>
 
@@ -362,11 +286,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Datos principales
+                  Información del artículo
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Información base del artículo y su indexación regional.
+                  Ingrese el título, la fecha y la base de datos donde está indexado.
                 </p>
               </div>
 
@@ -470,22 +394,6 @@
                   </p>
                 </div>
 
-                <div class="sgpc-field sgpc-col-span-6">
-                  <label
-                    class="sgpc-label"
-                    for="ar-tipo_articulo"
-                  >
-                    Clasificación
-                  </label>
-
-                  <input
-                    id="ar-tipo_articulo"
-                    class="sgpc-input"
-                    type="text"
-                    value="Regional"
-                    disabled
-                  />
-                </div>
 
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
@@ -532,7 +440,7 @@
                     class="sgpc-label"
                     for="ar-base_datos_indexada"
                   >
-                    Base de datos / indexación
+                    Base de datos de indexación
                     <span
                       class="req"
                       aria-hidden="true"
@@ -657,8 +565,7 @@
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Identificación formal, metadatos y enlaces de acceso. Los
-                  indicadores de impacto no aplican a artículos regionales.
+                  Complete los datos de la revista y agregue los enlaces disponibles.
                 </p>
               </div>
 
@@ -672,12 +579,17 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
+                <div class="sgpc-form-subsection sgpc-col-span-12">
+                  <strong>Revista</strong>
+                  <span>Datos principales de la revista donde se publicó el artículo.</span>
+                </div>
+
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="ar-codigo_issn"
                   >
-                    Código ISSN
+                    ISSN
                     <span
                       class="req"
                       aria-hidden="true"
@@ -717,7 +629,7 @@
                     class="sgpc-label"
                     for="ar-codigo_doi"
                   >
-                    Código DOI
+                    DOI
                   </label>
 
                   <input
@@ -820,12 +732,17 @@
                   </p>
                 </div>
 
+                <div class="sgpc-form-subsection sgpc-col-span-12">
+                  <strong>Enlaces</strong>
+                  <span>Agregue los enlaces solo si están disponibles.</span>
+                </div>
+
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="ar-link_revista"
                   >
-                    Link de la revista
+                    Enlace de la revista
                   </label>
 
                   <input
@@ -859,7 +776,7 @@
                     class="sgpc-label"
                     for="ar-link_publicacion"
                   >
-                    Link de la publicación
+                    Enlace de la publicación
                   </label>
 
                   <input
@@ -907,7 +824,7 @@
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Seleccione autores, participación y orden de firma.
+                  Agregue las personas que participaron y colóquelas en el orden en que deben aparecer.
                 </p>
               </div>
 
@@ -944,12 +861,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Adjuntos
+                  Documentos
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Suba evidencias del artículo en PDF y asigne un nombre a cada
-                  archivo cuando sea necesario.
+                  Adjunte el documento del artículo y, si corresponde, archivos adicionales.
                 </p>
               </div>
 
@@ -966,16 +882,57 @@
                 v-model="form.archivos"
                 :error="fieldErrors.archivos"
                 input-id="ar-archivo-input"
-                title="Agregar archivos PDF"
-                description="Puede cargar hasta 2 PDF complementarios."
-                helper-text="Formato permitido: PDF. Máximo 2 archivos y 3 MB por archivo."
+                title=""
+                description=""
+                helper-text=""
                 :multiple="true"
-                :max-files="2"
-                :uses-primary-slot="false"
+                :max-files="3"
+                :uses-primary-slot="true"
+                :primary-max-size-mb="5"
                 :attachment-max-size-mb="3"
               />
             </div>
           </section>
+
+          <!-- =================================================
+               PREVALIDACIÓN
+          ================================================== -->
+
+          <div
+            v-if="prevalidacionBloqueantes.length"
+            class="sgpc-alert is-error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <strong>Corrija antes de continuar</strong>
+            <span>Corrija los siguientes puntos antes de registrar:</span>
+            <ul>
+              <li
+                v-for="(item, index) in prevalidacionBloqueantes"
+                :key="`ar-pre-block-${item.codigo || index}`"
+              >
+                {{ item.mensaje }}
+              </li>
+            </ul>
+          </div>
+
+          <div
+            v-if="prevalidacionAdvertencias.length"
+            class="sgpc-alert is-info"
+            role="status"
+            aria-live="polite"
+          >
+            <strong>Revise antes de registrar</strong>
+            <span>Estas observaciones no impiden el registro, pero conviene verificarlas antes de continuar:</span>
+            <ul>
+              <li
+                v-for="(item, index) in prevalidacionAdvertencias"
+                :key="`ar-pre-warning-${item.codigo || index}`"
+              >
+                {{ item.mensaje }}
+              </li>
+            </ul>
+          </div>
 
           <!-- =================================================
                MENSAJES
@@ -1001,36 +958,16 @@
         </main>
 
         <!-- ===================================================
-             RESUMEN
+             ESTADO DEL REGISTRO
         ==================================================== -->
 
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
             <div class="sgpc-summary-head">
-              <div
-                class="sgpc-summary-icon"
-                aria-hidden="true"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M4 4h16v16H4V4Zm2 2v12h12V6H6Zm2 2h8v2H8V8Zm0 4h5v2H8v-2Z"
-                  />
-                </svg>
-              </div>
-
               <div>
-                <p class="sgpc-summary-kicker">
-                  Seguimiento
-                </p>
-
-                <h3>
-                  Resumen del registro
-                </h3>
+                <h2>
+                  Estado del registro
+                </h2>
               </div>
             </div>
 
@@ -1040,7 +977,7 @@
             >
               <div class="sgpc-progress-row">
                 <span>
-                  Completitud
+                  Progreso
                 </span>
 
                 <strong>
@@ -1051,7 +988,7 @@
               <div
                 class="sgpc-progress-bar"
                 role="progressbar"
-                aria-label="Completitud del formulario"
+                aria-label="Progreso del formulario"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 :aria-valuenow="progressPercent"
@@ -1066,87 +1003,76 @@
               <p class="sgpc-progress-caption">
                 {{ completedRequiredCount }} de
                 {{ totalRequiredCount }}
-                secciones obligatorias completas
+                secciones obligatorias listas
               </p>
-            </div>
-
-            <div class="sgpc-optional-summary">
-              <div class="sgpc-optional-summary__head">
-                <span>Información complementaria</span>
-                <strong>{{ optionalCompletedCount }}/{{ totalOptionalCount }}</strong>
-              </div>
-
-              <p v-if="optionalMissingCount > 0">
-                <strong>{{ optionalMissingCount }}</strong>
-                {{ optionalMissingCount === 1 ? "dato opcional sin completar" : "datos opcionales sin completar" }}.
-                Puede registrar igualmente, pero conviene revisarlos si dispone de esa información.
-              </p>
-
-              <p v-else class="is-complete">
-                Toda la información complementaria aplicable está completa.
-              </p>
-
-              <button
-                v-if="optionalMissingCount > 0"
-                type="button"
-                class="sgpc-summary-link"
-                @click="reviewOptionalFields"
-              >
-                Revisar opcionales
-              </button>
             </div>
 
             <div
-              v-if="canSubmit"
+              v-if="pendingRequiredSections.length"
+              class="sgpc-pending-summary"
+            >
+              <strong>
+                Falta completar
+              </strong>
+
+              <div class="sgpc-pending-summary__list">
+                <button
+                  v-for="item in pendingRequiredSections"
+                  :key="item.key"
+                  type="button"
+                  class="sgpc-pending-summary__item"
+                  @click="goTo(item.target)"
+                >
+                  <span>{{ item.label }}</span>
+                  <small>{{ item.detail }}</small>
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-else
               class="sgpc-ready-notice"
-              :class="{ 'has-optional-gap': optionalMissingCount > 0 }"
               role="status"
               aria-live="polite"
             >
               <strong>
-                {{ optionalMissingCount > 0 ? "Listo para registrar" : "Registro completo" }}
+                Listo para registrar
               </strong>
 
-              <span v-if="optionalMissingCount > 0">
-                Los datos obligatorios están completos. Quedan opcionales que puede revisar antes de guardar.
-              </span>
-
-              <span v-else>
-                Los datos obligatorios y complementarios están completos.
+              <span>
+                Todos los datos obligatorios están completos.
               </span>
             </div>
 
-            <div class="sgpc-status-list">
-              <button
-                v-for="item in summarySections"
-                :key="item.key"
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': item.done,
-                  'has-optional-gap': item.done && item.optionalMissing > 0,
-                  'is-optional-empty': !item.required && !item.done,
-                }"
-                @click="goTo(item.target)"
-              >
-                <div>
-                  <strong>{{ item.label }}</strong>
-                  <span>{{ item.detail }}</span>
-                </div>
+            <div
+              v-if="optionalMissingCount > 0"
+              class="sgpc-optional-summary sgpc-optional-summary--compact"
+            >
+              <p>
+                Hay
+                <strong>{{ optionalMissingCount }}</strong>
+                {{
+                  optionalMissingCount === 1
+                    ? "dato opcional sin completar"
+                    : "datos opcionales sin completar"
+                }}.
+                Puede registrar sin completarlos.
+              </p>
 
-                <em>{{ item.status }}</em>
+              <button
+                type="button"
+                class="sgpc-summary-link"
+                @click="reviewOptionalFields"
+              >
+                Revisarlos
               </button>
             </div>
-
-            <!-- ===============================================
-                 ACCIONES ALINEADAS CON LOS DEMÁS FORMULARIOS
-            ================================================ -->
 
             <div class="sgpc-summary-actions">
               <button
                 class="sgpc-btn-primary sgpc-publication-submit"
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || !canSubmit"
                 :aria-busy="loading ? 'true' : 'false'"
               >
                 <span
@@ -1173,14 +1099,17 @@
                 </span>
               </button>
 
+              <p class="sgpc-draft-note">
+                Los cambios se guardan automáticamente en este navegador.
+              </p>
+
               <button
                 type="button"
-                class="sgpc-btn"
+                class="sgpc-btn sgpc-discard-draft-btn"
                 :disabled="loading"
-                title="Elimina únicamente el borrador guardado en este navegador"
-                @click="limpiarBorrador"
+                @click="requestDiscardDraft"
               >
-                Limpiar borrador
+                Descartar borrador
               </button>
             </div>
           </div>
@@ -1188,75 +1117,64 @@
       </form>
 
       <div
-        v-if="showOptionalReviewDialog"
-        class="sgpc-review-modal"
+        v-if="showDiscardDraftDialog"
+        class="sgpc-review-modal sgpc-review-modal--discard"
         role="presentation"
-        @mousedown.self="closeOptionalReviewDialog"
+        @mousedown.self="cancelDiscardDraft"
       >
         <section
-          ref="optionalReviewDialog"
+          ref="discardDraftDialog"
           class="sgpc-review-modal__dialog"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="ar-optional-review-title"
-          aria-describedby="ar-optional-review-description"
+          aria-labelledby="ar-discard-draft-title"
+          aria-describedby="ar-discard-draft-description"
           tabindex="-1"
-          @keydown.esc="closeOptionalReviewDialog"
+          @keydown.esc="cancelDiscardDraft"
         >
-          <div class="sgpc-review-modal__icon" aria-hidden="true">!</div>
+          <div
+            class="sgpc-review-modal__icon"
+            aria-hidden="true"
+          >
+            !
+          </div>
 
           <div class="sgpc-review-modal__content">
-            <p class="sgpc-review-modal__kicker">Revisión final</p>
-
-            <h2 id="ar-optional-review-title">
-              El artículo regional está listo para registrarse
+            <h2 id="ar-discard-draft-title">
+              ¿Descartar este borrador?
             </h2>
 
-            <p id="ar-optional-review-description">
-              Todos los campos obligatorios están completos, pero quedan
-              {{ optionalMissingCount }}
-              {{ optionalMissingCount === 1 ? "dato opcional vacío" : "datos opcionales vacíos" }}.
-              Esto no impide guardar el registro.
+            <p id="ar-discard-draft-description">
+              Se eliminarán los datos que ha ingresado en este formulario.
+              Esta acción no se puede deshacer.
             </p>
-
-            <ul class="sgpc-review-modal__list">
-              <li
-                v-for="item in optionalMissingItems"
-                :key="item.key"
-              >
-                <span>{{ item.label }}</span>
-                <small>{{ item.sectionLabel }}</small>
-              </li>
-            </ul>
 
             <div class="sgpc-review-modal__actions">
               <button
                 type="button"
-                class="sgpc-btn-primary"
-                @click="confirmOptionalRegistration"
-              >
-                Registrar de todas formas
-              </button>
-
-              <button
-                type="button"
                 class="sgpc-btn"
-                @click="reviewOptionalFields"
-              >
-                Revisar opcionales
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-review-modal__cancel"
-                @click="closeOptionalReviewDialog"
+                @click="cancelDiscardDraft"
               >
                 Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-btn-danger"
+                @click="confirmDiscardDraft"
+              >
+                Descartar borrador
               </button>
             </div>
           </div>
         </section>
       </div>
+
+      <NoticeDialog
+        :model-value="prevalidationNotice"
+        @close="closePrevalidationNotice"
+      />
+
     </div>
   </div>
 </template>
@@ -1276,7 +1194,12 @@ import { useRoute } from "vue-router";
 import DatosGenerales from "../componentes/DatosGenerales.vue";
 import AutoresSelector from "../componentes/AutoresSelector.vue";
 import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
 import api from "../../scripts/api/axios";
+import {
+  prevalidarPublicacion,
+} from "../../scripts/api/publicacionesApi";
+import { useNotice } from "../../scripts/composables/useNotice.js";
 
 import {
   appendArchivosToFormData,
@@ -1291,6 +1214,118 @@ defineOptions({
 
 
 const route = useRoute();
+
+
+const {
+  notice: prevalidationNotice,
+  openNotice: openPrevalidationNotice,
+  closeNotice: closePrevalidationNoticeBase,
+} = useNotice();
+
+let prevalidationDecisionResolver = null;
+
+
+function resolvePrevalidationDecision(value) {
+  const resolver =
+    prevalidationDecisionResolver;
+
+  prevalidationDecisionResolver =
+    null;
+
+  if (
+    typeof resolver ===
+    "function"
+  ) {
+    resolver(
+      Boolean(value)
+    );
+  }
+}
+
+
+function closePrevalidationNotice() {
+  resolvePrevalidationDecision(
+    false
+  );
+
+  closePrevalidationNoticeBase();
+}
+
+
+function confirmarAdvertenciasPrevalidacion(
+  advertencias = []
+) {
+  const items =
+    Array.isArray(advertencias)
+      ? advertencias
+      : [];
+
+  if (!items.length) {
+    return Promise.resolve(true);
+  }
+
+  closePrevalidationNotice();
+
+  const visibles =
+    items.slice(0, 5);
+
+  const details = [
+    ...visibles.map(
+      (item) =>
+        `• ${String(
+          item?.mensaje ||
+          "Revise la información indicada."
+        ).trim()}`
+    ),
+    ...(
+      items.length > 5
+        ? [
+            `• Hay ${
+              items.length - 5
+            } observación${
+              items.length - 5 === 1
+                ? ""
+                : "es"
+            } adicional${
+              items.length - 5 === 1
+                ? ""
+                : "es"
+            } en el formulario.`,
+          ]
+        : []
+    ),
+  ].join("\n");
+
+  return new Promise(
+    (resolve) => {
+      prevalidationDecisionResolver =
+        resolve;
+
+      openPrevalidationNotice({
+        title:
+          "Revise antes de registrar",
+        message:
+          "Hay información que requiere atención. Estas observaciones no impiden el registro, pero conviene verificarlas antes de continuar.",
+        details,
+        confirm: true,
+        confirmText:
+          "Continuar con el registro",
+        cancelText:
+          "Volver a revisar",
+        onConfirm: () => {
+          resolvePrevalidationDecision(
+            true
+          );
+        },
+        onCancel: () => {
+          resolvePrevalidationDecision(
+            false
+          );
+        },
+      });
+    }
+  );
+}
 
 
 /* =========================================================
@@ -1365,18 +1400,19 @@ const ERROR_KEY_ALIASES = Object.freeze({
 
 
 const FIELD_LABELS = Object.freeze({
-  admin_context: "Usuario objetivo",
+  admin_context: "Usuario seleccionado",
   general: "Validación general",
+  sede: "Sede",
   facultad: "Facultad",
   carrera: "Carrera",
   proyecto: "Proyecto de investigación",
   area: "Área del conocimiento (UNESCO)",
   subarea: "Subárea del conocimiento (UNESCO)",
   tipo_codigo: "Tipo de artículo",
-  origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa u otro origen",
+  origen_tipo: "Origen académico",
+  origen_grado: "Carrera, programa u otro origen",
   nombre_articulo: "Título del artículo",
-  base_datos_indexada: "Base de datos / indexación",
+  base_datos_indexada: "Base de datos de indexación",
   base_datos_otra: "Base de datos (otra)",
   anio_publicacion: "Año de publicación",
   mes_publicacion: "Mes de publicación",
@@ -1384,16 +1420,17 @@ const FIELD_LABELS = Object.freeze({
   codigo_doi: "DOI",
   nombre_revista: "Nombre de la revista",
   numero_revista: "Número de la revista",
-  link_revista: "Link de la revista",
-  link_publicacion: "Link de la publicación",
+  link_revista: "Enlace de la revista",
+  link_publicacion: "Enlace de la publicación",
   autores: "Autores",
-  archivos: "Adjuntos PDF",
+  archivos: "Documentos",
 });
 
 
 const ERROR_FIELD_ORDER = Object.freeze([
   "admin_context",
   "tipo_codigo",
+  "sede",
   "facultad",
   "carrera",
   "proyecto",
@@ -1424,6 +1461,7 @@ const ERROR_FIELD_ORDER = Object.freeze([
 
 function createDefaultFormDatos() {
   return {
+    sede: null,
     facultad: null,
     carrera: null,
     proyecto: null,
@@ -1579,7 +1617,7 @@ function normalizeDrfErrors(data) {
         fields.archivos
       ) {
         message =
-          "Revise la sección de Adjuntos PDF.";
+          "Revise la sección de Documentos.";
       } else if (first) {
         const label =
           FIELD_LABELS[first] ||
@@ -1704,9 +1742,13 @@ const errorMessage = ref("");
 
 const fieldErrors = ref({});
 
+const prevalidacionBloqueantes = ref([]);
+const prevalidacionAdvertencias = ref([]);
+const prevalidacionResumen = ref(null);
+
 const draftInfo = ref("");
-const showOptionalReviewDialog = ref(false);
-const optionalReviewDialog = ref(null);
+const showDiscardDraftDialog = ref(false);
+const discardDraftDialog = ref(null);
 
 let draftTimer = null;
 let draftEnabled = true;
@@ -1761,14 +1803,7 @@ const storageKey = computed(() => {
 const adminDisplayUsuario =
   computed(() => {
     return (
-      adminContext.value
-        .usuarioNombre ||
-
-      `ID ${
-        adminContext.value
-          .usuarioId ||
-        "—"
-      }`
+      adminContext.value.usuarioNombre || "Usuario seleccionado"
     );
   });
 
@@ -1859,7 +1894,7 @@ const pageKicker = computed(
 const pageTitle = computed(
   () => {
     return (
-      "Registrar Artículo Regional"
+      "Registrar artículo regional"
     );
   }
 );
@@ -1867,16 +1902,8 @@ const pageTitle = computed(
 
 const pageSubtitle = computed(
   () => {
-    if (
-      isAdminDelegado.value
-    ) {
-      return (
-        "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios."
-      );
-    }
-
     return (
-      "Registre datos generales, origen, indexación regional, revista, enlaces, autores y adjuntos. Los campos marcados con * son obligatorios."
+      "Complete los datos de la publicación. Los campos con * son obligatorios."
     );
   }
 );
@@ -1943,6 +1970,7 @@ const hasRequiredContext =
       formDatos.value || {};
 
     return Boolean(
+      general.sede &&
       general.facultad &&
       general.carrera
     );
@@ -1987,7 +2015,8 @@ const hasRequiredMain =
       !Number.isInteger(
         publicationYear
       ) ||
-      publicationYear <= 0
+      publicationYear < 1900 ||
+      publicationYear > 2100
     ) {
       return false;
     }
@@ -2103,7 +2132,7 @@ const optionalMissingItems =
         key: "proyecto",
         label: "Proyecto de investigación",
         section: "datos",
-        sectionLabel: "Datos generales",
+        sectionLabel: "Información académica",
       });
     }
 
@@ -2112,14 +2141,14 @@ const optionalMissingItems =
         key: "area",
         label: "Área del conocimiento (UNESCO)",
         section: "datos",
-        sectionLabel: "Datos generales",
+        sectionLabel: "Información académica",
       });
     } else if (!hasValue(general.subarea)) {
       items.push({
         key: "subarea",
         label: "Subárea del conocimiento (UNESCO)",
         section: "datos",
-        sectionLabel: "Datos generales",
+        sectionLabel: "Información académica",
       });
     }
 
@@ -2128,14 +2157,14 @@ const optionalMissingItems =
         key: "mes_publicacion",
         label: "Mes de publicación",
         section: "principal",
-        sectionLabel: "Datos principales",
+        sectionLabel: "Información del artículo",
       });
     }
 
     if (!hasValue(form.value.codigo_doi)) {
       items.push({
         key: "codigo_doi",
-        label: "Código DOI",
+        label: "DOI",
         section: "revista",
         sectionLabel: "Revista y enlaces",
       });
@@ -2153,7 +2182,7 @@ const optionalMissingItems =
     if (!hasValue(form.value.link_revista)) {
       items.push({
         key: "link_revista",
-        label: "Link de la revista",
+        label: "Enlace de la revista",
         section: "revista",
         sectionLabel: "Revista y enlaces",
       });
@@ -2162,7 +2191,7 @@ const optionalMissingItems =
     if (!hasValue(form.value.link_publicacion)) {
       items.push({
         key: "link_publicacion",
-        label: "Link de la publicación",
+        label: "Enlace de la publicación",
         section: "revista",
         sectionLabel: "Revista y enlaces",
       });
@@ -2171,9 +2200,9 @@ const optionalMissingItems =
     if (!hasAdjuntos.value) {
       items.push({
         key: "archivos",
-        label: "Adjuntos PDF",
+        label: "Documentos",
         section: "adjuntos",
-        sectionLabel: "Adjuntos",
+        sectionLabel: "Documentos",
       });
     }
 
@@ -2250,46 +2279,26 @@ const optionalJournalMissingCount =
   });
 
 
-function sectionStatusText(
-  optionalMissing = 0
-) {
-  if (optionalMissing > 0) {
-    return `${optionalMissing} ${
-      optionalMissing === 1
-        ? "opcional sin completar"
-        : "opcionales sin completar"
-    }`;
-  }
-
-  return "Información completa";
+function sectionStatusText() {
+  return "Listo";
 }
 
 
 function sectionStateLabel(
-  requiredDone,
-  optionalMissing = 0
+  requiredDone
 ) {
-  if (!requiredDone) {
-    return "Pendiente";
-  }
-
-  return optionalMissing > 0
-    ? "Completo · revisar opcionales"
-    : "Completo";
+  return requiredDone
+    ? "Listo"
+    : "Falta información";
 }
 
 
 function sectionStateClass(
-  requiredDone,
-  optionalMissing = 0
+  requiredDone
 ) {
-  if (!requiredDone) {
-    return "is-pending";
-  }
-
-  return optionalMissing > 0
-    ? "is-complete has-optional-gap"
-    : "is-complete";
+  return requiredDone
+    ? "is-complete"
+    : "is-pending";
 }
 
 
@@ -2299,56 +2308,52 @@ const summarySections =
       {
         key: "datos",
         target: "sec-datos-generales",
-        label: "Datos generales",
+        label: "Información académica",
         done: hasRequiredContext.value,
         required: true,
         optionalMissing:
           optionalContextMissingCount.value,
         detail:
           hasRequiredContext.value
-            ? sectionStatusText(
-                optionalContextMissingCount.value
-              )
-            : "Campos obligatorios pendientes",
+            ? "Listo"
+            : "Complete sede, facultad y carrera",
         status:
           hasRequiredContext.value
-            ? "Completo"
-            : "Pendiente",
+            ? "Listo"
+            : "Falta información",
       },
       {
         key: "origen",
         target: "sec-origen",
-        label: "Origen",
+        label: "Origen académico",
         done: hasRequiredOrigin.value,
         required: true,
         optionalMissing: 0,
         detail:
           hasRequiredOrigin.value
-            ? "Información completa"
+            ? "Listo"
             : "Seleccione el origen",
         status:
           hasRequiredOrigin.value
-            ? "Completo"
-            : "Pendiente",
+            ? "Listo"
+            : "Falta información",
       },
       {
         key: "principal",
         target: "sec-principales",
-        label: "Datos principales",
+        label: "Información del artículo",
         done: hasRequiredMain.value,
         required: true,
         optionalMissing:
           optionalMainMissingCount.value,
         detail:
           hasRequiredMain.value
-            ? sectionStatusText(
-                optionalMainMissingCount.value
-              )
-            : "Artículo, año o indexación pendientes",
+            ? "Listo"
+            : "Complete título, año e indexación",
         status:
           hasRequiredMain.value
-            ? "Completo"
-            : "Pendiente",
+            ? "Listo"
+            : "Falta información",
       },
       {
         key: "revista",
@@ -2360,14 +2365,12 @@ const summarySections =
           optionalJournalMissingCount.value,
         detail:
           hasRequiredJournal.value
-            ? sectionStatusText(
-                optionalJournalMissingCount.value
-              )
-            : "Revista o ISSN pendientes",
+            ? "Listo"
+            : "Complete revista e ISSN",
         status:
           hasRequiredJournal.value
-            ? "Completo"
-            : "Pendiente",
+            ? "Listo"
+            : "Falta información",
       },
       {
         key: "autores",
@@ -2378,28 +2381,28 @@ const summarySections =
         optionalMissing: 0,
         detail:
           hasRequiredAuthors.value
-            ? `${form.value.autores.length} autor(es)`
-            : "Sin autores",
+            ? "Listo"
+            : "Agregue al menos un autor",
         status:
           hasRequiredAuthors.value
-            ? "Completo"
-            : "Pendiente",
+            ? "Listo"
+            : "Falta información",
       },
       {
-        key: "adjuntos",
+        key: "documentos",
         target: "sec-adjuntos",
-        label: "Adjuntos",
+        label: "Documentos",
         done: hasAdjuntos.value,
         required: false,
         optionalMissing:
           hasAdjuntos.value ? 0 : 1,
         detail:
           hasAdjuntos.value
-            ? `${form.value.archivos.length} archivo(s)`
-            : "Sin archivos adjuntos",
+            ? "Documentos agregados"
+            : "Opcional",
         status:
           hasAdjuntos.value
-            ? "Completado"
+            ? "Listo"
             : "Opcional",
       },
     ];
@@ -2409,24 +2412,35 @@ const summarySections =
         {
           key: "admin",
           target: "sec-contexto-admin",
-          label: "Contexto administrativo",
+          label: "Persona seleccionada",
           done: adminReady.value,
           required: true,
           optionalMissing: 0,
           detail:
             adminReady.value
-              ? "Usuario objetivo válido"
-              : "Falta usuario objetivo",
+              ? "Listo"
+              : "Seleccione la persona",
           status:
             adminReady.value
-              ? "Completo"
-              : "Pendiente",
+              ? "Listo"
+              : "Falta información",
         },
         ...sections,
       ];
     }
 
     return sections;
+  });
+
+
+const pendingRequiredSections =
+  computed(() => {
+    return summarySections.value
+      .filter(
+        (section) =>
+          section.required &&
+          !section.done
+      );
   });
 
 
@@ -2606,17 +2620,9 @@ function focusOptionalItem(item) {
 }
 
 
-function closeOptionalReviewDialog() {
-  showOptionalReviewDialog.value =
-    false;
-}
-
-
 function reviewOptionalFields() {
   const first =
     optionalMissingItems.value[0];
-
-  closeOptionalReviewDialog();
 
   if (!first) {
     return;
@@ -2624,26 +2630,6 @@ function reviewOptionalFields() {
 
   nextTick(() => {
     focusOptionalItem(first);
-  });
-}
-
-
-function openOptionalReviewDialog() {
-  showOptionalReviewDialog.value =
-    true;
-
-  nextTick(() => {
-    optionalReviewDialog.value
-      ?.focus?.();
-  });
-}
-
-
-async function confirmOptionalRegistration() {
-  closeOptionalReviewDialog();
-
-  await registrarArticuloRegional({
-    skipFrontValidation: true,
   });
 }
 
@@ -2658,11 +2644,6 @@ async function handleSubmitIntent() {
   fieldErrors.value = {};
 
   if (!validateFront()) {
-    return;
-  }
-
-  if (optionalMissingCount.value > 0) {
-    openOptionalReviewDialog();
     return;
   }
 
@@ -3083,24 +3064,8 @@ function loadDraft() {
       };
     }
 
-    if (
-      parsed?.updatedAt
-    ) {
-      const date =
-        new Date(
-          parsed.updatedAt
-        );
-
-      draftInfo.value =
-        Number.isNaN(
-          date.getTime()
-        )
-          ? "Se recuperó un borrador guardado."
-          : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
-    } else {
-      draftInfo.value =
-        "Se recuperó un borrador guardado.";
-    }
+    draftInfo.value =
+      "Borrador recuperado. Puede continuar donde lo dejó.";
 
     successMessage.value =
       "";
@@ -3142,6 +3107,168 @@ function disableDraftTemporarily() {
   );
 }
 
+
+/* =========================================================
+   PREVALIDACIÓN BACKEND
+========================================================= */
+
+function clearPrevalidationState() {
+  prevalidacionBloqueantes.value = [];
+  prevalidacionAdvertencias.value = [];
+  prevalidacionResumen.value = null;
+}
+
+function normalizePrevalidationIssues(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item, index) => {
+      if (typeof item === "string") {
+        return {
+          codigo: `validacion-${index}`,
+          nivel: "",
+          campo: null,
+          mensaje: item.trim(),
+          origen: "validacion",
+          metadata: {},
+        };
+      }
+
+      const mensaje = String(
+        item?.mensaje ?? item?.message ?? item?.detail ?? ""
+      ).trim();
+
+      if (!mensaje) return null;
+
+      return {
+        codigo: String(
+          item?.codigo ?? item?.code ?? `validacion-${index}`
+        ).trim(),
+        nivel: String(item?.nivel || "").trim(),
+        campo: item?.campo ? String(item.campo).trim() : null,
+        mensaje,
+        origen: String(item?.origen || "validacion").trim(),
+        metadata:
+          item?.metadata && typeof item.metadata === "object"
+            ? item.metadata
+            : {},
+      };
+    })
+    .filter(Boolean);
+}
+
+function applyPrevalidationFieldErrors(items) {
+  const next = { ...fieldErrors.value };
+
+  normalizePrevalidationIssues(items).forEach((item) => {
+    const rawField = String(item.campo || "").trim();
+    if (!rawField) return;
+
+    const field = ERROR_KEY_ALIASES[rawField] || rawField;
+    if (!next[field]) next[field] = item.mensaje;
+  });
+
+  fieldErrors.value = next;
+}
+
+function selectedUploadItems() {
+  return (Array.isArray(form.value.archivos) ? form.value.archivos : [])
+    .filter((item) => item?.file);
+}
+
+function buildPrevalidationPayload(autoresPayload) {
+  const general = formDatos.value || {};
+  const uploadItems = selectedUploadItems();
+
+  return {
+    tipo_codigo: "articulo_regional",
+    sede: general.sede || null,
+    facultad: general.facultad || null,
+    carrera: general.carrera || null,
+    proyecto: general.proyecto || null,
+    area: general.area || null,
+    subarea: general.subarea || null,
+    origen_tipo: form.value.origen_tipo || "ninguno",
+    origen_grado: form.value.origen_grado || "",
+    nombre_articulo: String(form.value.nombre_articulo || "").trim(),
+    anio_publicacion: form.value.anio_publicacion,
+    mes_publicacion: form.value.mes_publicacion || null,
+    base_datos_indexada: String(form.value.base_datos_indexada || "").trim().toLowerCase(),
+    base_datos_otra: String(form.value.base_datos_otra || "").trim(),
+    codigo_issn: String(form.value.codigo_issn || "").trim(),
+    codigo_doi: String(form.value.codigo_doi || "").trim(),
+    nombre_revista: String(form.value.nombre_revista || "").trim(),
+    numero_revista: form.value.numero_revista || null,
+    link_revista: String(form.value.link_revista || "").trim(),
+    link_publicacion: String(form.value.link_publicacion || "").trim(),
+    autores: autoresPayload,
+    archivo_pdf: uploadItems[0]?.file || null,
+    registrado_por_admin: isAdminDelegado.value,
+    usuario_objetivo_id: isAdminDelegado.value ? adminContext.value.usuarioId : null,
+    autor_objetivo_id: isAdminDelegado.value ? adminContext.value.autorId : null,
+  };
+}
+
+async function ejecutarPrevalidacion(autoresPayload) {
+  clearPrevalidationState();
+
+  let response;
+
+  try {
+    response = await prevalidarPublicacion(
+      buildPrevalidationPayload(autoresPayload)
+    );
+  } catch (error) {
+    const normalized = normalizeDrfErrors(error?.response?.data);
+
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      ...(normalized.fields || {}),
+    };
+    errorMessage.value =
+      normalized.message ||
+      "No se pudo verificar la información antes del registro. Revise los datos e inténtelo nuevamente.";
+    successMessage.value = "";
+
+    const first = firstErrorField(fieldErrors.value);
+    if (first) nextTick(() => focusField(first));
+    return false;
+  }
+
+  const bloqueantes = normalizePrevalidationIssues(response?.bloqueantes);
+  const advertencias = normalizePrevalidationIssues(response?.advertencias);
+
+  prevalidacionBloqueantes.value = bloqueantes;
+  prevalidacionAdvertencias.value = advertencias;
+  prevalidacionResumen.value = response?.resumen || null;
+
+  if (response?.puede_continuar === false || bloqueantes.length) {
+    applyPrevalidationFieldErrors(bloqueantes);
+    errorMessage.value =
+      "Hay datos que deben corregirse antes de registrar el artículo.";
+    successMessage.value = "";
+
+    const first = firstErrorField(fieldErrors.value);
+    if (first) nextTick(() => focusField(first));
+    return false;
+  }
+
+  if (advertencias.length) {
+    const continuar =
+      await confirmarAdvertenciasPrevalidacion(
+        advertencias
+      );
+
+    if (!continuar) {
+      errorMessage.value =
+        "Revise las observaciones antes de continuar con el registro.";
+      successMessage.value =
+        "";
+
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /* =========================================================
    AUTORES
@@ -3230,7 +3357,7 @@ function validateAdminContext() {
       .usuarioId
   ) {
     return (
-      "Debe llegar al formulario con un usuario objetivo válido."
+      "Seleccione nuevamente al usuario para continuar con el registro."
     );
   }
 
@@ -3258,12 +3385,19 @@ function validateFront() {
       .usuarioId
   ) {
     errors.admin_context =
-      "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
+      "Seleccione nuevamente al usuario para continuar con el registro.";
   }
 
   // -------------------------------------------------------
   // Clasificación institucional
   // -------------------------------------------------------
+
+  if (
+    !general.sede
+  ) {
+    errors.sede =
+      "Seleccione una sede.";
+  }
 
   if (
     !general.facultad
@@ -3317,7 +3451,7 @@ function validateFront() {
     )
   ) {
     errors.origen_grado =
-      `El grado, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+      `La carrera, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
   }
 
   // -------------------------------------------------------
@@ -3334,10 +3468,11 @@ function validateFront() {
     !Number.isInteger(
       publicationYear
     ) ||
-    publicationYear <= 0
+    publicationYear < 1900 ||
+    publicationYear > 2100
   ) {
     errors.anio_publicacion =
-      "Ingrese un año de publicación válido.";
+      "Ingrese un año de publicación válido entre 1900 y 2100.";
   }
 
   if (
@@ -3634,10 +3769,14 @@ function resetForm() {
   fieldErrors.value =
     {};
 
+  prevalidacionBloqueantes.value = [];
+  prevalidacionAdvertencias.value = [];
+  prevalidacionResumen.value = null;
+
   draftInfo.value =
     "";
 
-  showOptionalReviewDialog.value =
+  showDiscardDraftDialog.value =
     false;
 
   formDatos.value =
@@ -3645,6 +3784,35 @@ function resetForm() {
 
   form.value =
     createDefaultForm();
+}
+
+
+function requestDiscardDraft() {
+  if (loading.value) {
+    return;
+  }
+
+  showDiscardDraftDialog.value =
+    true;
+
+  nextTick(() => {
+    discardDraftDialog.value
+      ?.focus?.();
+  });
+}
+
+
+function cancelDiscardDraft() {
+  showDiscardDraftDialog.value =
+    false;
+}
+
+
+function confirmDiscardDraft() {
+  showDiscardDraftDialog.value =
+    false;
+
+  limpiarBorrador();
 }
 
 
@@ -3660,7 +3828,7 @@ function limpiarBorrador() {
   resetForm();
 
   successMessage.value =
-    "Borrador eliminado.";
+    "Borrador descartado.";
 
   errorMessage.value =
     "";
@@ -3704,6 +3872,8 @@ async function registrarArticuloRegional({ skipFrontValidation = false } = {}) {
 
   fieldErrors.value =
     {};
+
+  clearPrevalidationState();
 
   try {
     // -----------------------------------------------------
@@ -3771,6 +3941,19 @@ async function registrarArticuloRegional({ skipFrontValidation = false } = {}) {
         "admin_context"
       );
 
+      return;
+    }
+
+    // -----------------------------------------------------
+    // Prevalidación backend: integridad, PDF y duplicados
+    // -----------------------------------------------------
+
+    const prevalidacionOk =
+      await ejecutarPrevalidacion(
+        autoresPayload
+      );
+
+    if (!prevalidacionOk) {
       return;
     }
 
@@ -3986,10 +4169,10 @@ async function registrarArticuloRegional({ skipFrontValidation = false } = {}) {
 
     appendArchivosToFormData(
       formData,
-      form.value.archivos,
+      selectedUploadItems(),
       {
         primaryField:
-          null,
+          "archivo_pdf",
 
         filesField:
           "archivos",
@@ -4020,8 +4203,8 @@ async function registrarArticuloRegional({ skipFrontValidation = false } = {}) {
 
     successMessage.value =
       isAdminDelegado.value
-        ? "Artículo regional registrado correctamente para el usuario seleccionado."
-        : "Artículo regional registrado correctamente.";
+        ? "Artículo regional guardado correctamente para el usuario seleccionado. La publicación quedó en estado Borrador y puede editarse o enviarse a revisión desde la gestión de publicaciones."
+        : "La publicación se guardó correctamente y quedó en estado Borrador. Revise la información y edítela si es necesario antes de enviarla a revisión. Una vez enviada, la edición quedará bloqueada hasta que el administrador apruebe, rechace o solicite correcciones.";
 
     errorMessage.value =
       "";
@@ -4132,6 +4315,8 @@ onMounted(() => {
 
 
 onBeforeUnmount(() => {
+  closePrevalidationNotice();
+
   clearTimeout(
     draftTimer
   );

@@ -71,6 +71,18 @@
   --z-modal: 100;
   --z-toast: 120;
 
+  /* Capas semánticas reutilizables.
+     Administración y avisos deben consumir estos tokens en vez
+     de inventar z-index locales. */
+  --z-admin-overlay: var(--z-overlay);
+  --z-admin-modal: var(--z-modal);
+  --z-notice: var(--z-toast);
+
+  /* Contraste sobre acciones primarias y comportamiento de overlays. */
+  --text-on-primary: var(--button-text, var(--accent-contrast, #ffffff));
+  --overlay-blur: 0px;
+  --shadow-modal: var(--shadow-strong);
+
   /*
    * Las duraciones finales consumen los valores "-base"
    * escritos por transicionesRuta.js mediante themeStore.
@@ -285,6 +297,12 @@
   --danger: #b42318;
   --info: #1d4ed8;
 
+  /* Texto legible sobre botones semánticos rellenos. */
+  --success-contrast: #ffffff;
+  --warning-contrast: #ffffff;
+  --danger-contrast: #ffffff;
+  --info-contrast: #ffffff;
+
   --success-soft: #e9f7ef;
   --warning-soft: #fff4dd;
   --danger-soft: #fdeceb;
@@ -355,6 +373,104 @@ html.dark,
 body.dark {
   color-scheme: dark;
 
+  /* Fallback oscuro completo.
+     Evita que .dark sin una variante adicional herede fondos,
+     superficies, bordes y estados visuales del tema claro. */
+  --bg-main: #0f141c;
+  --bg-card: #151c26;
+  --bg-navbar: #111821;
+  --bg-input: #1b2430;
+  --bg-elevated: #1a2330;
+  --bg-elev: var(--bg-elevated);
+  --bg-soft: #1c2531;
+
+  --overlay:
+    rgba(
+      0,
+      0,
+      0,
+      0.76
+    );
+
+  --border-color: #2b3746;
+  --border-strong: #405067;
+  --line-soft: #202b38;
+
+  --shadow-soft:
+    0 8px 22px
+    rgba(
+      0,
+      0,
+      0,
+      0.18
+    );
+
+  --shadow-strong:
+    0 18px 42px
+    rgba(
+      0,
+      0,
+      0,
+      0.42
+    );
+
+  --shadow-hover:
+    0 10px 28px
+    rgba(
+      0,
+      0,
+      0,
+      0.24
+    );
+
+  --hover: #1c2633;
+  --active: #253449;
+
+  --focus-outline:
+    var(--color-primary);
+
+  --focus-ring:
+    color-mix(
+      in srgb,
+      var(--color-primary) 28%,
+      transparent
+    );
+
+  --ring-primary:
+    0 0 0 3px
+    var(--focus-ring);
+
+  --surface-2: #131a23;
+  --surface-3: #19222d;
+  --surface-4: #202b38;
+
+  --primary-soft:
+    color-mix(
+      in srgb,
+      var(--color-primary) 18%,
+      var(--bg-card)
+    );
+
+  --primary-soft-strong:
+    color-mix(
+      in srgb,
+      var(--color-primary) 30%,
+      var(--bg-card)
+    );
+
+  --primary-ink-soft:
+    color-mix(
+      in srgb,
+      var(--color-primary) 72%,
+      #ffffff
+    );
+
+  --footer-bg: #0b1017;
+  --footer-text: #ffffff;
+  --footer-muted: #aeb8c5;
+
+  --card-hover-bg: var(--bg-elevated);
+
   --text-primary: #ffffff;
   --text-secondary: #b8b8b8;
   --text-inverse: #000000;
@@ -364,6 +480,13 @@ body.dark {
   --warning: #f0b85b;
   --danger: #ef7f78;
   --info: var(--color-primary);
+
+  /* Los estados son más luminosos en oscuro; usan tinta oscura
+     para conservar contraste AA en botones compactos. */
+  --success-contrast: #07110c;
+  --warning-contrast: #111111;
+  --danger-contrast: #111111;
+  --info-contrast: var(--accent-contrast, #ffffff);
 
   --success-soft: #10291d;
   --warning-soft: #2b210f;
@@ -857,6 +980,8 @@ body.dark.dark-crimson-black {
 
   --danger: #d32f2f;
   --info: #7a0b14;
+  --danger-contrast: #ffffff;
+  --info-contrast: #ffffff;
 
   --danger-soft: #1d0306;
   --info-soft: #160204;

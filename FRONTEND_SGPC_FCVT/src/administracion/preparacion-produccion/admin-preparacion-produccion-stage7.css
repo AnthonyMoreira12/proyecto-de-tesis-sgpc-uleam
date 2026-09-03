@@ -1,0 +1,158 @@
+/* ============================================================
+   SGPC ULEAM — ETAPA 7
+   PREPARACIÓN DE ACTUALIZACIÓN
+   Capa de ajuste sobre admin-preparacion-produccion.css
+============================================================ */
+
+.prep-page {
+  padding-top: calc(var(--sgpc-nav-offset, 78px) + 14px);
+}
+
+.prep-feedback-row {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Resumen agrupado: cuatro datos, una sola superficie visual. */
+.prep-page .prep-metrics {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  background: var(--bg-card);
+}
+
+.prep-page .prep-metrics article {
+  min-height: 112px;
+  padding: 16px 18px;
+  border: 0;
+  border-top: 0;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+}
+
+.prep-page .prep-metrics article:last-child {
+  border-right: 0;
+}
+
+.prep-page .prep-metrics article:hover {
+  border-color: var(--border-color);
+  background: var(--bg-soft);
+  transform: none;
+}
+
+.prep-page .prep-metrics article[data-state="warning"] {
+  box-shadow: inset 0 3px 0 var(--warning);
+}
+
+.prep-page .prep-metrics article[data-state="success"] {
+  box-shadow: inset 0 3px 0 var(--success);
+}
+
+/* Bloqueos y advertencias mantienen semántica sin competir con el flujo. */
+.prep-page .prep-grid {
+  gap: 12px;
+}
+
+.prep-page .prep-panel {
+  box-shadow: none;
+}
+
+.prep-page .prep-normalize {
+  border-color: var(--border-strong, var(--border-color));
+}
+
+.prep-page .prep-actions {
+  padding-top: 2px;
+}
+
+.prep-page .prep-actions button.primary {
+  min-width: 190px;
+}
+
+/* Vista previa y pendientes se leen como resúmenes, no como mosaico de tarjetas. */
+.prep-page .prep-simulation-grid,
+.prep-page .prep-pending-grid {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: var(--bg-card);
+}
+
+.prep-page .prep-simulation-grid article,
+.prep-page .prep-pending-grid article {
+  border: 0;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+}
+
+.prep-page .prep-simulation-grid article:last-child,
+.prep-page .prep-pending-grid article:last-child {
+  border-right: 0;
+}
+
+.prep-page .prep-table-wrap {
+  border-radius: 11px;
+  box-shadow: none;
+}
+
+.prep-page .prep-message {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .prep-page .prep-metrics,
+  .prep-page .prep-simulation-grid,
+  .prep-page .prep-pending-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prep-page .prep-metrics article:nth-child(2),
+  .prep-page .prep-simulation-grid article:nth-child(2),
+  .prep-page .prep-pending-grid article:nth-child(2) {
+    border-right: 0;
+  }
+
+  .prep-page .prep-metrics article:nth-child(-n + 2),
+  .prep-page .prep-simulation-grid article:nth-child(-n + 2),
+  .prep-page .prep-pending-grid article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+@media (max-width: 560px) {
+  .prep-page {
+    padding-top: calc(var(--sgpc-nav-offset, 64px) + 10px);
+  }
+
+  .prep-page .prep-metrics,
+  .prep-page .prep-simulation-grid,
+  .prep-page .prep-pending-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .prep-page .prep-metrics article,
+  .prep-page .prep-simulation-grid article,
+  .prep-page .prep-pending-grid article {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .prep-page .prep-metrics article:last-child,
+  .prep-page .prep-simulation-grid article:last-child,
+  .prep-page .prep-pending-grid article:last-child {
+    border-bottom: 0;
+  }
+
+  .prep-page .prep-actions,
+  .prep-page .prep-actions button {
+    width: 100%;
+  }
+}

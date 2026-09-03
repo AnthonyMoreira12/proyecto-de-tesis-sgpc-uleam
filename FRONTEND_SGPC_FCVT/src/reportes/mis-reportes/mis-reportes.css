@@ -1,0 +1,1307 @@
+/* ============================================================
+   SGPC ULEAM — MI PRODUCCIÓN CIENTÍFICA
+   Alineado con el sistema visual global y sgpc-content-system.css
+
+   Principios:
+   - usa exclusivamente tokens globales/compartidos;
+   - misma densidad que Mis publicaciones;
+   - cabecera plana;
+   - superficies funcionales con radio 14px y sin sombra;
+   - controles de 42px;
+   - hover por borde/fondo, sin desplazamientos;
+   - gráficos limpios, sin "tarjeta dentro de tarjeta".
+============================================================ */
+
+.my-report {
+  --my-card: var(--sgpc-content-card, var(--bg-card, #ffffff));
+  --my-elevated: var(--sgpc-content-elevated, var(--bg-elevated, #ffffff));
+  --my-soft: var(--surface-2, var(--bg-soft, #f8fafc));
+  --my-soft-2: var(--surface-3, #f1f5f9);
+  --my-input: var(--sgpc-content-input, var(--bg-input, #ffffff));
+
+  --my-text: var(--sgpc-content-text, var(--text-primary, #111827));
+  --my-muted: var(--sgpc-content-muted, var(--text-secondary, #5f6b7a));
+  --my-disabled: var(--sgpc-content-disabled, var(--text-disabled, #9aa3af));
+
+  --my-line: var(--sgpc-content-line, var(--border-color, #d9e0e8));
+  --my-line-strong: var(--sgpc-content-line-strong, var(--border-strong, #bdc8d5));
+  --my-line-soft: var(--sgpc-content-line-soft, var(--line-soft, #e8edf2));
+
+  --my-primary: var(
+    --sgpc-content-primary,
+    var(--color-primary-effective, var(--color-primary, #1d4ed8))
+  );
+  --my-primary-soft: var(--sgpc-content-primary-soft, var(--primary-soft, #eaf1ff));
+  --my-primary-ink: var(--sgpc-content-primary-ink, var(--primary-ink-soft, #173ea7));
+  --my-primary-contrast: var(--text-on-primary, var(--accent-contrast, #ffffff));
+
+  --my-success: var(--sgpc-content-success, var(--success, #16794d));
+  --my-success-soft: var(--success-soft, #e9f7ef);
+  --my-danger: var(--sgpc-content-danger, var(--danger, #b42318));
+  --my-danger-soft: var(--danger-soft, #fdeceb);
+
+  --my-radius-sm: var(--sgpc-content-radius-sm, var(--radius-sm, 8px));
+  --my-radius-md: var(--sgpc-content-radius-md, var(--radius-md, 10px));
+  --my-radius-lg: var(--sgpc-content-radius-lg, var(--radius-lg, 14px));
+  --my-radius-pill: var(--sgpc-content-radius-pill, var(--radius-pill, 999px));
+
+  --my-control-sm: var(--sgpc-content-control-sm, var(--control-height-sm, 36px));
+  --my-control: var(--sgpc-content-control, var(--control-height-md, 42px));
+
+  --my-focus: var(--sgpc-content-focus, var(--ring-primary));
+
+  width: min(var(--sgpc-content-max, var(--container-max, 1320px)), 100%);
+  min-width: 0;
+  margin: 0 auto;
+  padding:
+    var(--sgpc-content-page-top, clamp(14px, 1.6vw, 22px))
+    var(--sgpc-content-page-x, clamp(14px, 2vw, 30px))
+    var(--sgpc-content-page-bottom, clamp(30px, 4vw, 46px));
+
+  display: grid;
+  align-content: start;
+  gap: var(--sgpc-content-gap, 16px);
+
+  color: var(--my-text);
+  font-family: var(--font-body, var(--font-ui, system-ui, sans-serif));
+}
+
+.my-report,
+.my-report *,
+.my-report *::before,
+.my-report *::after {
+  box-sizing: border-box;
+}
+
+.my-report > *,
+.my-report section,
+.my-report article,
+.my-report header,
+.my-report div,
+.my-report label {
+  min-width: 0;
+}
+
+/* ============================================================
+   1. CABECERA DE PÁGINA
+============================================================ */
+
+.my-report__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
+
+  margin: 0;
+  padding: 0 0 4px;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.my-report__header > div:first-child {
+  min-width: 0;
+}
+
+.my-report__header h1 {
+  margin: 0;
+
+  color: var(--my-text);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: clamp(1.78rem, 2.2vw, 2.2rem);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: -0.038em;
+  text-wrap: balance;
+}
+
+.my-report__header p {
+  max-width: 78ch;
+  margin: 7px 0 0;
+
+  color: var(--my-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.my-report__exports {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.my-report__export {
+  min-height: var(--my-control-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--button-secondary-border, var(--my-line));
+  border-radius: var(--my-radius-sm);
+  background: var(--button-secondary-bg, var(--my-card));
+  color: var(--button-secondary-text, var(--my-text));
+
+  box-shadow: none;
+  transform: none;
+
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast, 150ms ease),
+    border-color var(--t-fast, 150ms ease),
+    color var(--t-fast, 150ms ease);
+}
+
+.my-report__export svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.my-report__export:hover:not(:disabled) {
+  border-color: var(--my-line-strong);
+  background: var(--button-secondary-hover-bg, var(--my-elevated));
+  color: var(--my-text);
+}
+
+.my-report__export--pdf {
+  border-color: var(--button-border, var(--my-primary));
+  background: var(--button-bg, var(--my-primary));
+  color: var(--button-text, var(--my-primary-contrast));
+}
+
+.my-report__export--pdf:hover:not(:disabled) {
+  border-color: var(--button-hover-bg, var(--my-primary));
+  background: var(--button-hover-bg, var(--my-primary));
+  color: var(--button-text, var(--my-primary-contrast));
+}
+
+.my-report__export:disabled,
+.my-report__clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ============================================================
+   2. FILTROS
+============================================================ */
+
+.my-report__filters {
+  width: 100%;
+  overflow: hidden;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-lg);
+  background: var(--my-card);
+  box-shadow: none;
+}
+
+.my-report__filters > header,
+.my-report__detail > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.my-report__filters > header {
+  min-height: 50px;
+  padding: 12px 16px;
+
+  border-bottom: 1px solid var(--my-line-soft);
+  background: transparent;
+  box-shadow: none;
+}
+
+.my-report__filters > header > div:first-child,
+.my-report__detail > header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.my-report__filters h2,
+.my-report__detail h2,
+.my-report__analysis h2 {
+  margin: 0;
+
+  color: var(--my-text);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: 0.94rem;
+  font-weight: 740;
+  line-height: 1.28;
+  letter-spacing: -0.018em;
+}
+
+.my-report__filters > header p,
+.my-report__detail p,
+.my-report__chart-card > header p {
+  margin: 0;
+
+  color: var(--my-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.my-report__filter-actions {
+  min-height: 28px;
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.my-report__filter-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  color: var(--my-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.my-report__filter-loading > span {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+
+  border: 2px solid color-mix(in srgb, var(--my-primary) 18%, transparent);
+  border-top-color: var(--my-primary);
+  border-radius: 50%;
+
+  animation: my-report-spin 0.8s linear infinite;
+}
+
+.my-report__clear {
+  min-height: var(--my-control-sm);
+  padding: 0 3px;
+
+  border: 0;
+  background: transparent;
+  color: var(--my-primary);
+
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.my-report__clear:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.my-report__filter-grid {
+  width: 100%;
+  display: grid;
+}
+
+.my-report__filter-row {
+  width: 100%;
+  padding: 12px 16px;
+}
+
+.my-report__filter-row--period {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.my-report__filter-row--scope {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.35fr);
+  align-items: end;
+  gap: 10px;
+
+  border-top: 1px solid var(--my-line-soft);
+}
+
+.my-report__field {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.my-report__field--period-mode {
+  flex: 1 1 245px;
+  max-width: 360px;
+}
+
+.my-report__field--year {
+  flex: 0 1 170px;
+  min-width: 145px;
+  max-width: 190px;
+}
+
+.my-report__field--period-part {
+  flex: 1 1 235px;
+  max-width: 360px;
+}
+
+.my-report__field > span {
+  color: var(--my-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.my-report__field select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--my-control);
+
+  padding: 7px 34px 7px 11px;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-md);
+  outline: none;
+
+  background: var(--my-input);
+  color: var(--my-text);
+  box-shadow: none;
+
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+
+  transition:
+    background var(--t-fast, 150ms ease),
+    border-color var(--t-fast, 150ms ease),
+    box-shadow var(--t-fast, 150ms ease);
+}
+
+.my-report__field select:hover:not(:disabled) {
+  border-color: var(--my-line-strong);
+}
+
+.my-report__field select:focus {
+  border-color: var(--my-primary);
+  box-shadow: var(--my-focus);
+}
+
+.my-report__custom-period {
+  flex: 1 0 100%;
+  width: 100%;
+  max-width: 760px;
+  overflow: visible;
+}
+
+/* ============================================================
+   3. MENSAJES Y CARGA
+============================================================ */
+
+.my-report__message {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 11px;
+
+  border-left: 3px solid;
+  border-radius: 0 var(--my-radius-sm) var(--my-radius-sm) 0;
+
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.my-report__message.is-error {
+  border-left-color: var(--my-danger);
+  background: var(--my-danger-soft);
+  color: var(--my-danger);
+}
+
+.my-report__message.is-success {
+  grid-template-columns: 1fr;
+  border-left-color: var(--my-success);
+  background: var(--my-success-soft);
+  color: var(--my-success);
+}
+
+.my-report__loading {
+  min-height: 110px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-lg);
+  background: var(--my-card);
+
+  color: var(--my-muted);
+  font-size: 0.74rem;
+}
+
+.my-report__loading > span {
+  width: 20px;
+  height: 20px;
+
+  border: 2px solid color-mix(in srgb, var(--my-primary) 18%, transparent);
+  border-top-color: var(--my-primary);
+  border-radius: 50%;
+
+  animation: my-report-spin 0.8s linear infinite;
+}
+
+/* ============================================================
+   4. INDICADORES
+============================================================ */
+
+.my-report__stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.my-report__stats article {
+  min-height: 100px;
+  min-width: 0;
+
+  display: grid;
+  align-content: center;
+  gap: 5px;
+
+  padding: 13px 14px;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-lg);
+  background: var(--my-card);
+  box-shadow: none;
+  transform: none;
+
+  transition:
+    border-color var(--t-fast, 150ms ease),
+    background var(--t-fast, 150ms ease);
+}
+
+.my-report__stats article:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--my-primary) 26%,
+    var(--my-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--my-card) 97%,
+    var(--my-primary-soft) 3%
+  );
+
+  box-shadow: none;
+  transform: none;
+}
+
+.my-report__stats span,
+.my-report__stats small {
+  color: var(--my-muted);
+  line-height: 1.35;
+}
+
+.my-report__stats span {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.my-report__stats small {
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.my-report__stats strong {
+  color: var(--my-text);
+  font-size: clamp(1.42rem, 1.16rem + 0.65vw, 1.82rem);
+  font-weight: 760;
+  line-height: 1;
+  letter-spacing: -0.032em;
+}
+
+.my-report__stats article:first-child strong {
+  color: var(--my-primary);
+}
+
+/* ============================================================
+   5. ANÁLISIS
+============================================================ */
+
+.my-report__analysis {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.my-report__chart-card {
+  min-width: 0;
+  min-height: 0;
+
+  padding: 13px 14px 14px;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-lg);
+  background: var(--my-card);
+  box-shadow: none;
+  transform: none;
+
+  overflow: hidden;
+
+  transition:
+    border-color var(--t-fast, 150ms ease),
+    background var(--t-fast, 150ms ease);
+}
+
+.my-report__chart-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--my-primary) 24%,
+    var(--my-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--my-card) 98%,
+    var(--my-primary-soft) 2%
+  );
+
+  box-shadow: none;
+  transform: none;
+}
+
+.my-report__chart-card--wide {
+  grid-column: 1 / -1;
+}
+
+.my-report__chart-card > header {
+  min-height: 48px;
+  display: flex;
+  align-items: flex-start;
+
+  margin: 0 0 9px;
+  padding: 0 0 8px;
+
+  border-bottom: 1px solid var(--my-line-soft);
+  background: transparent;
+  box-shadow: none;
+}
+
+.my-report__chart-card > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+/* ============================================================
+   6. GRÁFICOS DE LÍNEA / ÁREA
+============================================================ */
+
+.my-report__line-chart {
+  width: 100%;
+  min-height: 230px;
+
+  padding: 4px 2px 0;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--my-primary);
+
+  overflow: visible;
+}
+
+.my-report__line-chart svg {
+  display: block;
+  width: 100%;
+  height: clamp(220px, 18vw, 300px);
+  overflow: visible;
+}
+
+.my-report__chart-gridline {
+  stroke: var(--my-line-soft);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.my-report__chart-line {
+  stroke: var(--my-primary);
+  stroke-width: 3.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.my-report__chart-area {
+  fill: url(#my-report-area-gradient);
+  color: var(--my-primary);
+  opacity: 0.86;
+}
+
+.my-report__chart-point {
+  cursor: default;
+}
+
+.my-report__chart-dot {
+  fill: var(--my-card);
+  stroke: var(--my-primary);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+
+  transform-box: fill-box;
+  transform-origin: center;
+
+  transition:
+    transform var(--t-fast, 150ms ease),
+    fill var(--t-fast, 150ms ease),
+    stroke var(--t-fast, 150ms ease);
+}
+
+.my-report__chart-value {
+  fill: var(--my-text);
+  font-size: 21px;
+  font-weight: 720;
+}
+
+.my-report__chart-label {
+  fill: var(--my-muted);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.my-report__chart-point:hover .my-report__chart-dot {
+  transform: scale(1.2);
+  fill: var(--my-primary);
+  stroke: var(--my-card);
+}
+
+.my-report__chart-point:hover .my-report__chart-value {
+  fill: var(--my-primary);
+}
+
+/* ============================================================
+   7. DONA / LEYENDA
+============================================================ */
+
+.my-report__donut-layout {
+  min-height: 270px;
+
+  display: grid;
+  grid-template-columns: minmax(145px, 0.78fr) minmax(0, 1.22fr);
+  align-items: center;
+  gap: clamp(16px, 2vw, 24px);
+
+  padding: 8px 2px 2px;
+}
+
+.my-report__donut {
+  width: min(100%, 200px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+
+  position: relative;
+
+  border-radius: 50%;
+  box-shadow: none;
+  transform: none;
+}
+
+.my-report__donut::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+
+  border-radius: inherit;
+  background: var(--my-card);
+  box-shadow: 0 0 0 1px var(--my-line-soft);
+}
+
+.my-report__donut > div {
+  position: absolute;
+  inset: 28%;
+  z-index: 1;
+
+  display: grid;
+  place-content: center;
+
+  text-align: center;
+}
+
+.my-report__donut strong {
+  color: var(--my-text);
+  font-size: clamp(1.25rem, 1rem + 0.7vw, 1.72rem);
+  font-weight: 760;
+  line-height: 1;
+}
+
+.my-report__donut span {
+  margin-top: 4px;
+
+  color: var(--my-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.my-report__legend {
+  display: grid;
+  gap: 0;
+}
+
+.my-report__legend > div {
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+
+  margin: 0;
+  padding: 9px 2px;
+
+  border-bottom: 1px solid var(--my-line-soft);
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+
+  transition: background var(--t-fast, 150ms ease);
+}
+
+.my-report__legend > div:last-child {
+  border-bottom: 0;
+}
+
+.my-report__legend > div:hover {
+  background: color-mix(
+    in srgb,
+    var(--my-card) 97%,
+    var(--my-primary-soft) 3%
+  );
+
+  transform: none;
+}
+
+.my-report__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: none;
+  box-shadow: none;
+}
+
+.my-report__legend strong {
+  min-width: 0;
+  overflow: hidden;
+
+  color: var(--my-text);
+  font-size: 0.72rem;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-report__legend > div > span:last-child {
+  color: var(--my-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   8. RANKING DE PROYECTOS
+============================================================ */
+
+.my-report__ranking-chart {
+  display: grid;
+  gap: 11px;
+  padding: 8px 2px 2px;
+}
+
+.my-report__ranking-chart > div {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+}
+
+.my-report__ranking-chart-head {
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 6px;
+}
+
+.my-report__ranking-chart-head > span {
+  width: auto;
+  height: auto;
+
+  display: block;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--my-muted);
+
+  font-size: 0.68rem;
+  font-weight: 720;
+  text-align: left;
+}
+
+.my-report__ranking-chart-head strong {
+  min-width: 0;
+  overflow: hidden;
+
+  color: var(--my-text);
+  font-size: 0.72rem;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-report__ranking-chart-head b {
+  color: var(--my-text);
+  font-size: 0.72rem;
+  font-weight: 740;
+}
+
+.my-report__ranking-track {
+  height: 7px;
+  margin-left: 22px;
+
+  overflow: hidden;
+
+  border-radius: var(--my-radius-pill);
+  background: var(--my-soft-2);
+}
+
+.my-report__ranking-track span {
+  display: block;
+  height: 100%;
+
+  border-radius: inherit;
+  background: var(--my-primary);
+
+  transform: none;
+  filter: none;
+}
+
+/* ============================================================
+   9. DETALLE / TABLA
+============================================================ */
+
+.my-report__detail {
+  width: 100%;
+  overflow: hidden;
+
+  border: 1px solid var(--my-line);
+  border-radius: var(--my-radius-lg);
+  background: var(--my-card);
+  box-shadow: none;
+}
+
+.my-report__detail > header {
+  margin: 0;
+  padding: 12px 16px;
+
+  border-bottom: 1px solid var(--my-line-soft);
+  background: transparent;
+  box-shadow: none;
+}
+
+.my-report__table-wrap {
+  width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.my-report__table-wrap table {
+  width: max(100%, 940px);
+  min-width: 940px;
+  table-layout: fixed;
+  border-collapse: collapse;
+
+  background: var(--my-card);
+  color: var(--my-text);
+}
+
+.my-report__table-wrap th,
+.my-report__table-wrap td {
+  padding: 10px 13px;
+
+  border-bottom: 1px solid var(--my-line-soft);
+
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.my-report__table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.my-report__table-wrap tbody tr {
+  background: var(--my-card);
+
+  transition: background var(--t-fast, 150ms ease);
+}
+
+.my-report__table-wrap tbody tr:hover {
+  background: color-mix(
+    in srgb,
+    var(--my-card) 97%,
+    var(--my-primary-soft) 3%
+  );
+}
+
+.my-report__table-wrap th {
+  background: var(--my-elevated);
+  color: var(--my-muted);
+
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.my-report__table-wrap td {
+  color: var(--my-text);
+  font-size: 0.72rem;
+  line-height: 1.46;
+}
+
+.my-report__table-wrap td strong {
+  color: var(--my-text);
+  font-size: 0.75rem;
+  font-weight: 680;
+  line-height: 1.42;
+}
+
+.my-report__table-wrap th:nth-child(1),
+.my-report__table-wrap td:nth-child(1) {
+  width: 29%;
+}
+
+.my-report__table-wrap th:nth-child(2),
+.my-report__table-wrap td:nth-child(2) {
+  width: 13%;
+}
+
+.my-report__table-wrap th:nth-child(3),
+.my-report__table-wrap td:nth-child(3) {
+  width: 11%;
+}
+
+.my-report__table-wrap th:nth-child(4),
+.my-report__table-wrap td:nth-child(4) {
+  width: 22%;
+}
+
+.my-report__table-wrap th:nth-child(5),
+.my-report__table-wrap td:nth-child(5) {
+  width: 25%;
+}
+
+.my-report__empty {
+  margin: 0;
+  padding: 24px 16px;
+
+  color: var(--my-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ============================================================
+   10. FOCO / ACCESIBILIDAD
+============================================================ */
+
+.my-report__export:focus-visible,
+.my-report__clear:focus-visible {
+  outline: none;
+  box-shadow: var(--my-focus);
+}
+
+@keyframes my-report-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   11. RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .my-report__header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .my-report__exports {
+    justify-self: start;
+  }
+
+  .my-report__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 940px) {
+  .my-report__analysis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .my-report__chart-card--wide {
+    grid-column: auto;
+  }
+
+  .my-report__filter-row--scope {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-report__donut-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .my-report__donut {
+    width: min(188px, 60vw);
+  }
+}
+
+@media (max-width: 900px) {
+  .my-report {
+    padding: 14px 14px 30px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 700px) {
+  .my-report__exports {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-report__export {
+    width: 100%;
+  }
+
+  .my-report__filters > header,
+  .my-report__detail > header {
+    align-items: flex-start;
+  }
+
+  .my-report__filter-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .my-report__filter-row--scope {
+    grid-template-columns: 1fr;
+  }
+
+  .my-report__field--period-mode,
+  .my-report__field--year,
+  .my-report__field--period-part {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .my-report__line-chart {
+    min-height: 190px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .my-report__line-chart svg {
+    width: 760px;
+    max-width: none;
+    height: 215px;
+  }
+
+  .my-report__table-wrap {
+    padding: 10px;
+    overflow: visible;
+    background: var(--my-soft);
+  }
+
+  .my-report__table-wrap table,
+  .my-report__table-wrap tbody,
+  .my-report__table-wrap tr,
+  .my-report__table-wrap td {
+    width: 100%;
+    min-width: 0;
+    display: block;
+  }
+
+  .my-report__table-wrap table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .my-report__table-wrap thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .my-report__table-wrap tbody {
+    display: grid;
+    gap: 9px;
+  }
+
+  .my-report__table-wrap tbody tr {
+    display: grid;
+
+    overflow: hidden;
+
+    border: 1px solid var(--my-line);
+    border-radius: var(--my-radius-lg);
+    background: var(--my-card);
+  }
+
+  .my-report__table-wrap tbody tr:hover {
+    background: var(--my-card);
+  }
+
+  .my-report__table-wrap td,
+  .my-report__table-wrap td:nth-child(n) {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: minmax(86px, 0.36fr) minmax(0, 1fr);
+    gap: 9px;
+
+    padding: 9px 11px;
+
+    border-bottom: 1px solid var(--my-line-soft);
+  }
+
+  .my-report__table-wrap td:last-child {
+    border-bottom: 0;
+  }
+
+  .my-report__table-wrap td::before {
+    content: attr(data-label);
+
+    color: var(--my-muted);
+    font-size: 0.64rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 620px) {
+  .my-report {
+    padding: 12px 12px 26px;
+  }
+
+  .my-report__header h1 {
+    font-size: 1.62rem;
+  }
+
+  .my-report__filters,
+  .my-report__stats article,
+  .my-report__chart-card,
+  .my-report__detail {
+    border-radius: 12px;
+  }
+
+  .my-report__filters > header,
+  .my-report__filter-row,
+  .my-report__detail > header {
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 470px) {
+  .my-report__filters > header,
+  .my-report__detail > header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-report__filter-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .my-report__exports {
+    grid-template-columns: 1fr;
+  }
+
+  .my-report__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .my-report__table-wrap td,
+  .my-report__table-wrap td:nth-child(n) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (pointer: coarse) {
+  .my-report button,
+  .my-report select {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  .my-report select {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-report *,
+  .my-report *::before,
+  .my-report *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

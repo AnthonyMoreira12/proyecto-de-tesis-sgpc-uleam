@@ -1,32 +1,24 @@
 <template>
   <main class="pf-page">
     <section class="pf-shell">
-      <header class="pf-hero page-stage page-hero">
-        <div class="pf-hero__copy">
-          <p class="pf-kicker">Proyectos</p>
+      <header
+        class="pf-context page-stage page-hero"
+        aria-label="Formulario de proyecto"
+      >
+        <button
+          type="button"
+          class="pf-context__back"
+          :disabled="saving"
+          @click="volverListado"
+        >
+          <span aria-hidden="true">←</span>
+          Volver
+        </button>
 
-          <h1 class="pf-title">
+        <div class="pf-context__main">
+          <h1 class="pf-context__title">
             {{ isEditMode ? "Editar proyecto" : "Nuevo proyecto" }}
           </h1>
-
-          <p class="pf-subtitle">
-            Registre el proyecto, su facultad, carrera, años de ejecución y PDF de respaldo.
-            El equipo investigador puede completarse después mientras el proyecto no esté cerrado.
-          </p>
-        </div>
-
-        <div class="pf-hero__meta" aria-label="Resumen">
-          <span class="pf-pill">
-            Estado: <strong>{{ estadoResumen }}</strong>
-          </span>
-
-          <span class="pf-pill">
-            Vigencia: <strong>{{ periodoResumen }}</strong>
-          </span>
-
-          <span class="pf-pill">
-            Profesores: <strong>{{ profesoresResumen }}</strong>
-          </span>
         </div>
       </header>
 
@@ -45,7 +37,7 @@
             class="pf-card pf-state-card pf-state-card--error"
             role="alert"
           >
-            <h2 class="pf-state-title">No se pudo cargar</h2>
+            <h2 class="pf-state-title">No se pudo cargar el proyecto</h2>
             <p class="pf-state-text">{{ loadProyectoError }}</p>
 
             <div class="pf-state-actions">
@@ -75,16 +67,12 @@
             >
               <div class="pf-card__head">
                 <div>
-                  <p class="pf-section-kicker">Datos</p>
 
                   <h2 id="pf-datos-title" class="pf-card__title">
-                    Información principal
+                    Información del proyecto
                   </h2>
                 </div>
 
-                <p class="pf-card__desc">
-                  Nombre, estado y descripción del proyecto.
-                </p>
               </div>
 
               <div class="pf-grid">
@@ -133,7 +121,7 @@
                   </select>
 
                   <p id="proyecto-estado-help" class="pf-help">
-                    El estado se cambia desde el listado de proyectos.
+                    Se cambia desde Proyectos.
                   </p>
                 </div>
 
@@ -163,20 +151,16 @@
             >
               <div class="pf-card__head">
                 <div>
-                  <p class="pf-section-kicker">Vigencia</p>
 
                   <h2 id="pf-periodo-title" class="pf-card__title">
-                    Años y fechas del proyecto
+                    Fechas
                   </h2>
                 </div>
 
-                <p class="pf-card__desc">
-                  Los años deben coincidir con las fechas registradas cuando estas se informen.
-                </p>
               </div>
 
               <div class="pf-grid">
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-6">
                   <label for="proyecto-periodo-inicio">
                     Año de inicio
                     <span class="pf-req">*</span>
@@ -196,16 +180,12 @@
                     @input="normalizarAnioInput('anio_inicio')"
                   />
 
-                  <p class="pf-help">
-                    Rango permitido: {{ MIN_YEAR }}–{{ MAX_YEAR }}.
-                  </p>
-
                   <p v-if="showAnioInicioError" class="pf-error" role="alert">
                     Ingrese un año de inicio válido.
                   </p>
                 </div>
 
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-6">
                   <label for="proyecto-periodo-fin">
                     Año de finalización
                   </label>
@@ -237,12 +217,7 @@
                   </p>
                 </div>
 
-                <div class="pf-period-preview pf-col-4">
-                  <span>Vigencia</span>
-                  <strong>{{ periodoResumen }}</strong>
-                </div>
-
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-3">
                   <label for="proyecto-fecha-inicio">Fecha de inicio</label>
 
                   <input
@@ -253,9 +228,9 @@
                   />
                 </div>
 
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-3">
                   <label for="proyecto-fecha-fin-planificada">
-                    Fecha fin planificada
+                    Fecha de finalización prevista
                   </label>
 
                   <input
@@ -266,9 +241,9 @@
                   />
                 </div>
 
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-3">
                   <label for="proyecto-fecha-fin-prorrogada">
-                    Fecha prorrogada
+                    Nueva fecha de finalización
                   </label>
 
                   <input
@@ -279,11 +254,11 @@
                   />
 
                   <p class="pf-help">
-                    La prórroga se administra desde el listado.
+                    Se gestiona desde Proyectos.
                   </p>
                 </div>
 
-                <div class="pf-field pf-col-4">
+                <div class="pf-field pf-col-3">
                   <label for="proyecto-fecha-cierre">Fecha de cierre</label>
 
                   <input
@@ -307,19 +282,51 @@
             >
               <div class="pf-card__head">
                 <div>
-                  <p class="pf-section-kicker">Asignación</p>
 
                   <h2 id="pf-carrera-title" class="pf-card__title">
-                    Facultad y carrera
+                    Unidad académica
                   </h2>
                 </div>
 
-                <p class="pf-card__desc">
-                  Primero seleccione una facultad. Luego podrá escoger la carrera correspondiente.
-                </p>
               </div>
 
               <div class="pf-grid">
+                <div class="pf-field pf-col-4">
+                  <label for="proyecto-sede">
+                    Sede
+                    <span class="pf-req">*</span>
+                  </label>
+
+                  <select
+                    id="proyecto-sede"
+                    v-model="form.sede"
+                    class="pf-select"
+                    :disabled="saving || loadingSedes"
+                    :aria-invalid="showSedeError ? 'true' : 'false'"
+                    @change="handleSedeChange"
+                  >
+                    <option value="" disabled>
+                      {{ loadingSedes ? "Cargando..." : "Seleccione una sede" }}
+                    </option>
+
+                    <option
+                      v-for="sede in sedes"
+                      :key="sede.id"
+                      :value="sede.id"
+                    >
+                      {{ sede.nombre }}
+                    </option>
+                  </select>
+
+                  <p v-if="showSedeError" class="pf-error" role="alert">
+                    Seleccione una sede.
+                  </p>
+
+                  <p v-if="errorSedes" class="pf-error" role="alert">
+                    {{ errorSedes }}
+                  </p>
+                </div>
+
                 <div class="pf-field pf-col-4">
                   <label for="proyecto-facultad">
                     Facultad
@@ -330,7 +337,7 @@
                     id="proyecto-facultad"
                     v-model="form.facultad"
                     class="pf-select"
-                    :disabled="saving || loadingFacultades"
+                    :disabled="saving || loadingFacultades || !form.sede"
                     :aria-invalid="showFacultadError ? 'true' : 'false'"
                     @change="handleFacultadChange"
                   >
@@ -338,7 +345,9 @@
                       {{
                         loadingFacultades
                           ? "Cargando..."
-                          : "Seleccione una facultad"
+                          : form.sede
+                            ? "Seleccione una facultad"
+                            : "Seleccione primero una sede"
                       }}
                     </option>
 
@@ -360,7 +369,7 @@
                   </p>
                 </div>
 
-                <div class="pf-field pf-col-8">
+                <div class="pf-field pf-col-4">
                   <label for="proyecto-carrera">
                     Carrera
                     <span class="pf-req">*</span>
@@ -372,7 +381,7 @@
                     :class="{
                       'is-open': carreraDropdownOpen,
                       'is-invalid': showCarreraError,
-                      'is-disabled': !form.facultad || saving || loadingCarreras
+                      'is-disabled': !form.sede || !form.facultad || saving || loadingCarreras
                     }"
                   >
                     <div class="pf-combo__control">
@@ -389,7 +398,7 @@
                         :aria-busy="loadingCarreras ? 'true' : 'false'"
                         :placeholder="carreraPlaceholder"
                         autocomplete="off"
-                        :disabled="!form.facultad || saving || loadingCarreras"
+                        :disabled="!form.sede || !form.facultad || saving || loadingCarreras"
                         @focus="abrirCarreraDropdown"
                         @input="handleCarreraInput"
                         @keydown.down.prevent="moverCarrera(1)"
@@ -402,7 +411,7 @@
                       <button
                         type="button"
                         class="pf-combo__button"
-                        :disabled="!form.facultad || saving || loadingCarreras"
+                        :disabled="!form.sede || !form.facultad || saving || loadingCarreras"
                         aria-label="Abrir carreras"
                         @click="toggleCarreraDropdown"
                       >
@@ -456,10 +465,10 @@
                         aria-label="Carreras disponibles"
                       >
                         <div
-                          v-if="!form.facultad"
+                          v-if="!form.sede || !form.facultad"
                           class="pf-dropdown-state"
                         >
-                          Seleccione una facultad para ver sus carreras.
+                          Seleccione una sede y una facultad para ver sus carreras.
                         </div>
 
                         <div
@@ -513,7 +522,7 @@
                   </div>
 
                   <p v-if="showCarreraError" class="pf-error" role="alert">
-                    Seleccione una carrera válida.
+                    Seleccione una carrera.
                   </p>
                 </div>
               </div>
@@ -526,16 +535,12 @@
             >
               <div class="pf-card__head">
                 <div>
-                  <p class="pf-section-kicker">Profesores</p>
 
                   <h2 id="pf-profesores-title" class="pf-card__title">
-                    Equipo investigador
+                    Equipo del proyecto
                   </h2>
                 </div>
 
-                <p class="pf-card__desc">
-                  Puede completarlo después.
-                </p>
               </div>
 
               <div class="pf-authors-layout">
@@ -553,7 +558,7 @@
                       ref="autorInput"
                       v-model="autorQuery"
                       type="text"
-                      placeholder="Mínimo 2 caracteres"
+                      placeholder="Buscar por nombre o correo"
                       autocomplete="off"
                       :disabled="saving"
                       @focus="handleAutorFocus"
@@ -580,10 +585,12 @@
                       Buscando...
                     </span>
 
-                    <span v-else class="pf-mini-pill">
-                      {{ autoresVisibles.length }} resultado{{
-                        autoresVisibles.length === 1 ? "" : "s"
-                      }}
+                    <span
+                      v-else-if="autorQuery.trim().length >= 2"
+                      class="pf-mini-pill"
+                    >
+                      {{ autoresVisibles.length }}
+                      {{ autoresVisibles.length === 1 ? "coincidencia" : "coincidencias" }}
                     </span>
 
                     <button
@@ -650,7 +657,7 @@
                             <small>{{ autor.correo || "Sin correo registrado" }}</small>
                           </span>
 
-                          <em>{{ autor.es_externo ? "Externo" : "Interno" }}</em>
+                          <em>{{ autor.es_externo ? "Externo" : "Institucional" }}</em>
                         </button>
                       </template>
                     </div>
@@ -659,7 +666,7 @@
 
                 <div class="pf-authors-selected">
                   <div class="pf-authors-selected__head">
-                    <h3>Seleccionados</h3>
+                    <h3>Equipo seleccionado</h3>
                     <span>{{ profesoresResumen }}</span>
                   </div>
 
@@ -668,7 +675,7 @@
                     class="pf-empty-box"
                     :class="{ 'is-invalid': showAutoresError }"
                   >
-                    Equipo pendiente. Puede guardar y completarlo después.
+                    Sin profesores agregados.
                   </div>
 
                   <div v-else class="pf-author-list">
@@ -678,8 +685,14 @@
                       class="pf-author-card"
                     >
                       <div class="pf-author-card__identity">
-                        <strong>{{ autor.nombre_completo }}</strong>
-                        <span>{{ autor.correo || "Sin correo registrado" }}</span>
+                        <span class="pf-author-card__order">
+                          {{ index + 1 }}
+                        </span>
+
+                        <div>
+                          <strong>{{ autor.nombre_completo }}</strong>
+                          <span>{{ autor.correo || "Sin correo registrado" }}</span>
+                        </div>
                       </div>
 
                       <div class="pf-author-card__controls">
@@ -705,8 +718,6 @@
                       </div>
 
                       <div class="pf-author-card__footer">
-                        <span>Orden {{ index + 1 }}</span>
-
                         <div class="pf-author-card__actions">
                           <button
                             type="button"
@@ -759,16 +770,12 @@
             >
               <div class="pf-card__head">
                 <div>
-                  <p class="pf-section-kicker">PDF</p>
 
                   <h2 id="pf-documento-title" class="pf-card__title">
-                    Documento del proyecto
+                    Documento
                   </h2>
                 </div>
 
-                <p class="pf-card__desc">
-                  PDF opcional. Máximo 5 MB.
-                </p>
               </div>
 
               <div
@@ -779,16 +786,6 @@
                 @dragleave.prevent="handlePdfDragLeave"
                 @drop.prevent="handlePdfDrop"
               >
-                <div class="pf-upload__head">
-                  <h3>Agregar PDF</h3>
-
-                  <div class="pf-upload__chips">
-                    <span>PDF</span>
-                    <span>1 archivo</span>
-                    <span>≤ 5 MB</span>
-                  </div>
-                </div>
-
                 <label class="pf-upload__trigger" for="proyecto-pdf">
                   <input
                     id="proyecto-pdf"
@@ -805,14 +802,10 @@
                   </span>
 
                   <span class="pf-upload__copy">
-                    <strong>Seleccionar PDF</strong>
-                    <small>También puede arrastrar y soltar el archivo</small>
+                    <strong>Seleccionar archivo</strong>
+                    <small>PDF · Máximo 5 MB · También puede arrastrarlo aquí</small>
                   </span>
                 </label>
-
-                <p class="pf-upload__hint">
-                  Formato permitido: PDF. Máximo 5 MB.
-                </p>
 
                 <article
                   v-if="
@@ -848,7 +841,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        Ver PDF
+                        Ver documento
                       </a>
 
                       <button
@@ -879,7 +872,7 @@
                   class="pf-save-error"
                   role="status"
                 >
-                  El PDF almacenado se eliminará al guardar.
+                  El documento actual se eliminará al guardar.
 
                   <button
                     type="button"
@@ -899,110 +892,52 @@
           </template>
         </main>
 
-        <aside class="pf-aside page-stage page-aside" aria-label="Resumen">
-          <section class="pf-summary">
-            <div class="pf-summary__head">
-              <p class="pf-section-kicker">Resumen</p>
-              <h2 class="pf-summary__title">Registro</h2>
-            </div>
+        <aside
+          class="pf-aside page-stage page-aside"
+          aria-label="Resumen y acciones del proyecto"
+        >
+          <section class="pf-aside-card pf-aside-card--summary">
+            <h3>Resumen</h3>
 
-            <div class="pf-progress">
-              <div class="pf-progress__bar" aria-hidden="true">
-                <span :style="{ width: `${completionPercent}%` }"></span>
+            <dl class="pf-project-summary">
+              <div>
+                <dt>Estado</dt>
+                <dd>{{ estadoResumen }}</dd>
               </div>
 
-              <strong>{{ completionPercent }}%</strong>
-            </div>
+              <div>
+                <dt>Período</dt>
+                <dd>{{ periodoResumen }}</dd>
+              </div>
 
-            <div class="pf-summary-list">
-              <a
-                href="#pf-datos"
-                class="pf-summary-item"
-                :class="{ 'is-complete': Boolean(form.nombre) }"
-              >
-                <span class="pf-summary-dot" aria-hidden="true"></span>
+              <div>
+                <dt>Sede</dt>
+                <dd>{{ sedeSeleccionada?.nombre || "Sin seleccionar" }}</dd>
+              </div>
 
-                <span>
-                  <strong>Datos</strong>
-                  <small>{{ form.nombre ? "Listo" : "Pendiente" }}</small>
-                </span>
-              </a>
+              <div>
+                <dt>Carrera</dt>
+                <dd>{{ carreraSeleccionada?.nombre || "Sin seleccionar" }}</dd>
+              </div>
 
-              <a
-                href="#pf-periodo"
-                class="pf-summary-item"
-                :class="{ 'is-complete': isValidProjectYear(form.anio_inicio) }"
-              >
-                <span class="pf-summary-dot" aria-hidden="true"></span>
+              <div>
+                <dt>Equipo</dt>
+                <dd>{{ profesoresResumen }}</dd>
+              </div>
 
-                <span>
-                  <strong>Vigencia</strong>
-                  <small>{{ periodoResumen }}</small>
-                </span>
-              </a>
-
-              <a
-                href="#pf-carrera"
-                class="pf-summary-item"
-                :class="{ 'is-complete': Boolean(form.facultad && carreraSeleccionada) }"
-              >
-                <span class="pf-summary-dot" aria-hidden="true"></span>
-
-                <span>
-                  <strong>Asignación</strong>
-                  <small>
-                    {{ carreraSeleccionada?.nombre || facultadSeleccionada?.nombre || "Pendiente" }}
-                  </small>
-                </span>
-              </a>
-
-              <a
-                href="#pf-profesores"
-                class="pf-summary-item"
-                :class="{ 'is-complete': !isEstadoCierre || hasPrincipalAutor }"
-              >
-                <span class="pf-summary-dot" aria-hidden="true"></span>
-
-                <span>
-                  <strong>Profesores</strong>
-                  <small>{{ profesoresResumen }}</small>
-                </span>
-              </a>
-
-              <a
-                href="#pf-documento"
-                class="pf-summary-item"
-                :class="{
-                  'is-complete': Boolean(
-                    form.archivo_pdf ||
-                    (archivoPdfActualUrl && !eliminarPdfActual)
-                  )
-                }"
-              >
-                <span class="pf-summary-dot" aria-hidden="true"></span>
-
-                <span>
-                  <strong>PDF</strong>
-                  <small>
-                    {{
-                      form.archivo_pdf ||
-                      (archivoPdfActualUrl && !eliminarPdfActual)
-                        ? "Cargado"
-                        : "Opcional"
-                    }}
-                  </small>
-                </span>
-              </a>
-            </div>
-          </section>
-
-          <section class="pf-aside-card">
-            <h3>Acciones</h3>
-
-            <p>
-              Complete los campos obligatorios. El PDF y los profesores pueden
-              agregarse después.
-            </p>
+              <div>
+                <dt>Documento</dt>
+                <dd>
+                  {{
+                    form.archivo_pdf
+                      ? "Nuevo archivo"
+                      : archivoPdfActualUrl && !eliminarPdfActual
+                        ? "Registrado"
+                        : "Sin documento"
+                  }}
+                </dd>
+              </div>
+            </dl>
 
             <div v-if="saveError" class="pf-save-error" role="alert">
               {{ saveError }}
@@ -1027,13 +962,18 @@
                 class="pf-btn pf-btn--primary"
                 :disabled="saving || loadingProyecto"
               >
-                {{ saving ? "Guardando..." : "Guardar proyecto" }}
+                {{ saving ? "Guardando..." : (isEditMode ? "Guardar cambios" : "Registrar proyecto") }}
               </button>
             </div>
           </section>
         </aside>
       </form>
     </section>
+
+    <NoticeDialog
+      :modelValue="notice"
+      @close="handleNoticeClose"
+    />
   </main>
 </template>
 
@@ -1057,11 +997,15 @@ import {
   actualizarProyecto,
   buscarAutoresProyecto,
   consultarCarrerasProyecto,
+  consultarCarrerasPorSedeProyecto,
   consultarFacultadesProyecto,
+  consultarSedesProyecto,
   crearProyecto,
   getProyectoApiErrorMessage,
   obtenerProyecto,
 } from "../../scripts/api/proyectosApi";
+import { useNotice } from "../../scripts/composables/useNotice";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
 
 
 /* ============================================================
@@ -1073,6 +1017,14 @@ const route =
 
 const router =
   useRouter();
+
+const {
+  notice,
+  openNotice,
+  closeNotice,
+} = useNotice();
+
+let discardDecisionResolver = null;
 
 const isEditMode =
   computed(
@@ -1174,6 +1126,7 @@ function emptyForm() {
     nombre: "",
     descripcion: "",
     estado: "nuevo",
+    sede: "",
     facultad: "",
     carrera: "",
     anio_inicio:
@@ -1214,8 +1167,17 @@ const triedSubmit =
 
 
 /* ============================================================
-   FACULTADES / CARRERAS
+   SEDES / FACULTADES / CARRERAS
 ============================================================ */
+
+const sedes =
+  ref([]);
+
+const loadingSedes =
+  ref(false);
+
+const errorSedes =
+  ref("");
 
 const facultades =
   ref([]);
@@ -1295,6 +1257,7 @@ const pdfDragOver =
 let autorSearchTimer = null;
 let autorAbortController = null;
 let projectAbortController = null;
+let sitesAbortController = null;
 let facultiesAbortController = null;
 let careersAbortController = null;
 
@@ -1729,6 +1692,11 @@ function buildSnapshot() {
     estado:
       form.value.estado,
 
+    sede:
+      normalizeId(
+        form.value.sede
+      ),
+
     facultad:
       normalizeId(
         form.value.facultad
@@ -1798,15 +1766,64 @@ const hasUnsavedChanges =
   );
 
 
+function resolveDiscardDecision(accepted) {
+  const resolver =
+    discardDecisionResolver;
+
+  discardDecisionResolver =
+    null;
+
+  if (
+    typeof resolver ===
+    "function"
+  ) {
+    resolver(
+      Boolean(accepted)
+    );
+  }
+}
+
+
+function handleNoticeClose() {
+  resolveDiscardDecision(false);
+  closeNotice();
+}
+
+
 function confirmDiscardChanges() {
   if (
     !hasUnsavedChanges.value
   ) {
-    return true;
+    return Promise.resolve(true);
   }
 
-  return window.confirm(
-    UNSAVED_MESSAGE
+  if (
+    discardDecisionResolver
+  ) {
+    return Promise.resolve(false);
+  }
+
+  return new Promise(
+    (resolve) => {
+      discardDecisionResolver =
+        resolve;
+
+      openNotice({
+        title: "Descartar cambios",
+        message:
+          "Hay cambios sin guardar en el proyecto. " +
+          "Si continúa, esos cambios se perderán.",
+        confirm: true,
+        confirmText: "Descartar cambios",
+        cancelText: "Continuar editando",
+        onConfirm: () => {
+          resolveDiscardDecision(true);
+        },
+        onCancel: () => {
+          resolveDiscardDecision(false);
+        },
+      });
+    }
   );
 }
 
@@ -1972,6 +1989,24 @@ const pdfLabel =
   );
 
 
+const sedeSeleccionada =
+  computed(
+    () => (
+      sedes.value.find(
+        (item) => (
+          normalizeId(
+            item.id
+          )
+          === normalizeId(
+            form.value.sede
+          )
+        )
+      )
+      || null
+    )
+  );
+
+
 const facultadSeleccionada =
   computed(
     () => (
@@ -2012,11 +2047,12 @@ const carreraPlaceholder =
   computed(
     () => {
       if (
-        !form.value.facultad
+        !form.value.sede
+        || !form.value.facultad
       ) {
         return (
-          "Seleccione primero "
-          + "una facultad"
+          "Seleccione primero sede "
+          + "y facultad"
         );
       }
 
@@ -2038,6 +2074,15 @@ const showNombreError =
       && !String(
         form.value.nombre || ""
       ).trim()
+    )
+  );
+
+
+const showSedeError =
+  computed(
+    () => (
+      triedSubmit.value
+      && !form.value.sede
     )
   );
 
@@ -2138,6 +2183,10 @@ const completionPercent =
 
         isValidProjectYear(
           form.value.anio_inicio
+        ),
+
+        Boolean(
+          form.value.sede
         ),
 
         Boolean(
@@ -2399,6 +2448,14 @@ function hydrateForm(
     estado:
       data.estado || "nuevo",
 
+    sede:
+      normalizeId(
+        data.sede_id
+        || data.sede?.id
+        || data.sede
+        || ""
+      ),
+
     facultad:
       facultyId,
 
@@ -2529,7 +2586,8 @@ async function cargarProyecto() {
     );
 
     if (
-      form.value.facultad
+      form.value.sede
+      && form.value.facultad
     ) {
       await cargarCarrerasPorFacultad(
         form.value.facultad
@@ -2561,8 +2619,7 @@ async function cargarProyecto() {
       getProyectoApiErrorMessage(
         error,
         (
-          "No se pudo obtener la "
-          + "información del proyecto."
+          "No pudimos cargar la información del proyecto."
         )
       );
 
@@ -2577,6 +2634,144 @@ async function cargarProyecto() {
         false;
     }
   }
+}
+
+
+/* ============================================================
+   SEDES
+============================================================ */
+
+function normalizeSede(
+  item
+) {
+  return {
+    id:
+      normalizeId(
+        item?.id
+      ),
+
+    nombre:
+      item?.nombre
+      || item?.label
+      || item?.name
+      || "",
+  };
+}
+
+
+async function cargarSedes() {
+  sitesAbortController
+    ?.abort?.();
+
+  const controller =
+    new AbortController();
+
+  sitesAbortController =
+    controller;
+
+  loadingSedes.value =
+    true;
+
+  errorSedes.value =
+    "";
+
+  try {
+    const payload =
+      await consultarSedesProyecto({
+        signal:
+          controller.signal,
+      });
+
+    if (
+      sitesAbortController
+      !== controller
+    ) {
+      return;
+    }
+
+    sedes.value =
+      extractArray(
+        payload
+      )
+        .map(
+          normalizeSede
+        )
+        .filter(
+          (item) => (
+            item.id
+            && item.nombre
+          )
+        )
+        .sort(
+          (first, second) => (
+            String(
+              first.nombre
+            ).localeCompare(
+              String(
+                second.nombre
+              ),
+              "es",
+              {
+                sensitivity:
+                  "base",
+              }
+            )
+          )
+        );
+
+    if (
+      !sedes.value.length
+    ) {
+      errorSedes.value =
+        "No hay sedes disponibles.";
+    }
+  } catch (
+    error
+  ) {
+    if (
+      error?.code
+      === "ERR_CANCELED"
+    ) {
+      return;
+    }
+
+    console.error(
+      "Error cargando sedes:",
+      error
+    );
+
+    sedes.value = [];
+
+    errorSedes.value =
+      getProyectoApiErrorMessage(
+        error,
+        "No pudimos cargar las sedes."
+      );
+  } finally {
+    if (
+      sitesAbortController
+      === controller
+    ) {
+      loadingSedes.value =
+        false;
+    }
+  }
+}
+
+
+async function handleSedeChange() {
+  form.value.facultad =
+    "";
+
+  form.value.carrera =
+    "";
+
+  carreraQuery.value =
+    "";
+
+  carreras.value = [];
+
+  cerrarCarreraDropdown();
 }
 
 
@@ -2703,8 +2898,7 @@ async function cargarFacultades() {
       getProyectoApiErrorMessage(
         error,
         (
-          "No se pudieron cargar "
-          + "las facultades."
+          "No pudimos cargar las facultades."
         )
       );
   } finally {
@@ -2732,7 +2926,8 @@ async function handleFacultadChange() {
   cerrarCarreraDropdown();
 
   if (
-    !form.value.facultad
+    !form.value.sede
+    || !form.value.facultad
   ) {
     return;
   }
@@ -2845,14 +3040,34 @@ async function cargarCarrerasPorFacultad(
       || ""
     );
 
-    const payload =
-      await consultarCarrerasProyecto(
+    if (
+      !form.value.sede
+    ) {
+      carreras.value = [];
+      errorCarreras.value =
+        "Seleccione una sede antes de consultar carreras.";
+      return;
+    }
+
+    const [
+      facultyPayload,
+      sitePayload,
+    ] = await Promise.all([
+      consultarCarrerasProyecto(
         facultadId,
         {
           signal:
             controller.signal,
         }
-      );
+      ),
+      consultarCarrerasPorSedeProyecto(
+        form.value.sede,
+        {
+          signal:
+            controller.signal,
+        }
+      ),
+    ]);
 
     if (
       careersAbortController
@@ -2861,10 +3076,25 @@ async function cargarCarrerasPorFacultad(
       return;
     }
 
+    const siteIds =
+      new Set(
+        extractArray(
+          sitePayload
+        )
+          .map(
+            (item) => (
+              normalizeId(
+                item?.id
+              )
+            )
+          )
+          .filter(Boolean)
+      );
+
     carreras.value =
       sortCarreras(
         extractArray(
-          payload
+          facultyPayload
         )
           .map(
             (item) => (
@@ -2878,6 +3108,11 @@ async function cargarCarrerasPorFacultad(
             (item) => (
               item.id
               && item.nombre
+              && siteIds.has(
+                normalizeId(
+                  item.id
+                )
+              )
             )
           )
       );
@@ -2887,7 +3122,7 @@ async function cargarCarrerasPorFacultad(
     ) {
       errorCarreras.value = (
         "No hay carreras disponibles "
-        + "para esta facultad."
+        + "para esta sede y facultad."
       );
     }
   } catch (
@@ -3659,8 +3894,7 @@ async function buscarAutores() {
       getProyectoApiErrorMessage(
         error,
         (
-          "No se pudieron cargar "
-          + "los profesores."
+          "No pudimos cargar los profesores."
         )
       );
   } finally {
@@ -4092,6 +4326,14 @@ function buildPayload() {
 
   appendFormValue(
     payload,
+    "sede",
+    toApiId(
+      form.value.sede
+    )
+  );
+
+  appendFormValue(
+    payload,
     "carrera",
     toApiId(
       form.value.carrera
@@ -4195,6 +4437,15 @@ function validateBeforeSave() {
           ?.focus?.()
       )
     );
+
+    return false;
+  }
+
+  if (
+    !form.value.sede
+  ) {
+    saveError.value =
+      "Seleccione una sede.";
 
     return false;
   }
@@ -4451,8 +4702,7 @@ async function guardarProyecto() {
       getProyectoApiErrorMessage(
         error,
         (
-          "No se pudo guardar "
-          + "el proyecto."
+          "No pudimos guardar el proyecto."
         )
       );
   } finally {
@@ -4474,7 +4724,7 @@ async function volverListado() {
   }
 
   if (
-    !confirmDiscardChanges()
+    !(await confirmDiscardChanges())
   ) {
     return;
   }
@@ -4751,7 +5001,11 @@ onMounted(
       handleBeforeUnload
     );
 
-    await cargarFacultades();
+    await Promise.all([
+      cargarSedes(),
+      cargarFacultades(),
+    ]);
+
     await cargarProyecto();
 
     if (
@@ -4773,6 +5027,7 @@ onMounted(
 
 onBeforeUnmount(
   () => {
+    resolveDiscardDecision(false);
     clearTimeout(
       autorSearchTimer
     );
@@ -4781,6 +5036,9 @@ onBeforeUnmount(
       ?.abort?.();
 
     projectAbortController
+      ?.abort?.();
+
+    sitesAbortController
       ?.abort?.();
 
     facultiesAbortController

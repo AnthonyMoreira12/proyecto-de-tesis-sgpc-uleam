@@ -12,7 +12,7 @@ Reglas principales:
 - No se exponen cédulas, correos, identificadores internos del Usuario,
   origen de autenticación ni privilegios administrativos.
 - La afiliación institucional se deriva del Autor y, cuando corresponde,
-  de la carrera y facultad del Usuario vinculado.
+  de la sede, carrera y facultad del Usuario vinculado.
 - El estado distingue cuentas pendientes, activas e inactivas sin exponer
   credenciales.
 """
@@ -21,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
-from core.models import Autor
+from core.models import Autor, Publicacion
 
 
 User = get_user_model()
@@ -123,6 +123,11 @@ def _build_full_name(author):
     return full_name or None
 
 
+def _site(user):
+    """Obtiene la sede del Usuario institucional vinculado."""
+    return getattr(user, "sede", None) if user is not None else None
+
+
 def _career(user):
     """Obtiene la carrera del Usuario vinculado."""
     return getattr(user, "carrera", None) if user is not None else None
@@ -203,20 +208,45 @@ def _publications_count(author):
 
     prefetched = getattr(author, "_busqueda_participaciones", None)
     if prefetched is not None:
-        return len(
-            {
-                getattr(participation, "publicacion_id", None)
-                for participation in prefetched
-                if getattr(participation, "publicacion_id", None)
-            }
-        )
+        publicacion_ids = {
+            getattr(participation, "publicacion_id", None)
+            for participation in prefetched
+            if getattr(participation, "publicacion_id", None)
+        }
+
+        if not publicacion_ids:
+            return 0
+
+        try:
+            return (
+                Publicacion.objects
+                .filter(
+                    pk__in=publicacion_ids,
+                    estado=(
+                        Publicacion.ESTADO_APROBADA
+                    ),
+                )
+                .count()
+            )
+        except (AttributeError, TypeError, ValueError):
+            return 0
 
     relation_manager = getattr(author, "participaciones", None)
     if relation_manager is None:
         return 0
 
     try:
-        return relation_manager.values("publicacion_id").distinct().count()
+        return (
+            relation_manager
+            .filter(
+                publicacion__estado=(
+                    Publicacion.ESTADO_APROBADA
+                )
+            )
+            .values("publicacion_id")
+            .distinct()
+            .count()
+        )
     except (AttributeError, TypeError, ValueError):
         return 0
 
@@ -261,6 +291,8 @@ class AutorBusquedaSerializer(serializers.ModelSerializer):
     institucion = serializers.SerializerMethodField(read_only=True)
     org = serializers.SerializerMethodField(read_only=True)
 
+    sede_id = serializers.SerializerMethodField(read_only=True)
+    sede = serializers.SerializerMethodField(read_only=True)
     carrera_id = serializers.SerializerMethodField(read_only=True)
     carrera = serializers.SerializerMethodField(read_only=True)
     facultad_id = serializers.SerializerMethodField(read_only=True)
@@ -292,6 +324,8 @@ class AutorBusquedaSerializer(serializers.ModelSerializer):
             "name",
             "institucion",
             "org",
+            "sede_id",
+            "sede",
             "carrera_id",
             "carrera",
             "facultad_id",
@@ -335,12 +369,23 @@ class AutorBusquedaSerializer(serializers.ModelSerializer):
 
         values = _unique_text_list(
             [
+                self.get_sede(obj),
                 self.get_facultad(obj),
                 self.get_carrera(obj),
             ]
         )
 
         return " · ".join(values) if values else None
+
+    def get_sede_id(self, obj):
+        user = _safe_user(obj)
+        site = _site(user)
+        return getattr(site, "pk", None) if site is not None else None
+
+    def get_sede(self, obj):
+        user = _safe_user(obj)
+        site = _site(user)
+        return _optional_text(getattr(site, "nombre", None))
 
     def get_carrera_id(self, obj):
         user = _safe_user(obj)
@@ -389,6 +434,7 @@ class AutorBusquedaSerializer(serializers.ModelSerializer):
     def get_tags(self, obj):
         return _unique_text_list(
             [
+                self.get_sede(obj),
                 self.get_facultad(obj),
                 self.get_carrera(obj),
             ]

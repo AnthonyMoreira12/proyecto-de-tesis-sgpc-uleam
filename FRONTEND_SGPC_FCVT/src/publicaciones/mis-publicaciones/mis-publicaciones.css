@@ -1,230 +1,44 @@
 /* ============================================================
    SGPC ULEAM — MIS PUBLICACIONES
-   Estilos exclusivos de la interfaz
+   Misma línea visual del catálogo institucional de Publicaciones.
+   La lógica de workflow permanece en MisPublicacionesView.vue.
 ============================================================ */
 
 .mispub {
-  --mp-bg:
-    var(
-      --sgpc-list-bg,
-      var(--bg-main, #f2f5fa)
-    );
-
-  --mp-card:
-    var(
-      --sgpc-list-card,
-      var(--bg-card, #ffffff)
-    );
-
-  --mp-input:
-    var(
-      --sgpc-list-input,
-      var(--bg-input, #ffffff)
-    );
-
-  --mp-elev:
-    var(
-      --sgpc-list-elev,
-      var(--bg-elevated, #f8faff)
-    );
-
-  --mp-text:
-    var(
-      --sgpc-list-text,
-      var(--text-primary, #172033)
-    );
-
-  --mp-muted:
-    var(
-      --sgpc-list-muted,
-      var(--text-secondary, #637187)
-    );
-
-  --mp-disabled:
-    var(
-      --sgpc-list-disabled,
-      var(
-        --text-disabled,
-        rgba(23, 32, 51, 0.42)
-      )
-    );
-
-  --mp-line:
-    var(
-      --sgpc-list-line,
-      var(--border-color, #dce4ef)
-    );
-
-  --mp-line-strong:
-    var(
-      --sgpc-list-line-strong,
-      var(--border-strong, #c6d2e1)
-    );
-
-  --mp-primary:
-    var(
-      --sgpc-list-primary,
-      var(
-        --color-primary-effective,
-        var(--color-primary, #245f98)
-      )
-    );
-
-  --mp-primary-soft:
-    color-mix(
-      in srgb,
-      var(--mp-primary) 8%,
-      var(--mp-card)
-    );
-
-  --mp-primary-line:
-    color-mix(
-      in srgb,
-      var(--mp-primary) 20%,
-      var(--mp-line)
-    );
-
-  --mp-success:
-    var(
-      --sgpc-list-success,
-      var(--success, #287957)
-    );
-
-  --mp-danger:
-    var(
-      --sgpc-list-danger,
-      var(--danger, #b64d45)
-    );
-
-  --mp-info:
-    var(
-      --sgpc-list-info,
-      var(--info, #356f9f)
-    );
-
-  /*
-   * Contraste oficial definido por el tema global.
-   * Ejemplos:
-   * - azul/rojo -> texto blanco;
-   * - acento blanco -> texto negro u oscuro.
-   */
-  --mp-accent-contrast:
-    var(
-      --accent-contrast,
-      #ffffff
-    );
-
-  /* Tokens del interruptor en tema claro. */
-  --mp-toggle-track-off:
-    var(
-      --surface-4,
-      color-mix(
-        in srgb,
-        var(--mp-muted) 18%,
-        var(--mp-input)
-      )
-    );
-
-  --mp-toggle-thumb-off:
-    var(
-      --bg-card,
-      #ffffff
-    );
-
-  --mp-radius-sm:
-    var(
-      --sgpc-list-radius-sm,
-      var(--radius-sm, 10px)
-    );
-
-  --mp-radius-md:
-    var(
-      --sgpc-list-radius-md,
-      var(--radius-md, 12px)
-    );
-
-  --mp-radius-lg:
-    var(
-      --sgpc-list-radius-lg,
-      var(--radius-lg, 16px)
-    );
-
-  --mp-radius-xl:
-    var(
-      --sgpc-list-radius-xl,
-      var(--radius-xl, 20px)
-    );
-
-  --mp-radius-2xl:
-    var(
-      --sgpc-list-radius-2xl,
-      var(--radius-2xl, 24px)
-    );
-
-  --mp-radius-pill:
-    var(
-      --sgpc-list-radius-pill,
-      var(--radius-pill, 999px)
-    );
-
-  --mp-shadow-soft:
-    var(
-      --sgpc-list-shadow-soft,
-      var(
-        --shadow-soft,
-        0 8px 24px rgba(31, 45, 68, 0.055)
-      )
-    );
-
-  --mp-shadow-strong:
-    var(
-      --sgpc-list-shadow-strong,
-      var(
-        --shadow-strong,
-        0 18px 42px rgba(31, 45, 68, 0.09)
-      )
-    );
-
-  --page-accent: var(--mp-primary);
-  --page-accent-soft: var(--mp-primary-soft);
-  --page-accent-line: var(--mp-primary-line);
-  --page-accent-ink: var(--mp-primary);
-
-  box-sizing: border-box;
+  --mp-bg: var(--sgpc-list-bg, var(--bg-main, #f2f5fa));
+  --mp-card: var(--sgpc-list-card, var(--bg-card, #ffffff));
+  --mp-elev: var(--sgpc-list-elev, var(--bg-elevated, #f8fafc));
+  --mp-input: var(--sgpc-list-input, var(--bg-input, #ffffff));
+  --mp-text: var(--sgpc-list-text, var(--text-primary, #172033));
+  --mp-muted: var(--sgpc-list-muted, var(--text-secondary, #637187));
+  --mp-disabled: var(--sgpc-list-disabled, var(--text-disabled, #98a2b3));
+  --mp-line: var(--sgpc-list-line, var(--border-color, #dce4ef));
+  --mp-line-strong: var(--sgpc-list-line-strong, var(--border-strong, #c6d2e1));
+  --mp-primary: var(
+    --sgpc-list-primary,
+    var(--color-primary-effective, var(--color-primary, #245f98))
+  );
+  --mp-success: var(--sgpc-list-success, var(--success, #287957));
+  --mp-danger: var(--sgpc-list-danger, var(--danger, #b64d45));
+  --mp-warning: var(--sgpc-list-warning, var(--warning, #a66f1f));
+  --mp-info: var(--sgpc-list-info, var(--info, #356f9f));
+  --mp-radius: 16px;
+  --mp-radius-sm: 12px;
+  --mp-shadow: 0 7px 22px rgba(31, 45, 68, 0.045);
 
   width: 100%;
+  min-width: 0;
   min-height: 100vh;
-
   padding:
-    calc(var(--sgpc-nav-offset, 78px) + 16px)
-    clamp(14px, 2vw, 28px)
-    36px;
-
-  background:
-    radial-gradient(
-      circle at 8% 0%,
-      color-mix(
-        in srgb,
-        var(--mp-primary) 4%,
-        transparent
-      ),
-      transparent 30%
-    ),
-    var(--mp-bg);
-
+    calc(var(--sgpc-nav-offset, 78px) + 18px)
+    clamp(16px, 2vw, 30px)
+    44px;
+  background: var(--mp-bg);
   color: var(--mp-text);
-
-  font-family:
-    var(
-      --font-body,
-      "Geist",
-      "Inter",
-      "Segoe UI",
-      system-ui,
-      sans-serif
-    );
+  font-family: var(--font-body, "Geist", "Inter", "Segoe UI", system-ui, sans-serif);
 }
 
+.mispub,
 .mispub *,
 .mispub *::before,
 .mispub *::after {
@@ -235,2224 +49,1332 @@
 .mispub input,
 .mispub select,
 .mispub textarea {
-  font-family:
-    var(
-      --font-control,
-      "Geist",
-      "Inter",
-      "Segoe UI",
-      system-ui,
-      sans-serif
-    );
-}
-
-.mispub button,
-.mispub select,
-.mispub input {
-  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
 }
 
 .mispub__wrap {
-  width:
-    min(
-      var(--container-max, 1320px),
-      100%
-    );
-
+  width: min(var(--sgpc-content-max, 1480px), 100%);
+  min-width: 0;
   margin: 0 auto;
-
   display: grid;
-  gap:
-    var(
-      --sgpc-list-page-gap,
-      14px
-    );
+  gap: 16px;
 }
 
 /* ============================================================
-   ACENTO DINÁMICO POR TIPO
+   CABECERA
 ============================================================ */
 
-.mispub[data-tipo="AAI"] {
-  --page-accent: var(--pub-aai);
-  --page-accent-soft: var(--pub-aai-soft);
-  --page-accent-line: var(--pub-aai-line);
-  --page-accent-ink: var(--pub-aai-ink);
+.mispub-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 4px 0 6px;
 }
 
-.mispub[data-tipo="AR"] {
-  --page-accent: var(--pub-ar);
-  --page-accent-soft: var(--pub-ar-soft);
-  --page-accent-line: var(--pub-ar-line);
-  --page-accent-ink: var(--pub-ar-ink);
-}
-
-.mispub[data-tipo="PON"] {
-  --page-accent: var(--pub-pon);
-  --page-accent-soft: var(--pub-pon-soft);
-  --page-accent-line: var(--pub-pon-line);
-  --page-accent-ink: var(--pub-pon-ink);
-}
-
-.mispub[data-tipo="CAP"] {
-  --page-accent: var(--pub-cap);
-  --page-accent-soft: var(--pub-cap-soft);
-  --page-accent-line: var(--pub-cap-line);
-  --page-accent-ink: var(--pub-cap-ink);
-}
-
-.mispub[data-tipo="LIB"] {
-  --page-accent: var(--pub-lib);
-  --page-accent-soft: var(--pub-lib-soft);
-  --page-accent-line: var(--pub-lib-line);
-  --page-accent-ink: var(--pub-lib-ink);
-}
-
-/* ============================================================
-   ENCABEZADO
-============================================================ */
-
-.mispub .mispub__hero {
-  position: relative;
-
-  display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(390px, 0.72fr);
-
-  align-items: center;
-
-  gap: 20px;
-
-  padding: 18px 20px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-xl);
-
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(
-        in srgb,
-        var(--mp-card) 97%,
-        var(--mp-bg)
-      ),
-      var(--mp-card)
-    );
-
-  box-shadow:
-    var(--mp-shadow-soft);
-
-  overflow: hidden;
-}
-
-.mispub .mispub__hero::before {
-  content: "";
-
-  position: absolute;
-
-  inset:
-    0
-    0
-    auto
-    0;
-
-  height: 3px;
-
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(
-        in srgb,
-        var(--page-accent) 78%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--page-accent) 18%,
-        transparent
-      )
-    );
-}
-
-.mispub .hero__copy {
+.mispub-header__copy {
   min-width: 0;
 }
 
-.mispub .hero__eyebrow {
+.mispub-eyebrow,
+.mispub-section-kicker {
   display: inline-flex;
   align-items: center;
-
-  margin: 0;
-
-  color: var(--mp-muted);
-
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.085em;
+  gap: 7px;
+  color: var(--mp-primary);
+  font-size: 0.69rem;
+  font-weight: 820;
+  letter-spacing: 0.075em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
-.mispub .hero__title {
-  margin: 6px 0 0;
-
-  color: var(--mp-text);
-
-  font-family:
-    var(
-      --font-heading,
-      "Geist",
-      "Inter",
-      "Segoe UI",
-      sans-serif
-    );
-
-  font-size:
-    clamp(
-      1.72rem,
-      2vw,
-      2.45rem
-    );
-
-  line-height: 1.02;
-  letter-spacing: -0.043em;
-  font-weight: 700;
-}
-
-.mispub .hero__subtitle {
-  max-width: 72ch;
-
-  margin: 8px 0 0;
-
-  color: var(--mp-muted);
-
-  font-size: 0.88rem;
-  line-height: 1.48;
-  font-weight: 500;
-}
-
-.mispub .hero__pills {
-  display: flex;
-  flex-wrap: wrap;
-
-  gap: 7px;
-
-  margin-top: 12px;
-}
-
-.mispub .pill {
-  display: inline-flex;
-  align-items: center;
-
-  min-height: 30px;
-
-  padding: 0 11px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 91%,
-      var(--mp-bg)
-    );
-
-  color: var(--mp-muted);
-
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.mispub .pill strong {
-  margin-left: 4px;
-
-  color: var(--mp-text);
-  font-weight: 850;
-}
-
-.mispub .pill--active {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
-}
-
-.mispub .hero__tools {
-  min-width: 0;
-
-  display: grid;
-
-  gap: 10px;
-}
-
-/* ============================================================
-   BUSCADOR
-============================================================ */
-
-.mispub .search.search--navbar {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-
-  width: 100%;
-
-  min-height:
-    var(
-      --sgpc-list-control-height-lg,
-      44px
-    );
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-md);
-
-  background:
-    var(--mp-input);
-
-  overflow: hidden;
-
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease);
-}
-
-.mispub .search.search--navbar:hover {
-  border-color:
-    var(--mp-line-strong);
-}
-
-.mispub .search.search--navbar:focus-within {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--page-accent) 32%,
-      var(--mp-line)
-    );
-
-  box-shadow:
-    var(
-      --ring-primary,
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--page-accent) 16%,
-        transparent
-      )
-    );
-}
-
-.mispub .search__lead {
-  position: absolute;
-
-  left: 13px;
-  top: 50%;
-
+.mispub-eyebrow::before {
+  content: "";
   width: 18px;
-  height: 18px;
-
-  display: inline-grid;
-  place-items: center;
-
-  transform:
-    translateY(-50%);
-
-  color: var(--mp-muted);
-
-  pointer-events: none;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
 }
 
-.mispub .search__svg {
-  width: 17px;
-  height: 17px;
-
-  display: block;
-}
-
-.mispub .search__input {
-  width: 100%;
-  min-width: 0;
-
-  min-height:
-    var(
-      --sgpc-list-control-height,
-      42px
-    );
-
-  padding:
-    0
-    50px
-    0
-    40px;
-
-  border: none !important;
-  border-radius: 0 !important;
-
-  background: transparent !important;
-  color: var(--mp-text) !important;
-
-  outline: none !important;
-  box-shadow: none !important;
-
-  font-size: 0.86rem;
-  font-weight: 600;
-}
-
-.mispub .search__input::placeholder {
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-muted) 80%,
-      transparent
-    );
-
-  font-weight: 500;
-}
-
-.mispub .search__input::-webkit-search-cancel-button {
-  appearance: none;
-}
-
-.mispub .search__action {
-  position: absolute;
-
-  right: 5px;
-  top: 50%;
-
-  width: 34px;
-  height: 34px;
-
-  display: inline-grid;
-  place-items: center;
-
-  transform:
-    translateY(-50%);
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-sm);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 92%,
-      var(--mp-bg)
-    );
-
-  color: var(--mp-muted);
-
-  cursor: pointer;
-
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease);
-}
-
-.mispub .search__action:hover {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
-}
-
-.mispub .search__x {
-  font-size: 1.2rem;
-  line-height: 1;
-  font-weight: 500;
-}
-
-/* ============================================================
-   CAMBIO DE VISTA
-============================================================ */
-
-.mispub .view__switch {
-  display: grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
-  gap: 6px;
-
-  padding: 4px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-md);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 91%,
-      var(--mp-bg)
-    );
-}
-
-.mispub .view__btn {
-  min-height: 36px;
-
-  padding: 0 14px;
-
-  border:
-    1px solid
-    transparent;
-
-  border-radius:
-    var(--mp-radius-sm);
-
-  background: transparent;
-  color: var(--mp-muted);
-
-  font-size: 0.8rem;
-  font-weight: 750;
-
-  cursor: pointer;
-
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease);
-}
-
-.mispub .view__btn:hover {
+.mispub-title {
+  margin: 6px 0 0;
   color: var(--mp-text);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 94%,
-      var(--mp-bg)
-    );
-}
-
-.mispub .view__btn.activo {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--mp-card);
-
-  box-shadow:
-    var(--mp-shadow-soft);
-}
-
-/* ============================================================
-   CONTENEDOR DE FILTROS COMPACTO
-============================================================ */
-
-.mispub .mispub__filters {
-  display: grid;
-  gap: 10px;
-
-  padding: 13px 14px 14px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-xl);
-
-  background:
-    var(--mp-card);
-
-  box-shadow:
-    var(--mp-shadow-soft);
-}
-
-.mispub .filters__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 14px;
-
-  padding-bottom: 9px;
-
-  border-bottom:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-line) 72%,
-      transparent
-    );
-}
-
-.mispub .filters__titlewrap {
-  min-width: 0;
-
-  display: grid;
-  gap: 3px;
-}
-
-.mispub .filters__titleLine {
-  min-width: 0;
-
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-
-  gap: 8px;
-}
-
-.mispub .filters__title {
-  margin: 0;
-
-  color: var(--mp-text);
-
-  font-family:
-    var(
-      --font-heading,
-      "Geist",
-      "Inter",
-      "Segoe UI",
-      sans-serif
-    );
-
-  font-size: 0.98rem;
-  line-height: 1.1;
-  font-weight: 720;
-  letter-spacing: -0.02em;
-}
-
-.mispub .filters__activeBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 22px;
-
-  padding: 0 8px;
-
-  border:
-    1px solid
-    var(--page-accent-line);
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--page-accent-soft);
-
-  color:
-    var(--page-accent-ink);
-
-  font-size: 0.66rem;
-  line-height: 1;
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: clamp(2rem, 2.6vw, 2.65rem);
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
 }
 
-.mispub .filters__description {
-  max-width: 78ch;
-
-  margin: 0;
-
+.mispub-subtitle {
+  max-width: 780px;
+  margin: 9px 0 0;
   color: var(--mp-muted);
-
-  font-size: 0.73rem;
-  line-height: 1.35;
+  font-size: 0.92rem;
   font-weight: 500;
+  line-height: 1.55;
 }
 
-.mispub .filters__clear {
-  min-height: 32px;
-
-  padding: 0 11px;
-
+.mispub-header__summary {
   flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+}
 
-  border:
-    1px solid
-    var(--mp-line);
+.mispub-summary-card {
+  min-width: 98px;
+  min-height: 58px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 9px 13px;
+  border: 1px solid var(--mp-line);
+  border-radius: 13px;
+  background: var(--mp-card);
+}
 
-  border-radius:
-    var(--mp-radius-sm);
+.mispub-summary-card span {
+  color: var(--mp-muted);
+  font-size: 0.66rem;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
 
-  background:
-    var(--mp-input);
-
-  color:
-    var(--mp-text);
-
-  font-size: 0.73rem;
-  font-weight: 760;
-
-  cursor: pointer;
+.mispub-summary-card strong {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--mp-text);
+  font-size: 1rem;
+  font-weight: 840;
+  line-height: 1.2;
+  text-overflow: ellipsis;
   white-space: nowrap;
-
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease),
-    opacity var(--t-fast, 0.18s ease);
 }
 
-.mispub .filters__clear:hover:not(:disabled) {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
+.mispub-summary-card--accent {
+  border-color: color-mix(in srgb, var(--mp-primary) 22%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-primary) 5%, var(--mp-card));
 }
 
-.mispub .filters__clear.is-hidden {
-  visibility: hidden;
-  opacity: 0;
-
-  pointer-events: none;
-}
-
-.mispub .filters__clear:disabled {
-  opacity: 0.5;
-
-  cursor: not-allowed;
+.mispub-summary-card--accent strong {
+  color: var(--mp-primary);
 }
 
 /* ============================================================
-   GRUPOS DE FILTROS
+   BÚSQUEDA / DESCUBRIMIENTO
 ============================================================ */
 
-.mispub .filters__group {
+.mispub-discovery {
   min-width: 0;
-
   display: grid;
-  gap: 8px;
-
-  padding: 10px 11px;
-
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-line) 80%,
-      transparent
-    );
-
-  border-radius:
-    var(--mp-radius-lg);
-
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(
-        in srgb,
-        var(--mp-card) 97%,
-        var(--mp-elev)
-      ),
-      color-mix(
-        in srgb,
-        var(--mp-card) 99%,
-        var(--mp-bg)
-      )
-    );
-}
-
-.mispub .filters__group--advanced {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--page-accent) 15%,
-      var(--mp-line)
-    );
-
-  background:
-    color-mix(
-      in srgb,
-      var(--page-accent-soft) 22%,
-      var(--mp-card)
-    );
-}
-
-.mispub .filters__groupHead {
-  display: flex;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-
   gap: 12px;
 }
 
-.mispub .filters__groupTitle {
-  margin: 0;
-
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-text) 92%,
-      var(--mp-muted)
-    );
-
-  font-size: 0.75rem;
-  line-height: 1.2;
-  font-weight: 820;
-  letter-spacing: 0.005em;
+.mispub-discovery__summary {
+  min-width: 116px;
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  gap: 1px;
+  padding: 0 4px 0 12px;
 }
 
-.mispub .filters__groupHint {
+.mispub-discovery__summary strong {
+  color: var(--mp-text);
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.mispub-discovery__summary span {
   color: var(--mp-muted);
-
-  font-size: 0.66rem;
-  line-height: 1.3;
-  font-weight: 550;
-
-  text-align: right;
+  font-size: 0.7rem;
+  font-weight: 650;
 }
 
 /* ============================================================
-   CHIPS DE TIPO COMPACTOS
+   FILTROS
 ============================================================ */
 
-.mispub .filters__row {
+.mispub-filters,
+.mispub-results {
+  min-width: 0;
+  border: 1px solid var(--mp-line);
+  border-radius: var(--mp-radius);
+  background: var(--mp-card);
+}
+
+.mispub-filters {
+  padding: 17px 18px 16px;
+  box-shadow: 0 1px 2px rgba(31, 45, 68, 0.02);
+}
+
+.mispub-filters__topline,
+.mispub-results__head {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.mispub-section-title,
+.mispub-results__title {
+  margin: 4px 0 0;
+  color: var(--mp-text);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.mispub-filters__status {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-
   gap: 6px;
 }
 
-.mispub .chip {
+.mispub-filter-count {
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
-
-  gap: 6px;
-
-  min-height: 32px;
-
   padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--mp-primary) 18%, var(--mp-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mp-primary) 6%, var(--mp-card));
+  color: var(--mp-primary);
+  font-size: 0.69rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
 
-  border:
-    1px solid
-    var(--mp-line);
+.mispub-text-action,
+.mispub-filter-chip,
+.mispub-type-filter__chip {
+  font: inherit;
+}
 
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--mp-input);
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.72rem;
-  font-weight: 720;
-
+.mispub-text-action {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--mp-primary);
+  font-size: 0.75rem;
+  font-weight: 760;
   cursor: pointer;
-
-  transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    transform var(--t-fast, 0.18s ease);
 }
 
-.mispub .chip:hover {
-  color: var(--mp-text);
-
-  border-color:
-    var(--mp-line-strong);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 93%,
-      var(--mp-bg)
-    );
-
-  transform:
-    translateY(-1px);
+.mispub-text-action:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.mispub .chip.activo {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
-
-  box-shadow:
-    0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--page-accent) 7%,
-      transparent
-    );
-}
-
-.mispub .chip__dot {
-  --chip-dot:
-    var(--mp-primary);
-
-  width: 7px;
-  height: 7px;
-
-  flex: 0 0 auto;
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--chip-dot);
-
-  box-shadow:
-    0 0 0 3px
-    color-mix(
-      in srgb,
-      var(--chip-dot) 12%,
-      transparent
-    );
-}
-
-.mispub .chip__dot[data-tipo="ALL"] {
-  --chip-dot:
-    var(--mp-primary);
-}
-
-.mispub .chip__dot[data-tipo="AAI"] {
-  --chip-dot:
-    var(--pub-aai);
-}
-
-.mispub .chip__dot[data-tipo="AR"] {
-  --chip-dot:
-    var(--pub-ar);
-}
-
-.mispub .chip__dot[data-tipo="PON"] {
-  --chip-dot:
-    var(--pub-pon);
-}
-
-.mispub .chip__dot[data-tipo="CAP"] {
-  --chip-dot:
-    var(--pub-cap);
-}
-
-.mispub .chip__dot[data-tipo="LIB"] {
-  --chip-dot:
-    var(--pub-lib);
-}
-
-.mispub .chip__label {
+.mispub-quick-filters {
   min-width: 0;
-}
-
-.mispub .chip__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-width: 21px;
-  height: 19px;
-
-  padding: 0 6px;
-
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-line) 76%,
-      transparent
-    );
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 90%,
-      transparent
-    );
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.63rem;
-  font-weight: 820;
-}
-
-/* ============================================================
-   CUADRÍCULAS COMPACTAS
-============================================================ */
-
-.mispub .filters__primaryGrid,
-.mispub .filters__advancedGrid {
-  min-width: 0;
-
   display: grid;
-
-  gap: 9px;
-}
-
-.mispub .filters__primaryGrid {
   grid-template-columns:
-    minmax(185px, 1.25fr)
-    minmax(165px, 1.05fr)
-    minmax(165px, 1.05fr)
-    minmax(96px, 0.56fr)
-    minmax(118px, 0.68fr)
-    minmax(145px, 0.78fr);
+    minmax(150px, 0.9fr)
+    minmax(190px, 1.15fr)
+    minmax(185px, 1.1fr)
+    minmax(150px, 0.9fr)
+    minmax(145px, 0.82fr)
+    auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 15px;
 }
 
-.mispub .filters__advancedGrid {
-  grid-template-columns:
-    minmax(190px, 1.2fr)
-    minmax(115px, 0.66fr)
-    minmax(115px, 0.66fr)
-    minmax(170px, 1fr)
-    minmax(185px, 1.05fr);
-}
-
-.mispub .filter-field {
+.mispub-field {
   min-width: 0;
-
   display: grid;
   align-content: start;
-
-  gap: 5px;
+  gap: 6px;
 }
 
-.mispub .filter-field--toggle {
-  align-self: stretch;
-}
-
-.mispub .filter-label {
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-text) 82%,
-      var(--mp-muted)
-    );
-
+.mispub-label {
+  color: color-mix(in srgb, var(--mp-text) 82%, var(--mp-muted));
   font-size: 0.68rem;
+  font-weight: 780;
   line-height: 1.2;
-  font-weight: 800;
 }
 
-.mispub .filter-select {
+.mispub-label--muted {
+  color: var(--mp-muted);
+  font-weight: 680;
+}
+
+.mispub-select {
   width: 100%;
   min-width: 0;
-
-  min-height: 39px;
-
+  min-height: 42px;
   padding: 0 34px 0 11px;
-
-  border:
-    1px solid
-    var(--mp-line) !important;
-
-  border-radius:
-    var(--mp-radius-md);
-
-  background-color:
-    var(--mp-input) !important;
-
-  color:
-    var(--mp-text) !important;
-
-  outline: none;
+  border: 1px solid var(--mp-line) !important;
+  border-radius: 10px;
+  outline: 0;
+  background-color: var(--mp-input) !important;
+  color: var(--mp-text) !important;
   box-shadow: none;
-
   font-size: 0.78rem;
-  font-weight: 650;
-
+  font-weight: 620;
   cursor: pointer;
-
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    opacity var(--t-fast, 0.18s ease);
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
 }
 
-.mispub .filter-select:hover:not(:disabled) {
-  border-color:
-    var(--mp-line-strong) !important;
+.mispub-select:hover:not(:disabled) {
+  border-color: var(--mp-line-strong) !important;
 }
 
-.mispub .filter-select:focus {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--page-accent) 32%,
-      var(--mp-line)
-    ) !important;
-
-  box-shadow:
-    var(
-      --ring-primary,
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--page-accent) 16%,
-        transparent
-      )
-    );
+.mispub-select:focus {
+  border-color: var(--mp-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mp-primary) 12%, transparent);
 }
 
-.mispub .filter-select:disabled {
+.mispub-select:disabled {
   opacity: 0.56;
-
-  color:
-    var(--mp-disabled) !important;
-
+  color: var(--mp-disabled) !important;
   cursor: not-allowed;
 }
 
-/* ============================================================
-   BOTÓN DE FILTROS AVANZADOS
-============================================================ */
-
-.mispub .filters__advancedButton {
-  width: 100%;
-  min-width: 0;
-  min-height: 39px;
-
-  display: grid;
-  grid-template-columns:
-    auto
-    minmax(0, 1fr)
-    auto
-    auto;
-
-  align-items: center;
-
-  gap: 7px;
-
-  padding: 0 10px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-md);
-
-  background:
-    var(--mp-input);
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.74rem;
-  font-weight: 780;
-
-  cursor: pointer;
-
-  transition:
-    color var(--t-fast, 0.18s ease),
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease);
+:root.dark .mispub-select,
+html.dark .mispub-select,
+body.dark .mispub-select {
+  color-scheme: dark;
 }
 
-.mispub .filters__advancedButton:hover,
-.mispub .filters__advancedButton.is-open,
-.mispub .filters__advancedButton.has-active {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
+:root.dark .mispub-select option,
+html.dark .mispub-select option,
+body.dark .mispub-select option {
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
-.mispub .filters__advancedButton.is-open {
-  box-shadow:
-    0 0 0 2px
-    color-mix(
-      in srgb,
-      var(--page-accent) 7%,
-      transparent
-    );
-}
+/* PDF toggle */
 
-.mispub .filters__advancedIcon,
-.mispub .filters__advancedChevron {
-  width: 16px;
-  height: 16px;
-
-  display: block;
-
-  flex: 0 0 auto;
-}
-
-.mispub .filters__advancedLabel {
-  min-width: 0;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  text-align: left;
-}
-
-.mispub .filters__advancedCount {
+.mispub-pdf-toggle {
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  min-width: 20px;
-  height: 20px;
-
-  padding: 0 6px;
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--page-accent);
-
-  color:
-    var(--mp-accent-contrast);
-
-  font-size: 0.62rem;
-  font-weight: 850;
-}
-
-.mispub .filters__advancedChevron {
-  transition:
-    transform var(--t-fast, 0.18s ease);
-}
-
-.mispub .filters__advancedButton.is-open
-  .filters__advancedChevron {
-  transform:
-    rotate(180deg);
-}
-
-/* ============================================================
-   INTERRUPTOR SOLO CON PDF COMPACTO
-============================================================ */
-
-.mispub .filter-toggle {
-  min-width: 0;
-  min-height: 39px;
-
-  display: grid;
-  grid-template-columns:
-    auto
-    minmax(0, 1fr);
-
-  align-items: center;
-
-  gap: 9px;
-
-  padding: 6px 9px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-md);
-
-  background:
-    var(--mp-input);
-
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--mp-line);
+  border-radius: 10px;
+  background: var(--mp-input);
+  color: var(--mp-muted);
+  font-size: 0.75rem;
+  font-weight: 740;
+  white-space: nowrap;
   cursor: pointer;
-
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease);
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
-.mispub .filter-toggle:hover {
-  border-color:
-    var(--mp-line-strong);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-input) 94%,
-      var(--page-accent-soft)
-    );
+.mispub-pdf-toggle:hover {
+  border-color: var(--mp-line-strong);
+  color: var(--mp-text);
 }
 
-.mispub .filter-toggle:has(
-  .filter-toggle__input:checked
-) {
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--page-accent-soft) 56%,
-      var(--mp-input)
-    );
+.mispub-pdf-toggle:has(.mispub-pdf-toggle__input:checked) {
+  border-color: color-mix(in srgb, var(--mp-primary) 28%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-primary) 7%, var(--mp-card));
+  color: var(--mp-primary);
 }
 
-.mispub .filter-toggle:has(
-  .filter-toggle__input:focus-visible
-) {
-  box-shadow:
-    var(
-      --ring-primary,
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--page-accent) 16%,
-        transparent
-      )
-    );
+.mispub-pdf-toggle:has(.mispub-pdf-toggle__input:focus-visible) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mp-primary) 12%, transparent);
 }
 
-.mispub .filter-toggle__input {
+.mispub-pdf-toggle__input {
   position: absolute;
-
   width: 1px;
   height: 1px;
-
   margin: -1px;
-  padding: 0;
-
   overflow: hidden;
-
-  clip:
-    rect(
-      0,
-      0,
-      0,
-      0
-    );
-
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
-
   border: 0;
 }
 
-.mispub .filter-toggle__control {
-  position: relative;
-
-  width: 40px;
-  height: 22px;
-
+.mispub-pdf-toggle__control {
+  width: 21px;
+  height: 21px;
+  display: inline-grid;
+  place-items: center;
   flex: 0 0 auto;
-
-  display: inline-flex;
-  align-items: center;
-
-  padding: 3px;
-
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-muted) 38%,
-      var(--mp-line)
-    );
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--mp-toggle-track-off);
-
+  border: 1px solid var(--mp-line-strong);
+  border-radius: 6px;
+  background: var(--mp-card);
+  color: transparent;
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease);
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
 }
 
-.mispub .filter-toggle__thumb {
-  width: 14px;
-  height: 14px;
-
-  display: block;
-
-  border-radius:
-    50%;
-
-  background:
-    var(--mp-toggle-thumb-off);
-
-  box-shadow:
-    0 1px 4px
-    rgba(15, 23, 42, 0.2);
-
-  transform:
-    translateX(0);
-
-  transition:
-    transform var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease);
+.mispub-pdf-toggle__control svg {
+  width: 15px;
+  height: 15px;
 }
 
-.mispub
-  .filter-toggle__input:checked
-  + .filter-toggle__control {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--page-accent) 68%,
-      var(--page-accent-line)
-    );
-
-  background:
-    var(--page-accent);
+.mispub-pdf-toggle__input:checked + .mispub-pdf-toggle__control {
+  border-color: var(--mp-primary);
+  background: var(--mp-primary);
+  color: #ffffff;
 }
 
-.mispub
-  .filter-toggle__input:checked
-  + .filter-toggle__control
-  .filter-toggle__thumb {
-  transform:
-    translateX(18px);
+/* ============================================================
+   FILTROS AVANZADOS
+============================================================ */
 
-  background:
-    var(--mp-accent-contrast);
-}
-
-.mispub .filter-toggle__content {
+.mispub-advanced-trigger {
+  width: 100%;
   min-width: 0;
-
+  min-height: 50px;
   display: grid;
-  gap: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px 11px;
+  border: 1px solid var(--mp-line);
+  border-radius: 11px;
+  background: var(--mp-elev);
+  color: var(--mp-muted);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
 }
 
-.mispub .filter-toggle__title {
-  color:
-    var(--mp-text);
-
-  font-size: 0.72rem;
-  line-height: 1.15;
-  font-weight: 810;
+.mispub-advanced-trigger:hover,
+.mispub-advanced-trigger.is-open,
+.mispub-advanced-trigger.has-active {
+  border-color: color-mix(in srgb, var(--mp-primary) 24%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-primary) 5%, var(--mp-card));
+  color: var(--mp-primary);
 }
 
-.mispub .filter-toggle__description {
-  color:
-    var(--mp-muted);
+.mispub-advanced-trigger__icon {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--mp-card);
+  color: currentColor;
+}
 
-  font-size: 0.61rem;
-  line-height: 1.2;
+.mispub-advanced-trigger__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.mispub-advanced-trigger__copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mispub-advanced-trigger__copy strong {
+  color: var(--mp-text);
+  font-size: 0.78rem;
+  font-weight: 780;
+}
+
+.mispub-advanced-trigger__copy small {
+  overflow: hidden;
+  color: var(--mp-muted);
+  font-size: 0.68rem;
   font-weight: 520;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ============================================================
-   INTEGRACIÓN CON EL TEMA GLOBAL OSCURO
-
-   El tema global activa el modo oscuro mediante la clase .dark
-   en :root/html/body. No se crea una paleta paralela: únicamente
-   se reutilizan sus tokens oficiales.
-============================================================ */
-
-:root.dark .mispub,
-html.dark .mispub,
-body.dark .mispub {
-  color-scheme: dark;
-
-  --mp-accent-contrast:
-    var(
-      --accent-contrast,
-      #ffffff
-    );
-
-  --mp-toggle-track-off:
-    var(
-      --surface-4,
-      var(--bg-soft, #242424)
-    );
-
-  --mp-toggle-thumb-off:
-    var(
-      --text-primary,
-      #ffffff
-    );
+.mispub-advanced-trigger__count {
+  min-width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mp-primary);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 820;
 }
 
-:root.dark .mispub .filter-select,
-html.dark .mispub .filter-select,
-body.dark .mispub .filter-select {
-  color-scheme: dark;
+.mispub-advanced-trigger__chevron {
+  font-size: 1rem;
+  transition: transform 150ms ease;
 }
 
-:root.dark .mispub .filter-select option,
-html.dark .mispub .filter-select option,
-body.dark .mispub .filter-select option {
-  background:
-    var(--bg-input);
-
-  color:
-    var(--text-primary);
+.mispub-advanced-trigger.is-open .mispub-advanced-trigger__chevron {
+  transform: rotate(180deg);
 }
 
-:root.dark .mispub .filter-toggle__control,
-html.dark .mispub .filter-toggle__control,
-body.dark .mispub .filter-toggle__control {
-  box-shadow:
-    inset 0 0 0 1px
-    color-mix(
-      in srgb,
-      var(--text-primary) 7%,
-      transparent
-    );
+.mispub-advanced {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--mp-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mp-elev) 70%, var(--mp-card));
 }
 
-:root.dark .mispub .filter-toggle__thumb,
-html.dark .mispub .filter-toggle__thumb,
-body.dark .mispub .filter-toggle__thumb {
-  box-shadow:
-    0 1px 5px
-    rgba(0, 0, 0, 0.52);
+.mispub-advanced__row {
+  display: grid;
+  gap: 10px;
 }
 
-:root.dark .mispub
-  .filter-toggle__input:checked
-  + .filter-toggle__control,
-html.dark .mispub
-  .filter-toggle__input:checked
-  + .filter-toggle__control,
-body.dark .mispub
-  .filter-toggle__input:checked
-  + .filter-toggle__control {
-  box-shadow:
-    inset 0 0 0 1px
-    color-mix(
-      in srgb,
-      var(--mp-accent-contrast) 18%,
-      transparent
-    );
+.mispub-advanced__row--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* ============================================================
-   TRANSICIÓN DEL PANEL AVANZADO
-============================================================ */
+.mispub-period {
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid var(--mp-line);
+}
+
+.mispub-period__head strong {
+  display: block;
+  color: var(--mp-text);
+  font-size: 0.78rem;
+  font-weight: 790;
+}
+
+.mispub-period__head span {
+  display: block;
+  margin-top: 2px;
+  color: var(--mp-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.mispub-period__options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 13px;
+  margin-top: 10px;
+}
+
+.mispub-period__group {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.mispub-period__label {
+  color: var(--mp-muted);
+  font-size: 0.67rem;
+  font-weight: 730;
+}
+
+.mispub-period__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.mispub-period__separator {
+  align-self: center;
+  min-width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  margin-bottom: 3px;
+  border: 1px solid var(--mp-line);
+  border-radius: 999px;
+  background: var(--mp-card);
+  color: var(--mp-muted);
+  font-size: 0.67rem;
+  font-weight: 760;
+}
 
 .filters-advanced-enter-active,
 .filters-advanced-leave-active {
   overflow: hidden;
-
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity 170ms ease,
+    transform 170ms ease;
 }
 
 .filters-advanced-enter-from,
 .filters-advanced-leave-to {
   opacity: 0;
+  transform: translateY(-5px);
+}
 
-  transform:
-    translateY(-6px);
+/* Filtros activos */
+
+.mispub-active-filters {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mp-line);
+}
+
+.mispub-active-filters__label {
+  margin-right: 2px;
+  color: var(--mp-muted);
+  font-size: 0.68rem;
+  font-weight: 730;
+}
+
+.mispub-filter-chip {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--mp-primary) 18%, var(--mp-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mp-primary) 5%, var(--mp-card));
+  color: var(--mp-primary);
+  font-size: 0.7rem;
+  font-weight: 690;
+  cursor: pointer;
+}
+
+.mispub-filter-chip:hover {
+  border-color: color-mix(in srgb, var(--mp-primary) 34%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-primary) 9%, var(--mp-card));
 }
 
 /* ============================================================
-   ESTADOS
+   FEEDBACK DEL WORKFLOW
 ============================================================ */
 
-.mispub .mispub__state:empty {
-  display: none;
+.mispub-feedback {
+  display: grid;
+  gap: 8px;
 }
 
-.mispub .state {
-  min-height: 58px;
-
+.mispub-alert {
+  min-height: 48px;
   display: flex;
   align-items: center;
-
-  gap: 10px;
-
-  padding: 14px 16px;
-
-  border:
-    1px dashed
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-lg);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 93%,
-      var(--mp-bg)
-    );
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.84rem;
-  font-weight: 650;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--mp-line);
+  border-radius: 11px;
+  background: var(--mp-card);
+  color: var(--mp-muted);
+  font-size: 0.78rem;
+  font-weight: 620;
 }
 
-.mispub .state--empty {
-  justify-content: center;
-
-  min-height: 118px;
-
-  flex-direction: column;
-
-  text-align: center;
+.mispub-alert--error {
+  border-color: color-mix(in srgb, var(--mp-danger) 30%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-danger) 6%, var(--mp-card));
+  color: var(--mp-danger);
 }
 
-.mispub .state--error {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--mp-danger) 30%,
-      var(--mp-line)
-    );
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-danger) 5%,
-      var(--mp-card)
-    );
-
-  color:
-    var(--mp-danger);
+.mispub-alert--success {
+  border-color: color-mix(in srgb, var(--mp-success) 28%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-success) 6%, var(--mp-card));
+  color: var(--mp-success);
 }
 
-.mispub .dot {
-  width: 9px;
-  height: 9px;
-
+.mispub-alert button {
   flex: 0 0 auto;
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--page-accent);
-
-  box-shadow:
-    0 0 0 4px
-    var(--page-accent-soft);
-
-  animation:
-    mp-loading
-    1.2s
-    ease-in-out
-    infinite;
-}
-
-@keyframes mp-loading {
-  0%,
-  100% {
-    opacity: 0.48;
-
-    transform:
-      scale(0.9);
-  }
-
-  50% {
-    opacity: 1;
-
-    transform:
-      scale(1);
-  }
+  padding: 5px 7px;
+  border: 0;
+  background: transparent;
+  color: currentColor;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 760;
+  cursor: pointer;
 }
 
 /* ============================================================
    RESULTADOS
 ============================================================ */
 
-.mispub .mispub__results {
-  width: 100%;
-  min-width: 0;
+.mispub-results {
+  padding: 18px;
 }
 
-.mispub .cards {
-  width: 100%;
+.mispub-results__head {
+  align-items: center;
+}
+
+.mispub-results__head p {
+  max-width: 720px;
+  margin: 6px 0 0;
+  color: var(--mp-muted);
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.mispub-view-switch {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--mp-line);
+  border-radius: 11px;
+  background: var(--mp-elev);
+}
+
+.mispub-view-switch button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mp-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 730;
+  cursor: pointer;
+}
+
+.mispub-view-switch button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mispub-view-switch button:hover {
+  color: var(--mp-text);
+}
+
+.mispub-view-switch button.is-active {
+  border-color: var(--mp-line);
+  background: var(--mp-card);
+  color: var(--mp-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+/* Clasificación por tipo */
+
+.mispub-type-filter {
   min-width: 0;
-
   display: grid;
+  gap: 8px;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mp-line);
+}
 
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(
-        min(100%, 360px),
-        1fr
-      )
-    );
+.mispub-type-filter__label {
+  color: var(--mp-muted);
+  font-size: 0.68rem;
+  font-weight: 760;
+}
 
-  align-items: stretch;
+.mispub-type-filter__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
 
-  gap:
-    clamp(
-      14px,
-      1.4vw,
-      20px
-    );
+.mispub-type-filter__chip {
+  --type-accent: var(--mp-primary);
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--mp-line);
+  border-radius: 9px;
+  background: var(--mp-card);
+  color: var(--mp-muted);
+  font-size: 0.71rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.mispub-type-filter__chip:hover,
+.mispub-type-filter__chip.is-active {
+  border-color: color-mix(in srgb, var(--type-accent) 30%, var(--mp-line));
+  background: color-mix(in srgb, var(--type-accent) 6%, var(--mp-card));
+  color: var(--mp-text);
+}
+
+.mispub-type-filter__chip.is-active {
+  color: var(--type-accent);
+}
+
+.mispub-type-filter__chip strong {
+  color: currentColor;
+  font-size: 0.66rem;
+  font-weight: 830;
+}
+
+.mispub-type-filter__dot {
+  --type-accent: var(--mp-primary);
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--type-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--type-accent) 11%, transparent);
+}
+
+.mispub-type-filter__dot[data-tipo="AAI"] { --type-accent: var(--pub-aai, #245f98); }
+.mispub-type-filter__dot[data-tipo="AR"] { --type-accent: var(--pub-ar, #287957); }
+.mispub-type-filter__dot[data-tipo="PON"] { --type-accent: var(--pub-pon, #a66f1f); }
+.mispub-type-filter__dot[data-tipo="CAP"] { --type-accent: var(--pub-cap, #7657a5); }
+.mispub-type-filter__dot[data-tipo="LIB"] { --type-accent: var(--pub-lib, #a24c60); }
+
+.mispub-type-filter__chip:has(.mispub-type-filter__dot[data-tipo="AAI"]) { --type-accent: var(--pub-aai, #245f98); }
+.mispub-type-filter__chip:has(.mispub-type-filter__dot[data-tipo="AR"]) { --type-accent: var(--pub-ar, #287957); }
+.mispub-type-filter__chip:has(.mispub-type-filter__dot[data-tipo="PON"]) { --type-accent: var(--pub-pon, #a66f1f); }
+.mispub-type-filter__chip:has(.mispub-type-filter__dot[data-tipo="CAP"]) { --type-accent: var(--pub-cap, #7657a5); }
+.mispub-type-filter__chip:has(.mispub-type-filter__dot[data-tipo="LIB"]) { --type-accent: var(--pub-lib, #a24c60); }
+
+/* ============================================================
+   CARGA / VACÍO
+============================================================ */
+
+.mispub-state {
+  margin-top: 14px;
+}
+
+.mispub-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mispub-skeleton-card {
+  min-height: 270px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--mp-line);
+  border-radius: 13px;
+  background: var(--mp-card);
+  overflow: hidden;
+}
+
+.mispub-skeleton-card span {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--mp-elev) 20%,
+    color-mix(in srgb, var(--mp-elev) 70%, var(--mp-card)) 50%,
+    var(--mp-elev) 80%
+  );
+  background-size: 200% 100%;
+  animation: mispub-skeleton 1.2s linear infinite;
+}
+
+.mispub-skeleton-card span:nth-child(1) { width: 42%; }
+.mispub-skeleton-card span:nth-child(2) { width: 88%; height: 24px; }
+.mispub-skeleton-card span:nth-child(3) { width: 68%; }
+.mispub-skeleton-card span:nth-child(4) { width: 76%; }
+
+@keyframes mispub-skeleton {
+  to { background-position: -200% 0; }
+}
+
+.mispub-loading-line {
+  min-height: 82px;
+  display: grid;
+  place-items: center;
+  color: var(--mp-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.mispub-empty {
+  min-height: 250px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 24px;
+  border: 1px dashed var(--mp-line);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--mp-elev) 52%, var(--mp-card));
+  text-align: center;
+}
+
+.mispub-empty__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mp-primary) 7%, var(--mp-card));
+  color: var(--mp-primary);
+}
+
+.mispub-empty__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mispub-empty h3 {
+  margin: 4px 0 0;
+  color: var(--mp-text);
+  font-size: 0.98rem;
+  font-weight: 790;
+}
+
+.mispub-empty p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--mp-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.mispub-empty.is-error .mispub-empty__icon {
+  background: color-mix(in srgb, var(--mp-danger) 7%, var(--mp-card));
+  color: var(--mp-danger);
+}
+
+.mispub-btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid var(--mp-line);
+  border-radius: 10px;
+  background: var(--mp-card);
+  color: var(--mp-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+.mispub-btn--primary {
+  border-color: var(--mp-primary);
+  background: var(--mp-primary);
+  color: #ffffff;
 }
 
 /* ============================================================
-   TARJETAS
+   GRID Y TARJETAS
 ============================================================ */
 
-.mispub .card {
-  --card-accent:
-    var(
-      --pub-otro,
-      var(--mp-primary)
-    );
-
-  --card-accent-soft:
-    var(
-      --pub-otro-soft,
-      var(--mp-primary-soft)
-    );
-
-  --card-accent-line:
-    var(
-      --pub-otro-line,
-      var(--mp-primary-line)
-    );
-
-  --card-accent-ink:
-    var(
-      --pub-otro-ink,
-      var(--mp-text)
-    );
-
-  position: relative;
-
+.mispub-grid {
   width: 100%;
-  height: 100%;
-
   min-width: 0;
-  min-height: 232px;
-
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(14px, 1.35vw, 19px);
+  margin-top: 14px;
+}
 
-  grid-template-rows:
-    auto
-    1fr
-    auto;
-
-  gap: 13px;
-
-  padding: 15px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-xl);
-
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(
-        in srgb,
-        var(--mp-card) 98%,
-        var(--mp-bg)
-      ),
-      var(--mp-card)
-    );
-
-  box-shadow:
-    var(--mp-shadow-soft);
-
+.mispub-card {
+  --card-accent: var(--mp-primary);
+  position: relative;
+  min-width: 0;
+  min-height: 310px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mp-line);
+  border-radius: 14px;
+  background: var(--mp-card);
   overflow: hidden;
-
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    transform var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease);
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
-.mispub .card::before {
-  content: "";
+.mispub-card[data-tipo="AAI"] { --card-accent: var(--pub-aai, #245f98); }
+.mispub-card[data-tipo="AR"] { --card-accent: var(--pub-ar, #287957); }
+.mispub-card[data-tipo="PON"] { --card-accent: var(--pub-pon, #a66f1f); }
+.mispub-card[data-tipo="CAP"] { --card-accent: var(--pub-cap, #7657a5); }
+.mispub-card[data-tipo="LIB"] { --card-accent: var(--pub-lib, #a24c60); }
 
-  position: absolute;
+.mispub-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--card-accent) 26%, var(--mp-line));
+  box-shadow: var(--mp-shadow);
+}
 
-  inset:
-    0
-    0
-    auto
-    0;
-
+.mispub-card__accent {
+  width: 100%;
   height: 3px;
-
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(
-        in srgb,
-        var(--card-accent) 74%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--card-accent) 20%,
-        transparent
-      )
-    );
+  flex: 0 0 auto;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--card-accent) 78%, transparent),
+    color-mix(in srgb, var(--card-accent) 17%, transparent)
+  );
 }
 
-.mispub .card:hover {
-  transform:
-    translateY(-2px);
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--card-accent) 25%,
-      var(--mp-line)
-    );
-
-  box-shadow:
-    var(--mp-shadow-strong);
-}
-
-.mispub .card:focus-within {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--card-accent) 35%,
-      var(--mp-line)
-    );
-
-  box-shadow:
-    var(--mp-shadow-soft),
-    0 0 0 3px
-    color-mix(
-      in srgb,
-      var(--card-accent) 15%,
-      transparent
-    );
-}
-
-.mispub .card[data-tipo="AAI"] {
-  --card-accent: var(--pub-aai);
-  --card-accent-soft: var(--pub-aai-soft);
-  --card-accent-line: var(--pub-aai-line);
-  --card-accent-ink: var(--pub-aai-ink);
-}
-
-.mispub .card[data-tipo="AR"] {
-  --card-accent: var(--pub-ar);
-  --card-accent-soft: var(--pub-ar-soft);
-  --card-accent-line: var(--pub-ar-line);
-  --card-accent-ink: var(--pub-ar-ink);
-}
-
-.mispub .card[data-tipo="PON"] {
-  --card-accent: var(--pub-pon);
-  --card-accent-soft: var(--pub-pon-soft);
-  --card-accent-line: var(--pub-pon-line);
-  --card-accent-ink: var(--pub-pon-ink);
-}
-
-.mispub .card[data-tipo="CAP"] {
-  --card-accent: var(--pub-cap);
-  --card-accent-soft: var(--pub-cap-soft);
-  --card-accent-line: var(--pub-cap-line);
-  --card-accent-ink: var(--pub-cap-ink);
-}
-
-.mispub .card[data-tipo="LIB"] {
-  --card-accent: var(--pub-lib);
-  --card-accent-soft: var(--pub-lib-soft);
-  --card-accent-line: var(--pub-lib-line);
-  --card-accent-ink: var(--pub-lib-ink);
-}
-
-.mispub .card__head {
+.mispub-card__head {
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-
   gap: 10px;
+  padding: 13px 14px 0;
 }
 
-.mispub .card__body {
+.mispub-card__badges {
   min-width: 0;
-
-  display: grid;
-
-  align-content: start;
-
-  gap: 7px;
-}
-
-.mispub .card__titleLink {
-  display: block;
-
-  color: inherit;
-  text-decoration: none;
-
-  border-radius: 6px;
-}
-
-.mispub .card__titleLink:hover .card__title {
-  color:
-    var(--card-accent-ink);
-}
-
-.mispub .card__title {
-  margin: 0;
-
-  color:
-    var(--mp-text);
-
-  font-family:
-    var(
-      --font-heading,
-      "Geist",
-      "Inter",
-      "Segoe UI",
-      sans-serif
-    );
-
-  font-size: 1.02rem;
-  line-height: 1.3;
-  letter-spacing: -0.018em;
-  font-weight: 750;
-
-  overflow-wrap: anywhere;
-  word-break: normal;
-
-  transition:
-    color var(--t-fast, 0.18s ease);
-}
-
-.mispub .card__meta {
-  margin: 0;
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.8rem;
-  line-height: 1.42;
-  font-weight: 520;
-
-  display: -webkit-box;
-
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
-
-.mispub .card__meta--soft {
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-text) 78%,
-      var(--mp-muted)
-    );
-
-  font-weight: 700;
-}
-
-.mispub .card__origin {
-  margin: 3px 0 0;
-
-  padding: 8px 10px;
-
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--card-accent) 18%,
-      var(--mp-line)
-    );
-
-  border-radius:
-    var(--mp-radius-sm);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--card-accent) 5%,
-      var(--mp-card)
-    );
-
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-text) 88%,
-      var(--mp-muted)
-    );
-
-  font-size: 0.76rem;
-  line-height: 1.4;
-  font-weight: 550;
-
-  display: -webkit-box;
-
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
-
-.mispub .card__origin strong {
-  color:
-    var(--card-accent-ink);
-
-  font-weight: 800;
-}
-
-.mispub .card__footer {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-
-  gap: 7px;
-
-  padding-top: 10px;
-
-  border-top:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-line) 78%,
-      transparent
-    );
-}
-
-.mispub .card__footer--actions {
   flex-wrap: wrap;
+  gap: 6px;
 }
 
-/* ============================================================
-   BADGES Y FECHA
-============================================================ */
-
-.mispub .type__badge,
-.mispub .mini-badge {
-  --badge-accent:
-    var(
-      --pub-otro,
-      var(--mp-primary)
-    );
-
-  --badge-accent-soft:
-    var(
-      --pub-otro-soft,
-      var(--mp-primary-soft)
-    );
-
-  --badge-accent-line:
-    var(
-      --pub-otro-line,
-      var(--mp-primary-line)
-    );
-
-  --badge-accent-ink:
-    var(
-      --pub-otro-ink,
-      var(--mp-text)
-    );
-
+.mispub-badge {
+  --badge-accent: var(--card-accent);
+  min-height: 27px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--badge-accent) 23%, var(--mp-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--badge-accent) 6%, var(--mp-card));
+  color: var(--badge-accent);
+  font-size: 0.66rem;
+  font-weight: 780;
+  line-height: 1;
+}
 
-  min-height: 28px;
+.mispub-badge__dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+}
 
-  padding: 0 9px;
+.mispub-status {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--mp-line);
+  border-radius: 999px;
+  background: var(--mp-elev);
+  color: var(--mp-muted);
+  font-size: 0.65rem;
+  font-weight: 790;
+  line-height: 1;
+  white-space: nowrap;
+}
 
-  border:
-    1px solid
-    var(--badge-accent-line);
+.mispub-status[data-estado="en_revision"] {
+  border-color: color-mix(in srgb, var(--mp-info) 30%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-info) 7%, var(--mp-card));
+  color: var(--mp-info);
+}
 
-  border-radius:
-    var(--mp-radius-pill);
+.mispub-status[data-estado="observada"] {
+  border-color: color-mix(in srgb, var(--mp-warning) 34%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-warning) 8%, var(--mp-card));
+  color: var(--mp-warning);
+}
 
-  background:
-    var(--badge-accent-soft);
+.mispub-status[data-estado="aprobada"] {
+  border-color: color-mix(in srgb, var(--mp-success) 30%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-success) 7%, var(--mp-card));
+  color: var(--mp-success);
+}
 
-  color:
-    var(--badge-accent-ink);
+.mispub-status[data-estado="rechazada"] {
+  border-color: color-mix(in srgb, var(--mp-danger) 30%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-danger) 7%, var(--mp-card));
+  color: var(--mp-danger);
+}
 
+.mispub-date {
+  flex: 0 0 auto;
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--mp-line);
+  border-radius: 999px;
+  background: var(--mp-card);
+  color: var(--mp-muted);
+  font-size: 0.65rem;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.mispub-card__body {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  padding: 13px 14px 15px;
+}
+
+.mispub-card__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mispub-card__title {
+  margin: 0;
+  color: var(--mp-text);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  font-size: 1rem;
+  font-weight: 780;
+  line-height: 1.32;
+  letter-spacing: -0.018em;
+  overflow-wrap: anywhere;
+  transition: color 150ms ease;
+}
+
+.mispub-card__title-link:hover .mispub-card__title {
+  color: var(--card-accent);
+}
+
+.mispub-card__section {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.mispub-card__section-label {
+  color: var(--mp-muted);
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.mispub-card__authors {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--mp-text) 88%, var(--mp-muted));
+  font-size: 0.76rem;
+  font-weight: 590;
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mispub-card__academic {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  color: var(--mp-muted);
+  font-size: 0.73rem;
+  font-weight: 570;
+  line-height: 1.42;
+}
+
+.mispub-card__academic svg {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  color: color-mix(in srgb, var(--card-accent) 75%, var(--mp-muted));
+}
+
+.mispub-card__tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mispub-meta-chip {
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid var(--mp-line);
+  border-radius: 999px;
+  background: var(--mp-elev);
+  color: var(--mp-muted);
+  font-size: 0.64rem;
+  font-weight: 710;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mispub-meta-chip--origin {
+  border-color: color-mix(in srgb, var(--card-accent) 18%, var(--mp-line));
+  color: color-mix(in srgb, var(--card-accent) 78%, var(--mp-text));
+}
+
+.mispub-meta-chip--pdf {
+  border-color: color-mix(in srgb, var(--mp-success) 24%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-success) 5%, var(--mp-card));
+  color: var(--mp-success);
+}
+
+.mispub-workflow {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--mp-info);
+  background: color-mix(in srgb, var(--mp-info) 4%, var(--mp-card));
+  color: var(--mp-muted);
   font-size: 0.7rem;
-  line-height: 1;
-  font-weight: 850;
-  white-space: nowrap;
+  font-weight: 580;
+  line-height: 1.42;
 }
 
-.mispub
-  :is(
-    .type__badge,
-    .mini-badge
-  )[data-tipo="AAI"] {
-  --badge-accent: var(--pub-aai);
-  --badge-accent-soft: var(--pub-aai-soft);
-  --badge-accent-line: var(--pub-aai-line);
-  --badge-accent-ink: var(--pub-aai-ink);
+.mispub-workflow__dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: currentColor;
 }
 
-.mispub
-  :is(
-    .type__badge,
-    .mini-badge
-  )[data-tipo="AR"] {
-  --badge-accent: var(--pub-ar);
-  --badge-accent-soft: var(--pub-ar-soft);
-  --badge-accent-line: var(--pub-ar-line);
-  --badge-accent-ink: var(--pub-ar-ink);
+.mispub-workflow[data-estado="observada"] {
+  border-left-color: var(--mp-warning);
+  background: color-mix(in srgb, var(--mp-warning) 5%, var(--mp-card));
+  color: var(--mp-warning);
 }
 
-.mispub
-  :is(
-    .type__badge,
-    .mini-badge
-  )[data-tipo="PON"] {
-  --badge-accent: var(--pub-pon);
-  --badge-accent-soft: var(--pub-pon-soft);
-  --badge-accent-line: var(--pub-pon-line);
-  --badge-accent-ink: var(--pub-pon-ink);
+.mispub-workflow[data-estado="aprobada"] {
+  border-left-color: var(--mp-success);
+  background: color-mix(in srgb, var(--mp-success) 4%, var(--mp-card));
+  color: var(--mp-success);
 }
 
-.mispub
-  :is(
-    .type__badge,
-    .mini-badge
-  )[data-tipo="CAP"] {
-  --badge-accent: var(--pub-cap);
-  --badge-accent-soft: var(--pub-cap-soft);
-  --badge-accent-line: var(--pub-cap-line);
-  --badge-accent-ink: var(--pub-cap-ink);
+.mispub-workflow[data-estado="rechazada"] {
+  border-left-color: var(--mp-danger);
+  background: color-mix(in srgb, var(--mp-danger) 4%, var(--mp-card));
+  color: var(--mp-danger);
 }
 
-.mispub
-  :is(
-    .type__badge,
-    .mini-badge
-  )[data-tipo="LIB"] {
-  --badge-accent: var(--pub-lib);
-  --badge-accent-soft: var(--pub-lib-soft);
-  --badge-accent-line: var(--pub-lib-line);
-  --badge-accent-ink: var(--pub-lib-ink);
+.mispub-card__footer {
+  margin-top: auto;
+  min-height: 102px;
+  display: grid;
+  grid-template-rows: 34px minmax(32px, auto);
+  align-content: start;
+  gap: 8px;
+  padding: 11px 14px 13px;
+  border-top: 1px solid var(--mp-line);
+  background: color-mix(in srgb, var(--mp-elev) 38%, var(--mp-card));
 }
 
-.mispub .date {
+.mispub-card__detail {
+  width: 100%;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--card-accent);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mispub-card__detail svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 150ms ease;
+}
+
+.mispub-card__detail:hover svg {
+  transform: translateX(2px);
+}
+
+.mispub-card__actions {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mispub-action {
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  min-height: 28px;
-
   padding: 0 9px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    var(--mp-input);
-
-  color:
-    var(--mp-muted);
-
-  font-size: 0.69rem;
-  line-height: 1;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   BOTONES
-============================================================ */
-
-.mispub .btn-mini {
-  min-height: 32px;
-
-  padding: 0 11px;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-sm);
-
-  background:
-    var(--mp-input);
-
-  color:
-    var(--mp-text);
-
-  font-size: 0.74rem;
-  font-weight: 750;
-
+  border: 1px solid var(--mp-line);
+  border-radius: 8px;
+  background: var(--mp-card);
+  color: var(--mp-text);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 720;
   cursor: pointer;
-
   transition:
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease),
-    transform var(--t-fast, 0.18s ease),
-    opacity var(--t-fast, 0.18s ease);
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
 }
 
-.mispub .btn-mini:hover:not(:disabled) {
-  color:
-    var(--page-accent-ink);
-
-  border-color:
-    var(--page-accent-line);
-
-  background:
-    var(--page-accent-soft);
-
-  transform:
-    translateY(-1px);
+.mispub-action:hover:not(:disabled) {
+  border-color: var(--mp-line-strong);
+  background: var(--mp-elev);
 }
 
-.mispub .btn-mini:disabled {
-  opacity: 0.55;
+.mispub-action--primary {
+  border-color: color-mix(in srgb, var(--mp-primary) 34%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-primary) 7%, var(--mp-card));
+  color: var(--mp-primary);
+}
 
+.mispub-action--warning {
+  border-color: color-mix(in srgb, var(--mp-warning) 34%, var(--mp-line));
+  background: color-mix(in srgb, var(--mp-warning) 7%, var(--mp-card));
+  color: var(--mp-warning);
+}
+
+.mispub-action:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -2460,455 +1382,280 @@ body.dark .mispub
    TABLA
 ============================================================ */
 
-.mispub .table-wrap {
+.mispub-table-wrap {
   min-width: 0;
-
+  margin-top: 14px;
   overflow-x: auto;
-
-  border:
-    1px solid
-    var(--mp-line);
-
-  border-radius:
-    var(--mp-radius-xl);
-
-  background:
-    var(--mp-card);
-
-  box-shadow:
-    var(--mp-shadow-soft);
+  border: 1px solid var(--mp-line);
+  border-radius: 12px;
+  background: var(--mp-card);
 }
 
-.mispub .table {
+.mispub-table {
   width: 100%;
-  min-width: 1080px;
-
+  min-width: 1320px;
   border-collapse: collapse;
   border-spacing: 0;
-
-  color:
-    var(--mp-text);
+  color: var(--mp-text);
 }
 
-.mispub .table th,
-.mispub .table td {
-  padding: 13px 14px;
-
-  border-bottom:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--mp-line) 82%,
-      transparent
-    );
-
+.mispub-table th,
+.mispub-table td {
+  padding: 12px 13px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mp-line) 82%, transparent);
   text-align: left;
   vertical-align: middle;
 }
 
-.mispub .table th {
+.mispub-table th {
   position: sticky;
-
   top: 0;
-
   z-index: 2;
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-card) 88%,
-      var(--mp-elev)
-    );
-
-  color:
-    color-mix(
-      in srgb,
-      var(--mp-text) 86%,
-      var(--mp-muted)
-    );
-
-  font-size: 0.7rem;
-  line-height: 1.2;
-  font-weight: 850;
-  letter-spacing: 0.045em;
+  background: color-mix(in srgb, var(--mp-card) 82%, var(--mp-elev));
+  color: color-mix(in srgb, var(--mp-text) 84%, var(--mp-muted));
+  font-size: 0.67rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.mispub .table td {
-  color:
-    var(--mp-muted);
-
-  font-size: 0.78rem;
+.mispub-table td {
+  color: var(--mp-muted);
+  font-size: 0.74rem;
+  font-weight: 540;
   line-height: 1.4;
-  font-weight: 550;
 }
 
-.mispub .table tbody tr {
-  transition:
-    background var(--t-fast, 0.18s ease);
+.mispub-table tbody tr:hover {
+  background: color-mix(in srgb, var(--mp-primary) 3%, var(--mp-card));
 }
 
-.mispub .table tbody tr:hover {
-  background:
-    color-mix(
-      in srgb,
-      var(--page-accent) 3%,
-      var(--mp-card)
-    );
+.mispub-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
-.mispub .table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.mispub .td-strong {
-  color:
-    var(--mp-text) !important;
-
-  font-weight: 750 !important;
-}
-
-.mispub .td-title {
+.mispub-table__title-cell {
   min-width: 260px;
   max-width: 420px;
 }
 
-.mispub .table__titleLink {
-  color:
-    var(--mp-text);
-
-  font-weight: 750;
+.mispub-table__title-link {
+  color: var(--mp-text);
+  font-weight: 720;
   text-decoration: none;
-
   overflow-wrap: anywhere;
-
-  transition:
-    color var(--t-fast, 0.18s ease);
 }
 
-.mispub .table__titleLink:hover {
-  color:
-    var(--page-accent-ink);
-
+.mispub-table__title-link:hover {
+  color: var(--mp-primary);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.mispub .th-actions,
-.mispub .td-actions {
-  text-align: right;
+.mispub-table-badge {
+  color: var(--mp-primary);
+  font-size: 0.68rem;
+  font-weight: 760;
 }
 
-.mispub .table__actions {
+.mispub-table-badge[data-tipo="AAI"] { color: var(--pub-aai, #245f98); }
+.mispub-table-badge[data-tipo="AR"] { color: var(--pub-ar, #287957); }
+.mispub-table-badge[data-tipo="PON"] { color: var(--pub-pon, #a66f1f); }
+.mispub-table-badge[data-tipo="CAP"] { color: var(--pub-cap, #7657a5); }
+.mispub-table-badge[data-tipo="LIB"] { color: var(--pub-lib, #a24c60); }
+
+.mispub-status--table {
+  min-height: 25px;
+  padding: 0 7px;
+  font-size: 0.62rem;
+}
+
+.mispub-table__actions-head {
+  text-align: right !important;
+}
+
+.mispub-table__actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-
-  gap: 6px;
+  gap: 5px;
 }
 
-/* ============================================================
-   SCROLLBAR
-============================================================ */
-
-.mispub .table-wrap::-webkit-scrollbar {
+.mispub-table-wrap::-webkit-scrollbar {
   height: 10px;
 }
 
-.mispub .table-wrap::-webkit-scrollbar-thumb {
-  border:
-    3px solid
-    transparent;
-
-  border-radius:
-    var(--mp-radius-pill);
-
-  background:
-    color-mix(
-      in srgb,
-      var(--mp-muted) 34%,
-      transparent
-    );
-
-  background-clip:
-    padding-box;
+.mispub-table-wrap::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mp-muted) 34%, transparent);
+  background-clip: padding-box;
 }
 
 /* ============================================================
-   ACCESIBILIDAD Y FOCO
+   FOCO / ACCESIBILIDAD
 ============================================================ */
 
-.mispub
-  :where(
-    .search__action,
-    .view__btn,
-    .filters__clear,
-    .filters__advancedButton,
-    .chip,
-    .filter-select,
-    .btn-mini,
-    .card__titleLink,
-    .table__titleLink
-  ):focus-visible {
-  outline: none;
-
-  box-shadow:
-    var(
-      --ring-primary,
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--page-accent) 16%,
-        transparent
-      )
-    );
+.mispub :where(
+  .mispub-text-action,
+  .mispub-select,
+  .mispub-advanced-trigger,
+  .mispub-filter-chip,
+  .mispub-view-switch button,
+  .mispub-type-filter__chip,
+  .mispub-btn,
+  .mispub-card__title-link,
+  .mispub-card__detail,
+  .mispub-action,
+  .mispub-table__title-link
+):focus-visible {
+  outline: 2px solid var(--mp-primary);
+  outline-offset: 2px;
 }
 
 /* ============================================================
-   RESPONSIVE — ESCRITORIO MEDIO
+   RESPONSIVE
 ============================================================ */
 
-@media (max-width: 1180px) {
-  .mispub .mispub__hero {
-    grid-template-columns:
-      minmax(0, 1fr)
-      minmax(340px, 0.72fr);
+@media (max-width: 1240px) {
+  .mispub-quick-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .mispub .filters__dateGrid--classification {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+  .mispub-pdf-toggle {
+    width: 100%;
   }
-
-  .mispub
-    .filters__dateGrid--classification
-    .filter-field--toggle {
-    grid-column:
-      1 / -1;
-  }
-
 }
 
-/* ============================================================
-   RESPONSIVE — TABLET
-============================================================ */
+@media (max-width: 1080px) {
+  .mispub-grid,
+  .mispub-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .mispub {
     padding:
       calc(var(--sgpc-nav-offset, 72px) + 14px)
       14px
-      32px;
+      34px;
   }
 
-  .mispub .mispub__hero {
-    grid-template-columns:
-      1fr;
+  .mispub-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .mispub .hero__tools {
-    grid-template-columns:
-      minmax(0, 1fr)
-      auto;
-
-    align-items: center;
+  .mispub-header__summary {
+    width: 100%;
+    justify-content: flex-start;
   }
 
-  .mispub .view__switch {
-    min-width: 220px;
+  .mispub-discovery {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .mispub .filters__dateGrid--academic,
-  .mispub .filters__dateGrid--period {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+  .mispub-discovery__summary {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 0 2px;
   }
 
-  .mispub
-    .filters__dateGrid--academic
-    .filter-field:last-child {
-    grid-column:
-      1 / -1;
+  .mispub-quick-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mispub
-    .filters__dateGrid--period
-    .filter-field:first-child {
-    grid-column:
-      1 / -1;
+  .mispub-period__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mispub-period__separator {
+    justify-self: start;
+    margin: 0;
   }
 }
-
-/* ============================================================
-   RESPONSIVE — MÓVIL
-============================================================ */
 
 @media (max-width: 720px) {
   .mispub {
     padding:
       calc(var(--sgpc-nav-offset, 68px) + 10px)
       12px
-      26px;
+      28px;
   }
 
-  .mispub__wrap {
-    gap: 12px;
+  .mispub-title {
+    font-size: 1.8rem;
   }
 
-  .mispub .mispub__hero,
-  .mispub .mispub__filters,
-  .mispub .table-wrap {
-    border-radius:
-      var(--mp-radius-lg);
+  .mispub-subtitle {
+    font-size: 0.85rem;
   }
 
-  .mispub .mispub__hero {
-    padding: 16px;
+  .mispub-filters,
+  .mispub-results {
+    padding: 14px;
+    border-radius: 13px;
   }
 
-  .mispub .hero__title {
-    font-size: 1.65rem;
-  }
-
-  .mispub .hero__subtitle {
-    font-size: 0.84rem;
-  }
-
-  .mispub .hero__tools {
-    grid-template-columns:
-      1fr;
-  }
-
-  .mispub .view__switch {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .mispub .mispub__filters {
-    padding: 13px;
-  }
-
-  .mispub .filters__head {
+  .mispub-filters__topline,
+  .mispub-results__head {
     align-items: stretch;
-
     flex-direction: column;
+    gap: 11px;
   }
 
-  .mispub .filters__clear {
-    width: 100%;
+  .mispub-filters__status,
+  .mispub-view-switch {
+    align-self: flex-start;
   }
 
-  .mispub .filters__clear.is-hidden {
-    display: none;
+  .mispub-quick-filters,
+  .mispub-advanced__row--two,
+  .mispub-period__controls,
+  .mispub-grid,
+  .mispub-skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .mispub .filters__group {
-    padding: 12px;
+  .mispub-advanced {
+    padding: 11px;
   }
 
-  .mispub .filters__groupHead {
-    align-items: flex-start;
-
-    flex-direction: column;
-
-    gap: 4px;
-  }
-
-  .mispub .filters__groupHint {
-    text-align: left;
-  }
-
-  .mispub .filters__row {
+  .mispub-type-filter__chips {
     display: grid;
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mispub .chip {
+  .mispub-type-filter__chip {
     width: 100%;
-
     justify-content: flex-start;
   }
 
-  .mispub .chip__label {
-    flex: 1;
-
-    text-align: left;
+  .mispub-type-filter__chip strong {
+    margin-left: auto;
   }
 
-  .mispub .filters__dateGrid--academic,
-  .mispub .filters__dateGrid--classification,
-  .mispub .filters__dateGrid--period {
-    grid-template-columns:
-      1fr;
-  }
-
-  .mispub
-    .filters__dateGrid--academic
-    .filter-field:last-child,
-  .mispub
-    .filters__dateGrid--classification
-    .filter-field--toggle,
-  .mispub
-    .filters__dateGrid--period
-    .filter-field:first-child {
-    grid-column:
-      auto;
-  }
-
-  .mispub .cards {
-    grid-template-columns:
-      1fr;
-  }
-
-  .mispub .card {
+  .mispub-card {
     min-height: 0;
-
-    border-radius:
-      var(--mp-radius-lg);
   }
 
-  .mispub .card__head {
-    align-items: flex-start;
+  .mispub-card__footer {
+    min-height: 102px;
   }
 
-  .mispub .type__badge {
-    white-space: normal;
-
-    text-align: center;
-  }
-
-  .mispub .state {
-    padding: 13px;
-  }
-
-  .mispub .table {
-    min-width: 960px;
-  }
-
-  .mispub .card:hover,
-  .mispub .chip:hover,
-  .mispub .view__btn:hover,
-  .mispub .filters__clear:hover:not(:disabled),
-  .mispub .btn-mini:hover:not(:disabled) {
+  .mispub-card:hover {
     transform: none;
+    box-shadow: none;
   }
 }
-
-/* ============================================================
-   RESPONSIVE — MÓVIL PEQUEÑO
-============================================================ */
 
 @media (max-width: 480px) {
   .mispub {
@@ -2916,298 +1663,902 @@ body.dark .mispub
     padding-right: 10px;
   }
 
-  .mispub .hero__pills {
+  .mispub-header__summary {
     display: grid;
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mispub .pill {
-    justify-content: center;
+  .mispub-summary-card {
+    min-width: 0;
   }
 
-  .mispub .pill--active {
-    grid-column:
-      1 / -1;
+  .mispub-type-filter__chips {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .mispub .filters__row {
-    grid-template-columns:
-      1fr;
-  }
-
-  .mispub .filter-toggle {
-    grid-template-columns:
-      auto
-      minmax(0, 1fr);
-  }
-
-  .mispub .card__head {
+  .mispub-card__head {
     flex-direction: column;
   }
 
-  .mispub .date {
+  .mispub-date {
     align-self: flex-start;
   }
 
-  .mispub .card__footer,
-  .mispub .table__actions {
+  .mispub-card__footer {
+    min-height: 102px;
+    grid-template-rows: 34px minmax(32px, auto);
+  }
+
+  .mispub-card__actions,
+  .mispub-table__actions {
     display: grid;
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
-  .mispub .btn-mini {
+  .mispub-action {
     width: 100%;
-  }
-}
-
-
-
-/* ============================================================
-   AJUSTES RESPONSIVOS DEL PANEL COMPACTO
-============================================================ */
-
-@media (max-width: 1180px) {
-  .mispub .filters__primaryGrid {
-    grid-template-columns:
-      repeat(
-        3,
-        minmax(0, 1fr)
-      );
-  }
-
-  .mispub .filter-field--year,
-  .mispub .filter-field--month,
-  .mispub .filter-field--advancedAction {
-    grid-column:
-      auto;
-  }
-
-  .mispub .filters__advancedGrid {
-    grid-template-columns:
-      repeat(
-        3,
-        minmax(0, 1fr)
-      );
-  }
-
-  .mispub .filters__advancedGrid
-    .filter-field--toggle {
-    grid-column:
-      span 2;
-  }
-}
-
-@media (max-width: 960px) {
-  .mispub .filters__primaryGrid,
-  .mispub .filters__advancedGrid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
-
-  .mispub .filter-field--faculty,
-  .mispub .filter-field--project {
-    grid-column:
-      auto;
-  }
-
-  .mispub .filters__advancedGrid
-    .filter-field--toggle {
-    grid-column:
-      auto;
-  }
-}
-
-@media (max-width: 720px) {
-  .mispub .mispub__filters {
-    gap: 9px;
-
-    padding: 11px;
-  }
-
-  .mispub .filters__head {
-    align-items: stretch;
-    flex-direction: column;
-
-    gap: 9px;
-  }
-
-  .mispub .filters__clear {
-    width: 100%;
-  }
-
-  .mispub .filters__clear.is-hidden {
-    display: none;
-  }
-
-  .mispub .filters__group {
-    padding: 10px;
-  }
-
-  .mispub .filters__groupHead {
-    align-items: flex-start;
-    flex-direction: column;
-
-    gap: 3px;
-  }
-
-  .mispub .filters__groupHint {
-    text-align: left;
-  }
-
-  .mispub .filters__row {
-    display: grid;
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
-
-  .mispub .chip {
-    width: 100%;
-
-    justify-content: flex-start;
-  }
-
-  .mispub .chip__label {
-    flex: 1;
-
-    text-align: left;
-  }
-
-  .mispub .filters__primaryGrid,
-  .mispub .filters__advancedGrid {
-    grid-template-columns:
-      1fr;
-  }
-
-  .mispub .filter-field--faculty,
-  .mispub .filter-field--career,
-  .mispub .filter-field--project,
-  .mispub .filter-field--year,
-  .mispub .filter-field--month,
-  .mispub .filter-field--advancedAction,
-  .mispub .filters__advancedGrid
-    .filter-field--toggle {
-    grid-column:
-      auto;
-  }
-
-  .mispub .filter-select,
-  .mispub .filters__advancedButton,
-  .mispub .filter-toggle {
-    min-height: 41px;
-  }
-}
-
-@media (max-width: 480px) {
-  .mispub .filters__row {
-    grid-template-columns:
-      1fr;
   }
 }
 
 /* ============================================================
-   MOVIMIENTO REDUCIDO
+   MOVIMIENTO REDUCIDO / IMPRESIÓN
 ============================================================ */
 
-@media (
-  prefers-reduced-motion:
-  reduce
-) {
+@media (prefers-reduced-motion: reduce) {
   .mispub *,
   .mispub *::before,
   .mispub *::after {
-    scroll-behavior: auto !important;
-
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-
     transition-duration: 0.001ms !important;
   }
 
-  .mispub .card,
-  .mispub .chip,
-  .mispub .btn-mini {
+  .mispub-card {
     transform: none !important;
   }
 }
 
-/* ============================================================
-   IMPRESIÓN
-============================================================ */
-
 @media print {
   .mispub {
     min-height: auto;
-
     padding: 0;
-
     background: #ffffff !important;
     color: #000000 !important;
   }
 
-  .mispub .mispub__filters,
-  .mispub .hero__tools,
-  .mispub .card__footer,
-  .mispub .table__actions,
-  .mispub .td-actions,
-  .mispub .th-actions {
+  .mispub-discovery,
+  .mispub-filters,
+  .mispub-view-switch,
+  .mispub-card__actions,
+  .mispub-table__actions {
     display: none !important;
   }
 
-  .mispub .mispub__hero,
-  .mispub .card,
-  .mispub .table-wrap {
+  .mispub-results,
+  .mispub-card,
+  .mispub-table-wrap {
     box-shadow: none !important;
   }
 
-  .mispub .cards {
+  .mispub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ============================================================
+   18. MIS PUBLICACIONES — USUARIO FINAL / ALINEACIÓN 2026
+============================================================ */
+
+/* Ancho y ritmo coherentes con las demás vistas depuradas. */
+.mispub {
+  padding:
+    calc(var(--sgpc-nav-offset, 78px) + 10px)
+    clamp(10px, 1.25vw, 18px)
+    42px;
+}
+
+.mispub__wrap {
+  width: min(1320px, 100%);
+  gap: 14px;
+
+  container-name: mis-publicaciones;
+  container-type: inline-size;
+}
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.mispub-header {
+  display: block;
+
+  padding:
+    2px
+    2px
+    12px;
+
+  border-bottom:
+    1px solid
+    var(--mp-line);
+}
+
+.mispub-header__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.mispub-title {
+  margin: 0;
+
+  font-size:
+    clamp(
+      1.45rem,
+      1.28rem + 0.55vw,
+      1.82rem
+    );
+
+  font-weight: 780;
+  line-height: 1.1;
+  letter-spacing: -0.032em;
+}
+
+.mispub-subtitle {
+  max-width: 72ch;
+
+  margin: 0;
+
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* Clases antiguas que ya no se muestran. */
+.mispub-eyebrow,
+.mispub-header__summary,
+.mispub-summary-card,
+.mispub-discovery__summary {
+  display: none !important;
+}
+
+/* ============================================================
+   BÚSQUEDA
+============================================================ */
+
+.mispub-discovery {
+  display: block;
+}
+
+/* ============================================================
+   FILTROS
+============================================================ */
+
+.mispub-filters {
+  padding:
+    14px
+    15px;
+
+  border-radius: 14px;
+
+  box-shadow: none;
+}
+
+.mispub-filters__topline {
+  align-items: center;
+}
+
+.mispub-section-kicker {
+  display: none;
+}
+
+.mispub-section-title {
+  margin: 0;
+
+  font-size: 0.9rem;
+  font-weight: 740;
+  letter-spacing: -0.015em;
+}
+
+.mispub-filters__status {
+  gap: 4px;
+}
+
+.mispub-filter-count {
+  display: none;
+}
+
+.mispub-text-action {
+  min-height: 32px;
+
+  padding:
+    0
+    6px;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.mispub-quick-filters {
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    )
+    auto;
+
+  gap: 9px;
+
+  margin-top: 12px;
+}
+
+.mispub-label {
+  font-size: 0.66rem;
+  font-weight: 720;
+}
+
+.mispub-select,
+.mispub-pdf-toggle {
+  min-height: 40px;
+
+  border-radius: 9px;
+}
+
+.mispub-select {
+  font-size: 0.74rem;
+}
+
+.mispub-pdf-toggle {
+  padding-inline: 10px;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.mispub-pdf-toggle__control {
+  width: 19px;
+  height: 19px;
+
+  border-radius: 5px;
+}
+
+/* Más filtros se comporta como una fila secundaria,
+   no como una segunda tarjeta dentro de Filtros. */
+.mispub-advanced-trigger {
+  min-height: 42px;
+
+  grid-template-columns:
+    28px
+    minmax(0, 1fr)
+    auto
+    auto;
+
+  margin-top: 10px;
+
+  padding:
+    6px
+    8px;
+
+  border:
+    0;
+
+  border-top:
+    1px solid
+    var(--mp-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.mispub-advanced-trigger:hover,
+.mispub-advanced-trigger.is-open,
+.mispub-advanced-trigger.has-active {
+  border-color:
+    var(--mp-line);
+
+  background: transparent;
+
+  color:
+    var(--mp-primary);
+}
+
+.mispub-advanced-trigger__icon {
+  width: 28px;
+  height: 28px;
+
+  border:
+    1px solid
+    var(--mp-line);
+
+  border-radius: 8px;
+
+  background:
+    var(--mp-card);
+}
+
+.mispub-advanced-trigger__copy strong {
+  font-size: 0.72rem;
+}
+
+.mispub-advanced-trigger__copy small {
+  font-size: 0.64rem;
+}
+
+.mispub-advanced-trigger__count {
+  min-width: 20px;
+  height: 20px;
+
+  font-size: 0.61rem;
+}
+
+/* El contenido avanzado comparte la misma superficie del filtro. */
+.mispub-advanced {
+  margin-top: 0;
+
+  padding:
+    12px
+    0
+    0;
+
+  border: 0;
+  border-top:
+    1px solid
+    var(--mp-line);
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.mispub-period {
+  margin-top: 11px;
+  padding-top: 11px;
+}
+
+.mispub-period__head strong {
+  font-size: 0.72rem;
+}
+
+.mispub-period__head span,
+.mispub-period__label {
+  font-size: 0.64rem;
+}
+
+.mispub-period__separator {
+  border: 0;
+
+  background: transparent;
+
+  font-weight: 650;
+}
+
+.mispub-active-filters {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.mispub-active-filters__label {
+  font-size: 0.65rem;
+}
+
+.mispub-filter-chip {
+  min-height: 28px;
+
+  padding-inline: 8px;
+
+  border-radius: 8px;
+
+  font-size: 0.66rem;
+}
+
+/* ============================================================
+   RESULTADOS — SIN TARJETA CONTENEDORA
+============================================================ */
+
+.mispub-results {
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+
+  box-shadow: none;
+}
+
+.mispub-results__head {
+  align-items: center;
+
+  padding:
+    2px
+    1px
+    0;
+}
+
+.mispub-results__title {
+  margin: 0;
+
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: -0.018em;
+}
+
+.mispub-results__head p {
+  max-width: 680px;
+
+  margin-top: 4px;
+
+  font-size: 0.7rem;
+}
+
+.mispub-view-switch {
+  padding: 2px;
+
+  border-radius: 9px;
+
+  background:
+    var(--mp-card);
+}
+
+.mispub-view-switch button {
+  min-height: 32px;
+
+  padding-inline: 9px;
+
+  border-radius: 7px;
+
+  font-size: 0.67rem;
+}
+
+.mispub-view-switch button.is-active {
+  box-shadow: none;
+}
+
+.mispub-type-filter {
+  margin-top: 11px;
+  padding-top: 10px;
+}
+
+.mispub-type-filter__label {
+  font-size: 0.65rem;
+}
+
+.mispub-type-filter__chips {
+  gap: 5px;
+}
+
+.mispub-type-filter__chip {
+  min-height: 31px;
+
+  padding-inline: 8px;
+
+  border-radius: 8px;
+
+  font-size: 0.66rem;
+}
+
+.mispub-type-filter__dot {
+  width: 6px;
+  height: 6px;
+
+  box-shadow: none;
+}
+
+/* ============================================================
+   TARJETAS DE PUBLICACIÓN
+============================================================ */
+
+.mispub-grid,
+.mispub-skeleton-grid {
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(300px, 1fr)
+    );
+
+  gap: 11px;
+
+  margin-top: 11px;
+}
+
+.mispub-card {
+  min-height: 0;
+
+  border-radius: 12px;
+
+  box-shadow: none;
+
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.mispub-card:hover {
+  transform: none;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--card-accent) 24%,
+      var(--mp-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--card-accent) 1.5%,
+      var(--mp-card)
+    );
+
+  box-shadow: none;
+}
+
+.mispub-card__accent {
+  display: none;
+}
+
+.mispub-card__head {
+  padding:
+    12px
+    12px
+    0;
+}
+
+.mispub-badge,
+.mispub-status {
+  min-height: 24px;
+
+  padding-inline: 7px;
+
+  font-size: 0.61rem;
+}
+
+.mispub-badge__dot {
+  width: 5px;
+  height: 5px;
+}
+
+.mispub-date {
+  font-size: 0.64rem;
+}
+
+.mispub-card__body {
+  padding:
+    11px
+    12px
+    12px;
+}
+
+.mispub-card__title {
+  font-size: 0.88rem;
+  line-height: 1.32;
+}
+
+.mispub-card__section-label {
+  font-size: 0.61rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mispub-card__authors,
+.mispub-card__academic {
+  font-size: 0.67rem;
+}
+
+.mispub-card__tags {
+  gap: 4px;
+}
+
+.mispub-meta-chip {
+  min-height: 23px;
+
+  max-width: 100%;
+
+  padding-inline: 7px;
+
+  border-radius: 7px;
+
+  font-size: 0.61rem;
+}
+
+.mispub-meta-chip--project {
+  max-width: min(100%, 220px);
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mispub-workflow {
+  padding:
+    8px
+    9px;
+
+  border-radius: 8px;
+
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.mispub-card__footer {
+  min-height: 0;
+
+  display: grid;
+  grid-template-rows: auto auto;
+
+  gap: 7px;
+
+  padding:
+    9px
+    12px
+    11px;
+
+  background: transparent;
+}
+
+.mispub-card__detail {
+  min-height: 31px;
+
+  font-size: 0.69rem;
+}
+
+.mispub-card__detail:hover svg {
+  transform: none;
+}
+
+.mispub-card__actions {
+  min-height: 0;
+
+  gap: 5px;
+}
+
+.mispub-action {
+  min-height: 30px;
+
+  padding-inline: 8px;
+
+  border-radius: 7px;
+
+  font-size: 0.64rem;
+}
+
+/* ============================================================
+   TABLA
+============================================================ */
+
+.mispub-table-wrap {
+  margin-top: 11px;
+
+  border-radius: 11px;
+}
+
+.mispub-table {
+  min-width: 1180px;
+}
+
+.mispub-table th,
+.mispub-table td {
+  padding:
+    10px
+    11px;
+}
+
+.mispub-table th {
+  font-size: 0.62rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mispub-table td {
+  font-size: 0.69rem;
+}
+
+/* ============================================================
+   ESTADOS / ALERTAS
+============================================================ */
+
+.mispub-alert,
+.mispub-empty {
+  border-radius: 10px;
+
+  box-shadow: none;
+}
+
+/* ============================================================
+   RESPONSIVE POR CONTENEDOR
+============================================================ */
+
+@container mis-publicaciones (max-width: 1120px) {
+  .mispub-quick-filters {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub-pdf-toggle {
+    width: 100%;
+  }
+}
+
+@container mis-publicaciones (max-width: 760px) {
+  .mispub-filters {
+    padding:
+      12px;
+  }
+
+  .mispub-filters__topline,
+  .mispub-results__head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .mispub-view-switch {
+    align-self: flex-start;
+  }
+
+  .mispub-quick-filters,
+  .mispub-advanced__row--two,
+  .mispub-period__controls,
+  .mispub-period__options {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .mispub-period__separator {
+    justify-self: start;
+    min-width: 0;
+    height: auto;
+  }
+
+  .mispub-type-filter__chips {
+    display: grid;
     grid-template-columns:
       repeat(
         2,
         minmax(0, 1fr)
       );
   }
+
+  .mispub-type-filter__chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mispub-type-filter__chip strong {
+    margin-left: auto;
+  }
+
+  /* Tabla -> fichas. */
+  .mispub-table-wrap {
+    overflow: visible;
+
+    border: 0;
+    border-radius: 0;
+
+    background: transparent;
+  }
+
+  .mispub-table {
+    width: 100%;
+    min-width: 0;
+
+    display: block;
+  }
+
+  .mispub-table thead {
+    display: none;
+  }
+
+  .mispub-table tbody {
+    display: grid;
+    gap: 9px;
+  }
+
+  .mispub-table tr {
+    display: grid;
+
+    overflow: hidden;
+
+    border:
+      1px solid
+      var(--mp-line);
+
+    border-radius: 11px;
+
+    background:
+      var(--mp-card);
+  }
+
+  .mispub-table td {
+    min-width: 0;
+
+    display: grid;
+    grid-template-columns:
+      minmax(90px, 0.34fr)
+      minmax(0, 1fr);
+
+    gap: 10px;
+
+    padding:
+      8px
+      10px;
+
+    border-bottom:
+      1px solid
+      var(--mp-line);
+
+    color:
+      var(--mp-text);
+
+    overflow-wrap: anywhere;
+  }
+
+  .mispub-table td::before {
+    content:
+      attr(data-label);
+
+    color:
+      var(--mp-muted);
+
+    font-size: 0.61rem;
+    font-weight: 700;
+  }
+
+  .mispub-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .mispub-table__title-cell {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .mispub-table__actions {
+    width: 100%;
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 5px;
+  }
 }
 
-/* ============================================================
-   ARMONIZACIÓN CON LA BASE COMPARTIDA
-============================================================ */
+@container mis-publicaciones (max-width: 480px) {
+  .mispub-type-filter__chips {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
 
-.mispub .filter-select {
-  min-block-size: 39px;
+  .mispub-card__head {
+    flex-direction: column;
+  }
+
+  .mispub-date {
+    align-self: flex-start;
+  }
+
+  .mispub-card__actions,
+  .mispub-table__actions {
+    display: grid;
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .mispub-action {
+    width: 100%;
+  }
+
+  .mispub-table td {
+    grid-template-columns:
+      minmax(76px, 0.34fr)
+      minmax(0, 1fr);
+  }
 }
 
-.mispub .search.search--navbar {
-  min-block-size:
-    var(
-      --sgpc-list-control-height-lg,
-      44px
-    );
-}
-
-.mispub .hero__tools,
-.mispub .filters__dateGrid,
-.mispub .cards,
-.mispub .table-wrap,
-.mispub .filters__group,
-.mispub .filter-toggle {
-  min-width: 0;
-}

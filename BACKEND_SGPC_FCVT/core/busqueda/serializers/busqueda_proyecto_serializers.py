@@ -6,7 +6,7 @@ resultados generales y autocompletados:
 
 - Nombre y descripción resumida.
 - Estado y periodo de ejecución.
-- Carrera y facultad derivada.
+- Sede, carrera y facultad derivada.
 - Fechas principales del proyecto.
 - Disponibilidad y URL absoluta del PDF.
 - Alias estables utilizados por el frontend.
@@ -52,6 +52,11 @@ def _safe_file_url(file_field, *, request=None):
         return request.build_absolute_uri(file_url)
     except (ValueError, TypeError):
         return file_url
+
+
+def _site(project):
+    """Obtiene la sede institucional del proyecto."""
+    return getattr(project, "sede", None) if project is not None else None
 
 
 def _career(project):
@@ -137,7 +142,9 @@ class ProyectoBusquedaSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField(read_only=True)
     snippet = serializers.SerializerMethodField(read_only=True)
 
-    # Carrera y facultad.
+    # Sede, carrera y facultad.
+    sede_id = serializers.SerializerMethodField(read_only=True)
+    sede = serializers.SerializerMethodField(read_only=True)
     carrera_id = serializers.SerializerMethodField(read_only=True)
     carrera = serializers.SerializerMethodField(read_only=True)
     facultad_id = serializers.SerializerMethodField(read_only=True)
@@ -184,7 +191,9 @@ class ProyectoBusquedaSerializer(serializers.ModelSerializer):
             "anio_fin",
             "periodo",
 
-            # Carrera y facultad
+            # Sede, carrera y facultad
+            "sede_id",
+            "sede",
             "carrera_id",
             "carrera",
             "facultad_id",
@@ -217,8 +226,16 @@ class ProyectoBusquedaSerializer(serializers.ModelSerializer):
         return _optional_text(getattr(obj, "descripcion", None)) or ""
 
     # ========================================================
-    # CARRERA Y FACULTAD
+    # SEDE, CARRERA Y FACULTAD
     # ========================================================
+
+    def get_sede_id(self, obj):
+        site = _site(obj)
+        return getattr(site, "pk", None) if site is not None else None
+
+    def get_sede(self, obj):
+        site = _site(obj)
+        return _optional_text(getattr(site, "nombre", None))
 
     def get_carrera_id(self, obj):
         career = _career(obj)

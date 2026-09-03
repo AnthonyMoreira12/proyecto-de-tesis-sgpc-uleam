@@ -259,7 +259,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Proyecto
-    "core",
+    "core.apps.CoreConfig",
 
     # Terceros
     "rest_framework",
@@ -290,6 +290,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.auditoria.middleware.AuditoriaRequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -513,6 +514,71 @@ REST_FRAMEWORK = {
 # ============================================================
 # SIMPLEJWT
 # ============================================================
+
+# ============================================================
+# COOKIE HTTPONLY DEL REFRESH JWT
+# ============================================================
+
+AUTH_REFRESH_COOKIE_NAME = (
+    os.getenv(
+        "AUTH_REFRESH_COOKIE_NAME",
+        "sgpc_refresh_token",
+    ).strip()
+    or "sgpc_refresh_token"
+)
+
+AUTH_REFRESH_COOKIE_PATH = (
+    os.getenv(
+        "AUTH_REFRESH_COOKIE_PATH",
+        "/api/auth/",
+    ).strip()
+    or "/api/auth/"
+)
+
+AUTH_REFRESH_COOKIE_DOMAIN = (
+    os.getenv(
+        "AUTH_REFRESH_COOKIE_DOMAIN",
+        "",
+    ).strip()
+    or None
+)
+
+AUTH_REFRESH_COOKIE_SECURE = env_bool(
+    "AUTH_REFRESH_COOKIE_SECURE",
+    not DEBUG,
+)
+
+AUTH_REFRESH_COOKIE_SAMESITE = (
+    os.getenv(
+        "AUTH_REFRESH_COOKIE_SAMESITE",
+        "Lax",
+    ).strip()
+    or "Lax"
+)
+
+if (
+    AUTH_REFRESH_COOKIE_SAMESITE.lower()
+    not in {
+        "lax",
+        "strict",
+        "none",
+    }
+):
+    raise ImproperlyConfigured(
+        "AUTH_REFRESH_COOKIE_SAMESITE debe ser "
+        "Lax, Strict o None."
+    )
+
+if (
+    AUTH_REFRESH_COOKIE_SAMESITE.lower()
+    == "none"
+    and not AUTH_REFRESH_COOKIE_SECURE
+):
+    raise ImproperlyConfigured(
+        "AUTH_REFRESH_COOKIE_SECURE debe estar activo "
+        "cuando AUTH_REFRESH_COOKIE_SAMESITE=None."
+    )
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(

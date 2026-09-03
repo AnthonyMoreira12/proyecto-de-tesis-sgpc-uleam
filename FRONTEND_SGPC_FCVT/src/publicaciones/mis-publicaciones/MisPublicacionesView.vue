@@ -3,470 +3,306 @@
     class="mispub"
     :data-tipo="tipoThemeCode"
   >
-    <div class="mispub__wrap">
+    <main class="mispub__wrap">
       <!-- =====================================================
         ENCABEZADO
       ====================================================== -->
-
       <header
-        class="mispub__hero page-stage page-stage-1"
+        class="mispub-header page-stage page-stage-1"
         aria-label="Mis publicaciones"
       >
-        <div class="hero__copy">
-          <span class="hero__eyebrow">
-            Producción científica
-          </span>
-
-          <h1 class="hero__title">
+        <div class="mispub-header__copy">
+          <h1 class="mispub-title">
             Mis publicaciones
           </h1>
 
-          <p class="hero__subtitle">
-            Consulte, filtre y gestione las publicaciones científicas
-            vinculadas a su perfil académico.
+          <p class="mispub-subtitle">
+            Revise sus publicaciones, consulte su estado y realice las acciones disponibles.
           </p>
-
-          <div
-            class="hero__pills"
-            aria-label="Resumen de publicaciones"
-          >
-            <span class="pill">
-              Total:
-              <strong>{{ totalPublicaciones }}</strong>
-            </span>
-
-            <span class="pill">
-              Resultados:
-              <strong>{{ totalResultados }}</strong>
-            </span>
-
-            <span
-              v-if="activeFiltersCount"
-              class="pill pill--active"
-            >
-              Filtros:
-              <strong>{{ activeFiltersCount }}</strong>
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="hero__tools"
-          aria-label="Herramientas de consulta"
-        >
-          <label
-            class="search search--navbar"
-            aria-label="Buscar publicación"
-          >
-            <span
-              class="search__lead"
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                class="search__svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm6.1-1.06 4.05 4.06a1 1 0 0 1-1.42 1.42l-4.06-4.05a9 9 0 1 1 1.42-1.42Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-
-            <input
-              ref="searchEl"
-              v-model="q"
-              class="search__input"
-              type="search"
-              inputmode="search"
-              autocomplete="off"
-              placeholder="Buscar por título, autor, tipo, proyecto, facultad o carrera…"
-            />
-
-            <button
-              type="button"
-              class="search__action"
-              :aria-label="q ? 'Limpiar búsqueda' : 'Enfocar búsqueda'"
-              @click="handleSearchAction"
-            >
-              <span
-                v-if="q"
-                class="search__x"
-                aria-hidden="true"
-              >
-                ×
-              </span>
-
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-                class="search__svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm6.1-1.06 4.05 4.06a1 1 0 1 1-1.42 1.42l-4.06-4.05a9 9 0 1 1 1.42-1.42Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-          </label>
-
-          <div
-            class="view__switch"
-            role="group"
-            aria-label="Vista de resultados"
-          >
-            <button
-              type="button"
-              class="view__btn"
-              :class="{ activo: vista === 'cards' }"
-              :aria-pressed="vista === 'cards'"
-              @click="vista = 'cards'"
-            >
-              Tarjetas
-            </button>
-
-            <button
-              type="button"
-              class="view__btn"
-              :class="{ activo: vista === 'tabla' }"
-              :aria-pressed="vista === 'tabla'"
-              @click="vista = 'tabla'"
-            >
-              Tabla
-            </button>
-          </div>
         </div>
       </header>
 
       <!-- =====================================================
-        FILTROS COMPACTOS
+        BÚSQUEDA
       ====================================================== -->
-
       <section
-        class="mispub__filters page-stage page-stage-2"
-        aria-label="Filtros de publicaciones"
+        class="mispub-discovery page-stage page-stage-2"
+        aria-label="Buscar en mis publicaciones"
       >
-        <div class="filters__head">
-          <div class="filters__titlewrap">
-            <div class="filters__titleLine">
-              <h2 class="filters__title">
-                Filtros y ordenamiento
-              </h2>
+        <MisPublicacionesSearchField
+          ref="searchEl"
+          v-model="q"
+          placeholder="Buscar por título, autor o proyecto"
+        />
+      </section>
 
-              <span
-                v-if="activeFiltersCount"
-                class="filters__activeBadge"
-              >
-                {{ activeFiltersCount }}
-                {{ activeFiltersCount === 1 ? "activo" : "activos" }}
-              </span>
-            </div>
-
-            <p class="filters__description">
-              Refine los resultados sin perder de vista sus publicaciones.
-            </p>
+      <!-- =====================================================
+        FILTROS
+      ====================================================== -->
+      <section
+        class="mispub-filters page-stage page-stage-3"
+        aria-label="Filtros de mis publicaciones"
+      >
+        <div class="mispub-filters__topline">
+          <div>
+            <h2 class="mispub-section-title">
+              Filtros
+            </h2>
           </div>
 
-          <button
-            type="button"
-            class="filters__clear"
-            :class="{ 'is-hidden': !canClearFilters }"
-            :disabled="!canClearFilters"
-            @click="clearAllFilters"
-          >
-            Limpiar filtros
-          </button>
-        </div>
-
-        <!-- ===================================================
-          TIPO DE PUBLICACIÓN
-        ==================================================== -->
-
-        <div class="filters__group filters__group--types">
-          <div class="filters__groupHead">
-            <h3 class="filters__groupTitle">
-              Tipo de publicación
-            </h3>
-          </div>
-
-          <div
-            class="filters__row"
-            aria-label="Filtrar por tipo de publicación"
-          >
+          <div class="mispub-filters__status">
             <button
-              v-for="tipo in TIPOS_LIST"
-              :key="tipo.value"
+              v-if="canClearFilters"
               type="button"
-              class="chip"
-              :class="{ activo: filtro.value === tipo.value }"
-              :aria-pressed="filtro.value === tipo.value"
-              @click="cambiarFiltro(tipo)"
+              class="mispub-text-action"
+              @click="clearAllFilters"
             >
-              <span
-                class="chip__dot"
-                :data-tipo="tipo.value"
-                aria-hidden="true"
-              ></span>
-
-              <span class="chip__label">
-                {{ tipo.label }}
-              </span>
-
-              <span
-                class="chip__count"
-                aria-label="Cantidad"
-              >
-                {{ countByType(tipo.value) }}
-              </span>
+              Limpiar filtros
             </button>
           </div>
         </div>
 
-        <!-- ===================================================
-          FILTROS PRINCIPALES
-        ==================================================== -->
+        <div class="mispub-quick-filters">
+          <div class="mispub-field">
+            <label
+              class="mispub-label"
+              for="mispub-sede"
+            >
+              Sede
+            </label>
 
-        <div class="filters__group filters__group--primary">
-          <div class="filters__groupHead">
-            <h3 class="filters__groupTitle">
-              Filtros principales
-            </h3>
+            <select
+              id="mispub-sede"
+              v-model="filtroSede"
+              class="mispub-select"
+              @change="onMainSedeChange"
+            >
+              <option value="">
+                Todas las sedes
+              </option>
 
-            <span class="filters__groupHint">
-              Carrera y proyecto dependen de la selección anterior.
+              <option
+                v-for="sede in sedes"
+                :key="`sede-${sede.id}`"
+                :value="String(sede.id)"
+              >
+                {{ getCatalogLabel(sede) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mispub-field">
+            <label
+              class="mispub-label"
+              for="mispub-facultad"
+            >
+              Facultad
+            </label>
+
+            <select
+              id="mispub-facultad"
+              v-model="filtroFacultad"
+              class="mispub-select"
+              @change="onMainFacultadChange"
+            >
+              <option value="">
+                Todas las facultades
+              </option>
+
+              <option
+                v-for="facultad in facultades"
+                :key="`facultad-${facultad.id}`"
+                :value="String(facultad.id)"
+              >
+                {{ getCatalogLabel(facultad) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mispub-field">
+            <label
+              class="mispub-label"
+              for="mispub-carrera"
+            >
+              Carrera
+            </label>
+
+            <select
+              id="mispub-carrera"
+              v-model="filtroCarrera"
+              class="mispub-select"
+              :disabled="!filtroSede && !filtroFacultad"
+              @change="onMainCarreraChange"
+            >
+              <option value="">
+                {{
+                  filtroSede || filtroFacultad
+                    ? "Todas las carreras"
+                    : "Seleccione sede o facultad"
+                }}
+              </option>
+
+              <option
+                v-for="carrera in carreras"
+                :key="`carrera-${carrera.id}`"
+                :value="String(carrera.id)"
+              >
+                {{ getCatalogLabel(carrera) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mispub-field">
+            <label
+              class="mispub-label"
+              for="mispub-estado"
+            >
+              Estado
+            </label>
+
+            <select
+              id="mispub-estado"
+              v-model="filtroEstado"
+              class="mispub-select"
+            >
+              <option
+                v-for="estado in ESTADOS_FILTER_LIST"
+                :key="`estado-${estado.value}`"
+                :value="estado.value"
+              >
+                {{ estado.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mispub-field">
+            <label
+              class="mispub-label"
+              for="mispub-orden"
+            >
+              Ordenar por
+            </label>
+
+            <select
+              id="mispub-orden"
+              v-model="orden"
+              class="mispub-select"
+            >
+              <option
+                v-for="option in ORDENES"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <label
+            class="mispub-pdf-toggle"
+            for="mispub-solo-pdf"
+          >
+            <input
+              id="mispub-solo-pdf"
+              v-model="soloConPdf"
+              class="mispub-pdf-toggle__input"
+              type="checkbox"
+            />
+
+            <span
+              class="mispub-pdf-toggle__control"
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="m9.2 16.2-3.4-3.4 1.4-1.4 2 2 7.6-7.6 1.4 1.4-9 9Z"
+                />
+              </svg>
             </span>
-          </div>
 
-          <div class="filters__primaryGrid">
-            <div class="filter-field filter-field--faculty">
-              <label
-                class="filter-label"
-                for="mispub-facultad"
-              >
-                Facultad
-              </label>
-
-              <select
-                id="mispub-facultad"
-                v-model="filtroFacultad"
-                class="filter-select"
-                @change="onMainFacultadChange"
-              >
-                <option value="">
-                  Todas las facultades
-                </option>
-
-                <option
-                  v-for="facultad in facultades"
-                  :key="`facultad-${facultad.id}`"
-                  :value="String(facultad.id)"
-                >
-                  {{ getCatalogLabel(facultad) }}
-                </option>
-              </select>
-            </div>
-
-            <div class="filter-field filter-field--career">
-              <label
-                class="filter-label"
-                for="mispub-carrera"
-              >
-                Carrera
-              </label>
-
-              <select
-                id="mispub-carrera"
-                v-model="filtroCarrera"
-                class="filter-select"
-                :disabled="!filtroFacultad"
-                @change="onMainCarreraChange"
-              >
-                <option value="">
-                  Todas las carreras
-                </option>
-
-                <option
-                  v-for="carrera in carreras"
-                  :key="`carrera-${carrera.id}`"
-                  :value="String(carrera.id)"
-                >
-                  {{ getCatalogLabel(carrera) }}
-                </option>
-              </select>
-            </div>
-
-            <div class="filter-field filter-field--project">
-              <label
-                class="filter-label"
-                for="mispub-proyecto"
-              >
-                Proyecto
-              </label>
-
-              <select
-                id="mispub-proyecto"
-                v-model="filtroProyecto"
-                class="filter-select"
-                :disabled="!filtroCarrera"
-              >
-                <option value="">
-                  Todos los proyectos
-                </option>
-
-                <option
-                  v-for="proyecto in proyectos"
-                  :key="`proyecto-${proyecto.id}`"
-                  :value="String(proyecto.id)"
-                >
-                  {{ getCatalogLabel(proyecto) }}
-                </option>
-              </select>
-            </div>
-
-            <div class="filter-field filter-field--year">
-              <label
-                class="filter-label"
-                for="mispub-anio"
-              >
-                Año
-              </label>
-
-              <select
-                id="mispub-anio"
-                v-model="filtroAnio"
-                class="filter-select"
-                :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnioDesde || filtroAnioHasta)"
-              >
-                <option value="">
-                  {{
-                    loadingAnios
-                      ? "Cargando años…"
-                      : añosDisponibles.length
-                        ? "Todos"
-                        : "Sin años disponibles"
-                  }}
-                </option>
-
-                <option
-                  v-for="anio in añosDisponibles"
-                  :key="`exact-${anio}`"
-                  :value="String(anio)"
-                >
-                  {{ anio }}
-                </option>
-              </select>
-            </div>
-
-            <div class="filter-field filter-field--month">
-              <label
-                class="filter-label"
-                for="mispub-mes"
-              >
-                Mes
-              </label>
-
-              <select
-                id="mispub-mes"
-                v-model="filtroMes"
-                class="filter-select"
-              >
-                <option
-                  v-for="mes in MESES_LIST"
-                  :key="`mes-${mes.value || 'all'}`"
-                  :value="mes.value"
-                >
-                  {{ mes.label }}
-                </option>
-              </select>
-            </div>
-
-            <div class="filter-field filter-field--advancedAction">
-              <span class="filter-label">
-                Opciones
-              </span>
-
-              <button
-                type="button"
-                class="filters__advancedButton"
-                :class="{
-                  'is-open': filtrosAvanzadosAbiertos,
-                  'has-active': advancedFiltersCount > 0,
-                }"
-                :aria-expanded="filtrosAvanzadosAbiertos"
-                aria-controls="mispub-advanced-filters"
-                @click="filtrosAvanzadosAbiertos = !filtrosAvanzadosAbiertos"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  class="filters__advancedIcon"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M4 6h16M7 12h10M10 18h4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.9"
-                    stroke-linecap="round"
-                  />
-                </svg>
-
-                <span class="filters__advancedLabel">
-                  Más filtros
-                </span>
-
-                <span
-                  v-if="advancedFiltersCount"
-                  class="filters__advancedCount"
-                  aria-label="Filtros avanzados activos"
-                >
-                  {{ advancedFiltersCount }}
-                </span>
-
-                <svg
-                  viewBox="0 0 24 24"
-                  class="filters__advancedChevron"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m7 10 5 5 5-5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+            <span>Solo con documento</span>
+          </label>
         </div>
 
-        <!-- ===================================================
-          FILTROS AVANZADOS PLEGABLES
-        ==================================================== -->
+        <button
+          type="button"
+          class="mispub-advanced-trigger"
+          :class="{
+            'is-open': filtrosAvanzadosAbiertos,
+            'has-active': advancedFiltersCount > 0,
+          }"
+          :aria-expanded="filtrosAvanzadosAbiertos"
+          aria-controls="mispub-advanced-filters"
+          @click="filtrosAvanzadosAbiertos = !filtrosAvanzadosAbiertos"
+        >
+          <span class="mispub-advanced-trigger__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M4 6h10v2H4V6Zm0 10h6v2H4v-2Zm0-5h16v2H4v-2Zm14-7h2v6h-2V4Zm-6 10h2v6h-2v-6Z"
+              />
+            </svg>
+          </span>
+
+          <span class="mispub-advanced-trigger__copy">
+            <strong>Más filtros</strong>
+            <small>Proyecto, origen y período</small>
+          </span>
+
+          <span
+            v-if="advancedFiltersCount"
+            class="mispub-advanced-trigger__count"
+          >
+            {{ advancedFiltersCount }}
+          </span>
+
+          <span
+            class="mispub-advanced-trigger__chevron"
+            aria-hidden="true"
+          >
+            ⌄
+          </span>
+        </button>
 
         <Transition name="filters-advanced">
           <div
             v-if="filtrosAvanzadosAbiertos"
             id="mispub-advanced-filters"
-            class="filters__group filters__group--advanced"
+            class="mispub-advanced"
           >
-            <div class="filters__groupHead">
-              <h3 class="filters__groupTitle">
-                Filtros avanzados
-              </h3>
-
-              <span class="filters__groupHint">
-                Para el período use un año exacto o un rango; el mes puede combinarse con ambos.
-              </span>
-            </div>
-
-            <div class="filters__advancedGrid">
-              <div class="filter-field">
+            <div class="mispub-advanced__row mispub-advanced__row--two">
+              <div class="mispub-field">
                 <label
-                  class="filter-label"
+                  class="mispub-label"
+                  for="mispub-proyecto"
+                >
+                  Proyecto
+                </label>
+
+                <select
+                  id="mispub-proyecto"
+                  v-model="filtroProyecto"
+                  class="mispub-select"
+                  :disabled="!filtroCarrera"
+                >
+                  <option value="">
+                    {{ filtroCarrera ? "Todos los proyectos" : "Seleccione una carrera" }}
+                  </option>
+
+                  <option
+                    v-for="proyecto in proyectos"
+                    :key="`proyecto-${proyecto.id}`"
+                    :value="String(proyecto.id)"
+                  >
+                    {{ getCatalogLabel(proyecto) }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="mispub-field">
+                <label
+                  class="mispub-label"
                   for="mispub-origen"
                 >
                   Origen
@@ -475,7 +311,7 @@
                 <select
                   id="mispub-origen"
                   v-model="filtroOrigen"
-                  class="filter-select"
+                  class="mispub-select"
                 >
                   <option
                     v-for="origen in ORIGENES_LIST"
@@ -486,196 +322,204 @@
                   </option>
                 </select>
               </div>
+            </div>
 
-              <div class="filter-field">
-                <label
-                  class="filter-label"
-                  for="mispub-anio-desde"
-                >
-                  Desde
-                </label>
-
-                <select
-                  id="mispub-anio-desde"
-                  v-model="filtroAnioDesde"
-                  class="filter-select"
-                  :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
-                >
-                  <option value="">
-                    Sin mínimo
-                  </option>
-
-                  <option
-                    v-for="anio in añosDisponibles"
-                    :key="`desde-${anio}`"
-                    :value="String(anio)"
-                  >
-                    {{ anio }}
-                  </option>
-                </select>
+            <div class="mispub-period">
+              <div class="mispub-period__head">
+                <div>
+                  <strong>Período</strong>
+                  <span>Elija un año concreto o un rango de años.</span>
+                </div>
               </div>
 
-              <div class="filter-field">
-                <label
-                  class="filter-label"
-                  for="mispub-anio-hasta"
-                >
-                  Hasta
-                </label>
+              <div class="mispub-period__options">
+                <div class="mispub-period__group">
+                  <span class="mispub-period__label">
+                    Año y mes
+                  </span>
 
-                <select
-                  id="mispub-anio-hasta"
-                  v-model="filtroAnioHasta"
-                  class="filter-select"
-                  :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
-                >
-                  <option value="">
-                    Sin máximo
-                  </option>
+                  <div class="mispub-period__controls">
+                    <div class="mispub-field">
+                      <label
+                        class="mispub-label mispub-label--muted"
+                        for="mispub-anio"
+                      >
+                        Año
+                      </label>
 
-                  <option
-                    v-for="anio in añosDisponibles"
-                    :key="`hasta-${anio}`"
-                    :value="String(anio)"
-                  >
-                    {{ anio }}
-                  </option>
-                </select>
-              </div>
+                      <select
+                        id="mispub-anio"
+                        v-model="filtroAnio"
+                        class="mispub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnioDesde || filtroAnioHasta)"
+                      >
+                        <option value="">
+                          {{
+                            loadingAnios
+                              ? "Cargando años…"
+                              : añosDisponibles.length
+                                ? "Todos los años"
+                                : "Sin años disponibles"
+                          }}
+                        </option>
 
-              <div class="filter-field">
-                <label
-                  class="filter-label"
-                  for="mispub-orden"
-                >
-                  Ordenar por
-                </label>
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`exact-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
 
-                <select
-                  id="mispub-orden"
-                  v-model="orden"
-                  class="filter-select"
-                >
-                  <option
-                    v-for="option in ORDENES"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-              </div>
+                    <div class="mispub-field">
+                      <label
+                        class="mispub-label mispub-label--muted"
+                        for="mispub-mes"
+                      >
+                        Mes
+                      </label>
 
-              <div class="filter-field filter-field--toggle">
-                <span class="filter-label">
-                  Disponibilidad
+                      <select
+                        id="mispub-mes"
+                        v-model="filtroMes"
+                        class="mispub-select"
+                      >
+                        <option
+                          v-for="mes in MESES_LIST"
+                          :key="`mes-${mes.value || 'all'}`"
+                          :value="mes.value"
+                        >
+                          {{ mes.label }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="mispub-period__separator">
+                  o
                 </span>
 
-                <label
-                  class="filter-toggle filter-toggle--compact"
-                  for="mispub-solo-pdf"
-                >
-                  <input
-                    id="mispub-solo-pdf"
-                    v-model="soloConPdf"
-                    class="filter-toggle__input"
-                    type="checkbox"
-                  />
-
-                  <span
-                    class="filter-toggle__control"
-                    aria-hidden="true"
-                  >
-                    <span class="filter-toggle__thumb"></span>
+                <div class="mispub-period__group">
+                  <span class="mispub-period__label">
+                    Rango
                   </span>
 
-                  <span class="filter-toggle__content">
-                    <strong class="filter-toggle__title">
-                      Solo con PDF
-                    </strong>
+                  <div class="mispub-period__controls">
+                    <div class="mispub-field">
+                      <label
+                        class="mispub-label mispub-label--muted"
+                        for="mispub-anio-desde"
+                      >
+                        Desde
+                      </label>
 
-                    <span class="filter-toggle__description">
-                      Archivo disponible
-                    </span>
-                  </span>
-                </label>
+                      <select
+                        id="mispub-anio-desde"
+                        v-model="filtroAnioDesde"
+                        class="mispub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
+                      >
+                        <option value="">
+                          Sin mínimo
+                        </option>
+
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`desde-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="mispub-field">
+                      <label
+                        class="mispub-label mispub-label--muted"
+                        for="mispub-anio-hasta"
+                      >
+                        Hasta
+                      </label>
+
+                      <select
+                        id="mispub-anio-hasta"
+                        v-model="filtroAnioHasta"
+                        class="mispub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
+                      >
+                        <option value="">
+                          Sin máximo
+                        </option>
+
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`hasta-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </Transition>
+
+        <div
+          v-if="activeFilterChips.length"
+          class="mispub-active-filters"
+          aria-label="Filtros activos"
+        >
+          <span class="mispub-active-filters__label">
+            Aplicados
+          </span>
+
+          <button
+            v-for="chip in activeFilterChips"
+            :key="chip.key"
+            type="button"
+            class="mispub-filter-chip"
+            :aria-label="`Quitar filtro ${chip.label}`"
+            @click="removeActiveFilter(chip.key)"
+          >
+            <span>{{ chip.label }}</span>
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
       </section>
 
       <!-- =====================================================
-        ESTADOS
+        MENSAJES DEL WORKFLOW
       ====================================================== -->
-
       <section
-        class="mispub__state page-stage page-stage-3"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div
-          v-if="loading"
-          class="state state--loading"
-        >
-          <span
-            class="dot"
-            aria-hidden="true"
-          ></span>
-
-          <span>
-            Cargando publicaciones…
-          </span>
-        </div>
-
-        <div
-          v-else-if="publicacionesFiltradas.length === 0"
-          class="state state--empty"
-          :class="{ 'state--error': Boolean(errorMsg) }"
-          :role="errorMsg ? 'alert' : 'status'"
-        >
-          <span>
-            {{ emptyMessage }}
-          </span>
-
-          <button
-            v-if="errorMsg"
-            type="button"
-            class="btn-mini"
-            @click="cargarPublicaciones({ forceLoading: true })"
-          >
-            Reintentar
-          </button>
-
-          <button
-            v-else-if="canClearFilters"
-            type="button"
-            class="btn-mini"
-            @click="clearAllFilters"
-          >
-            Limpiar filtros
-          </button>
-        </div>
-      </section>
-
-      <section
-        v-if="pdfErrorMsg"
-        class="mispub__state page-stage page-stage-3"
+        v-if="pdfErrorMsg || workflowMessage || workflowError"
+        class="mispub-feedback page-stage page-stage-4"
         aria-live="polite"
       >
         <div
-          class="state state--error"
+          v-if="pdfErrorMsg"
+          class="mispub-alert mispub-alert--error"
           role="alert"
         >
-          <span>
-            {{ pdfErrorMsg }}
-          </span>
+          <span>{{ pdfErrorMsg }}</span>
+          <button type="button" @click="pdfErrorMsg = ''">
+            Cerrar
+          </button>
+        </div>
 
-          <button
-            type="button"
-            class="btn-mini"
-            @click="pdfErrorMsg = ''"
-          >
+        <div
+          v-if="workflowMessage || workflowError"
+          class="mispub-alert"
+          :class="workflowError ? 'mispub-alert--error' : 'mispub-alert--success'"
+          :role="workflowError ? 'alert' : 'status'"
+        >
+          <span>{{ workflowError || workflowMessage }}</span>
+          <button type="button" @click="clearWorkflowFeedback">
             Cerrar
           </button>
         </div>
@@ -684,267 +528,483 @@
       <!-- =====================================================
         RESULTADOS
       ====================================================== -->
-
       <section
-        v-if="!loading && publicacionesFiltradas.length > 0"
-        class="mispub__results page-stage page-stage-3"
-        aria-label="Resultados de publicaciones"
+        class="mispub-results page-stage page-stage-4"
+        aria-label="Resultados de mis publicaciones"
       >
-        <!-- Vista de tarjetas -->
+        <div class="mispub-results__head">
+          <div>
+            <h2 class="mispub-results__title">
+              {{ totalResultados }}
+              {{ totalResultados === 1 ? "publicación" : "publicaciones" }}
+            </h2>
 
-        <div
-          v-if="vista === 'cards'"
-          class="cards page-stagger page-stagger--mid"
-        >
-          <article
-            v-for="pub in publicacionesFiltradas"
-            :key="pub.id"
-            class="card"
-            :data-tipo="resolveType(pub)"
+            <p>
+              Revise el estado y use las acciones disponibles en cada publicación.
+            </p>
+          </div>
+
+          <div
+            class="mispub-view-switch"
+            role="group"
+            aria-label="Vista de resultados"
           >
-            <div class="card__head">
-              <span
-                class="type__badge"
-                :data-tipo="resolveType(pub)"
-              >
-                {{ resolveLabel(pub) }}
-              </span>
+            <button
+              type="button"
+              :class="{ 'is-active': vista === 'cards' }"
+              :aria-pressed="vista === 'cards'"
+              @click="vista = 'cards'"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" />
+              </svg>
+              Tarjetas
+            </button>
 
-              <time
-                class="date"
-                :datetime="publicationPeriodDatetime(pub)"
-              >
-                {{ formatPublicationPeriod(pub) }}
-              </time>
-            </div>
-
-            <div class="card__body">
-              <RouterLink
-                class="card__titleLink"
-                :to="`/publicacion/${pub.id}`"
-                :aria-label="`Ver detalle de ${pub.titulo || 'publicación'}`"
-              >
-                <h3
-                  class="card__title"
-                  :title="pub.titulo || 'Sin título'"
-                >
-                  {{ pub.titulo || "Sin título" }}
-                </h3>
-              </RouterLink>
-
-              <p
-                v-if="pub.autor"
-                class="card__meta card__meta--soft"
-                :title="pub.autor"
-              >
-                {{ pub.autor }}
-              </p>
-
-              <p
-                v-if="pub.proyecto"
-                class="card__meta"
-                :title="pub.proyecto"
-              >
-                {{ pub.proyecto }}
-              </p>
-
-              <p
-                class="card__meta"
-                :title="buildAcademicMeta(pub)"
-              >
-                {{ buildAcademicMeta(pub) }}
-              </p>
-
-              <p
-                v-if="resolveOrigenResumen(pub)"
-                class="card__origin"
-                :title="resolveOrigenResumen(pub)"
-              >
-                <strong>
-                  Origen:
-                </strong>
-
-                {{ resolveOrigenResumen(pub) }}
-              </p>
-            </div>
-
-            <div class="card__footer card__footer--actions">
-              <button
-                type="button"
-                class="btn-mini"
-                @click="verDetalles(pub.id)"
-              >
-                Ver
-              </button>
-
-              <button
-                v-if="pub.puede_editar"
-                type="button"
-                class="btn-mini"
-                @click="editarPublicacion(pub.id)"
-              >
-                Editar
-              </button>
-
-              <button
-                v-if="hasPdf(pub)"
-                type="button"
-                class="btn-mini"
-                :disabled="openingPdfId !== null"
-                @click="abrirPdf(pub)"
-              >
-                {{
-                  openingPdfId === pub.id
-                    ? "Abriendo…"
-                    : "PDF"
-                }}
-              </button>
-            </div>
-          </article>
+            <button
+              type="button"
+              :class="{ 'is-active': vista === 'tabla' }"
+              :aria-pressed="vista === 'tabla'"
+              @click="vista = 'tabla'"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M4 5h16v3H4V5Zm0 5h16v3H4v-3Zm0 5h16v3H4v-3Z" />
+              </svg>
+              Tabla
+            </button>
+          </div>
         </div>
 
-        <!-- Vista de tabla -->
-
         <div
-          v-else
-          class="table-wrap"
-          role="region"
-          aria-label="Tabla detallada de publicaciones"
-          tabindex="0"
+          class="mispub-type-filter"
+          aria-label="Tipo de publicación"
         >
-          <table class="table">
-            <thead>
-              <tr>
-                <th scope="col">
-                  Tipo
-                </th>
+          <span class="mispub-type-filter__label">
+            Tipo
+          </span>
 
-                <th scope="col">
-                  Título
-                </th>
+          <div class="mispub-type-filter__chips">
+            <button
+              v-for="tipo in TIPOS_LIST"
+              :key="tipo.value"
+              type="button"
+              class="mispub-type-filter__chip"
+              :class="{ 'is-active': filtro.value === tipo.value }"
+              :aria-pressed="filtro.value === tipo.value"
+              @click="cambiarFiltro(tipo)"
+            >
+              <span
+                class="mispub-type-filter__dot"
+                :data-tipo="tipo.value"
+                aria-hidden="true"
+              ></span>
 
-                <th scope="col">
-                  Origen
-                </th>
+              <span>{{ tipo.label }}</span>
+              <strong>{{ countByType(tipo.value) }}</strong>
+            </button>
+          </div>
+        </div>
 
-                <th scope="col">
-                  Proyecto
-                </th>
+        <!-- Carga -->
+        <div
+          v-if="loading"
+          class="mispub-state"
+          aria-live="polite"
+        >
+          <div
+            v-if="vista === 'cards'"
+            class="mispub-skeleton-grid"
+            aria-label="Cargando publicaciones"
+          >
+            <div
+              v-for="n in 6"
+              :key="n"
+              class="mispub-skeleton-card"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
 
-                <th scope="col">
-                  Período
-                </th>
+          <div
+            v-else
+            class="mispub-loading-line"
+          >
+            Cargando publicaciones…
+          </div>
+        </div>
 
-                <th scope="col">
-                  Facultad
-                </th>
+        <!-- Vacío / error -->
+        <div
+          v-else-if="publicacionesFiltradas.length === 0"
+          class="mispub-empty"
+          :class="{ 'is-error': Boolean(errorMsg) }"
+          :role="errorMsg ? 'alert' : 'status'"
+        >
+          <div class="mispub-empty__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M4 3h11l5 5v13H4V3Zm2 2v14h12V9h-4V5H6Zm3 8h6v2H9v-2Zm0-4h3v2H9V9Z"
+              />
+            </svg>
+          </div>
 
-                <th scope="col">
-                  Carrera
-                </th>
+          <h3>
+            {{ errorMsg ? "No pudimos cargar sus publicaciones" : "No encontramos publicaciones" }}
+          </h3>
 
-                <th
-                  scope="col"
-                  class="th-actions"
-                >
-                  Opciones
-                </th>
-              </tr>
-            </thead>
+          <p>{{ emptyMessage }}</p>
 
-            <tbody>
-              <tr
-                v-for="pub in publicacionesFiltradas"
-                :key="pub.id"
-              >
-                <td class="td-strong">
+          <button
+            v-if="errorMsg"
+            type="button"
+            class="mispub-btn mispub-btn--primary"
+            @click="cargarPublicaciones({ forceLoading: true })"
+          >
+            Reintentar
+          </button>
+
+          <button
+            v-else-if="canClearFilters"
+            type="button"
+            class="mispub-btn mispub-btn--primary"
+            @click="clearAllFilters"
+          >
+            Limpiar filtros
+          </button>
+        </div>
+
+        <template v-else>
+          <!-- Vista de tarjetas -->
+          <div
+            v-if="vista === 'cards'"
+            class="mispub-grid page-stagger page-stagger--mid"
+          >
+            <article
+              v-for="pub in publicacionesFiltradas"
+              :key="pub.id"
+              class="mispub-card"
+              :data-tipo="resolveType(pub)"
+            >
+              <div class="mispub-card__accent" aria-hidden="true"></div>
+
+              <div class="mispub-card__head">
+                <div class="mispub-card__badges">
                   <span
-                    class="mini-badge"
+                    class="mispub-badge"
                     :data-tipo="resolveType(pub)"
                   >
+                    <span class="mispub-badge__dot" aria-hidden="true"></span>
                     {{ resolveLabel(pub) }}
                   </span>
-                </td>
 
-                <td
-                  class="td-title"
-                  :title="pub.titulo || 'Sin título'"
+                  <span
+                    class="mispub-status"
+                    :data-estado="resolveEstadoValue(pub)"
+                  >
+                    {{ resolveEstadoLabel(pub) }}
+                  </span>
+                </div>
+
+                <time
+                  class="mispub-date"
+                  :datetime="publicationPeriodDatetime(pub)"
                 >
-                  <RouterLink
-                    class="table__titleLink"
-                    :to="`/publicacion/${pub.id}`"
+                  {{ formatPublicationPeriod(pub) }}
+                </time>
+              </div>
+
+              <div class="mispub-card__body">
+                <RouterLink
+                  class="mispub-card__title-link"
+                  :to="`/publicacion/${pub.id}`"
+                  :aria-label="`Ver publicación ${pub.titulo || ''}`"
+                >
+                  <h3
+                    class="mispub-card__title"
+                    :title="pub.titulo || 'Sin título'"
                   >
                     {{ pub.titulo || "Sin título" }}
-                  </RouterLink>
-                </td>
+                  </h3>
+                </RouterLink>
 
-                <td
-                  :title="resolveOrigenResumen(pub) || 'Sin origen específico'"
+                <div
+                  v-if="pub.autor"
+                  class="mispub-card__section"
                 >
-                  {{ resolveOrigenResumen(pub) || "—" }}
-                </td>
+                  <span class="mispub-card__section-label">
+                    Autores
+                  </span>
+                  <p
+                    class="mispub-card__authors"
+                    :title="pub.autor"
+                  >
+                    {{ pub.autor }}
+                  </p>
+                </div>
 
-                <td :title="pub.proyecto || 'Sin proyecto'">
-                  {{ pub.proyecto || "—" }}
-                </td>
+                <div
+                  class="mispub-card__academic"
+                  :title="buildAcademicMeta(pub)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 3 2 8l10 5 8-4v6h2V8L12 3Zm-6 9.1V16c0 2.2 2.7 4 6 4s6-1.8 6-4v-3.9l-6 3-6-3Z"
+                    />
+                  </svg>
+                  <span>{{ buildAcademicMeta(pub) }}</span>
+                </div>
 
-                <td>
-                  {{ formatPublicationPeriod(pub) }}
-                </td>
+                <div
+                  v-if="pub.proyecto || resolveOrigenResumen(pub) || hasPdf(pub)"
+                  class="mispub-card__tags"
+                  aria-label="Información adicional"
+                >
+                  <span
+                    v-if="pub.proyecto"
+                    class="mispub-meta-chip mispub-meta-chip--project"
+                    :title="pub.proyecto"
+                  >
+                    {{ pub.proyecto }}
+                  </span>
 
-                <td :title="pub.facultad || 'Sin facultad'">
-                  {{ pub.facultad || "—" }}
-                </td>
+                  <span
+                    v-if="resolveOrigenResumen(pub)"
+                    class="mispub-meta-chip mispub-meta-chip--origin"
+                    :title="resolveOrigenResumen(pub)"
+                  >
+                    {{ resolveOrigenResumen(pub) }}
+                  </span>
 
-                <td :title="pub.carrera || 'Sin carrera'">
-                  {{ pub.carrera || "—" }}
-                </td>
+                  <span
+                    v-if="hasPdf(pub)"
+                    class="mispub-meta-chip mispub-meta-chip--pdf"
+                  >
+                    Documento disponible
+                  </span>
+                </div>
 
-                <td class="td-actions">
-                  <div class="table__actions">
-                    <button
-                      class="btn-mini"
-                      type="button"
-                      :aria-label="`Ver detalle de ${pub.titulo || 'publicación'}`"
-                      @click="verDetalles(pub.id)"
+                <div
+                  v-if="resolveWorkflowHint(pub)"
+                  class="mispub-workflow"
+                  :data-estado="resolveEstadoValue(pub)"
+                >
+                  <span class="mispub-workflow__dot" aria-hidden="true"></span>
+                  <span>{{ resolveWorkflowHint(pub) }}</span>
+                </div>
+              </div>
+
+              <footer class="mispub-card__footer">
+                <button
+                  type="button"
+                  class="mispub-card__detail"
+                  @click="verDetalles(pub.id)"
+                >
+                  {{ verActionLabel(pub) }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="m13.2 5.6 6.4 6.4-6.4 6.4-1.4-1.4 4-4H4v-2h11.8l-4-4 1.4-1.4Z"
+                    />
+                  </svg>
+                </button>
+
+                <div class="mispub-card__actions">
+                  <button
+                    v-if="puedeEditarDesdeListado(pub)"
+                    type="button"
+                    class="mispub-action"
+                    :disabled="workflowPublicationId !== null"
+                    @click="editarPublicacion(pub.id)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    v-if="puedeEnviarDesdeListado(pub)"
+                    type="button"
+                    class="mispub-action mispub-action--primary"
+                    :disabled="workflowPublicationId !== null"
+                    @click="enviarARevisionDesdeListado(pub)"
+                  >
+                    {{
+                      isWorkflowLoading(pub.id, "enviar")
+                        ? "Enviando…"
+                        : "Enviar a revisión"
+                    }}
+                  </button>
+
+                  <button
+                    v-if="puedeReenviarDesdeListado(pub)"
+                    type="button"
+                    class="mispub-action mispub-action--warning"
+                    :disabled="workflowPublicationId !== null"
+                    @click="reenviarARevisionDesdeListado(pub)"
+                  >
+                    {{
+                      isWorkflowLoading(pub.id, "reenviar")
+                        ? "Reenviando…"
+                        : "Reenviar"
+                    }}
+                  </button>
+
+                  <button
+                    v-if="hasPdf(pub)"
+                    type="button"
+                    class="mispub-action"
+                    :disabled="openingPdfId !== null"
+                    @click="abrirPdf(pub)"
+                  >
+                    {{ openingPdfId === pub.id ? "Abriendo…" : "Documento" }}
+                  </button>
+                </div>
+              </footer>
+            </article>
+          </div>
+
+          <!-- Vista de tabla -->
+          <div
+            v-else
+            class="mispub-table-wrap"
+            role="region"
+            aria-label="Tabla detallada de publicaciones"
+            tabindex="0"
+          >
+            <table class="mispub-table">
+              <thead>
+                <tr>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Título</th>
+                  <th scope="col">Origen</th>
+                  <th scope="col">Proyecto</th>
+                  <th scope="col">Período</th>
+                  <th scope="col">Sede</th>
+                  <th scope="col">Facultad</th>
+                  <th scope="col">Carrera</th>
+                  <th scope="col" class="mispub-table__actions-head">
+                    Opciones
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="pub in publicacionesFiltradas"
+                  :key="pub.id"
+                >
+                  <td data-label="Tipo">
+                    <span
+                      class="mispub-table-badge"
+                      :data-tipo="resolveType(pub)"
                     >
-                      Ver
-                    </button>
+                      {{ resolveLabel(pub) }}
+                    </span>
+                  </td>
 
-                    <button
-                      v-if="pub.puede_editar"
-                      class="btn-mini"
-                      type="button"
-                      :aria-label="`Editar ${pub.titulo || 'publicación'}`"
-                      @click="editarPublicacion(pub.id)"
+                  <td data-label="Estado">
+                    <span
+                      class="mispub-status mispub-status--table"
+                      :data-estado="resolveEstadoValue(pub)"
                     >
-                      Editar
-                    </button>
+                      {{ resolveEstadoLabel(pub) }}
+                    </span>
+                  </td>
 
-                    <button
-                      v-if="hasPdf(pub)"
-                      class="btn-mini"
-                      type="button"
-                      :disabled="openingPdfId !== null"
-                      :aria-label="`Abrir PDF de ${pub.titulo || 'publicación'}`"
-                      @click="abrirPdf(pub)"
+                  <td class="mispub-table__title-cell" data-label="Publicación">
+                    <RouterLink
+                      class="mispub-table__title-link"
+                      :to="`/publicacion/${pub.id}`"
                     >
-                      {{
-                        openingPdfId === pub.id
-                          ? "Abriendo…"
-                          : "PDF"
-                      }}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                      {{ pub.titulo || "Sin título" }}
+                    </RouterLink>
+                  </td>
+
+                  <td data-label="Origen">{{ resolveOrigenResumen(pub) || "—" }}</td>
+                  <td data-label="Proyecto">{{ pub.proyecto || "—" }}</td>
+                  <td data-label="Período">{{ formatPublicationPeriod(pub) }}</td>
+                  <td data-label="Sede">{{ pub.sede || "—" }}</td>
+                  <td data-label="Facultad">{{ pub.facultad || "—" }}</td>
+                  <td data-label="Carrera">{{ pub.carrera || "—" }}</td>
+
+                  <td data-label="Acciones">
+                    <div class="mispub-table__actions">
+                      <button
+                        class="mispub-action"
+                        type="button"
+                        @click="verDetalles(pub.id)"
+                      >
+                        {{ verActionLabel(pub) }}
+                      </button>
+
+                      <button
+                        v-if="puedeEditarDesdeListado(pub)"
+                        class="mispub-action"
+                        type="button"
+                        :disabled="workflowPublicationId !== null"
+                        @click="editarPublicacion(pub.id)"
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        v-if="puedeEnviarDesdeListado(pub)"
+                        class="mispub-action mispub-action--primary"
+                        type="button"
+                        :disabled="workflowPublicationId !== null"
+                        @click="enviarARevisionDesdeListado(pub)"
+                      >
+                        {{
+                          isWorkflowLoading(pub.id, "enviar")
+                            ? "Enviando…"
+                            : "Enviar"
+                        }}
+                      </button>
+
+                      <button
+                        v-if="puedeReenviarDesdeListado(pub)"
+                        class="mispub-action mispub-action--warning"
+                        type="button"
+                        :disabled="workflowPublicationId !== null"
+                        @click="reenviarARevisionDesdeListado(pub)"
+                      >
+                        {{
+                          isWorkflowLoading(pub.id, "reenviar")
+                            ? "Reenviando…"
+                            : "Reenviar"
+                        }}
+                      </button>
+
+                      <button
+                        v-if="hasPdf(pub)"
+                        class="mispub-action"
+                        type="button"
+                        :disabled="openingPdfId !== null"
+                        @click="abrirPdf(pub)"
+                      >
+                        {{ openingPdfId === pub.id ? "Abriendo…" : "Documento" }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
       </section>
-    </div>
+    </main>
+
+    <NoticeDialog
+      :modelValue="notice"
+      @close="closeNotice"
+    />
   </div>
 </template>
+
 
 <script setup>
 import {
@@ -961,6 +1021,23 @@ import {
 } from "vue-router";
 
 import api from "../../scripts/api/axios";
+import { useNotice } from "../../scripts/composables/useNotice";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
+import MisPublicacionesSearchField from "./MisPublicacionesSearchField.vue";
+
+import {
+  enviarPublicacionRevision,
+  reenviarPublicacionRevision,
+} from "../../scripts/api/publicacionesApi";
+
+import {
+  ESTADO_PUBLICACION,
+  ESTADOS_PUBLICACION,
+  obtenerEstadoPublicacion,
+  puedeEditarPublicacion,
+  puedeEnviarRevision,
+  puedeReenviarRevision,
+} from "../../scripts/utils/publicacion-estados";
 
 import {
   PUBLICACION_TIPOS,
@@ -973,6 +1050,7 @@ import {
 
 const LIST_ENDPOINT = "/publicaciones/mias/";
 const YEARS_ENDPOINT = "/publicaciones/mias/anios-disponibles/";
+const SEDES_ENDPOINT = "/selects/sedes/";
 const FACULTADES_ENDPOINT = "/selects/facultades/";
 
 const FILTER_DEBOUNCE_MS = 350;
@@ -985,6 +1063,12 @@ const PDF_URL_REVOKE_DELAY_MS = 60_000;
 
 const route = useRoute();
 const router = useRouter();
+
+const {
+  notice,
+  openNotice,
+  closeNotice,
+} = useNotice();
 
 /* ============================================================
   TIPOS DE PUBLICACIÓN
@@ -1047,7 +1131,7 @@ const ORIGENES_LIST = Object.freeze([
     value: "ALL",
   },
   {
-    label: "Ninguno",
+    label: "Sin origen académico",
     value: "ninguno",
   },
   {
@@ -1069,7 +1153,7 @@ const ORIGENES_LIST = Object.freeze([
 ]);
 
 const ORIGEN_LABELS = Object.freeze({
-  ninguno: "Ninguno",
+  ninguno: "Sin origen académico",
   tic: "Trabajo de integración curricular",
   maestria: "Tesis de maestría",
   doctoral: "Tesis doctoral",
@@ -1119,12 +1203,26 @@ const MESES_LIST = Object.freeze([
   { value: "12", label: "Diciembre" },
 ]);
 
+const ESTADOS_FILTER_LIST = Object.freeze([
+  Object.freeze({
+    value: "ALL",
+    label: "Todos los estados",
+  }),
+  ...ESTADOS_PUBLICACION.map((estado) =>
+    Object.freeze({
+      value: estado.value,
+      label: estado.label,
+    })
+  ),
+]);
+
 /* ============================================================
   DATOS PRINCIPALES
 ============================================================ */
 
 const publicaciones = ref([]);
 
+const sedes = ref([]);
 const facultades = ref([]);
 const carreras = ref([]);
 const proyectos = ref([]);
@@ -1152,6 +1250,11 @@ const errorMsg = ref("");
 const pdfErrorMsg = ref("");
 const openingPdfId = ref(null);
 
+const workflowPublicationId = ref(null);
+const workflowAction = ref("");
+const workflowMessage = ref("");
+const workflowError = ref("");
+
 /* ============================================================
   ESTADO DE LA INTERFAZ
 ============================================================ */
@@ -1164,7 +1267,9 @@ const searchEl = ref(null);
 
 const filtro = ref(TIPOS.ALL);
 const filtroOrigen = ref("ALL");
+const filtroEstado = ref("ALL");
 
+const filtroSede = ref("");
 const filtroFacultad = ref("");
 const filtroCarrera = ref("");
 const filtroProyecto = ref("");
@@ -1258,37 +1363,48 @@ function extractErrorMessage(
   error,
   fallback = "No se pudieron cargar las publicaciones."
 ) {
-  const responseData = error?.response?.data;
+  const status = Number(error?.response?.status || 0);
 
+  if (status === 401) {
+    return "Su sesión ha vencido. Inicie sesión nuevamente.";
+  }
+
+  if (status === 403) {
+    return "No tiene permisos para realizar esta acción.";
+  }
+
+  if (status === 404) {
+    return "No encontramos la información solicitada.";
+  }
+
+  if (status === 429) {
+    return "Se realizaron demasiadas solicitudes. Intente nuevamente en unos minutos.";
+  }
+
+  const responseData = error?.response?.data;
   const detail =
     responseData?.detail ||
     responseData?.message ||
-    responseData?.error ||
-    error?.message;
+    responseData?.error;
 
-  if (Array.isArray(detail)) {
-    return detail.join(", ");
+  const text = Array.isArray(detail)
+    ? detail.join(" ")
+    : typeof detail === "string"
+      ? detail
+      : "";
+
+  const technicalPattern =
+    /(backend|endpoint|serializer|queryset|jwt|token|sql|postgres|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|http\s*\d{3}|request|response)/i;
+
+  if (
+    text &&
+    text.length <= 240 &&
+    !technicalPattern.test(text)
+  ) {
+    return text;
   }
 
-  if (detail && typeof detail === "object") {
-    return Object.entries(detail)
-      .flatMap(([field, value]) => {
-        const messages = Array.isArray(value)
-          ? value
-          : [value];
-
-        return messages.map(
-          (message) =>
-            `${field}: ${String(message)}`
-        );
-      })
-      .join(" ");
-  }
-
-  return String(
-    detail ||
-      fallback
-  );
+  return fallback;
 }
 
 /* ============================================================
@@ -1339,7 +1455,7 @@ function getCatalogLabel(item) {
         item?.titulo ??
         ""
     ).trim() ||
-    `Registro ${item?.id ?? ""}`.trim()
+    "Sin nombre"
   );
 }
 
@@ -1595,6 +1711,134 @@ function resolveOrigenResumen(item) {
   return label;
 }
 
+function resolveEstadoValue(item) {
+  return (
+    obtenerEstadoPublicacion(
+      item?.estado
+    ).value ||
+    ""
+  );
+}
+
+function resolveEstadoLabel(item) {
+  return (
+    String(
+      item?.estado_label ||
+        ""
+    ).trim() ||
+    obtenerEstadoPublicacion(
+      item?.estado
+    ).label
+  );
+}
+
+function resolveWorkflowHint(item) {
+  const estado =
+    resolveEstadoValue(item);
+
+  const hints = {
+    [ESTADO_PUBLICACION.BORRADOR]:
+      "Complete la información y envíela a revisión cuando esté lista.",
+
+    [ESTADO_PUBLICACION.EN_REVISION]:
+      "",
+
+    [ESTADO_PUBLICACION.OBSERVADA]:
+      "Revise las correcciones solicitadas.",
+
+    [ESTADO_PUBLICACION.APROBADA]:
+      "",
+
+    [ESTADO_PUBLICACION.RECHAZADA]:
+      "Consulte el motivo del rechazo.",
+  };
+
+  const baseHint =
+    hints[estado] || "";
+
+  const blockReason = String(
+    item?.motivo_bloqueo_edicion || ""
+  ).trim();
+
+  if (
+    blockReason &&
+    !puedeEditarDesdeListado(item)
+  ) {
+    return baseHint
+      ? `${baseHint} ${blockReason}`
+      : blockReason;
+  }
+
+  return baseHint;
+}
+
+function verActionLabel(item) {
+  const estado =
+    resolveEstadoValue(item);
+
+  if (
+    estado ===
+    ESTADO_PUBLICACION.OBSERVADA
+  ) {
+    return "Ver correcciones";
+  }
+
+  if (
+    estado ===
+    ESTADO_PUBLICACION.RECHAZADA
+  ) {
+    return "Ver motivo";
+  }
+
+  return "Ver publicación";
+}
+
+function puedeEditarDesdeListado(item) {
+  if (
+    typeof item?.puede_editar ===
+    "boolean"
+  ) {
+    return item.puede_editar;
+  }
+
+  if (
+    typeof item?.estado_editable ===
+    "boolean"
+  ) {
+    return item.estado_editable;
+  }
+
+  return puedeEditarPublicacion(item);
+}
+
+function puedeEnviarDesdeListado(item) {
+  if (
+    typeof item?.puede_enviar_revision ===
+    "boolean"
+  ) {
+    return item.puede_enviar_revision;
+  }
+
+  return (
+    puedeEditarDesdeListado(item) &&
+    puedeEnviarRevision(item)
+  );
+}
+
+function puedeReenviarDesdeListado(item) {
+  if (
+    typeof item?.puede_reenviar_revision ===
+    "boolean"
+  ) {
+    return item.puede_reenviar_revision;
+  }
+
+  return (
+    puedeEditarDesdeListado(item) &&
+    puedeReenviarRevision(item)
+  );
+}
+
 function hasPdf(item) {
   return Boolean(
     item?.tiene_pdf ||
@@ -1618,6 +1862,10 @@ function resolvePdfEndpoint(item) {
 }
 
 function buildAcademicMeta(pub) {
+  const sede = String(
+    pub?.sede || ""
+  ).trim();
+
   const facultad = String(
     pub?.facultad || ""
   ).trim();
@@ -1626,24 +1874,40 @@ function buildAcademicMeta(pub) {
     pub?.carrera || ""
   ).trim();
 
-  if (facultad && carrera) {
-    return `${facultad} · ${carrera}`;
-  }
+  const parts = [
+    sede,
+    facultad,
+    carrera,
+  ].filter(Boolean);
 
-  if (facultad) {
-    return facultad;
-  }
-
-  if (carrera) {
-    return carrera;
-  }
-
-  return "Sin ubicación académica";
+  return (
+    parts.join(" · ") ||
+    "Sin ubicación académica"
+  );
 }
 
 /* ============================================================
   CATÁLOGOS
 ============================================================ */
+
+async function loadSedes() {
+  try {
+    const response = await api.get(
+      SEDES_ENDPOINT
+    );
+
+    sedes.value = extractArray(
+      response.data
+    );
+  } catch (error) {
+    console.error(
+      "Error cargando sedes:",
+      error
+    );
+
+    sedes.value = [];
+  }
+}
 
 async function loadFacultades() {
   try {
@@ -1678,6 +1942,76 @@ async function fetchCarrerasByFacultad(
   return extractArray(response.data);
 }
 
+async function fetchCarrerasBySede(
+  sedeId
+) {
+  if (!sedeId) {
+    return [];
+  }
+
+  const response = await api.get(
+    `/selects/carreras/sede/${sedeId}/`
+  );
+
+  return extractArray(response.data);
+}
+
+async function fetchCarrerasDisponibles() {
+  const sedeId =
+    filtroSede.value;
+
+  const facultadId =
+    filtroFacultad.value;
+
+  if (!sedeId && !facultadId) {
+    return [];
+  }
+
+  if (
+    sedeId &&
+    !facultadId
+  ) {
+    return fetchCarrerasBySede(
+      sedeId
+    );
+  }
+
+  if (
+    facultadId &&
+    !sedeId
+  ) {
+    return fetchCarrerasByFacultad(
+      facultadId
+    );
+  }
+
+  const [
+    bySede,
+    byFacultad,
+  ] = await Promise.all([
+    fetchCarrerasBySede(
+      sedeId
+    ),
+    fetchCarrerasByFacultad(
+      facultadId
+    ),
+  ]);
+
+  const idsFacultad = new Set(
+    byFacultad.map(
+      (item) =>
+        String(item?.id ?? "")
+    )
+  );
+
+  return bySede.filter(
+    (item) =>
+      idsFacultad.has(
+        String(item?.id ?? "")
+      )
+  );
+}
+
 async function fetchProyectosByCarrera(
   carreraId
 ) {
@@ -1692,11 +2026,21 @@ async function fetchProyectosByCarrera(
   return extractArray(response.data);
 }
 
-async function loadDependentCatalogsFromState() {
+async function reloadCarreras({
+  resetSelection = false,
+} = {}) {
+  if (resetSelection) {
+    filtroCarrera.value = "";
+    filtroProyecto.value = "";
+  }
+
   carreras.value = [];
   proyectos.value = [];
 
-  if (!filtroFacultad.value) {
+  if (
+    !filtroSede.value &&
+    !filtroFacultad.value
+  ) {
     filtroCarrera.value = "";
     filtroProyecto.value = "";
     return;
@@ -1704,9 +2048,7 @@ async function loadDependentCatalogsFromState() {
 
   try {
     carreras.value =
-      await fetchCarrerasByFacultad(
-        filtroFacultad.value
-      );
+      await fetchCarrerasDisponibles();
 
     if (
       filtroCarrera.value &&
@@ -1739,7 +2081,7 @@ async function loadDependentCatalogsFromState() {
     }
   } catch (error) {
     console.error(
-      "Error cargando catálogos dependientes:",
+      "Error cargando carreras/proyectos:",
       error
     );
 
@@ -1748,30 +2090,22 @@ async function loadDependentCatalogsFromState() {
   }
 }
 
+async function loadDependentCatalogsFromState() {
+  await reloadCarreras({
+    resetSelection: false,
+  });
+}
+
+async function onMainSedeChange() {
+  await reloadCarreras({
+    resetSelection: true,
+  });
+}
+
 async function onMainFacultadChange() {
-  filtroCarrera.value = "";
-  filtroProyecto.value = "";
-
-  carreras.value = [];
-  proyectos.value = [];
-
-  if (!filtroFacultad.value) {
-    return;
-  }
-
-  try {
-    carreras.value =
-      await fetchCarrerasByFacultad(
-        filtroFacultad.value
-      );
-  } catch (error) {
-    console.error(
-      "Error cargando carreras:",
-      error
-    );
-
-    carreras.value = [];
-  }
+  await reloadCarreras({
+    resetSelection: true,
+  });
 }
 
 async function onMainCarreraChange() {
@@ -1849,6 +2183,24 @@ function hydrateStateFromRoute() {
   q.value = normalizeQueryValue(
     route.query.q
   );
+
+  const estadoQuery =
+    normalizeQueryValue(
+      route.query.estado
+    ).toLowerCase();
+
+  filtroEstado.value =
+    ESTADOS_FILTER_LIST.some(
+      (item) =>
+        item.value === estadoQuery
+    )
+      ? estadoQuery
+      : "ALL";
+
+  filtroSede.value =
+    normalizeQueryValue(
+      route.query.sede
+    );
 
   filtroFacultad.value =
     normalizeQueryValue(
@@ -1948,6 +2300,8 @@ function buildStateQuery() {
     "tipo",
     "origen",
     "q",
+    "estado",
+    "sede",
     "facultad",
     "carrera",
     "proyecto",
@@ -1980,6 +2334,18 @@ function buildStateQuery() {
 
   if (q.value.trim()) {
     query.q = q.value.trim();
+  }
+
+  if (
+    filtroEstado.value !== "ALL"
+  ) {
+    query.estado =
+      filtroEstado.value;
+  }
+
+  if (filtroSede.value) {
+    query.sede =
+      filtroSede.value;
   }
 
   if (filtroFacultad.value) {
@@ -2101,6 +2467,18 @@ function buildBackendParams({
       q.value.trim();
   }
 
+  if (
+    filtroEstado.value !== "ALL"
+  ) {
+    params.estado =
+      filtroEstado.value;
+  }
+
+  if (filtroSede.value) {
+    params.sede =
+      filtroSede.value;
+  }
+
   if (filtroFacultad.value) {
     params.facultad =
       filtroFacultad.value;
@@ -2172,6 +2550,16 @@ const activeFiltersCount =
       total += 1;
     }
 
+    if (
+      filtroEstado.value !== "ALL"
+    ) {
+      total += 1;
+    }
+
+    if (filtroSede.value) {
+      total += 1;
+    }
+
     if (filtroFacultad.value) {
       total += 1;
     }
@@ -2204,34 +2592,165 @@ const advancedFiltersCount =
   computed(() => {
     let total = 0;
 
+    if (filtroProyecto.value) {
+      total += 1;
+    }
+
     if (filtroOrigen.value !== "ALL") {
       total += 1;
     }
 
     if (
+      filtroAnio.value ||
+      filtroMes.value ||
       filtroAnioDesde.value ||
       filtroAnioHasta.value
     ) {
       total += 1;
     }
 
-    if (soloConPdf.value) {
-      total += 1;
-    }
-
-    if (orden.value !== "recientes") {
-      total += 1;
-    }
-
     return total;
   });
+
+const periodFilterLabel = computed(() => {
+  const monthLabel = MESES_LIST.find(
+    (item) => item.value === filtroMes.value
+  )?.label;
+
+  if (filtroAnio.value) {
+    return filtroMes.value
+      ? `${monthLabel || "Mes"} de ${filtroAnio.value}`
+      : `Año ${filtroAnio.value}`;
+  }
+
+  if (filtroAnioDesde.value || filtroAnioHasta.value) {
+    if (filtroAnioDesde.value && filtroAnioHasta.value) {
+      return `${filtroAnioDesde.value}–${filtroAnioHasta.value}`;
+    }
+
+    if (filtroAnioDesde.value) {
+      return `Desde ${filtroAnioDesde.value}`;
+    }
+
+    return `Hasta ${filtroAnioHasta.value}`;
+  }
+
+  if (filtroMes.value) {
+    return monthLabel || "Mes";
+  }
+
+  return "";
+});
+
+function findCatalogLabel(
+  catalog,
+  value,
+  fallback
+) {
+  const normalized = String(value ?? "");
+  const item = catalog.find(
+    (entry) => String(entry?.id ?? "") === normalized
+  );
+
+  return item
+    ? getCatalogLabel(item)
+    : fallback;
+}
+
+const activeFilterChips = computed(() => {
+  const chips = [];
+
+  if (filtroSede.value) {
+    chips.push({
+      key: "sede",
+      label: findCatalogLabel(
+        sedes.value,
+        filtroSede.value,
+        "Sede"
+      ),
+    });
+  }
+
+  if (filtroFacultad.value) {
+    chips.push({
+      key: "facultad",
+      label: findCatalogLabel(
+        facultades.value,
+        filtroFacultad.value,
+        "Facultad"
+      ),
+    });
+  }
+
+  if (filtroCarrera.value) {
+    chips.push({
+      key: "carrera",
+      label: findCatalogLabel(
+        carreras.value,
+        filtroCarrera.value,
+        "Carrera"
+      ),
+    });
+  }
+
+  if (filtroEstado.value !== "ALL") {
+    const estado = ESTADOS_FILTER_LIST.find(
+      (item) => item.value === filtroEstado.value
+    );
+
+    chips.push({
+      key: "estado",
+      label: estado?.label || "Estado",
+    });
+  }
+
+  if (filtroProyecto.value) {
+    chips.push({
+      key: "proyecto",
+      label: findCatalogLabel(
+        proyectos.value,
+        filtroProyecto.value,
+        "Proyecto"
+      ),
+    });
+  }
+
+  if (filtroOrigen.value !== "ALL") {
+    const origen = ORIGENES_LIST.find(
+      (item) => item.value === filtroOrigen.value
+    );
+
+    chips.push({
+      key: "origen",
+      label: origen?.label || "Origen",
+    });
+  }
+
+  if (periodFilterLabel.value) {
+    chips.push({
+      key: "periodo",
+      label: periodFilterLabel.value,
+    });
+  }
+
+  if (soloConPdf.value) {
+    chips.push({
+      key: "pdf",
+      label: "Solo con PDF",
+    });
+  }
+
+  return chips;
+});
 
 const canClearFilters =
   computed(() => {
     return (
       filtro.value?.value !== "ALL" ||
       filtroOrigen.value !== "ALL" ||
+      filtroEstado.value !== "ALL" ||
       q.value.trim().length > 0 ||
+      Boolean(filtroSede.value) ||
       Boolean(filtroFacultad.value) ||
       Boolean(filtroCarrera.value) ||
       Boolean(filtroProyecto.value) ||
@@ -2288,6 +2807,53 @@ const emptyMessage =
   ACCIONES DE FILTROS
 ============================================================ */
 
+async function removeActiveFilter(key) {
+  if (key === "sede") {
+    filtroSede.value = "";
+    await onMainSedeChange();
+    return;
+  }
+
+  if (key === "facultad") {
+    filtroFacultad.value = "";
+    await onMainFacultadChange();
+    return;
+  }
+
+  if (key === "carrera") {
+    filtroCarrera.value = "";
+    await onMainCarreraChange();
+    return;
+  }
+
+  if (key === "estado") {
+    filtroEstado.value = "ALL";
+    return;
+  }
+
+  if (key === "proyecto") {
+    filtroProyecto.value = "";
+    return;
+  }
+
+  if (key === "origen") {
+    filtroOrigen.value = "ALL";
+    return;
+  }
+
+  if (key === "periodo") {
+    filtroAnio.value = "";
+    filtroMes.value = "";
+    filtroAnioDesde.value = "";
+    filtroAnioHasta.value = "";
+    return;
+  }
+
+  if (key === "pdf") {
+    soloConPdf.value = false;
+  }
+}
+
 function cambiarFiltro(tipo) {
   filtro.value = tipo;
 }
@@ -2295,9 +2861,11 @@ function cambiarFiltro(tipo) {
 function clearAllFilters() {
   filtro.value = TIPOS.ALL;
   filtroOrigen.value = "ALL";
+  filtroEstado.value = "ALL";
 
   q.value = "";
 
+  filtroSede.value = "";
   filtroFacultad.value = "";
   filtroCarrera.value = "";
   filtroProyecto.value = "";
@@ -2365,6 +2933,198 @@ function editarPublicacion(id) {
     },
   });
 }
+
+function clearWorkflowFeedback() {
+  workflowMessage.value = "";
+  workflowError.value = "";
+}
+
+function isWorkflowLoading(
+  publicacionId,
+  action
+) {
+  return (
+    Number(
+      workflowPublicationId.value
+    ) === Number(publicacionId) &&
+    workflowAction.value === action
+  );
+}
+
+async function refreshAfterWorkflow() {
+  await Promise.all([
+    cargarResumen(),
+    cargarPublicaciones({
+      forceLoading: true,
+    }),
+  ]);
+}
+
+function workflowPublicationTitle(publicacion) {
+  return (
+    String(
+      publicacion?.titulo ||
+      publicacion?.nombre ||
+      ""
+    ).trim() ||
+    "esta publicación"
+  );
+}
+
+async function executeSendToReviewFromList(
+  publicacion
+) {
+  clearWorkflowFeedback();
+
+  workflowPublicationId.value =
+    publicacion.id;
+
+  workflowAction.value =
+    "enviar";
+
+  try {
+    await enviarPublicacionRevision(
+      publicacion.id
+    );
+
+    workflowMessage.value =
+      "La publicación fue enviada a revisión correctamente.";
+
+    try {
+      await refreshAfterWorkflow();
+    } catch (refreshError) {
+      console.warn(
+        "La publicación fue enviada, pero no se pudo refrescar el listado:",
+        refreshError
+      );
+
+      workflowMessage.value =
+        "La publicación fue enviada a revisión. Actualice el listado si el nuevo estado no aparece inmediatamente.";
+    }
+  } catch (error) {
+    console.error(
+      "Error enviando publicación a revisión:",
+      error
+    );
+
+    workflowError.value =
+      extractErrorMessage(
+        error,
+        "No se pudo enviar la publicación a revisión."
+      );
+  } finally {
+    workflowPublicationId.value = null;
+    workflowAction.value = "";
+  }
+}
+
+function enviarARevisionDesdeListado(
+  publicacion
+) {
+  if (
+    !publicacion?.id ||
+    workflowPublicationId.value !== null ||
+    !puedeEnviarDesdeListado(publicacion)
+  ) {
+    return;
+  }
+
+  const title =
+    workflowPublicationTitle(publicacion);
+
+  openNotice({
+    title: "Enviar a revisión",
+    message:
+      `¿Desea enviar “${title}” a revisión? ` +
+      "Mientras permanezca en revisión no podrá editarla.",
+    confirm: true,
+    confirmText: "Enviar a revisión",
+    cancelText: "Cancelar",
+    onConfirm: async () => {
+      await executeSendToReviewFromList(
+        publicacion
+      );
+    },
+  });
+}
+
+async function executeResendToReviewFromList(
+  publicacion
+) {
+  clearWorkflowFeedback();
+
+  workflowPublicationId.value =
+    publicacion.id;
+
+  workflowAction.value =
+    "reenviar";
+
+  try {
+    await reenviarPublicacionRevision(
+      publicacion.id
+    );
+
+    workflowMessage.value =
+      "La publicación fue reenviada a revisión correctamente.";
+
+    try {
+      await refreshAfterWorkflow();
+    } catch (refreshError) {
+      console.warn(
+        "La publicación fue reenviada, pero no se pudo refrescar el listado:",
+        refreshError
+      );
+
+      workflowMessage.value =
+        "La publicación fue reenviada a revisión. Actualice el listado si el nuevo estado no aparece inmediatamente.";
+    }
+  } catch (error) {
+    console.error(
+      "Error reenviando publicación a revisión:",
+      error
+    );
+
+    workflowError.value =
+      extractErrorMessage(
+        error,
+        "No se pudo reenviar la publicación a revisión."
+      );
+  } finally {
+    workflowPublicationId.value = null;
+    workflowAction.value = "";
+  }
+}
+
+function reenviarARevisionDesdeListado(
+  publicacion
+) {
+  if (
+    !publicacion?.id ||
+    workflowPublicationId.value !== null ||
+    !puedeReenviarDesdeListado(publicacion)
+  ) {
+    return;
+  }
+
+  const title =
+    workflowPublicationTitle(publicacion);
+
+  openNotice({
+    title: "Reenviar a revisión",
+    message:
+      `Confirme que realizó las correcciones solicitadas en “${title}”. ` +
+      "La publicación volverá a revisión y no podrá editarla mientras permanezca en ese estado.",
+    confirm: true,
+    confirmText: "Reenviar a revisión",
+    cancelText: "Cancelar",
+    onConfirm: async () => {
+      await executeResendToReviewFromList(
+        publicacion
+      );
+    },
+  });
+}
+
 
 /* ============================================================
   PDF AUTENTICADO
@@ -2762,7 +3522,7 @@ async function cargarPublicaciones({
     errorMsg.value =
       extractErrorMessage(
         error,
-        "No se pudieron cargar tus publicaciones."
+        "No se pudieron cargar sus publicaciones."
       );
   } finally {
     if (
@@ -2834,6 +3594,8 @@ watch(
     q,
     tipoFiltroValue,
     filtroOrigen,
+    filtroEstado,
+    filtroSede,
     filtroFacultad,
     filtroCarrera,
     filtroProyecto,
@@ -2867,7 +3629,11 @@ onMounted(async () => {
     onKey
   );
 
-  await loadFacultades();
+  await Promise.all([
+    loadSedes(),
+    loadFacultades(),
+  ]);
+
   await loadDependentCatalogsFromState();
 
   await Promise.all([

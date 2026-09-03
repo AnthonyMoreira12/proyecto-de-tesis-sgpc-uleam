@@ -26,7 +26,7 @@
 
             <div class="ivbi-sk-tabs">
               <span
-                v-for="n in 3"
+                v-for="n in 3"  
                 :key="`tab-${n}`"
                 class="ivbi-sk-pill"
               ></span>
@@ -34,7 +34,7 @@
 
             <div class="ivbi-sk-filters">
               <span
-                v-for="n in 6"
+                v-for="n in 7"
                 :key="`gf-${n}`"
                 class="ivbi-sk-field"
               ></span>
@@ -70,26 +70,12 @@
               aria-labelledby="ivbi-dashboard-title"
             >
               <div class="ivbi-header__identity">
-                <div
-                  class="ivbi-header__brandmark"
-                  aria-hidden="true"
-                >
-                  <img
-                    src="../../assets/LOGO-ULEAM-VERTICAL.png"
-                    alt=""
-                  />
-                </div>
-
                 <div class="ivbi-header__titlebox">
-                  <span class="ivbi-header__kicker">
-                    SGPC ULEAM
-                  </span>
-
                   <h1
                     id="ivbi-dashboard-title"
                     class="ivbi-header__title"
                   >
-                    Panel analítico institucional
+                    Producción científica
                   </h1>
 
                   <p class="ivbi-header__meta">
@@ -99,46 +85,121 @@
               </div>
 
               <div class="ivbi-header__actions">
-                <button
-                  class="ivbi-btn ivbi-btn--primary ivbi-btn--download"
-                  type="button"
-                  :disabled="
-                    loading ||
-                    isRefreshing ||
-                    downloadingReport
-                  "
-                  @click="downloadDashboardReport"
+                <div
+                  ref="reportMenuRef"
+                  class="ivbi-report-menu"
                 >
-                  <svg
-                    v-if="!downloadingReport"
-                    viewBox="0 0 20 20"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path
-                      d="M10 3v9M6.5 9.5 10 13l3.5-3.5M4 16.5h12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-
-                  <span
-                    v-else
-                    class="ivbi-btn__spinner"
-                    aria-hidden="true"
-                  ></span>
-
-                  <span>
-                    {{
+                  <button
+                    class="ivbi-btn ivbi-btn--primary ivbi-btn--download"
+                    type="button"
+                    :disabled="
+                      loading ||
+                      isRefreshing ||
                       downloadingReport
-                        ? "Generando reporte…"
-                        : "Descargar reporte"
-                    }}
-                  </span>
-                </button>
+                    "
+                    :aria-expanded="reportMenuOpen ? 'true' : 'false'"
+                    aria-haspopup="menu"
+                    @click="toggleReportMenu"
+                  >
+                    <svg
+                      v-if="!downloadingReport"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        d="M10 3v9M6.5 9.5 10 13l3.5-3.5M4 16.5h12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+
+                    <span
+                      v-else
+                      class="ivbi-btn__spinner"
+                      aria-hidden="true"
+                    ></span>
+
+                    <span>
+                      {{
+                        downloadingReport
+                          ? downloadingReportLabel
+                          : "Descargar informe"
+                      }}
+                    </span>
+
+                    <svg
+                      v-if="!downloadingReport"
+                      class="ivbi-report-menu__chevron"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="m6 8 4 4 4-4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+
+                  <div
+                    v-if="reportMenuOpen"
+                    class="ivbi-report-menu__panel"
+                    role="menu"
+                    aria-label="Formato del informe"
+                  >
+                    <button
+                      class="ivbi-report-option is-primary"
+                      type="button"
+                      role="menuitem"
+                      @click="downloadDashboardReport('pdf')"
+                    >
+                      <span class="ivbi-report-option__icon">PDF</span>
+
+                      <span class="ivbi-report-option__copy">
+                        <strong>Informe en PDF</strong>
+                        <small>Listo para compartir o imprimir</small>
+                      </span>
+
+                      <span class="ivbi-report-option__tag">Recomendado</span>
+                    </button>
+
+                    <button
+                      class="ivbi-report-option"
+                      type="button"
+                      role="menuitem"
+                      @click="downloadDashboardReport('excel')"
+                    >
+                      <span class="ivbi-report-option__icon">XLS</span>
+
+                      <span class="ivbi-report-option__copy">
+                        <strong>Datos en Excel</strong>
+                        <small>Para ordenar, filtrar o trabajar con los datos</small>
+                      </span>
+                    </button>
+
+                    <button
+                      v-if="isAdmin"
+                      class="ivbi-report-option"
+                      type="button"
+                      role="menuitem"
+                      @click="downloadDashboardReport('institutional_excel')"
+                    >
+                      <span class="ivbi-report-option__icon">ADM</span>
+
+                      <span class="ivbi-report-option__copy">
+                        <strong>Excel institucional detallado</strong>
+                        <small>Publicaciones aprobadas con detalle para gestión administrativa</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -147,11 +208,11 @@
             ================================================== -->
             <section
               class="ivbi-header__navigation"
-              aria-label="Vista actual del dashboard"
+              aria-label="Vista de producción científica"
             >
               <nav
                 class="ivbi-segmented"
-                aria-label="Vistas del dashboard"
+                aria-label="Vistas de producción científica"
               >
                 <button
                   v-for="vista in vistaOpciones"
@@ -168,41 +229,6 @@
                 </button>
               </nav>
 
-              <div class="ivbi-header__view-context">
-                <span
-                  class="ivbi-header__view-icon"
-                  aria-hidden="true"
-                >
-                  <svg viewBox="0 0 20 20">
-                    <circle
-                      cx="10"
-                      cy="10"
-                      r="7.4"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-
-                    <path
-                      d="M10 8.8v4.6M10 6.3h.01"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </span>
-
-                <p class="ivbi-header__view-help">
-                  <strong>
-                    {{ activeViewLabel }}
-                  </strong>
-
-                  <span>
-                    {{ activeViewDescription }}
-                  </span>
-                </p>
-              </div>
             </section>
 
             <!-- =================================================
@@ -210,63 +236,41 @@
             ================================================== -->
             <section
               class="ivbi-filterbar ivbi-filterbar--compact"
-              aria-labelledby="ivbi-filters-title"
+              :class="`is-${vistaActiva}`"
+              aria-label="Filtros de producción científica"
             >
-              <div class="ivbi-filterbar__compact-title">
-                <span
-                  class="ivbi-filterbar__compact-icon"
-                  aria-hidden="true"
-                >
-                  <svg viewBox="0 0 20 20">
-                    <path
-                      d="M3 4h14l-5.2 6.1v4.6l-3.6 1.8v-6.4L3 4Z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-
-                <div class="ivbi-filterbar__compact-copy">
-                  <span class="ivbi-filterbar__eyebrow">
-                    Filtros
-                  </span>
-
-                  <h2 id="ivbi-filters-title">
-                    {{ activeViewLabel }}
-                  </h2>
-                </div>
-
-                <span
-                  class="ivbi-filterbar__status"
-                  :class="{
-                    'is-live': !isRefreshing,
-                    'is-updating': isRefreshing,
-                  }"
-                  :title="
-                    isRefreshing
-                      ? 'Actualizando información'
-                      : 'Los filtros se aplican automáticamente'
-                  "
-                  aria-live="polite"
-                >
-                  {{
-                    isRefreshing
-                      ? "Actualizando…"
-                      : "Auto"
-                  }}
-                </span>
-              </div>
-
               <!-- CAMPOS -->
               <div class="ivbi-filterbar__fields">
-                <label class="ivbi-field">
+                <label class="ivbi-field ivbi-field--institutional ivbi-field--sede">
+                  <span>Sede</span>
+
+                  <select
+                    v-model="globalFilters.sede_id"
+                    aria-label="Filtrar por sede"
+                  >
+                    <option value="">
+                      Todas las sedes
+                    </option>
+
+                    <option
+                      v-for="sede in filtrosDisponibles.sedes"
+                      :key="sede.id"
+                      :value="String(sede.id)"
+                    >
+                      {{ sede.nombre }}
+                    </option>
+                  </select>
+                </label>
+
+                <label class="ivbi-field ivbi-field--institutional ivbi-field--facultad">
                   <span>Facultad</span>
 
-                  <select v-model="globalFilters.facultad_id">
+                  <select
+                    v-model="globalFilters.facultad_id"
+                    aria-label="Filtrar por facultad"
+                  >
                     <option value="">
-                      Todas
+                      Todas las facultades
                     </option>
 
                     <option
@@ -279,12 +283,20 @@
                   </select>
                 </label>
 
-                <label class="ivbi-field">
+                <label class="ivbi-field ivbi-field--institutional ivbi-field--carrera">
                   <span>Carrera</span>
 
-                  <select v-model="globalFilters.carrera_id">
+                  <select
+                    v-model="globalFilters.carrera_id"
+                    aria-label="Filtrar por carrera"
+                    :disabled="!globalFilters.facultad_id"
+                  >
                     <option value="">
-                      Todas
+                      {{
+                        globalFilters.facultad_id
+                          ? "Todas las carreras"
+                          : "Seleccione una facultad"
+                      }}
                     </option>
 
                     <option
@@ -297,12 +309,12 @@
                   </select>
                 </label>
 
-                <label class="ivbi-field">
-                  <span>Tipo</span>
+                <label class="ivbi-field ivbi-field--tipo">
+                  <span>Tipo de publicación</span>
 
                   <select v-model="activeViewFilters.tipo_codigo">
                     <option value="">
-                      Todos
+                      Todos los tipos
                     </option>
 
                     <option
@@ -315,112 +327,24 @@
                   </select>
                 </label>
 
-                <!-- RESUMEN -->
-                <template v-if="vistaActiva === 'resumen'">
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Desde</span>
+                <PeriodRangePicker
+                  :from="activeViewFilters.mes_desde"
+                  :to="activeViewFilters.mes_hasta"
+                  :period="periodoDisponible"
+                  @update:from="activeViewFilters.mes_desde = $event"
+                  @update:to="activeViewFilters.mes_hasta = $event"
+                />
 
-                    <input
-                      v-model="viewFilters.resumen.mes_desde"
-                      type="month"
-                      aria-label="Mes inicial del período"
-                      title="Seleccione el mes inicial"
-                      autocomplete="off"
-                    />
-                  </label>
-
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Hasta</span>
-
-                    <input
-                      v-model="viewFilters.resumen.mes_hasta"
-                      type="month"
-                      aria-label="Mes final del período"
-                      title="Seleccione el mes final"
-                      autocomplete="off"
-                    />
-                  </label>
-                </template>
-
-                <!-- TENDENCIA -->
-                <template v-else-if="vistaActiva === 'tendencia'">
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Desde</span>
-
-                    <input
-                      v-model="viewFilters.tendencia.mes_desde"
-                      type="month"
-                      aria-label="Mes inicial de la tendencia"
-                      title="Seleccione el mes inicial"
-                      autocomplete="off"
-                    />
-                  </label>
-
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Hasta</span>
-
-                    <input
-                      v-model="viewFilters.tendencia.mes_hasta"
-                      type="month"
-                      aria-label="Mes final de la tendencia"
-                      title="Seleccione el mes final"
-                      autocomplete="off"
-                    />
-                  </label>
-
-                  <label class="ivbi-field">
-                    <span>Año mensual</span>
-
-                    <select v-model="viewFilters.tendencia.anio">
-                      <option value="">
-                        {{ autoAnioMensualLabel }}
-                      </option>
-
-                      <option
-                        v-for="anio in filtrosDisponibles.anios"
-                        :key="`t-anio-${anio.value}`"
-                        :value="String(anio.value)"
-                      >
-                        {{ anio.label }}
-                      </option>
-                    </select>
-                  </label>
-                </template>
-
-                <!-- RANKINGS -->
-                <template v-else>
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Desde</span>
-
-                    <input
-                      v-model="viewFilters.rankings.mes_desde"
-                      type="month"
-                      aria-label="Mes inicial de los rankings"
-                      title="Seleccione el mes inicial"
-                      autocomplete="off"
-                    />
-                  </label>
-
-                  <label class="ivbi-field ivbi-field--month">
-                    <span>Hasta</span>
-
-                    <input
-                      v-model="viewFilters.rankings.mes_hasta"
-                      type="month"
-                      aria-label="Mes final de los rankings"
-                      title="Seleccione el mes final"
-                      autocomplete="off"
-                    />
-                  </label>
-
+                <!-- DESTACADOS: límite del ranking -->
+                <template v-if="vistaActiva === 'rankings'">
                   <label class="ivbi-field">
                     <span>Cantidad</span>
 
                     <select v-model="viewFilters.rankings.top">
-                      <option value="5">Top 5</option>
-                      <option value="10">Top 10</option>
-                      <option value="15">Top 15</option>
-                      <option value="20">Top 20</option>
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
                     </select>
                   </label>
                 </template>
@@ -431,13 +355,13 @@
                 <button
                   class="ivbi-filter-action"
                   type="button"
-                  title="Restablecer filtros de la vista actual"
+                  title="Quitar filtros"
                   :disabled="
                     loading ||
                     isRefreshing ||
                     downloadingReport
                   "
-                  @click="resetCurrentViewFilters"
+                  @click="resetCurrentFilters"
                 >
                   <svg
                     viewBox="0 0 20 20"
@@ -454,24 +378,7 @@
                     />
                   </svg>
 
-                  <span>Restablecer</span>
-                </button>
-
-                <button
-                  class="
-                    ivbi-filter-action
-                    ivbi-filter-action--ghost
-                  "
-                  type="button"
-                  title="Restablecer todos los filtros"
-                  :disabled="
-                    loading ||
-                    isRefreshing ||
-                    downloadingReport
-                  "
-                  @click="resetAllFilters"
-                >
-                  <span>Limpiar todo</span>
+                  <span>Quitar filtros</span>
                 </button>
               </div>
             </section>
@@ -512,16 +419,18 @@
                   <article
                     v-for="(kpi, kpiIndex) in headlineKpis"
                     :key="kpi.key"
-                    class="ivbi-kpi-card"
+                    class="ivbi-kpi-card ivbi-hover-info ivbi-hover-info--kpi"
+                    tabindex="0"
+                    :data-tooltip="kpi.tooltip"
+                    :aria-label="`${kpi.label}: ${formatNumber(kpi.value)}. ${kpi.tooltip}`"
                     :class="[
                       `ivbi-kpi-card--${kpi.key}`,
                       {
-                        'is-primary': [
-                          'publicaciones',
-                          'alto-impacto',
-                        ].includes(kpi.key),
+                        'is-primary':
+                          kpi.key === 'publicaciones',
 
                         'is-coverage': [
+                          'sedes',
                           'facultades',
                           'carreras',
                         ].includes(kpi.key),
@@ -555,10 +464,6 @@
                       <strong class="ivbi-kpi-card__value">
                         {{ formatNumber(kpi.value) }}
                       </strong>
-
-                      <span class="ivbi-kpi-card__hint">
-                        {{ kpi.hint }}
-                      </span>
                     </div>
                   </article>
                 </section>
@@ -577,9 +482,6 @@
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Distribución
-                        </span>
 
                         <h3 class="ivbi-card__title">
                           Publicaciones por tipo
@@ -591,8 +493,8 @@
                           v-if="tipoDominante"
                           class="ivbi-insight-pill"
                         >
-                          Dominante:
-                          {{ tipoDominante.tipo_codigo }}
+                          Más frecuente:
+                          {{ tipoDominante.tipo_nombre }}
                           ·
                           {{
                             formatPercent(
@@ -613,9 +515,9 @@
                             class="ivbi-info-tip__content"
                             role="tooltip"
                           >
-                            Seleccione un tipo en la
-                            leyenda para aplicar o quitar
-                            ese filtro.
+                            Haz clic en un tipo para ver solo
+                            esas publicaciones. Haz clic de
+                            nuevo para mostrar todas.
                           </span>
                         </span>
                       </div>
@@ -751,154 +653,78 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay publicaciones para mostrar.
                     </div>
                   </article>
 
-                  <!-- COMPARATIVA ANUAL -->
+                  <!-- SEDES -->
                   <article
                     class="
                       ivbi-card
-                      ivbi-card--comparison
+                      ivbi-card--sedes
+                      ivbi-card--compact-rank
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Comparativa anual
-                        </span>
 
                         <h3 class="ivbi-card__title">
-                          Publicaciones por tipo por año
+                          Sedes
                         </h3>
                       </div>
                     </header>
 
-                    <div
-                      v-if="
-                        hasGroupedData(
-                          publicacionesPorTipoAnual
-                        )
-                      "
-                      class="ivbi-grouped-wrap"
+                    <TransitionGroup
+                      v-if="topSedesResumen.length"
+                      name="ivbi-list"
+                      tag="div"
+                      class="ivbi-rank"
                     >
-                      <div class="ivbi-grouped">
-                        <div
-                          v-for="(
-                            category,
-                            catIndex
-                          ) in publicacionesPorTipoAnual.categorias"
-                          :key="`grupo-${category}`"
-                          class="ivbi-grouped__group"
-                        >
-                          <div class="ivbi-grouped__bars">
-                            <div
-                              v-for="(
-                                serie,
-                                serieIndex
-                              ) in publicacionesPorTipoAnual.series"
-                              :key="
-                                `${serie.codigo}-${category}`
-                              "
-                              class="
-                                ivbi-grouped__barbox
-                              "
-                              :style="{
-                                '--grouped-h':
-                                  groupedBarHeight(
-                                    publicacionesPorTipoAnual.series,
-                                    serie.data?.[
-                                      catIndex
-                                    ] || 0
-                                  ),
-
-                                '--grouped-delay':
-                                  `${
-                                    serieIndex * 45 +
-                                    catIndex * 20
-                                  }ms`,
-                              }"
-                            >
-                              <span
-                                class="
-                                  ivbi-grouped__value
-                                "
-                              >
-                                {{
-                                  serie.data?.[
-                                    catIndex
-                                  ] || 0
-                                }}
-                              </span>
-
-                              <div
-                                class="
-                                  ivbi-grouped__bar
-                                "
-                                :style="{
-                                  background:
-                                    getTypeColor(
-                                      serie.codigo,
-                                      serieIndex
-                                    ),
-                                }"
-                                :title="
-                                  `${serie.label}: ${
-                                    serie.data?.[
-                                      catIndex
-                                    ] || 0
-                                  }`
-                                "
-                              ></div>
-                            </div>
-                          </div>
+                      <div
+                        v-for="(item, index) in topSedesResumen"
+                        :key="`top-sede-${item.label}`"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
+                      >
+                        <div class="ivbi-rank__meta">
+                          <span class="ivbi-rank__index">
+                            {{ index + 1 }}
+                          </span>
 
                           <span
-                            class="
-                              ivbi-grouped__label
-                            "
+                            class="ivbi-rank__label"
+                            :title="item.label"
                           >
-                            {{ category }}
+                            {{ item.label }}
                           </span>
                         </div>
-                      </div>
 
-                      <div class="ivbi-series-legend">
-                        <span
-                          v-for="(
-                            serie,
-                            index
-                          ) in publicacionesPorTipoAnual.series"
-                          :key="
-                            `legend-${serie.codigo}`
-                          "
-                          class="
-                            ivbi-series-legend__item
-                          "
-                        >
-                          <i
-                            class="
-                              ivbi-series-legend__swatch
-                            "
+                        <div class="ivbi-rank__track">
+                          <div
+                            class="ivbi-rank__bar"
                             :style="{
-                              background:
-                                getTypeColor(
-                                  serie.codigo,
-                                  index
-                                ),
+                              '--rank-w': horizontalWidth(
+                                topSedesResumen,
+                                item.total,
+                                'total'
+                              ),
+                              '--rank-delay': `${index * 45}ms`,
+                              background: rankingBarColor(index),
                             }"
-                          ></i>
-
-                          {{ serie.label }}
-                        </span>
+                          >
+                            <span>{{ item.total }}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </TransitionGroup>
 
                     <div
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay sedes con publicaciones para esta selección.
                     </div>
                   </article>
 
@@ -907,16 +733,14 @@
                     class="
                       ivbi-card
                       ivbi-card--facultades
+                      ivbi-card--compact-rank
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Concentración
-                        </span>
 
                         <h3 class="ivbi-card__title">
-                          Top facultades
+                          Facultades
                         </h3>
                       </div>
                     </header>
@@ -937,7 +761,10 @@
                         :key="
                           `top-facultad-${item.label}`
                         "
-                        class="ivbi-rank__row"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
                         <div class="ivbi-rank__meta">
                           <span
@@ -992,7 +819,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay facultades con publicaciones para esta selección.
                     </div>
                   </article>
 
@@ -1001,84 +828,50 @@
                     class="
                       ivbi-card
                       ivbi-card--autores
+                      ivbi-card--compact-rank
+                      ivbi-card--simple-list
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Producción autoral
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Top autores
+                          Autores
                         </h3>
                       </div>
                     </header>
 
                     <TransitionGroup
-                      v-if="
-                        topAutoresResumen.length
-                      "
+                      v-if="topAutoresResumen.length"
                       name="ivbi-list"
                       tag="div"
-                      class="ivbi-rank"
+                      class="ivbi-simple-list"
                     >
                       <div
-                        v-for="(
-                          item,
-                          index
-                        ) in topAutoresResumen"
-                        :key="
-                          `top-autor-${item.label}`
+                        v-for="(item, index) in topAutoresResumen"
+                        :key="`top-autor-${item.label}`"
+                        class="
+                          ivbi-simple-list__row
+                          ivbi-hover-info
+                          ivbi-hover-info--rank
                         "
-                        class="ivbi-rank__row"
+                        tabindex="0"
+                        :data-tooltip="buildRankingTooltip(item, index)"
+                        :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
-                        <div class="ivbi-rank__meta">
-                          <span
-                            class="
-                              ivbi-rank__index
-                            "
-                          >
-                            {{ index + 1 }}
-                          </span>
+                        <span class="ivbi-simple-list__index">
+                          {{ index + 1 }}
+                        </span>
 
-                          <span
-                            class="
-                              ivbi-rank__label
-                            "
-                            :title="item.label"
-                          >
-                            {{ item.label }}
-                          </span>
-                        </div>
+                        <span
+                          class="ivbi-simple-list__label"
+                          :title="item.label"
+                        >
+                          {{ item.label }}
+                        </span>
 
-                        <div class="ivbi-rank__track">
-                          <div
-                            class="
-                              ivbi-rank__bar
-                            "
-                            :style="{
-                              '--rank-w':
-                                horizontalWidth(
-                                  topAutoresResumen,
-                                  item.total,
-                                  'total'
-                                ),
-
-                              '--rank-delay':
-                                `${index * 45}ms`,
-
-                              background:
-                                rankingBarColor(
-                                  index
-                                ),
-                            }"
-                          >
-                            <span>
-                              {{ item.total }}
-                            </span>
-                          </div>
-                        </div>
+                        <strong class="ivbi-simple-list__count">
+                          {{ publicationCountText(item.total) }}
+                        </strong>
                       </div>
                     </TransitionGroup>
 
@@ -1086,161 +879,215 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay autores con publicaciones para esta selección.
                     </div>
                   </article>
                 </section>
               </section>
 
               <!-- =============================================
-                   TENDENCIA
+                   TENDENCIA / EVOLUCIÓN
               ============================================== -->
               <section
                 v-else-if="
                   vistaActiva === 'tendencia'
                 "
                 key="tendencia"
-                class="ivbi-view-shell"
+                class="
+                  ivbi-view-shell
+                  ivbi-view-shell--trend
+                "
               >
                 <section
                   :key="
                     `trend-grid-${visualRevision}`
                   "
                   class="ivbi-trend-grid"
+                  aria-label="Evolución de la producción científica"
                 >
-                  <!-- HISTÓRICA -->
+                  <!-- =========================================
+                       1. EVOLUCIÓN HISTÓRICA
+                  ========================================== -->
                   <article
                     class="
                       ivbi-card
+                      ivbi-card--trend-panel
                       ivbi-card--historica
                     "
                   >
-                    <header class="ivbi-card__head">
+                    <header class="ivbi-card__head ivbi-trend-head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Serie histórica
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Publicaciones por año
+                          Evolución de la producción
                         </h3>
+
+                        <p class="ivbi-card__subtitle">
+                          Comportamiento histórico de las publicaciones
+                        </p>
                       </div>
 
-                      <span class="ivbi-card__total">
-                        {{
-                          formatNumber(
-                            totalOf(
-                              publicacionesPorAnio
-                            )
-                          )
-                        }}
+                      <span
+                        v-if="annualRangeLabel"
+                        class="ivbi-trend-context"
+                      >
+                        {{ annualRangeLabel }}
                       </span>
                     </header>
 
                     <div
-                      v-if="
-                        publicacionesPorAnio.length
-                      "
+                      v-if="publicacionesPorAnio.length"
                       class="
-                        ivbi-vbars
-                        ivbi-vbars--tall
+                        ivbi-line-chart
+                        ivbi-line-chart--annual
                       "
                     >
-                      <button
-                        v-for="(
-                          item,
-                          index
-                        ) in publicacionesPorAnio"
-                        :key="
-                          `trend-anio-${item.label}`
-                        "
-                        type="button"
-                        class="
-                          ivbi-vbars__col
-                          is-interactive
-                        "
-                        :class="{
-                          'is-selected':
-                            String(
-                              viewFilters
-                                .tendencia
-                                .anio
-                            ) ===
-                            String(item.label),
-                        }"
-                        @click="
-                          applyYearFromTrend(
-                            item.label
-                          )
-                        "
-                      >
-                        <span
-                          class="ivbi-vbars__value"
+                      <div class="ivbi-line-chart__plot">
+                        <svg
+                          class="ivbi-line-chart__svg"
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                          aria-hidden="true"
+                          focusable="false"
                         >
-                          {{ item.value }}
-                        </span>
+                          <line
+                            v-for="level in [25, 50, 75]"
+                            :key="`annual-grid-${level}`"
+                            x1="3"
+                            x2="97"
+                            :y1="level"
+                            :y2="level"
+                            class="ivbi-line-chart__gridline"
+                          />
 
-                        <div
+                          <polyline
+                            :points="
+                              lineChartPolyline(
+                                publicacionesPorAnio
+                              )
+                            "
+                            class="ivbi-line-chart__line"
+                          />
+                        </svg>
+
+                        <button
+                          v-for="(
+                            item,
+                            index
+                          ) in publicacionesPorAnio"
+                          :key="
+                            `annual-point-${item.label}`
+                          "
+                          type="button"
                           class="
-                            ivbi-vbars__track
+                            ivbi-line-chart__point
+                            ivbi-hover-info
+                          "
+                          :class="[
+                            tooltipEdgeClass(
+                              index,
+                              publicacionesPorAnio.length
+                            ),
+                            {
+                              'is-selected':
+                                String(
+                                  viewFilters
+                                    .tendencia
+                                    .anio
+                                ) === String(item.label),
+                            },
+                          ]"
+                          :style="
+                            lineChartPointStyle(
+                              publicacionesPorAnio,
+                              item,
+                              index
+                            )
+                          "
+                          :data-tooltip="
+                            buildAnnualTooltip(
+                              item,
+                              index
+                            )
+                          "
+                          :aria-label="
+                            buildAnnualTooltip(
+                              item,
+                              index
+                            )
+                          "
+                          @click="
+                            applyYearFromTrend(
+                              item.label
+                            )
                           "
                         >
-                          <div
+                          <span
                             class="
-                              ivbi-vbars__bar
+                              ivbi-line-chart__value
                             "
-                            :style="{
-                              '--bar-h':
-                                verticalBarHeight(
-                                  publicacionesPorAnio,
-                                  item.value
-                                ),
+                          >
+                            {{ item.value }}
+                          </span>
 
-                              '--bar-delay':
-                                `${index * 35}ms`,
+                          <span
+                            class="
+                              ivbi-line-chart__dot
+                            "
+                          ></span>
+                        </button>
+                      </div>
 
-                              background:
-                                paletteColor(
-                                  index
-                                ),
-                            }"
-                          ></div>
-                        </div>
-
+                      <div class="ivbi-line-chart__axis">
                         <span
+                          v-for="item in publicacionesPorAnio"
+                          :key="
+                            `annual-label-${item.label}`
+                          "
                           class="
-                            ivbi-vbars__label
+                            ivbi-line-chart__axis-label
                           "
                         >
                           {{ item.label }}
                         </span>
-                      </button>
+                      </div>
+
+                      <p
+                        class="
+                          ivbi-chart-note
+                          ivbi-chart-note--interactive
+                        "
+                      >
+                        Haz clic en un año para ver su detalle mensual.
+                      </p>
                     </div>
 
                     <div
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay publicaciones por año para esta selección.
                     </div>
                   </article>
 
-                  <!-- COMPARATIVA -->
+                  <!-- =========================================
+                       2. EVOLUCIÓN POR TIPO
+                  ========================================== -->
                   <article
                     class="
                       ivbi-card
+                      ivbi-card--trend-panel
                       ivbi-card--comparativa
                     "
                   >
-                    <header class="ivbi-card__head">
+                    <header class="ivbi-card__head ivbi-trend-head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Comparativa
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Publicaciones por tipo por año
+                          Evolución por tipo de publicación
                         </h3>
+
+                        <p class="ivbi-card__subtitle">
+                          Comparación anual según categoría
+                        </p>
                       </div>
                     </header>
 
@@ -1261,7 +1108,9 @@
                           :key="
                             `trend-group-${category}`
                           "
-                          class="ivbi-grouped__group"
+                          class="
+                            ivbi-grouped__group
+                          "
                         >
                           <div
                             class="
@@ -1278,6 +1127,30 @@
                               "
                               class="
                                 ivbi-grouped__barbox
+                                ivbi-hover-info
+                                ivbi-hover-info--chart
+                              "
+                              tabindex="0"
+                              :data-tooltip="
+                                buildTypeYearTooltip(
+                                  serie,
+                                  catIndex,
+                                  category
+                                )
+                              "
+                              :aria-label="
+                                buildTypeYearTooltip(
+                                  serie,
+                                  catIndex,
+                                  category
+                                )
+                              "
+                              :class="
+                                tooltipEdgeClass(
+                                  serieIndex,
+                                  publicacionesPorTipoAnual
+                                    .series.length
+                                )
                               "
                               :style="{
                                 '--grouped-h':
@@ -1336,6 +1209,7 @@
                         class="
                           ivbi-series-legend
                         "
+                        aria-label="Tipos de publicación"
                       >
                         <span
                           v-for="(
@@ -1360,6 +1234,7 @@
                                   index
                                 ),
                             }"
+                            aria-hidden="true"
                           ></i>
 
                           {{ serie.label }}
@@ -1371,88 +1246,161 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay información para comparar.
                     </div>
                   </article>
 
-                  <!-- MENSUAL -->
+                  <!-- =========================================
+                       3. COMPORTAMIENTO MENSUAL
+                  ========================================== -->
                   <article
                     class="
                       ivbi-card
+                      ivbi-card--trend-panel
                       ivbi-card--mensual
                     "
                   >
-                    <header class="ivbi-card__head">
+                    <header class="ivbi-card__head ivbi-trend-head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Detalle temporal
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Publicaciones por mes
+                          Comportamiento mensual
                         </h3>
+
+                        <p class="ivbi-card__subtitle">
+                          Distribución de publicaciones durante el año
+                        </p>
                       </div>
 
-                      <span class="ivbi-card__total">
+                      <span class="ivbi-trend-context">
                         {{
                           publicacionesPorMes.anio_base ||
-                          "Auto"
+                          "Último año con información"
                         }}
                       </span>
                     </header>
 
                     <div
                       v-if="
-                        publicacionesPorMes.items
-                          .length
+                        publicacionesPorMes.items.length
                       "
-                      class="ivbi-vbars"
+                      class="
+                        ivbi-line-chart
+                        ivbi-line-chart--area
+                        ivbi-line-chart--monthly
+                      "
                     >
-                      <div
-                        v-for="(
-                          item,
-                          index
-                        ) in publicacionesPorMes.items"
-                        :key="`mes-${item.label}`"
-                        class="ivbi-vbars__col"
-                      >
-                        <span
-                          class="ivbi-vbars__value"
+                      <div class="ivbi-line-chart__plot">
+                        <svg
+                          class="ivbi-line-chart__svg"
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                          aria-hidden="true"
+                          focusable="false"
                         >
-                          {{ item.value }}
-                        </span>
+                          <line
+                            v-for="level in [25, 50, 75]"
+                            :key="
+                              `monthly-grid-${level}`
+                            "
+                            x1="3"
+                            x2="97"
+                            :y1="level"
+                            :y2="level"
+                            class="
+                              ivbi-line-chart__gridline
+                            "
+                          />
+
+                          <polygon
+                            :points="
+                              lineChartAreaPoints(
+                                publicacionesPorMes.items
+                              )
+                            "
+                            class="
+                              ivbi-line-chart__area
+                            "
+                          />
+
+                          <polyline
+                            :points="
+                              lineChartPolyline(
+                                publicacionesPorMes.items
+                              )
+                            "
+                            class="
+                              ivbi-line-chart__line
+                            "
+                          />
+                        </svg>
 
                         <div
+                          v-for="(
+                            item,
+                            index
+                          ) in publicacionesPorMes.items"
+                          :key="
+                            `monthly-point-${item.label}`
+                          "
                           class="
-                            ivbi-vbars__track
+                            ivbi-line-chart__point
+                            ivbi-line-chart__point--static
+                            ivbi-hover-info
+                          "
+                          tabindex="0"
+                          :class="
+                            tooltipEdgeClass(
+                              index,
+                              publicacionesPorMes
+                                .items.length
+                            )
+                          "
+                          :style="
+                            lineChartPointStyle(
+                              publicacionesPorMes.items,
+                              item,
+                              index
+                            )
+                          "
+                          :data-tooltip="
+                            buildMonthlyTooltip(
+                              item,
+                              index
+                            )
+                          "
+                          :aria-label="
+                            buildMonthlyTooltip(
+                              item,
+                              index
+                            )
                           "
                         >
-                          <div
+                          <span
                             class="
-                              ivbi-vbars__bar
+                              ivbi-line-chart__value
                             "
-                            :style="{
-                              '--bar-h':
-                                verticalBarHeight(
-                                  publicacionesPorMes.items,
-                                  item.value
-                                ),
+                          >
+                            {{ item.value }}
+                          </span>
 
-                              '--bar-delay':
-                                `${index * 35}ms`,
-
-                              background:
-                                paletteColor(
-                                  index
-                                ),
-                            }"
-                          ></div>
+                          <span
+                            class="
+                              ivbi-line-chart__dot
+                            "
+                          ></span>
                         </div>
+                      </div>
 
+                      <div class="ivbi-line-chart__axis">
                         <span
-                          class="
-                            ivbi-vbars__label
+                          v-for="item in publicacionesPorMes.items"
+                          :key="
+                            `monthly-label-${item.label}`
                           "
+                          class="
+                            ivbi-line-chart__axis-label
+                          "
+                          :title="item.label"
                         >
                           {{ item.label }}
                         </span>
@@ -1463,7 +1411,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay publicaciones por mes para esta selección.
                     </div>
                   </article>
                 </section>
@@ -1483,6 +1431,73 @@
                   "
                   class="ivbi-rankings-grid"
                 >
+                  <!-- SEDES -->
+                  <article
+                    class="
+                      ivbi-card
+                      ivbi-card--sedes-rank
+                    "
+                  >
+                    <header class="ivbi-card__head">
+                      <div class="ivbi-card__head-main">
+
+                        <h3 class="ivbi-card__title">
+                          Sedes
+                        </h3>
+                      </div>
+                    </header>
+
+                    <TransitionGroup
+                      v-if="topSedesData.length"
+                      name="ivbi-list"
+                      tag="div"
+                      class="ivbi-rank"
+                    >
+                      <div
+                        v-for="(item, index) in topSedesData"
+                        :key="`rank-sede-${item.label}`"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
+                      >
+                        <div class="ivbi-rank__meta">
+                          <span class="ivbi-rank__index">
+                            {{ index + 1 }}
+                          </span>
+
+                          <span
+                            class="ivbi-rank__label"
+                            :title="item.label"
+                          >
+                            {{ item.label }}
+                          </span>
+                        </div>
+
+                        <div class="ivbi-rank__track">
+                          <div
+                            class="ivbi-rank__bar"
+                            :style="{
+                              '--rank-w': horizontalWidth(
+                                topSedesData,
+                                item.total,
+                                'total'
+                              ),
+                              '--rank-delay': `${index * 45}ms`,
+                              background: rankingBarColor(index),
+                            }"
+                          >
+                            <span>{{ item.total }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </TransitionGroup>
+
+                    <div v-else class="ivbi-empty">
+                      No hay sedes con publicaciones para esta selección.
+                    </div>
+                  </article>
+
                   <!-- FACULTADES -->
                   <article
                     class="
@@ -1492,12 +1507,9 @@
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Concentración
-                        </span>
 
                         <h3 class="ivbi-card__title">
-                          Top facultades
+                          Facultades
                         </h3>
                       </div>
                     </header>
@@ -1516,7 +1528,10 @@
                         :key="
                           `rank-facultad-${item.label}`
                         "
-                        class="ivbi-rank__row"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
                         <div class="ivbi-rank__meta">
                           <span
@@ -1565,7 +1580,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay facultades con publicaciones para esta selección.
                     </div>
                   </article>
 
@@ -1578,12 +1593,9 @@
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Concentración
-                        </span>
 
                         <h3 class="ivbi-card__title">
-                          Top carreras
+                          Carreras
                         </h3>
                       </div>
                     </header>
@@ -1602,7 +1614,10 @@
                         :key="
                           `rank-carrera-${item.label}`
                         "
-                        class="ivbi-rank__row"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
                         <div class="ivbi-rank__meta">
                           <span
@@ -1651,7 +1666,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay carreras con publicaciones para esta selección.
                     </div>
                   </article>
 
@@ -1660,24 +1675,78 @@
                     class="
                       ivbi-card
                       ivbi-card--autores-rank
+                      ivbi-card--simple-list
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Producción autoral
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Top autores
+                          Autores
                         </h3>
                       </div>
                     </header>
 
                     <TransitionGroup
-                      v-if="
-                        topAutoresData.length
-                      "
+                      v-if="topAutoresData.length"
+                      name="ivbi-list"
+                      tag="div"
+                      class="ivbi-simple-list"
+                    >
+                      <div
+                        v-for="(item, index) in topAutoresData"
+                        :key="`rank-autor-${item.label}`"
+                        class="
+                          ivbi-simple-list__row
+                          ivbi-hover-info
+                          ivbi-hover-info--rank
+                        "
+                        tabindex="0"
+                        :data-tooltip="buildRankingTooltip(item, index)"
+                        :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
+                      >
+                        <span class="ivbi-simple-list__index">
+                          {{ index + 1 }}
+                        </span>
+
+                        <span
+                          class="ivbi-simple-list__label"
+                          :title="item.label"
+                        >
+                          {{ item.label }}
+                        </span>
+
+                        <strong class="ivbi-simple-list__count">
+                          {{ publicationCountText(item.total) }}
+                        </strong>
+                      </div>
+                    </TransitionGroup>
+
+                    <div
+                      v-else
+                      class="ivbi-empty"
+                    >
+                      No hay autores con publicaciones para esta selección.
+                    </div>
+                  </article>
+
+                  <!-- ÁREAS -->
+                  <article
+                    class="
+                      ivbi-card
+                      ivbi-card--areas-rank
+                    "
+                  >
+                    <header class="ivbi-card__head">
+                      <div class="ivbi-card__head-main">
+
+                        <h3 class="ivbi-card__title">
+                          Áreas de conocimiento
+                        </h3>
+                      </div>
+                    </header>
+
+                    <TransitionGroup
+                      v-if="areasData.length"
                       name="ivbi-list"
                       tag="div"
                       class="ivbi-rank"
@@ -1686,11 +1755,14 @@
                         v-for="(
                           item,
                           index
-                        ) in topAutoresData"
+                        ) in areasData"
                         :key="
-                          `rank-autor-${item.label}`
+                          `rank-area-${item.label}`
                         "
-                        class="ivbi-rank__row"
+                        class="ivbi-rank__row ivbi-hover-info ivbi-hover-info--rank"
+                      tabindex="0"
+                      :data-tooltip="buildRankingTooltip(item, index)"
+                      :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
                         <div class="ivbi-rank__meta">
                           <span
@@ -1713,7 +1785,7 @@
                             :style="{
                               '--rank-w':
                                 horizontalWidth(
-                                  topAutoresData,
+                                  areasData,
                                   item.total,
                                   'total'
                                 ),
@@ -1739,26 +1811,22 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay áreas con publicaciones para esta selección.
                     </div>
                   </article>
-
 
                   <!-- REVISTAS -->
                   <article
                     class="
                       ivbi-card
                       ivbi-card--revistas
+                      ivbi-card--simple-list
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Difusión científica
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Revistas con más artículos
+                          Revistas
                         </h3>
                       </div>
                     </header>
@@ -1767,58 +1835,34 @@
                       v-if="journalsData.length"
                       name="ivbi-list"
                       tag="div"
-                      class="ivbi-rank"
+                      class="ivbi-simple-list"
                     >
                       <div
-                        v-for="(
-                          item,
-                          index
-                        ) in journalsData"
-                        :key="
-                          `journal-${item.label}`
+                        v-for="(item, index) in journalsData"
+                        :key="`journal-${item.label}`"
+                        class="
+                          ivbi-simple-list__row
+                          ivbi-hover-info
+                          ivbi-hover-info--rank
                         "
-                        class="ivbi-rank__row"
+                        tabindex="0"
+                        :data-tooltip="buildRankingTooltip(item, index, 'artículo', 'artículos')"
+                        :aria-label="`${item.label}. ${buildRankingTooltip(item, index, 'artículo', 'artículos')}`"
                       >
-                        <div class="ivbi-rank__meta">
-                          <span
-                            class="ivbi-rank__index"
-                          >
-                            {{ index + 1 }}
-                          </span>
+                        <span class="ivbi-simple-list__index">
+                          {{ index + 1 }}
+                        </span>
 
-                          <span
-                            class="ivbi-rank__label"
-                            :title="item.label"
-                          >
-                            {{ item.label }}
-                          </span>
-                        </div>
+                        <span
+                          class="ivbi-simple-list__label"
+                          :title="item.label"
+                        >
+                          {{ item.label }}
+                        </span>
 
-                        <div class="ivbi-rank__track">
-                          <div
-                            class="ivbi-rank__bar"
-                            :style="{
-                              '--rank-w':
-                                horizontalWidth(
-                                  journalsData,
-                                  item.total,
-                                  'total'
-                                ),
-
-                              '--rank-delay':
-                                `${index * 45}ms`,
-
-                              background:
-                                rankingBarColor(
-                                  index
-                                ),
-                            }"
-                          >
-                            <span>
-                              {{ item.total }}
-                            </span>
-                          </div>
-                        </div>
+                        <strong class="ivbi-simple-list__count">
+                          {{ countText(item.total, "artículo", "artículos") }}
+                        </strong>
                       </div>
                     </TransitionGroup>
 
@@ -1826,7 +1870,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay revistas con artículos para esta selección.
                     </div>
                   </article>
 
@@ -1835,16 +1879,13 @@
                     class="
                       ivbi-card
                       ivbi-card--proyectos
+                      ivbi-card--simple-list
                     "
                   >
                     <header class="ivbi-card__head">
                       <div class="ivbi-card__head-main">
-                        <span class="ivbi-card__eyebrow">
-                          Vinculación investigativa
-                        </span>
-
                         <h3 class="ivbi-card__title">
-                          Proyectos con más publicaciones
+                          Proyectos
                         </h3>
                       </div>
                     </header>
@@ -1853,58 +1894,34 @@
                       v-if="projectsData.length"
                       name="ivbi-list"
                       tag="div"
-                      class="ivbi-rank"
+                      class="ivbi-simple-list ivbi-simple-list--projects"
                     >
                       <div
-                        v-for="(
-                          item,
-                          index
-                        ) in projectsData"
-                        :key="
-                          `project-${item.label}`
+                        v-for="(item, index) in projectsData"
+                        :key="`project-${item.label}`"
+                        class="
+                          ivbi-simple-list__row
+                          ivbi-hover-info
+                          ivbi-hover-info--rank
                         "
-                        class="ivbi-rank__row"
+                        tabindex="0"
+                        :data-tooltip="buildRankingTooltip(item, index)"
+                        :aria-label="`${item.label}. ${buildRankingTooltip(item, index)}`"
                       >
-                        <div class="ivbi-rank__meta">
-                          <span
-                            class="ivbi-rank__index"
-                          >
-                            {{ index + 1 }}
-                          </span>
+                        <span class="ivbi-simple-list__index">
+                          {{ index + 1 }}
+                        </span>
 
-                          <span
-                            class="ivbi-rank__label"
-                            :title="item.label"
-                          >
-                            {{ item.label }}
-                          </span>
-                        </div>
+                        <span
+                          class="ivbi-simple-list__label"
+                          :title="item.label"
+                        >
+                          {{ item.label }}
+                        </span>
 
-                        <div class="ivbi-rank__track">
-                          <div
-                            class="ivbi-rank__bar"
-                            :style="{
-                              '--rank-w':
-                                horizontalWidth(
-                                  projectsData,
-                                  item.total,
-                                  'total'
-                                ),
-
-                              '--rank-delay':
-                                `${index * 45}ms`,
-
-                              background:
-                                rankingBarColor(
-                                  index
-                                ),
-                            }"
-                          >
-                            <span>
-                              {{ item.total }}
-                            </span>
-                          </div>
-                        </div>
+                        <strong class="ivbi-simple-list__count">
+                          {{ publicationCountText(item.total) }}
+                        </strong>
                       </div>
                     </TransitionGroup>
 
@@ -1912,7 +1929,7 @@
                       v-else
                       class="ivbi-empty"
                     >
-                      Sin datos.
+                      No hay proyectos con publicaciones para esta selección.
                     </div>
                   </article>
                 </section>
@@ -1927,52 +1944,15 @@
             v-else-if="loading || isRefreshing"
             class="ivbi-empty ivbi-empty--state"
           >
-            Actualizando…
+            Actualizando información…
           </div>
 
           <div
             v-else
             class="ivbi-empty ivbi-empty--state"
           >
-            Sin datos para los filtros seleccionados.
+            No encontramos publicaciones con las opciones seleccionadas.
           </div>
-
-          <!-- =================================================
-               NOTA
-          ================================================== -->
-          <footer
-            v-if="hasData"
-            class="ivbi-dashboard-note"
-          >
-            <span
-              class="ivbi-dashboard-note__icon"
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 20 20">
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="7.4"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-
-                <path
-                  d="M10 8.8v4.6M10 6.3h.01"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </span>
-
-            <span>
-              Los datos se actualizan automáticamente
-              según los filtros seleccionados.
-            </span>
-          </footer>
         </div>
       </section>
     </section>
@@ -1991,6 +1971,8 @@ import {
 } from "vue";
 
 import api from "../../scripts/api/axios";
+import { useUserStore } from "../../scripts/stores/userStore";
+import PeriodRangePicker from "./PeriodRangePicker.vue";
 
 /* =========================================================
    TIPOS CANÓNICOS
@@ -2044,6 +2026,7 @@ const EMPTY_RESPONSE = Object.freeze({
   summary: {
     total_publicaciones: 0,
     total_autores: 0,
+    total_sedes: 0,
     total_facultades: 0,
     total_carreras: 0,
     total_proyectos: 0,
@@ -2074,12 +2057,22 @@ const EMPTY_RESPONSE = Object.freeze({
       total_publicaciones: 0,
     },
 
+    top_sedes: {
+      limite: 10,
+      items: [],
+    },
+
     top_facultades: {
       limite: 10,
       items: [],
     },
 
     top_carreras: {
+      limite: 10,
+      items: [],
+    },
+
+    areas: {
       limite: 10,
       items: [],
     },
@@ -2103,9 +2096,23 @@ const EMPTY_RESPONSE = Object.freeze({
 
   filtros_disponibles: {
     tipos: [],
+    sedes: [],
     facultades: [],
     carreras: [],
     anios: [],
+    periodo: {
+      anio_min: null,
+      anio_max: null,
+      mes_min: null,
+      mes_max: null,
+      mes_actual: null,
+      ultimo_mes_con_datos: null,
+      anios: [],
+      meses: [],
+      meses_con_datos: {},
+      total_con_mes: 0,
+      total_sin_mes: 0,
+    },
     anio_base_mensual: null,
   },
 
@@ -2116,9 +2123,39 @@ const EMPTY_RESPONSE = Object.freeze({
    ESTADO
 ========================================================= */
 
+const userStore = useUserStore();
+
+const isAdmin = computed(() =>
+  Boolean(
+    userStore?.isAdmin ||
+    userStore?.esAdmin ||
+    userStore?.user?.es_admin ||
+    userStore?.user?.is_staff ||
+    userStore?.user?.is_superuser
+  )
+);
+
 const loading = ref(false);
 const isRefreshing = ref(false);
-const downloadingReport = ref(false);
+const downloadingReportFormat = ref("");
+const downloadingReport = computed(() =>
+  Boolean(downloadingReportFormat.value)
+);
+const reportMenuOpen = ref(false);
+const reportMenuRef = ref(null);
+
+const downloadingReportLabel = computed(() => {
+  if (
+    downloadingReportFormat.value ===
+    "institutional_excel"
+  ) {
+    return "Preparando Excel institucional…";
+  }
+
+  return downloadingReportFormat.value === "excel"
+    ? "Preparando Excel…"
+    : "Preparando PDF…";
+});
 
 const error = ref("");
 const response = ref(null);
@@ -2147,46 +2184,22 @@ const vistaOpciones = Object.freeze([
   },
   {
     key: "tendencia",
-    label: "Tendencia",
+    label: "Evolución",
   },
   {
     key: "rankings",
-    label: "Rankings",
+    label: "Destacados",
   },
 ]);
 
-const activeViewLabel = computed(() => {
-  return (
-    vistaOpciones.find(
-      (item) =>
-        item.key === vistaActiva.value
-    )?.label || "Resumen"
-  );
-});
 
-const activeViewDescription = computed(() => {
-  const descriptions = {
-    resumen:
-      "Indicadores generales, distribución y concentración institucional.",
-
-    tendencia:
-      "Evolución histórica, comparativa anual y comportamiento mensual.",
-
-    rankings:
-      "Facultades, carreras, autores, revistas y proyectos destacados.",
-  };
-
-  return (
-    descriptions[vistaActiva.value] ||
-    descriptions.resumen
-  );
-});
 
 /* =========================================================
    FILTROS
 ========================================================= */
 
 const globalFilters = reactive({
+  sede_id: "",
   facultad_id: "",
   carrera_id: "",
 });
@@ -2520,6 +2533,305 @@ function formatPercent(value) {
   })}%`;
 }
 
+
+function tooltipEdgeClass(
+  index,
+  total
+) {
+  const count = Number(total || 0);
+
+  if (count <= 1) {
+    return "ivbi-tooltip--center";
+  }
+
+  if (index <= 1) {
+    return "ivbi-tooltip--left";
+  }
+
+  if (index >= count - 2) {
+    return "ivbi-tooltip--right";
+  }
+
+  return "ivbi-tooltip--center";
+}
+
+function countText(
+  value,
+  singular = "publicación",
+  plural = "publicaciones"
+) {
+  const total = Number(value || 0);
+
+  return `${formatNumber(total)} ${
+    total === 1
+      ? singular
+      : plural
+  }`;
+}
+
+function lineChartX(index, total) {
+  if (Number(total || 0) <= 1) {
+    return 50;
+  }
+
+  return 4 +
+    (Number(index || 0) /
+      (Number(total) - 1)) *
+      92;
+}
+
+function lineChartY(items, value) {
+  const values = (items || []).map(
+    (item) => Number(item?.value || 0)
+  );
+
+  const maxValue = Math.max(
+    1,
+    ...values
+  );
+
+  const ratio = Math.max(
+    0,
+    Math.min(
+      1,
+      Number(value || 0) /
+        maxValue
+    )
+  );
+
+  return 84 - ratio * 70;
+}
+
+function lineChartPolyline(items = []) {
+  const total = items.length;
+
+  return items
+    .map(
+      (item, index) =>
+        `${lineChartX(index, total)},${lineChartY(items, item?.value)}`
+    )
+    .join(" ");
+}
+
+function lineChartAreaPoints(items = []) {
+  if (!items.length) {
+    return "";
+  }
+
+  const total = items.length;
+  const firstX = lineChartX(0, total);
+  const lastX = lineChartX(
+    total - 1,
+    total
+  );
+
+  return [
+    `${firstX},88`,
+    lineChartPolyline(items),
+    `${lastX},88`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function lineChartPointStyle(
+  items,
+  item,
+  index
+) {
+  return {
+    left:
+      `${lineChartX(index, items.length)}%`,
+    top:
+      `${lineChartY(items, item?.value)}%`,
+  };
+}
+
+function publicationCountText(value) {
+  return countText(
+    value,
+    "publicación",
+    "publicaciones"
+  );
+}
+
+function partPercentText(value, total) {
+  const base = Number(total || 0);
+
+  if (base <= 0) {
+    return "";
+  }
+
+  return formatPercent(
+    (Number(value || 0) / base) * 100
+  );
+}
+
+function buildRankingTooltip(
+  item,
+  index,
+  singular = "publicación",
+  plural = "publicaciones"
+) {
+  const totalGeneral = Number(
+    summary.value?.total_publicaciones || 0
+  );
+
+  const percentage =
+    partPercentText(
+      item?.total,
+      totalGeneral
+    );
+
+  const position =
+    index === 0
+      ? "1.er lugar"
+      : `${index + 1}.º lugar`;
+
+  return [
+    position,
+    countText(
+      item?.total,
+      singular,
+      plural
+    ),
+    percentage
+      ? `${percentage} del total mostrado`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildAnnualTooltip(item, index) {
+  const totalPeriodo =
+    totalOf(publicacionesPorAnio.value);
+
+  const current =
+    Number(item?.value || 0);
+
+  const previous =
+    index > 0
+      ? Number(
+          publicacionesPorAnio.value[
+            index - 1
+          ]?.value || 0
+        )
+      : null;
+
+  let comparison = "";
+
+  if (previous !== null) {
+    const difference =
+      current - previous;
+
+    if (difference > 0) {
+      comparison =
+        `${formatNumber(difference)} más que el año anterior`;
+    } else if (difference < 0) {
+      comparison =
+        `${formatNumber(Math.abs(difference))} menos que el año anterior`;
+    } else {
+      comparison =
+        "La misma cantidad que el año anterior";
+    }
+  }
+
+  const percentage =
+    partPercentText(
+      current,
+      totalPeriodo
+    );
+
+  return [
+    String(item?.label || "Año"),
+    publicationCountText(current),
+    comparison,
+    percentage
+      ? `${percentage} del período mostrado`
+      : "",
+    "Haz clic para ver este año",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildMonthlyTooltip(item, index) {
+  const items =
+    publicacionesPorMes.value?.items || [];
+
+  const current =
+    Number(item?.value || 0);
+
+  const previous =
+    index > 0
+      ? Number(
+          items[index - 1]?.value || 0
+        )
+      : null;
+
+  let comparison = "";
+
+  if (previous !== null) {
+    const difference =
+      current - previous;
+
+    if (difference > 0) {
+      comparison =
+        `${formatNumber(difference)} más que el mes anterior`;
+    } else if (difference < 0) {
+      comparison =
+        `${formatNumber(Math.abs(difference))} menos que el mes anterior`;
+    } else {
+      comparison =
+        "La misma cantidad que el mes anterior";
+    }
+  }
+
+  const year =
+    publicacionesPorMes.value?.anio_base;
+
+  const percentage =
+    partPercentText(
+      current,
+      totalOf(items)
+    );
+
+  return [
+    [item?.label, year]
+      .filter(Boolean)
+      .join(" "),
+    publicationCountText(current),
+    comparison,
+    percentage
+      ? `${percentage} del año mostrado`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildTypeYearTooltip(
+  serie,
+  catIndex,
+  category
+) {
+  const value = Number(
+    serie?.data?.[catIndex] || 0
+  );
+
+  return [
+    String(category || ""),
+    String(
+      serie?.label ||
+      "Tipo de publicación"
+    ),
+    publicationCountText(value),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 const MONTH_NAMES_ES = Object.freeze([
   "enero",
   "febrero",
@@ -2833,6 +3145,10 @@ function buildParams() {
 
   return Object.fromEntries(
     Object.entries({
+      sede_id:
+        globalFilters.sede_id ||
+        undefined,
+
       facultad_id:
         globalFilters.facultad_id ||
         undefined,
@@ -2871,6 +3187,54 @@ function buildParams() {
   );
 }
 
+function buildInstitutionalReportParams() {
+  const dashboardParams = buildParams();
+
+  const params = {
+    sede_id:
+      dashboardParams.sede_id ||
+      undefined,
+
+    facultad_id:
+      dashboardParams.facultad_id ||
+      undefined,
+
+    carrera_id:
+      dashboardParams.carrera_id ||
+      undefined,
+
+    tipo_codigo:
+      dashboardParams.tipo_codigo ||
+      undefined,
+  };
+
+  if (dashboardParams.anio) {
+    params.periodo_modo = "anual";
+    params.anio = dashboardParams.anio;
+  } else if (
+    dashboardParams.mes_desde ||
+    dashboardParams.mes_hasta
+  ) {
+    params.periodo_modo = "personalizado";
+    params.mes_desde =
+      dashboardParams.mes_desde ||
+      undefined;
+    params.mes_hasta =
+      dashboardParams.mes_hasta ||
+      undefined;
+  } else {
+    params.periodo_modo = "historico";
+  }
+
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== ""
+    )
+  );
+}
+
 /* =========================================================
    REPORTE EXCEL
 ========================================================= */
@@ -2894,7 +3258,7 @@ function sanitizeFileNamePart(value) {
     .slice(0, 80);
 }
 
-function buildReportFileName() {
+function buildReportFileName(format = "pdf") {
   const now = new Date();
 
   const datePart = [
@@ -2915,6 +3279,15 @@ function buildReportFileName() {
         "dashboard"
     );
 
+  const sedePart =
+    filtrosAplicados.value
+      ?.sede_nombre
+      ? sanitizeFileNamePart(
+          filtrosAplicados.value
+            .sede_nombre
+        )
+      : "todas-las-sedes";
+
   const facultadPart =
     filtrosAplicados.value
       ?.facultad_nombre
@@ -2922,14 +3295,37 @@ function buildReportFileName() {
           filtrosAplicados.value
             .facultad_nombre
         )
-      : "institucional";
+      : "todas-las-facultades";
+
+  const carreraPart =
+    filtrosAplicados.value
+      ?.carrera_nombre
+      ? `-${sanitizeFileNamePart(
+          filtrosAplicados.value
+            .carrera_nombre
+        )}`
+      : "";
+
+  const institutional =
+    format === "institutional_excel";
+
+  const prefix = institutional
+    ? "reporte-produccion-institucional-detallado-"
+    : "informe-produccion-cientifica-";
+
+  const extension =
+    format === "pdf"
+      ? "pdf"
+      : "xlsx";
 
   return (
-    "reporte-dashboard-" +
+    prefix +
     "sgpc-uleam-" +
     `${viewPart}-` +
-    `${facultadPart}-` +
-    `${datePart}.xlsx`
+    `${sedePart}-` +
+    `${facultadPart}` +
+    `${carreraPart}-` +
+    `${datePart}.${extension}`
   );
 }
 
@@ -2967,6 +3363,54 @@ function extractApiErrorMessage(
   return fallback;
 }
 
+const TECHNICAL_ERROR_PATTERN =
+  /(backend|endpoint|serializer|queryset|jwt|token|sql|postgres|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|request|response|\/api\/|http\s*\d{3})/i;
+
+function sanitizeUserMessage(
+  message,
+  fallback
+) {
+  const text = String(message || "").trim();
+
+  if (
+    !text ||
+    TECHNICAL_ERROR_PATTERN.test(text)
+  ) {
+    return fallback;
+  }
+
+  return text;
+}
+
+function toUserErrorMessage(
+  error,
+  fallback
+) {
+  const status = Number(
+    error?.response?.status || 0
+  );
+
+  if (status === 401) {
+    return "La sesión terminó. Inicie sesión nuevamente.";
+  }
+
+  if (status === 403) {
+    return "Su cuenta no puede consultar esta información.";
+  }
+
+  if (status === 429) {
+    return "Se hicieron demasiados intentos en poco tiempo. Espere unos minutos y vuelva a intentarlo.";
+  }
+
+  return sanitizeUserMessage(
+    extractApiErrorMessage(
+      error?.response?.data,
+      error?.message
+    ),
+    fallback
+  );
+}
+
 async function readBlobErrorMessage(
   errorBlob
 ) {
@@ -3000,22 +3444,87 @@ async function readBlobErrorMessage(
   }
 }
 
-async function downloadDashboardReport() {
+function toggleReportMenu() {
+  if (downloadingReport.value) {
+    return;
+  }
+
+  reportMenuOpen.value =
+    !reportMenuOpen.value;
+}
+
+function closeReportMenu() {
+  reportMenuOpen.value = false;
+}
+
+function handleReportMenuOutside(event) {
+  const root = reportMenuRef.value;
+
   if (
-    downloadingReport.value
+    !root ||
+    root.contains(event.target)
   ) {
     return;
   }
 
-  downloadingReport.value = true;
+  closeReportMenu();
+}
+
+async function downloadDashboardReport(
+  format = "pdf"
+) {
+  if (downloadingReport.value) {
+    return;
+  }
+
+  const normalizedFormat =
+    format === "excel"
+      ? "excel"
+      : format === "institutional_excel"
+        ? "institutional_excel"
+        : "pdf";
+
+  if (
+    normalizedFormat ===
+      "institutional_excel" &&
+    !isAdmin.value
+  ) {
+    error.value =
+      "Solo los administradores pueden descargar el Excel institucional detallado.";
+    reportMenuOpen.value = false;
+    return;
+  }
+
+  downloadingReportFormat.value =
+    normalizedFormat;
+  reportMenuOpen.value = false;
   error.value = "";
+
+  const isExcel =
+    normalizedFormat !== "pdf";
+
+  const isInstitutionalExcel =
+    normalizedFormat ===
+    "institutional_excel";
+
+  const endpoint =
+    isInstitutionalExcel
+      ? "/reportes/produccion/excel/"
+      : isExcel
+        ? "/dashboard/reporte/excel/"
+        : "/dashboard/reporte/pdf/";
+
+  const params =
+    isInstitutionalExcel
+      ? buildInstitutionalReportParams()
+      : buildParams();
 
   try {
     const { data } =
       await api.get(
-        "/dashboard/reporte/excel/",
+        endpoint,
         {
-          params: buildParams(),
+          params,
           responseType: "blob",
         }
       );
@@ -3023,8 +3532,9 @@ async function downloadDashboardReport() {
     const blob = new Blob(
       [data],
       {
-        type:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type: isExcel
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/pdf",
       }
     );
 
@@ -3037,16 +3547,16 @@ async function downloadDashboardReport() {
       document.createElement("a");
 
     link.href = url;
-
     link.download =
-      buildReportFileName();
+      buildReportFileName(
+        normalizedFormat
+      );
 
     document.body.appendChild(
       link
     );
 
     link.click();
-
     link.remove();
 
     window.setTimeout(() => {
@@ -3060,15 +3570,24 @@ async function downloadDashboardReport() {
         err?.response?.data
       );
 
+    const fallback =
+      isInstitutionalExcel
+        ? "No se pudo descargar el Excel institucional detallado. Vuelva a intentarlo."
+        : isExcel
+          ? "No se pudo descargar el archivo Excel. Vuelva a intentarlo."
+          : "No se pudo descargar el informe PDF. Vuelva a intentarlo.";
+
     error.value =
-      blobMessage ||
-      extractApiErrorMessage(
-        err?.response?.data,
-        err?.message
-      ) ||
-      "No fue posible descargar el reporte del dashboard.";
+      sanitizeUserMessage(
+        blobMessage ||
+          extractApiErrorMessage(
+            err?.response?.data,
+            err?.message
+          ),
+        fallback
+      );
   } finally {
-    downloadingReport.value = false;
+    downloadingReportFormat.value = "";
   }
 }
 
@@ -3113,13 +3632,64 @@ async function loadDashboard() {
 
     if (!data?.ok) {
       throw new Error(
-        "La API no devolvió una respuesta válida."
+        "No pudimos cargar la información."
       );
     }
 
     response.value = data;
 
     await replayDashboardMotion();
+
+    const sedesValidas =
+      new Set(
+        (
+          data
+            ?.filtros_disponibles
+            ?.sedes || []
+        ).map((item) =>
+          String(item.id)
+        )
+      );
+
+    if (
+      globalFilters.sede_id &&
+      !sedesValidas.has(
+        String(
+          globalFilters.sede_id
+        )
+      )
+    ) {
+      suppressAutoApply.value = true;
+      globalFilters.sede_id = "";
+      globalFilters.facultad_id = "";
+      globalFilters.carrera_id = "";
+      suppressAutoApply.value = false;
+    }
+
+    const facultadesValidas =
+      new Set(
+        (
+          data
+            ?.filtros_disponibles
+            ?.facultades || []
+        ).map((item) =>
+          String(item.id)
+        )
+      );
+
+    if (
+      globalFilters.facultad_id &&
+      !facultadesValidas.has(
+        String(
+          globalFilters.facultad_id
+        )
+      )
+    ) {
+      suppressAutoApply.value = true;
+      globalFilters.facultad_id = "";
+      globalFilters.carrera_id = "";
+      suppressAutoApply.value = false;
+    }
 
     const carrerasValidas =
       new Set(
@@ -3155,11 +3725,10 @@ async function loadDashboard() {
     }
 
     error.value =
-      extractApiErrorMessage(
-        err?.response?.data,
-        err?.message
-      ) ||
-      "No fue posible cargar el panel analítico.";
+      toUserErrorMessage(
+        err,
+        "No se pudo cargar la información. Vuelva a intentarlo."
+      );
 
     response.value =
       EMPTY_RESPONSE;
@@ -3190,9 +3759,7 @@ async function aplicarFiltros() {
       current.mes_hasta
   ) {
     error.value =
-      "El período mensual es inválido: " +
-      "'Desde' no puede ser posterior " +
-      "a 'Hasta'.";
+      "El mes inicial no puede ser posterior al mes final.";
 
     return;
   }
@@ -3206,92 +3773,27 @@ async function aplicarFiltros() {
    RESTABLECER FILTROS
 ========================================================= */
 
-async function resetCurrentViewFilters() {
+async function resetCurrentFilters() {
   suppressAutoApply.value = true;
 
-  if (
-    vistaActiva.value ===
-    "resumen"
-  ) {
-    viewFilters.resumen.tipo_codigo =
-      "";
+  // Los filtros institucionales son comunes a las tres vistas.
+  globalFilters.sede_id = "";
+  globalFilters.facultad_id = "";
+  globalFilters.carrera_id = "";
 
-    viewFilters.resumen.mes_desde =
-      "";
-
-    viewFilters.resumen.mes_hasta =
-      "";
-  } else if (
-    vistaActiva.value ===
-    "tendencia"
-  ) {
-    viewFilters.tendencia.tipo_codigo =
-      "";
-
-    viewFilters.tendencia.mes_desde =
-      "";
-
-    viewFilters.tendencia.mes_hasta =
-      "";
-
-    viewFilters.tendencia.anio =
-      "";
-  } else {
-    viewFilters.rankings.tipo_codigo =
-      "";
-
-    viewFilters.rankings.mes_desde =
-      "";
-
-    viewFilters.rankings.mes_hasta =
-      "";
-
-    viewFilters.rankings.top =
-      "10";
-  }
-
-  hoveredTypeCode.value = "";
-
-  suppressAutoApply.value = false;
-
-  clearAutoApplyTimer();
-
-  await loadDashboard();
-}
-
-async function resetAllFilters() {
-  suppressAutoApply.value = true;
-
-  globalFilters.facultad_id =
-    "";
-
-  globalFilters.carrera_id =
-    "";
-
-  const defaults =
-    defaultViewFilters();
+  // Solo se restablecen los filtros propios de la vista activa.
+  const defaults = defaultViewFilters();
+  const currentView = vistaActiva.value;
 
   Object.assign(
-    viewFilters.resumen,
-    defaults.resumen
-  );
-
-  Object.assign(
-    viewFilters.tendencia,
-    defaults.tendencia
-  );
-
-  Object.assign(
-    viewFilters.rankings,
-    defaults.rankings
+    viewFilters[currentView],
+    defaults[currentView]
   );
 
   hoveredTypeCode.value = "";
-
   suppressAutoApply.value = false;
 
   clearAutoApplyTimer();
-
   await loadDashboard();
 }
 
@@ -3497,6 +3999,16 @@ const filtrosDisponibles =
         .filtros_disponibles
   );
 
+const periodoDisponible =
+  computed(
+    () =>
+      filtrosDisponibles.value
+        ?.periodo ||
+      EMPTY_RESPONSE
+        .filtros_disponibles
+        .periodo
+  );
+
 const filtrosAplicados =
   computed(() => {
     const raw =
@@ -3581,6 +4093,39 @@ const publicacionesPorMes =
         .publicaciones_por_mes
   );
 
+
+const annualRangeLabel =
+  computed(() => {
+    const items =
+      publicacionesPorAnio.value ||
+      [];
+
+    if (!items.length) {
+      return "";
+    }
+
+    const first =
+      items[0]?.label;
+
+    const last =
+      items[
+        items.length - 1
+      ]?.label;
+
+    if (!first && !last) {
+      return "";
+    }
+
+    if (
+      String(first) ===
+      String(last)
+    ) {
+      return String(first || "");
+    }
+
+    return `${first || "—"}–${last || "—"}`;
+  });
+
 const publicacionesPorTipo =
   computed(() =>
     normalizePublicacionesPorTipoPayload(
@@ -3598,6 +4143,16 @@ const publicacionesPorTipoAnual =
       dashboards.value
         .publicaciones_por_tipo_anual
     )
+  );
+
+const topSedes =
+  computed(
+    () =>
+      dashboards.value
+        .top_sedes ||
+      EMPTY_RESPONSE
+        .dashboards
+        .top_sedes
   );
 
 const topFacultades =
@@ -3630,6 +4185,16 @@ const topAutores =
         .top_autores
   );
 
+const areas =
+  computed(
+    () =>
+      dashboards.value
+        .areas ||
+      EMPTY_RESPONSE
+        .dashboards
+        .areas
+  );
+
 const journals =
   computed(
     () =>
@@ -3650,21 +4215,6 @@ const projects =
         .projects
   );
 
-const anioBaseMensual =
-  computed(
-    () =>
-      filtrosDisponibles.value
-        ?.anio_base_mensual ||
-      null
-  );
-
-const autoAnioMensualLabel =
-  computed(() =>
-    anioBaseMensual.value
-      ? `Auto (${anioBaseMensual.value})`
-      : "Auto"
-  );
-
 /* =========================================================
    DATOS DISPONIBLES
 ========================================================= */
@@ -3680,6 +4230,10 @@ const hasData = computed(() => {
       publicacionesPorTipo.value
         .items.length > 0 ||
       topAutores.value
+        .items.length > 0 ||
+      areas.value
+        .items.length > 0 ||
+      topSedes.value
         .items.length > 0 ||
       topFacultades.value
         .items.length > 0 ||
@@ -3788,39 +4342,45 @@ const donutCenterHint =
    CONTEXTO DEL DASHBOARD
 ========================================================= */
 
-const tipoDominanteResumen =
+const tipoFiltroResumen =
   computed(() => {
-    if (
-      !tipoDominante.value
-    ) {
-      return "—";
+    const codigo =
+      filtrosAplicados.value
+        ?.tipo_codigo;
+
+    if (!codigo) {
+      return "";
     }
 
+    const tipo =
+      tiposDisponiblesCanonicos.value
+        .find(
+          (item) =>
+            String(item.codigo) ===
+            String(codigo)
+        );
+
     return (
-      `${tipoDominante.value.tipo_nombre}` +
-      ` · ` +
-      `${formatPercent(
-        tipoDominante.value
-          .porcentaje
-      )}`
+      tipo?.nombre ||
+      String(codigo)
     );
   });
 
 const periodoResumen =
   computed(() => {
-    const mesDesde =
+    const fechaDesde =
       filtrosAplicados.value
         ?.mes_desde;
 
-    const mesHasta =
+    const fechaHasta =
       filtrosAplicados.value
         ?.mes_hasta;
 
     const desde =
-      formatMonthYear(mesDesde);
+      formatMonthYear(fechaDesde);
 
     const hasta =
-      formatMonthYear(mesHasta);
+      formatMonthYear(fechaHasta);
 
     if (desde && hasta) {
       return desde === hasta
@@ -3882,32 +4442,23 @@ const periodoResumen =
       return categorias[0].label;
     }
 
-    return "Histórico";
+    return "Todo el período";
   });
 
 const coberturaResumen =
   computed(() => {
-    if (
+    const partes = [
       filtrosAplicados.value
-        ?.carrera_nombre
-    ) {
-      return (
-        filtrosAplicados.value
-          .carrera_nombre
-      );
-    }
-
-    if (
+        ?.sede_nombre,
       filtrosAplicados.value
-        ?.facultad_nombre
-    ) {
-      return (
-        filtrosAplicados.value
-          .facultad_nombre
-      );
-    }
+        ?.facultad_nombre,
+      filtrosAplicados.value
+        ?.carrera_nombre,
+    ].filter(Boolean);
 
-    return "Toda la institución";
+    return partes.length
+      ? partes.join(" · ")
+      : "Toda la institución";
   });
 
 const dashboardMetaLine =
@@ -3915,7 +4466,7 @@ const dashboardMetaLine =
     [
       coberturaResumen.value,
       periodoResumen.value,
-      tipoDominanteResumen.value,
+      tipoFiltroResumen.value,
     ]
       .filter(Boolean)
       .join(" · ")
@@ -3940,6 +4491,15 @@ const totalAutoresTween =
       () =>
         summary.value
           .total_autores
+    )
+  );
+
+const totalSedesTween =
+  useTweenNumber(
+    computed(
+      () =>
+        summary.value
+          .total_sedes
     )
   );
 
@@ -3970,15 +4530,6 @@ const totalProyectosTween =
     )
   );
 
-const totalAltoImpactoTween =
-  useTweenNumber(
-    computed(
-      () =>
-        summary.value
-          .articulos_alto_impacto
-    )
-  );
-
 const headlineKpis =
   computed(() => [
     {
@@ -3987,6 +4538,13 @@ const headlineKpis =
       value:
         totalPublicacionesTween.value,
       hint: periodoResumen.value,
+      tooltip: [
+        periodoResumen.value,
+        coberturaResumen.value,
+        tipoFiltroResumen.value,
+      ]
+        .filter(Boolean)
+        .join("\n"),
       iconPath:
         "M6 3h8l4 4v14H6V3Zm8 0v5h5M9 13h6M9 17h6",
     },
@@ -3996,9 +4554,23 @@ const headlineKpis =
       label: "Autores",
       value:
         totalAutoresTween.value,
-      hint: "Autores vinculados",
+      hint: "Autores con publicaciones",
+      tooltip:
+        "Personas que aparecen como autoras en las publicaciones mostradas.",
       iconPath:
         "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7-1a3 3 0 1 0 0-6M2.5 21c.6-4.2 3-6.5 6-6.5s5.4 2.3 6 6.5M14 14.8c3.6.4 5.7 2.4 6 6.2",
+    },
+
+    {
+      key: "sedes",
+      label: "Sedes",
+      value:
+        totalSedesTween.value,
+      hint: "Sedes con publicaciones",
+      tooltip:
+        "Sedes que tienen al menos una publicación en esta selección.",
+      iconPath:
+        "M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Zm0-8.2a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6Z",
     },
 
     {
@@ -4007,7 +4579,9 @@ const headlineKpis =
       value:
         totalFacultadesTween.value,
       hint:
-        "Cobertura institucional",
+        "Con publicaciones",
+      tooltip:
+        "Facultades que tienen al menos una publicación en esta selección.",
       iconPath:
         "M3 9 12 4l9 5M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18",
     },
@@ -4017,7 +4591,9 @@ const headlineKpis =
       label: "Carreras",
       value:
         totalCarrerasTween.value,
-      hint: "Oferta académica",
+      hint: "Con publicaciones",
+      tooltip:
+        "Carreras que tienen al menos una publicación en esta selección.",
       iconPath:
         "M3 8l9-5 9 5-9 5-9-5Zm4 3v5c3 2 7 2 10 0v-5M21 8v6",
     },
@@ -4027,25 +4603,35 @@ const headlineKpis =
       label: "Proyectos",
       value:
         totalProyectosTween.value,
-      hint: "Proyectos asociados",
+      hint: "Proyectos relacionados con publicaciones",
+      tooltip:
+        "Proyectos relacionados con las publicaciones mostradas.",
       iconPath:
         "M8 6V4h8v2M4 7h16v13H4V7Zm0 5h16M9 12v2h6v-2",
     },
 
-    {
-      key: "alto-impacto",
-      label: "Alto impacto",
-      value:
-        totalAltoImpactoTween.value,
-      hint: "Artículos indexados",
-      iconPath:
-        "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2-4.5-4.4 6.2-.9L12 3Z",
-    },
   ]);
 
 /* =========================================================
    RANKINGS
 ========================================================= */
+
+const topSedesData =
+  computed(() =>
+    (
+      topSedes.value.items ||
+      []
+    ).map((item) => ({
+      label:
+        item.sede ||
+        item.label ||
+        "Sede",
+
+      total: Number(
+        item.total || 0
+      ),
+    }))
+  );
 
 const topFacultadesData =
   computed(() =>
@@ -4110,6 +4696,23 @@ const topAutoresData =
     )
   );
 
+const areasData =
+  computed(() =>
+    (
+      areas.value.items ||
+      []
+    ).map((item) => ({
+      label:
+        item.label ||
+        item.area ||
+        "Área",
+
+      total: Number(
+        item.total || 0
+      ),
+    }))
+  );
+
 const journalsData =
   computed(() =>
     (
@@ -4147,20 +4750,54 @@ const projectsData =
 const topAutoresResumen =
   computed(() =>
     topAutoresData
-      .value.slice(0, 5)
+      .value.slice(0, 3)
+  );
+
+const topSedesResumen =
+  computed(() =>
+    topSedesData.value.slice(
+      0,
+      3
+    )
   );
 
 const topFacultadesResumen =
   computed(() =>
     topFacultadesData.value.slice(
       0,
-      5
+      3
     )
   );
 
 /* =========================================================
    WATCHERS
 ========================================================= */
+
+watch(
+  () =>
+    globalFilters.sede_id,
+
+  (newValue, oldValue) => {
+    if (
+      !hasMounted.value ||
+      newValue === oldValue
+    ) {
+      return;
+    }
+
+    suppressAutoApply.value = true;
+
+    globalFilters.facultad_id =
+      "";
+
+    globalFilters.carrera_id =
+      "";
+
+    suppressAutoApply.value = false;
+
+    scheduleAutoApply();
+  }
+);
 
 watch(
   () =>
@@ -4226,6 +4863,11 @@ watch(
 ========================================================= */
 
 onMounted(async () => {
+  document.addEventListener(
+    "pointerdown",
+    handleReportMenuOutside
+  );
+
   await loadDashboard();
 
   hasMounted.value = true;
@@ -4233,6 +4875,11 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearAutoApplyTimer();
+
+  document.removeEventListener(
+    "pointerdown",
+    handleReportMenuOutside
+  );
 });
 </script>
 

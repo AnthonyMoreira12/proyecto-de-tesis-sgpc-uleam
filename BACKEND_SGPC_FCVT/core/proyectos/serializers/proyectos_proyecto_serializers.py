@@ -25,7 +25,10 @@ from django.utils import timezone
 
 from rest_framework import serializers
 
-from core.models import Proyecto
+from core.models import (
+    Proyecto,
+    Sede,
+)
 from core.proyectos.services.proyectos_proyecto_services import (
     autores_payload_tiene_principal,
     normalize_proyecto_autores_payload,
@@ -232,6 +235,15 @@ def _safe_file_url(
     if request is None:
         return file_url
 
+    try:
+        return request.build_absolute_uri(
+            file_url
+        )
+    except (
+        ValueError,
+        TypeError,
+    ):
+        return file_url
 
 
 def _get_storage_reference(
@@ -319,17 +331,6 @@ def _schedule_storage_file_delete(
             file_name,
         )
     )
-
-    try:
-        return request.build_absolute_uri(
-            file_url
-        )
-
-    except (
-        ValueError,
-        TypeError,
-    ):
-        return file_url
 
 
 def _get_file_size(uploaded_file):
@@ -866,6 +867,27 @@ class ProyectoRepresentationMixin:
 
         return participations
 
+    def get_sede_nombre(
+        self,
+        obj,
+    ):
+        site = getattr(
+            obj,
+            "sede",
+            None,
+        )
+
+        if site is None:
+            return None
+
+        return _optional_text(
+            getattr(
+                site,
+                "nombre",
+                None,
+            )
+        )
+
     def get_carrera_nombre(
         self,
         obj,
@@ -1009,6 +1031,10 @@ class ProyectoListSerializer(
     Representación ligera utilizada en listados paginados.
     """
 
+    sede_nombre = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
     carrera_nombre = serializers.SerializerMethodField(
         read_only=True,
     )
@@ -1058,6 +1084,8 @@ class ProyectoListSerializer(
             "estado",
             "estado_label",
 
+            "sede",
+            "sede_nombre",
             "carrera",
             "carrera_nombre",
             "facultad",
@@ -1108,6 +1136,16 @@ class ProyectoSerializer(
     Serializer completo para crear, consultar y actualizar
     proyectos.
     """
+
+    sede = serializers.PrimaryKeyRelatedField(
+        queryset=Sede.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
+    sede_nombre = serializers.SerializerMethodField(
+        read_only=True,
+    )
 
     carrera_nombre = serializers.SerializerMethodField(
         read_only=True,
@@ -1219,6 +1257,8 @@ class ProyectoSerializer(
             "estado",
             "estado_label",
 
+            "sede",
+            "sede_nombre",
             "carrera",
             "carrera_nombre",
             "facultad",
@@ -1248,6 +1288,7 @@ class ProyectoSerializer(
 
         read_only_fields = [
             "id",
+            "sede_nombre",
             "carrera_nombre",
             "facultad",
             "fecha_fin_vigente",
@@ -1435,6 +1476,92 @@ class ProyectoSerializer(
             "instance",
             None,
         )
+
+        sede_was_sent = (
+            "sede" in attrs
+        )
+
+        carrera_was_sent = (
+            "carrera" in attrs
+        )
+
+        site = attrs.get(
+            "sede",
+            getattr(
+                instance,
+                "sede",
+                None,
+            ),
+        )
+
+        career = attrs.get(
+            "carrera",
+            getattr(
+                instance,
+                "carrera",
+                None,
+            ),
+        )
+
+        # Los proyectos nuevos deben quedar clasificados por Sede.
+        # Los registros históricos con sede NULL pueden seguir
+        # consultándose y recibir cambios no académicos durante la
+        # transición de datos.
+        if instance is None and site is None:
+            raise serializers.ValidationError(
+                {
+                    "sede": (
+                        "La sede es obligatoria para registrar "
+                        "un proyecto nuevo."
+                    )
+                }
+            )
+
+        if (
+            instance is not None
+            and (sede_was_sent or carrera_was_sent)
+            and site is None
+        ):
+            raise serializers.ValidationError(
+                {
+                    "sede": (
+                        "Debe seleccionar una sede al modificar "
+                        "la clasificación académica del proyecto."
+                    )
+                }
+            )
+
+        if site is not None and not bool(
+            getattr(site, "activa", False)
+        ):
+            raise serializers.ValidationError(
+                {
+                    "sede": (
+                        "La sede seleccionada no está activa."
+                    )
+                }
+            )
+
+        if site is not None and career is not None:
+            relation_is_active = (
+                career
+                .sedes_carrera
+                .filter(
+                    sede_id=site.pk,
+                    activa=True,
+                )
+                .exists()
+            )
+
+            if not relation_is_active:
+                raise serializers.ValidationError(
+                    {
+                        "carrera": (
+                            "La carrera seleccionada no está "
+                            "habilitada en la sede indicada."
+                        )
+                    }
+                )
 
         current_state = str(
             getattr(

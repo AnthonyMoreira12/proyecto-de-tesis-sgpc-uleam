@@ -41,19 +41,18 @@
 
           <div class="sch-empty-hero__copy">
             <span class="sch-eyebrow">
-              Búsqueda académica
+              Búsqueda
             </span>
 
             <h1
               id="sch-empty-title"
               class="sch-empty-hero__title"
             >
-              Consulte publicaciones e investigadores
+              Buscar publicaciones e investigadores
             </h1>
 
             <p class="sch-empty-hero__text">
-              Encuentre producción científica registrada en SGPC ULEAM mediante
-              títulos, autores, identificadores académicos, DOI, revistas, eventos o proyectos.
+              Busque por título, autor, ORCID, DOI, revista, evento o proyecto.
             </p>
           </div>
 
@@ -65,7 +64,7 @@
               class="sch-empty-search__label"
               for="sch-empty-search-input"
             >
-              Buscar en SGPC ULEAM
+              Buscar
             </label>
 
             <div class="sch-empty-search__box">
@@ -136,7 +135,7 @@
             aria-label="Búsquedas sugeridas"
           >
             <span class="sch-suggestions__label">
-              Sugerencias:
+              Ejemplos:
             </span>
 
             <button
@@ -227,7 +226,7 @@
               class="sch-sr-only"
               for="sch-results-search-input"
             >
-              Modificar consulta académica
+              Modificar búsqueda
             </label>
 
             <span
@@ -301,12 +300,9 @@
         >
           <div class="sch-controls__heading">
             <div>
-              <span class="sch-controls__eyebrow">
-                Refinar resultados
-              </span>
 
               <h2 id="sch-filter-title">
-                Filtros de publicaciones
+                Filtros
               </h2>
             </div>
 
@@ -517,8 +513,7 @@
               </span>
 
               <span class="sch-pdf-filter__copy">
-                <strong>Solo con PDF</strong>
-                <small>Documentos disponibles</small>
+                <strong>Con PDF</strong>
               </span>
 
               <span class="sch-switch" aria-hidden="true">
@@ -534,7 +529,7 @@
         <section
           v-if="authorContext && activeScope === 'pubs'"
           class="sch-authorstrip page-stage"
-          aria-label="Autor aplicado"
+          aria-label="Autor"
         >
           <div class="sch-authorstrip__main">
             <div class="sch-avatar sch-avatar--md">
@@ -559,7 +554,7 @@
 
             <div class="sch-authorstrip__copy">
               <span class="sch-authorstrip__eyebrow">
-                Autor aplicado
+                Autor
               </span>
 
               <h2 class="sch-authorstrip__name">
@@ -695,7 +690,7 @@
               </h2>
 
               <p class="sch-state__text">
-                {{ store.pubsError }}
+                {{ safeUiError(store.pubsError, "No pudimos completar la búsqueda. Intente nuevamente.") }}
               </p>
 
               <button
@@ -735,79 +730,67 @@
 
           <template v-else-if="resultsList.length">
             <div class="sch-publication-list">
-            <article
-              v-for="r in resultsList"
-              :key="r.id"
-              class="sch-publication-card"
-              :class="{
-                'has-pdf': r.hasPdf || r.pdf_url,
-              }"
-            >
-              <div class="sch-publication-card__accent"></div>
-
-              <aside
-                class="sch-publication-card__year"
-                :aria-label="publicationPeriodLabel(r)"
+              <article
+                v-for="r in resultsList"
+                :key="r.id"
+                class="sch-publication-card"
+                :class="{
+                  'has-pdf': Boolean(publicationPdfUrl(r)),
+                }"
               >
-                <small
-                  v-if="publicationMonthShort(r)"
-                  class="sch-publication-card__month"
+                <aside
+                  class="sch-publication-card__year"
+                  :aria-label="publicationPeriodLabel(r)"
                 >
-                  {{ publicationMonthShort(r) }}
-                </small>
-
-                <strong class="sch-publication-card__year-value">
-                  {{ r.year || "S/F" }}
-                </strong>
-              </aside>
-
-              <div class="sch-publication-card__content">
-                <div class="sch-publication-card__badges">
-                  <span
-                    v-if="r.tipo_label"
-                    class="sch-pill sch-pill--accent"
+                  <small
+                    v-if="publicationMonthShort(r)"
+                    class="sch-publication-card__month"
                   >
-                    {{ r.tipo_label }}
-                  </span>
+                    {{ publicationMonthShort(r) }}
+                  </small>
 
-                  <span
-                    v-if="r.hasPdf || r.pdf_url"
-                    class="sch-pill sch-pill--pdf"
-                  >
-                    <svg viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M5 2.5h6l4 4v11H5v-15Zm6 0v4h4"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                  <strong class="sch-publication-card__year-value">
+                    {{ r.year || r.anio_publicacion || r.anio || "S/F" }}
+                  </strong>
+                </aside>
 
-                    <span>PDF</span>
-                  </span>
-
-                  <span
-                    v-if="r.area_label"
-                    class="sch-pill"
-                  >
-                    {{ r.area_label }}
-                  </span>
-                </div>
-
-                <h2 class="sch-publication-card__title">
-                  <button
-                    type="button"
-                    @click="openPublication(r.id)"
-                  >
-                    {{ r.title || "Sin título" }}
-                  </button>
-                </h2>
-
-                <div class="sch-publication-card__details">
-                  <div class="sch-publication-card__detail">
+                <div class="sch-publication-card__content">
+                  <div class="sch-publication-card__badges">
                     <span
-                      class="sch-publication-card__detail-icon"
+                      v-if="r.tipo_label"
+                      class="sch-pill sch-pill--accent"
+                    >
+                      {{ r.tipo_label }}
+                    </span>
+
+                    <span
+                      v-if="publicationDoi(r)"
+                      class="sch-pill sch-pill--doi"
+                      :title="publicationDoi(r)"
+                    >
+                      DOI
+                    </span>
+
+                    <span
+                      v-if="publicationPdfUrl(r)"
+                      class="sch-pill sch-pill--pdf"
+                    >
+                      PDF
+                    </span>
+                  </div>
+
+                  <h2 class="sch-publication-card__title">
+                    <button
+                      type="button"
+                      @click="openPublication(r.id)"
+                    >
+                      {{ r.title || r.titulo || "Sin título" }}
+                    </button>
+                  </h2>
+
+                  <div class="sch-publication-card__authors">
+                    <span
+                      class="sch-publication-card__author-icon"
                       aria-hidden="true"
                     >
                       <svg viewBox="0 0 20 20">
@@ -831,13 +814,10 @@
                     </span>
 
                     <p>
-                      <template v-if="Array.isArray(r.authors)">
+                      <template v-if="Array.isArray(r.authors) && r.authors.length">
                         <template
                           v-for="(author, index) in r.authors"
-                          :key="
-                            author.id ||
-                            `${author.name}-${index}`
-                          "
+                          :key="author.id || `${author.name}-${index}`"
                         >
                           <button
                             class="sch-author-link"
@@ -847,123 +827,84 @@
                             {{ author.name }}
                           </button>
 
-                          <span
-                            v-if="
-                              index <
-                              r.authors.length - 1
-                            "
-                          >
-                            ,
-                          </span>
+                          <span v-if="index < r.authors.length - 1">, </span>
                         </template>
                       </template>
 
                       <span v-else>
-                        {{ r.authors || "Autores no disponibles" }}
+                        {{ r.authors || r.autores || "Autores no disponibles" }}
                       </span>
                     </p>
                   </div>
 
                   <div
-                    v-if="r.source || r.venue"
-                    class="sch-publication-card__detail"
+                    v-if="publicationAcademicMeta(r).length"
+                    class="sch-publication-card__academic"
+                    aria-label="Información académica"
                   >
                     <span
-                      class="sch-publication-card__detail-icon"
-                      aria-hidden="true"
+                      v-for="item in publicationAcademicMeta(r)"
+                      :key="item.key"
+                      class="sch-publication-card__academic-item"
+                      :title="item.title || item.value"
                     >
-                      <svg viewBox="0 0 20 20">
-                        <path
-                          d="M4 3.5h12v13H4v-13Zm3 3h6M7 9.5h6M7 12.5h4"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
+                      <strong v-if="item.label">{{ item.label }}</strong>
+                      <span>{{ item.value }}</span>
                     </span>
-
-                    <p>
-                      <span v-if="r.source">
-                        {{ r.source }}
-                      </span>
-
-                      <span
-                        v-if="r.source && r.venue"
-                        aria-hidden="true"
-                      >
-                        ·
-                      </span>
-
-                      <span v-if="r.venue">
-                        {{ r.venue }}
-                      </span>
-                    </p>
                   </div>
-                </div>
 
-                <p
-                  v-if="r.snippet"
-                  class="sch-publication-card__snippet"
-                >
-                  {{ r.snippet }}
-                </p>
-
-                <footer class="sch-publication-card__footer">
-                  <div class="sch-publication-card__tags">
+                  <footer class="sch-publication-card__footer">
                     <span
-                      v-if="r.doi"
-                      class="sch-doi"
-                      :title="r.doi"
+                      v-if="publicationDoi(r)"
+                      class="sch-publication-card__doi-value"
+                      :title="publicationDoi(r)"
                     >
-                      DOI: {{ r.doi }}
+                      {{ publicationDoi(r) }}
                     </span>
-                  </div>
 
-                  <div class="sch-actions">
-                    <button
-                      v-if="r.pdf_url"
-                      class="sch-action-link"
-                      type="button"
-                      @click="openPdf(r.pdf_url)"
-                    >
-                      <svg viewBox="0 0 20 20" aria-hidden="true">
-                        <path
-                          d="M10 3v9M6.5 9.5 10 13l3.5-3.5M4 16.5h12"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.6"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
+                    <div class="sch-actions">
+                      <button
+                        v-if="publicationPdfUrl(r)"
+                        class="sch-action-link"
+                        type="button"
+                        @click="openPdf(publicationPdfUrl(r))"
+                      >
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                          <path
+                            d="M10 3v9M6.5 9.5 10 13l3.5-3.5M4 16.5h12"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
 
-                      <span>Abrir PDF</span>
-                    </button>
+                        <span>Abrir PDF</span>
+                      </button>
 
-                    <button
-                      class="sch-action-link sch-action-link--primary"
-                      type="button"
-                      @click="openPublication(r.id)"
-                    >
-                      <span>Ver detalle</span>
+                      <button
+                        class="sch-action-link sch-action-link--primary"
+                        type="button"
+                        @click="openPublication(r.id)"
+                      >
+                        <span>Ver publicación</span>
 
-                      <svg viewBox="0 0 20 20" aria-hidden="true">
-                        <path
-                          d="M4.5 10h11M11.2 5.7l4.3 4.3-4.3 4.3"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.7"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </footer>
-              </div>
-            </article>
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                          <path
+                            d="M4.5 10h11M11.2 5.7l4.3 4.3-4.3 4.3"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </footer>
+                </div>
+              </article>
             </div>
 
             <nav
@@ -1040,7 +981,7 @@
 
             <div class="sch-state__content">
               <h2 class="sch-state__title">
-                Sin publicaciones encontradas
+                No encontramos publicaciones
               </h2>
 
               <p class="sch-state__text">
@@ -1103,7 +1044,7 @@
               </h2>
 
               <p class="sch-state__text">
-                {{ store.perfilesError }}
+                {{ safeUiError(store.perfilesError, "No pudimos cargar los investigadores. Intente nuevamente.") }}
               </p>
 
               <button
@@ -1164,21 +1105,6 @@
                     }}
                   </div>
                 </div>
-
-                <span
-                  v-if="profile.es_externo"
-                  class="sch-profile-card__type"
-                >
-                  Autor externo
-                </span>
-
-                <span
-                  v-if="profile.usuario_pendiente"
-                  class="sch-profile-card__type"
-                  title="Autor registrado sin acceso activo al sistema"
-                >
-                  Cuenta pendiente
-                </span>
               </div>
 
               <div class="sch-profile-card__body">
@@ -1244,7 +1170,7 @@
                   type="button"
                   @click="openProfile(profile.id)"
                 >
-                  <span>Ver perfil académico</span>
+                  <span>Ver perfil</span>
 
                   <svg viewBox="0 0 20 20" aria-hidden="true">
                     <path
@@ -1335,11 +1261,11 @@
 
             <div class="sch-state__content">
               <h2 class="sch-state__title">
-                Sin investigadores encontrados
+                No encontramos investigadores
               </h2>
 
               <p class="sch-state__text">
-                No existen perfiles académicos relacionados con esta consulta.
+                Pruebe con otro nombre o término de búsqueda.
               </p>
             </div>
           </div>
@@ -1686,6 +1612,174 @@ const publicationPeriodLabel = (publication) => {
 };
 
 
+const firstNonEmptyText = (...values) => {
+  for (const value of values) {
+    if (value == null) {
+      continue;
+    }
+
+    if (typeof value === "object") {
+      const nested = String(
+        value.nombre ??
+        value.name ??
+        value.label ??
+        value.titulo ??
+        value.title ??
+        ""
+      ).trim();
+
+      if (nested) {
+        return nested;
+      }
+
+      continue;
+    }
+
+    const normalized = String(value).trim();
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+};
+
+const publicationDoi = (publication) => {
+  const value = firstNonEmptyText(
+    publication?.doi,
+    publication?.doi_value,
+    publication?.doi_url,
+    publication?.identificador_doi
+  );
+
+  return value
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "")
+    .replace(/^doi:\s*/i, "")
+    .trim();
+};
+
+const publicationPdfUrl = (publication) => {
+  return firstNonEmptyText(
+    publication?.pdf_url,
+    publication?.archivo_pdf_url,
+    publication?.archivo_pdf,
+    publication?.pdf,
+    publication?.documento_url
+  );
+};
+
+const publicationSourceLabel = (publication) => {
+  const source = firstNonEmptyText(
+    publication?.source,
+    publication?.fuente,
+    publication?.revista_nombre,
+    publication?.nombre_revista,
+    publication?.revista,
+    publication?.editorial_nombre,
+    publication?.editorial,
+    publication?.evento_nombre,
+    publication?.nombre_evento,
+    publication?.evento,
+    publication?.congreso_nombre,
+    publication?.congreso
+  );
+
+  const venue = firstNonEmptyText(
+    publication?.venue,
+    publication?.lugar_publicacion,
+    publication?.nombre_publicacion
+  );
+
+  if (source && venue && source !== venue) {
+    return `${source} · ${venue}`;
+  }
+
+  return source || venue;
+};
+
+const publicationAreaLabel = (publication) => {
+  return firstNonEmptyText(
+    publication?.area_label,
+    publication?.area_nombre,
+    publication?.area_conocimiento_nombre,
+    publication?.area_conocimiento,
+    publication?.area
+  );
+};
+
+const publicationProjectLabel = (publication) => {
+  return firstNonEmptyText(
+    publication?.proyecto_label,
+    publication?.proyecto_nombre,
+    publication?.project_name,
+    publication?.proyecto
+  );
+};
+
+const publicationCareerLabel = (publication) => {
+  return firstNonEmptyText(
+    publication?.carrera_label,
+    publication?.carrera_nombre,
+    publication?.career_name,
+    publication?.carrera
+  );
+};
+
+const publicationAcademicMeta = (publication) => {
+  const items = [];
+  const seen = new Set();
+
+  const add = (key, label, value) => {
+    const normalized = String(value || "").trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    const signature = normalized.toLocaleLowerCase("es-EC");
+
+    if (seen.has(signature)) {
+      return;
+    }
+
+    seen.add(signature);
+    items.push({
+      key,
+      label,
+      value: normalized,
+      title: normalized,
+    });
+  };
+
+  add(
+    "source",
+    "Fuente",
+    publicationSourceLabel(publication)
+  );
+
+  add(
+    "area",
+    "Área",
+    publicationAreaLabel(publication)
+  );
+
+  add(
+    "career",
+    "Carrera",
+    publicationCareerLabel(publication)
+  );
+
+  add(
+    "project",
+    "Proyecto",
+    publicationProjectLabel(publication)
+  );
+
+  return items.slice(0, 3);
+};
+
+
 const pluralize = (
   value,
   singular,
@@ -1699,6 +1793,26 @@ const pluralize = (
       : plural
   }`;
 };
+
+const TECHNICAL_ERROR_PATTERN =
+  /backend|endpoint|serializer|queryset|jwt|token|sql|postgres|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|\/api\/|http\s*\d{3}|request|response/i;
+
+const safeUiError = (
+  value,
+  fallback
+) => {
+  const text = String(value ?? "").trim();
+
+  if (
+    !text
+    || TECHNICAL_ERROR_PATTERN.test(text)
+  ) {
+    return fallback;
+  }
+
+  return text;
+};
+
 
 const resultSummary = computed(() => {
   if (activeScope.value === "profiles") {
@@ -1749,10 +1863,10 @@ const queryMeta = computed(() => {
     authorContext.value?.name &&
     activeScope.value === "pubs"
   ) {
-    return `Producción registrada por el autor · ${resultSummary.value}`;
+    return resultSummary.value;
   }
 
-  return `${resultSummary.value} encontrados`;
+  return resultSummary.value;
 });
 
 const typeFacets = computed(() => {
@@ -2098,7 +2212,7 @@ const activeFilterChips = computed(() => {
   if (state.value.hasPdf === "1") {
     chips.push({
       key: "has_pdf",
-      label: "Solo con PDF",
+      label: "Con PDF",
       onRemove: () =>
         setParam("has_pdf", ""),
     });

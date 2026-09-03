@@ -1,19 +1,39 @@
 """
 Utilidades de permisos de publicaciones.
 
-Reglas de edición:
+Reglas del ciclo de gestión:
 
-1. Administradores:
-   pueden gestionar cualquier publicación.
+- Administrador:
+  puede modificar cualquier publicación en cualquier estado.
 
-2. Usuario creador:
-   puede gestionar la publicación que creó.
+- Usuario creador:
+  puede modificar únicamente publicaciones en Borrador u Observada.
 
-Los autores vinculados mediante PublicacionAutor no adquieren
-permiso de edición únicamente por figurar como autores. El permiso
-se concede al usuario que registró la publicación y a los
-administradores.
+- En revisión, Aprobada y Rechazada:
+  quedan bloqueadas para el usuario creador, pero no para el
+  administrador.
+
+Los autores bibliográficos vinculados mediante PublicacionAutor no
+adquieren permiso de edición únicamente por figurar como autores.
+El permiso ordinario de edición corresponde al usuario creador; los
+administradores conservan capacidad de edición durante todo el ciclo.
 """
+
+from core.models import Publicacion
+
+
+PUBLICACION_EDITABLE_STATES = frozenset(
+    {
+        Publicacion.ESTADO_BORRADOR,
+        Publicacion.ESTADO_OBSERVADA,
+    }
+)
+
+PUBLICACION_DELETABLE_STATES = frozenset(
+    {
+        Publicacion.ESTADO_BORRADOR,
+    }
+)
 
 
 def is_admin_user(
@@ -128,19 +148,96 @@ def resolve_user_autor_id(
     )
 
 
+def get_publicacion_state(
+    publicacion,
+):
+    """
+    Devuelve el estado normalizado de la publicación.
+
+    Un valor vacío o desconocido no se interpreta como editable.
+    """
+
+    if publicacion is None:
+        return ""
+
+    return str(
+        getattr(
+            publicacion,
+            "estado",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+
+def is_publicacion_content_editable(
+    publicacion,
+) -> bool:
+    """
+    Indica si el estado actual admite modificaciones de contenido.
+    """
+
+    return (
+        get_publicacion_state(
+            publicacion
+        )
+        in PUBLICACION_EDITABLE_STATES
+    )
+
+
+def get_publicacion_edit_block_reason(
+    publicacion,
+):
+    """
+    Devuelve el motivo institucional por el cual el contenido está
+    bloqueado. Retorna None cuando el estado sí permite edición.
+    """
+
+    state = get_publicacion_state(
+        publicacion
+    )
+
+    if state in PUBLICACION_EDITABLE_STATES:
+        return None
+
+    messages = {
+        Publicacion.ESTADO_EN_REVISION: (
+            "La publicación se encuentra en revisión y no puede "
+            "modificarse mientras el proceso de revisión esté activo."
+        ),
+        Publicacion.ESTADO_APROBADA: (
+            "La publicación está aprobada y no admite edición directa."
+        ),
+        Publicacion.ESTADO_RECHAZADA: (
+            "La publicación está rechazada y no admite edición directa."
+        ),
+    }
+
+    return messages.get(
+        state,
+        (
+            "El estado actual de la publicación no permite "
+            "modificar su contenido."
+        ),
+    )
+
+
 def can_edit_publicacion(
     user,
     publicacion,
 ) -> bool:
     """
-    Determina si un usuario puede modificar una publicación.
+    Determina si un usuario puede modificar el contenido.
 
-    Regla institucional:
+    Reglas:
 
-    - un administrador puede editar cualquier publicación;
-    - el usuario que creó la publicación puede editarla;
-    - los demás usuarios no pueden editarla, aunque aparezcan
-      como autores bibliográficos de la publicación.
+    1. Un administrador autenticado y activo puede editar la
+       publicación en cualquier estado.
+    2. El usuario creador solo puede editarla cuando se encuentre
+       en Borrador u Observada.
+
+    Los cambios de estado no se realizan mediante esta función; se
+    mantienen como acciones controladas del flujo de revisión.
     """
 
     if (
@@ -150,22 +247,27 @@ def can_edit_publicacion(
             "is_authenticated",
             False,
         )
+        or not getattr(
+            user,
+            "is_active",
+            True,
+        )
         or publicacion is None
     ):
         return False
 
-    # ---------------------------------------------------------
-    # Administrador
-    # ---------------------------------------------------------
-
+    # El administrador conserva capacidad de edición durante todo
+    # el ciclo de revisión, independientemente del estado actual.
     if is_admin_user(
         user
     ):
         return True
 
-    # ---------------------------------------------------------
-    # Usuario creador de la publicación
-    # ---------------------------------------------------------
+    # Para el usuario creador sí se aplica el bloqueo por estado.
+    if not is_publicacion_content_editable(
+        publicacion
+    ):
+        return False
 
     user_id = getattr(
         user,
@@ -183,4 +285,55 @@ def can_edit_publicacion(
             None,
         )
         == user_id
+    )
+
+
+def can_delete_publicacion(
+    user,
+    publicacion,
+) -> bool:
+    """
+    La eliminación directa se limita a administradores y únicamente
+    mientras la publicación siga siendo Borrador.
+
+    Una vez que una publicación entra al flujo de revisión no debe
+    eliminarse mediante CRUD ordinario, porque su trazabilidad deberá
+    conservarse.
+    """
+
+    if (
+        not is_admin_user(
+            user
+        )
+        or publicacion is None
+    ):
+        return False
+
+    return (
+        get_publicacion_state(
+            publicacion
+        )
+        in PUBLICACION_DELETABLE_STATES
+    )
+
+
+def get_publicacion_delete_block_reason(
+    publicacion,
+):
+    """
+    Devuelve un mensaje adecuado cuando una publicación ya no puede
+    eliminarse mediante CRUD ordinario.
+    """
+
+    state = get_publicacion_state(
+        publicacion
+    )
+
+    if state in PUBLICACION_DELETABLE_STATES:
+        return None
+
+    return (
+        "Solo las publicaciones en estado Borrador pueden eliminarse "
+        "directamente. Los registros que ya ingresaron al flujo de "
+        "revisión deben conservarse para mantener su trazabilidad."
     )

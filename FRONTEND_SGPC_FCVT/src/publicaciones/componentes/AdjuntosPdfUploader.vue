@@ -14,40 +14,27 @@
     </div>
 
     <div
-      class="sgpc-upload__chips"
-      aria-label="Restricciones de archivos"
+      class="sgpc-upload__summary"
+      aria-label="Condiciones de los archivos"
     >
-      <span class="sgpc-upload__chip">
-        PDF
+      <span>PDF</span>
+      <span aria-hidden="true">·</span>
+      <span>
+        Máximo {{ effectiveMaxFiles }}
+        {{ effectiveMaxFiles === 1 ? "archivo" : "archivos" }}
       </span>
 
-      <span class="sgpc-upload__chip">
-        {{
-          multiple
-            ? "Múltiples archivos"
-            : "Un solo archivo"
-        }}
-      </span>
+      <template v-if="usesPrimarySlot">
+        <span aria-hidden="true">·</span>
+        <span>Principal: {{ primaryMaxSizeMb }} MB</span>
+        <span aria-hidden="true">·</span>
+        <span>Adicionales: {{ attachmentMaxSizeMb }} MB</span>
+      </template>
 
-      <span class="sgpc-upload__chip">
-        {{ items.length }}/{{ effectiveMaxFiles }}
-      </span>
-
-      <span
-        v-if="usesPrimarySlot"
-        class="sgpc-upload__chip"
-      >
-        Principal: ≤ {{ primaryMaxSizeMb }} MB
-      </span>
-
-      <span class="sgpc-upload__chip">
-        {{
-          usesPrimarySlot
-            ? "Adjuntos"
-            : "Cada PDF"
-        }}:
-        ≤ {{ attachmentMaxSizeMb }} MB
-      </span>
+      <template v-else>
+        <span aria-hidden="true">·</span>
+        <span>Hasta {{ attachmentMaxSizeMb }} MB por archivo</span>
+      </template>
     </div>
 
     <label
@@ -67,32 +54,18 @@
         accept=".pdf,application/pdf,application/x-pdf"
         :multiple="multiple"
         :aria-describedby="describedByIds"
-        :aria-invalid="
-          Boolean(
-            error ||
-              localMessageType === 'error'
-          )
-        "
+        :aria-invalid="Boolean(error || localMessageType === 'error')"
         @change="onInputChange"
       />
 
-      <span
-        class="sgpc-upload__trigger-icon"
-        aria-hidden="true"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="22"
-          height="22"
-          fill="none"
-        >
+      <span class="sgpc-upload__trigger-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
           <path
             d="M12 16V8M8 12h8"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
           />
-
           <path
             d="M7 4.75h7.586a2 2 0 0 1 1.414.586l2.664 2.664A2 2 0 0 1 19.25 9.414V18A2.25 2.25 0 0 1 17 20.25H7A2.25 2.25 0 0 1 4.75 18V7A2.25 2.25 0 0 1 7 4.75Z"
             stroke="currentColor"
@@ -104,25 +77,17 @@
 
       <span class="sgpc-upload__trigger-copy">
         <span class="sgpc-upload__trigger-title">
-          {{
-            multiple
-              ? "Seleccionar uno o varios PDF"
-              : "Seleccionar archivo PDF"
-          }}
+          {{ multiple ? "Seleccionar archivos" : "Seleccionar archivo" }}
         </span>
-
         <span class="sgpc-upload__trigger-meta">
-          {{
-            multiple
-              ? "También puede arrastrar y soltar varios PDF"
-              : "También puede arrastrar y soltar un PDF"
-          }}
+          {{ multiple ? "o arrástrelos aquí" : "o arrástrelo aquí" }}
         </span>
       </span>
     </label>
 
     <div class="sgpc-upload__foot">
       <p
+        v-if="helperText"
         :id="helperId"
         class="sgpc-upload__hint"
       >
@@ -135,39 +100,23 @@
         role="status"
         aria-live="polite"
       >
-        Recuperando archivos PDF del borrador...
+        Recuperando archivos del borrador...
       </p>
 
       <p
-        v-if="
-          hasRecoveredItems &&
-          !isRestoringFiles
-        "
+        v-if="hasRecoveredItems && !isRestoringFiles"
         :id="recoveredWarningId"
         class="sgpc-upload__warning"
       >
-        No fue posible recuperar automáticamente uno o más
-        archivos del borrador. Puede volver a seleccionarlos
-        o quitarlos de la lista.
+        Algunos archivos del borrador deben seleccionarse nuevamente.
       </p>
 
       <p
         v-if="localMessage"
         :id="localMessageId"
-        :class="[
-          'sgpc-alert',
-          `is-${localMessageType}`,
-        ]"
-        :role="
-          localMessageType === 'error'
-            ? 'alert'
-            : 'status'
-        "
-        :aria-live="
-          localMessageType === 'error'
-            ? 'assertive'
-            : 'polite'
-        "
+        :class="['sgpc-alert', `is-${localMessageType}`]"
+        :role="localMessageType === 'error' ? 'alert' : 'status'"
+        :aria-live="localMessageType === 'error' ? 'assertive' : 'polite'"
       >
         {{ localMessage }}
       </p>
@@ -186,68 +135,27 @@
     <div
       v-if="items.length"
       class="sgpc-file-list"
-      aria-label="Archivos PDF seleccionados"
+      aria-label="Archivos seleccionados"
     >
       <article
         v-for="(item, index) in items"
         :key="item.key"
         class="sgpc-file-chip"
         :class="{
-          'sgpc-file-chip--cached':
-            isRecovered(item),
-
-          'sgpc-file-chip--warning':
-            isOversize(item, index),
-
-          'is-dragging':
-            draggedIndex === index,
-
-          'is-dragover':
-            dragOverIndex === index &&
-            draggedIndex !== index,
+          'sgpc-file-chip--cached': isRecovered(item),
+          'sgpc-file-chip--warning': isOversize(item, index),
         }"
-        @dragover.prevent="
-          onCardDragOver(index, $event)
-        "
-        @drop.prevent="
-          onCardDrop(index)
-        "
       >
         <div class="sgpc-file-chip__top">
           <div class="sgpc-file-chip__main">
-            <button
-              type="button"
-              class="sgpc-file-chip__move"
-              draggable="true"
-              :aria-label="
-                `Arrastrar ${displayName(item)}`
-              "
-              title="Arrastrar para reordenar"
-              @dragstart="
-                onDragStart(index, $event)
-              "
-              @dragend="onDragEnd"
-            >
-              ⋮⋮
-            </button>
-
-            <div
-              class="sgpc-file-chip__icon"
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-              >
+            <div class="sgpc-file-chip__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
                 <path
                   d="M7 3.75h7.2a2 2 0 0 1 1.414.586l2.05 2.05a2 2 0 0 1 .586 1.414V19A2.25 2.25 0 0 1 16 21.25H8A2.25 2.25 0 0 1 5.75 19V6A2.25 2.25 0 0 1 8 3.75Z"
                   stroke="currentColor"
                   stroke-width="1.8"
                   stroke-linejoin="round"
                 />
-
                 <path
                   d="M9 12.25h6M9 15.75h6M9 8.75h3.5"
                   stroke="currentColor"
@@ -261,66 +169,35 @@
               <div class="sgpc-file-chip__name">
                 {{ displayName(item) }}
               </div>
-
               <div class="sgpc-file-chip__meta">
-                Tamaño:
-                {{
-                  prettySize(
-                    item.file?.size ||
-                      item.size ||
-                      0
-                  )
-                }}
+                {{ prettySize(item.file?.size || item.size || 0) }}
               </div>
 
-              <div class="sgpc-file-chip__badges">
-                <span class="sgpc-file-chip__badge">
-                  #{{ index + 1 }}
-                </span>
-
+              <div
+                v-if="
+                  (usesPrimarySlot && index === 0) ||
+                  isRecovered(item) ||
+                  isOversize(item, index)
+                "
+                class="sgpc-file-chip__badges"
+              >
                 <span
-                  v-if="
-                    usesPrimarySlot &&
-                    index === 0
-                  "
-                  class="
-                    sgpc-file-chip__badge
-                    sgpc-file-chip__badge--ok
-                  "
+                  v-if="usesPrimarySlot && index === 0"
+                  class="sgpc-file-chip__badge sgpc-file-chip__badge--ok"
                 >
-                  Principal
+                  Documento principal
                 </span>
-
-                <span
-                  v-else
-                  class="sgpc-file-chip__badge"
-                >
-                  Adjunto
-                </span>
-
                 <span
                   v-if="isRecovered(item)"
-                  class="
-                    sgpc-file-chip__badge
-                    sgpc-file-chip__badge--draft
-                  "
+                  class="sgpc-file-chip__badge sgpc-file-chip__badge--draft"
                 >
-                  Re-seleccionar
+                  Debe seleccionarse nuevamente
                 </span>
-
                 <span
-                  v-if="
-                    isOversize(
-                      item,
-                      index
-                    )
-                  "
-                  class="
-                    sgpc-file-chip__badge
-                    sgpc-file-chip__badge--warning
-                  "
+                  v-if="isOversize(item, index)"
+                  class="sgpc-file-chip__badge sgpc-file-chip__badge--warning"
                 >
-                  Supera límite
+                  Supera el tamaño permitido
                 </span>
               </div>
             </div>
@@ -329,37 +206,30 @@
           <div class="sgpc-file-chip__actions">
             <button
               type="button"
-              class="sgpc-btn"
+              class="sgpc-btn sgpc-file-chip__order-btn"
               :disabled="index === 0"
-              :aria-label="
-                `Subir ${displayName(item)} una posición`
-              "
+              :aria-label="`Subir ${displayName(item)} una posición`"
               @click="moveUp(index)"
             >
+              <span aria-hidden="true">↑</span>
               Subir
             </button>
 
             <button
               type="button"
-              class="sgpc-btn"
-              :disabled="
-                index ===
-                items.length - 1
-              "
-              :aria-label="
-                `Bajar ${displayName(item)} una posición`
-              "
+              class="sgpc-btn sgpc-file-chip__order-btn"
+              :disabled="index === items.length - 1"
+              :aria-label="`Bajar ${displayName(item)} una posición`"
               @click="moveDown(index)"
             >
+              <span aria-hidden="true">↓</span>
               Bajar
             </button>
 
             <button
               type="button"
               class="sgpc-file-chip__remove"
-              :aria-label="
-                `Quitar ${displayName(item)}`
-              "
+              :aria-label="`Quitar ${displayName(item)}`"
               @click="removeItem(index)"
             >
               Quitar
@@ -370,46 +240,29 @@
         <div class="sgpc-file-chip__form">
           <label
             class="sgpc-label"
-            :for="
-              `${inputId}-nombre-${index}`
-            "
+            :for="`${inputId}-nombre-${index}`"
           >
-            Nombre personalizado
+            Descripción del documento
+            <span class="sgpc-file-chip__optional">(opcional)</span>
           </label>
 
           <input
-            :id="
-              `${inputId}-nombre-${index}`
-            "
+            :id="`${inputId}-nombre-${index}`"
             class="sgpc-input"
             type="text"
             :value="item.nombre || ''"
-            :maxlength="
-              MAX_ATTACHMENT_NAME_LENGTH
-            "
-            placeholder="Ej. PDF principal / Carta de aceptación / Evidencia editorial / ..."
-            @input="
-              updateName(
-                index,
-                $event.target.value
-              )
-            "
+            :maxlength="MAX_ATTACHMENT_NAME_LENGTH"
+            placeholder="Ej. Carta de aceptación"
+            @input="updateName(index, $event.target.value)"
           />
 
           <p class="sgpc-hint">
-            <template
-              v-if="isRecovered(item)"
-            >
-              No se encontró el archivo físico almacenado
-              para este elemento del borrador. Debe volver
-              a seleccionarlo.
+            <template v-if="isRecovered(item)">
+              Este archivo no pudo recuperarse del borrador.
+              Selecciónelo nuevamente.
             </template>
-
             <template v-else>
-              Este nombre se enviará junto al archivo para
-              organizarlo mejor. Máximo
-              {{ MAX_ATTACHMENT_NAME_LENGTH }}
-              caracteres.
+              Use una descripción breve solo si necesita identificar este archivo.
             </template>
           </p>
         </div>
@@ -464,18 +317,18 @@ const props = defineProps({
 
   title: {
     type: String,
-    default: "Agregar archivos PDF",
+    default: "Documentos",
   },
 
   description: {
     type: String,
     default:
-      "Adjunte evidencias o soportes en PDF.",
+      "Adjunte el documento de la publicación y, si corresponde, archivos adicionales.",
   },
 
   helperText: {
     type: String,
-    default: "Formato permitido: PDF.",
+    default: "",
   },
 
   multiple: {
@@ -645,9 +498,13 @@ const externalErrorId =
 
 const describedByIds =
   computed(() => {
-    const ids = [
-      helperId.value,
-    ];
+    const ids = [];
+
+    if (props.helperText) {
+      ids.push(
+        helperId.value
+      );
+    }
 
     if (
       hasRecoveredItems.value
@@ -1056,8 +913,8 @@ async function hydrateRecoveredFiles() {
 
           setLocalMessage(
             restoredCount === 1
-              ? "1 archivo PDF fue recuperado automáticamente del borrador."
-              : `${restoredCount} archivos PDF fueron recuperados automáticamente del borrador.`,
+              ? "Se recuperó 1 archivo del borrador."
+              : `${restoredCount} archivos fueron recuperados del borrador.`,
             "success"
           );
         }
@@ -1260,7 +1117,7 @@ function validateArrangement(
     effectiveMaxFiles.value
   ) {
     setLocalMessage(
-      `Solo se permiten ${effectiveMaxFiles.value} archivo(s) en esta configuración.`,
+      `Puede agregar como máximo ${effectiveMaxFiles.value} ${effectiveMaxFiles.value === 1 ? "archivo" : "archivos"}.`,
       "error"
     );
 
@@ -1817,16 +1674,16 @@ async function addFiles(
   ) {
     parts.push(
       replacedRecovered === 1
-        ? "1 archivo recuperado fue re-seleccionado"
-        : `${replacedRecovered} archivos recuperados fueron re-seleccionados`
+        ? "1 archivo del borrador fue seleccionado nuevamente"
+        : `${replacedRecovered} archivos del borrador fueron seleccionados nuevamente`
     );
   }
 
   if (duplicated) {
     parts.push(
       duplicated === 1
-        ? "1 archivo duplicado omitido"
-        : `${duplicated} archivos duplicados omitidos`
+        ? "1 archivo ya estaba agregado"
+        : `${duplicated} archivos ya estaban agregados`
     );
   }
 
@@ -1843,8 +1700,8 @@ async function addFiles(
   if (invalidMime) {
     parts.push(
       invalidMime === 1
-        ? "1 archivo tiene un tipo de contenido inválido"
-        : `${invalidMime} archivos tienen un tipo de contenido inválido`
+        ? "1 archivo no es un PDF válido"
+        : `${invalidMime} archivos no son PDF válidos`
     );
   }
 
@@ -1866,7 +1723,7 @@ async function addFiles(
 
   if (limitReached) {
     parts.push(
-      `se alcanzó el límite de ${effectiveMaxFiles.value} archivo(s)`
+      `se alcanzó el máximo de ${effectiveMaxFiles.value} ${effectiveMaxFiles.value === 1 ? "archivo" : "archivos"}`
     );
   }
 
@@ -1876,7 +1733,7 @@ async function addFiles(
       cacheResult.total
   ) {
     parts.push(
-      "el navegador no permitió conservar todos los archivos para la recuperación automática"
+      "algunos archivos podrían necesitar seleccionarse nuevamente al volver a este borrador"
     );
   }
 

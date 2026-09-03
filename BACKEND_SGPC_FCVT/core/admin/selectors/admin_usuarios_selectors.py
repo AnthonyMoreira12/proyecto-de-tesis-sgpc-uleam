@@ -171,6 +171,7 @@ def _participations_queryset():
             "publicacion",
             "publicacion__tipo",
             "publicacion__proyecto",
+            "publicacion__sede",
             "publicacion__carrera",
             "publicacion__carrera__facultad",
             "publicacion__articulo",
@@ -212,6 +213,7 @@ def admin_users_base_queryset(
     queryset = (
         User.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
             "autor",
@@ -439,6 +441,17 @@ def filter_admin_users_queryset(
             )
             | Q(
                 identificacion__icontains=query
+            )
+
+            # Sede institucional
+            | Q(
+                sede__nombre__icontains=query
+            )
+            | Q(
+                sede__codigo__icontains=query
+            )
+            | Q(
+                sede__ciudad__icontains=query
             )
 
             # Carrera y Facultad

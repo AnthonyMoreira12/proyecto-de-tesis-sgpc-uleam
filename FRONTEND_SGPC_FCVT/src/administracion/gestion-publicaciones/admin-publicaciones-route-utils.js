@@ -7,14 +7,14 @@ export function buildAdminPublicacionTargetQuery(target = {}) {
   if (usuarioId) {
     query.usuario_objetivo_id = usuarioId;
 
-    // Compatibilidad con formularios antiguos.
+    // Compatibilidad con formularios anteriores.
     query.usuario_id = usuarioId;
   }
 
   if (autorId) {
     query.autor_objetivo_id = autorId;
 
-    // Compatibilidad con formularios antiguos.
+    // Compatibilidad con formularios anteriores.
     query.autor_id = autorId;
   }
 
@@ -41,6 +41,7 @@ export function buildAdminPublicacionLinks(target = {}) {
       panel: {
         name: "AdminPublicaciones",
       },
+
       articuloAltoImpacto: null,
       articuloRegional: null,
       ponencia: null,
@@ -52,37 +53,49 @@ export function buildAdminPublicacionLinks(target = {}) {
   return {
     panel: {
       name: "AdminPublicacionesUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
 
     articuloAltoImpacto: {
       name: "AdminRegistroArticuloAltoImpactoUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
 
     articuloRegional: {
       name: "AdminRegistroArticuloRegionalUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
 
     ponencia: {
       name: "AdminRegistroPonenciaUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
 
     libro: {
       name: "AdminRegistroLibroUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
 
     capitulo: {
       name: "AdminRegistroCapituloLibroUsuario",
-      params: { usuarioId },
+      params: {
+        usuarioId,
+      },
       query,
     },
   };

@@ -1,7 +1,7 @@
 """
 Serializer de lectura del perfil del usuario autenticado.
 
-Expone la clasificación efectiva de la cuenta y oculta Facultad y
+Expone la clasificación efectiva de la cuenta y oculta Sede, Facultad y
 Carrera para cuentas externas o inconsistentes. La facultad se deriva
 exclusivamente desde carrera.facultad.
 """
@@ -74,6 +74,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     tipo_cuenta_label = serializers.SerializerMethodField(read_only=True)
     perfil_completo = serializers.SerializerMethodField(read_only=True)
 
+    sede = serializers.SerializerMethodField(read_only=True)
+    sede_id = serializers.SerializerMethodField(read_only=True)
     facultad = serializers.SerializerMethodField(read_only=True)
     facultad_id = serializers.SerializerMethodField(read_only=True)
     carrera = serializers.SerializerMethodField(read_only=True)
@@ -129,6 +131,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             "es_externo",
             "es_institucional",
             "tipo_cuenta_label",
+            "sede",
+            "sede_id",
             "facultad",
             "facultad_id",
             "carrera",
@@ -166,6 +170,17 @@ class ProfileSerializer(serializers.ModelSerializer):
             "profile_edit_seconds_remaining",
         ]
         read_only_fields = fields
+
+    def _get_site(self, obj):
+        # Solo las cuentas institucionales exponen información académica.
+        if not _is_institutional_user(obj):
+            return None
+        if getattr(obj, "sede_id", None) is None:
+            return None
+        try:
+            return obj.sede
+        except (ObjectDoesNotExist, AttributeError):
+            return None
 
     def _get_career(self, obj):
         # Solo las cuentas institucionales exponen información académica.
@@ -250,11 +265,37 @@ class ProfileSerializer(serializers.ModelSerializer):
         return "Cuenta sin clasificación válida"
 
     def get_perfil_completo(self, obj):
+        calcular = getattr(obj, "calcular_perfil_completo", None)
+
+        if callable(calcular):
+            try:
+                return bool(calcular())
+            except (AttributeError, ObjectDoesNotExist):
+                pass
+
         if _is_external_user(obj):
-            return _has_valid_cedula(obj)
+            return True
+
         if _is_institutional_user(obj):
-            return bool(_has_valid_cedula(obj) and obj.carrera_id)
+            return bool(
+                _has_valid_cedula(obj)
+                and getattr(obj, "sede_id", None)
+                and getattr(obj, "carrera_id", None)
+            )
+
         return False
+
+    def get_sede(self, obj):
+        site = self._get_site(obj)
+        return (
+            _normalize_optional_text(getattr(site, "nombre", None))
+            if site is not None
+            else None
+        )
+
+    def get_sede_id(self, obj):
+        site = self._get_site(obj)
+        return getattr(site, "pk", None) if site else None
 
     def get_facultad(self, obj):
         faculty = self._get_faculty(obj)

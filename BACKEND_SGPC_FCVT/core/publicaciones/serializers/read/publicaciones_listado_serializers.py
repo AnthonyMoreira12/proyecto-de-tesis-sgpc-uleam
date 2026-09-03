@@ -313,6 +313,9 @@ class PublicacionListadoSerializer(
     proyecto_id = serializers.SerializerMethodField()
     proyecto = serializers.SerializerMethodField()
 
+    sede_id = serializers.SerializerMethodField()
+    sede = serializers.SerializerMethodField()
+
     facultad_id = serializers.SerializerMethodField()
     facultad = serializers.SerializerMethodField()
 
@@ -331,6 +334,14 @@ class PublicacionListadoSerializer(
     )
 
     tipo_publicacion_final_label = (
+        serializers.SerializerMethodField()
+    )
+
+    # ========================================================
+    # ESTADO DE GESTIÓN
+    # ========================================================
+
+    estado_label = (
         serializers.SerializerMethodField()
     )
 
@@ -397,6 +408,9 @@ class PublicacionListadoSerializer(
             "proyecto_id",
             "proyecto",
 
+            "sede_id",
+            "sede",
+
             "facultad_id",
             "facultad",
 
@@ -411,6 +425,9 @@ class PublicacionListadoSerializer(
             "tipo_codigo",
             "tipo_publicacion_final",
             "tipo_publicacion_final_label",
+
+            "estado",
+            "estado_label",
 
             "origen_tipo",
             "origen_tipo_label",
@@ -739,6 +756,37 @@ class PublicacionListadoSerializer(
         )
 
     # ========================================================
+    # SEDE
+    # ========================================================
+
+    def get_sede_id(
+        self,
+        obj,
+    ):
+        return getattr(
+            obj,
+            "sede_id",
+            None,
+        )
+
+    def get_sede(
+        self,
+        obj,
+    ):
+        sede = _safe_related(
+            obj,
+            "sede",
+        )
+
+        return _to_str(
+            getattr(
+                sede,
+                "nombre",
+                None,
+            )
+        )
+
+    # ========================================================
     # FACULTAD
     # ========================================================
 
@@ -872,6 +920,38 @@ class PublicacionListadoSerializer(
                 )
             )
             or "ninguno"
+        )
+
+    # ========================================================
+    # ESTADO
+    # ========================================================
+
+    def get_estado_label(
+        self,
+        obj,
+    ):
+        display = getattr(
+            obj,
+            "get_estado_display",
+            None,
+        )
+
+        if callable(display):
+            try:
+                value = display()
+            except Exception:
+                value = None
+
+            if value:
+                return str(value)
+
+        return str(
+            getattr(
+                obj,
+                "estado",
+                "",
+            )
+            or ""
         )
 
     def get_origen_tipo_label(

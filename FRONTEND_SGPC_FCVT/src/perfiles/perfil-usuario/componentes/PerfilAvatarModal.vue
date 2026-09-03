@@ -23,22 +23,21 @@
           <header class="pav-head">
             <div class="pav-head__copy">
               <span class="pav-kicker">
-                Foto de perfil
+                Imagen de cuenta
               </span>
 
               <h3
                 id="pav-title"
                 class="pav-title"
               >
-                Administrar fotografía
+                Fotografía de perfil
               </h3>
 
               <p
                 id="pav-description"
                 class="pav-subtitle"
               >
-                Seleccione una imagen JPG, PNG o WEBP para
-                identificar su cuenta dentro del sistema.
+                Seleccione una imagen JPG, PNG o WEBP.
               </p>
             </div>
 
@@ -88,8 +87,8 @@
                   </h4>
 
                   <p class="pav-section-text">
-                    La imagen se mostrará en formato circular
-                    dentro de su perfil.
+                    La imagen se mostrará con el mismo recorte
+                    utilizado en la tarjeta de su perfil.
                   </p>
                 </div>
 
@@ -407,6 +406,11 @@
       </div>
     </Transition>
   </Teleport>
+
+  <NoticeDialog
+    :modelValue="notice"
+    @close="closeNotice"
+  />
 </template>
 
 <script setup>
@@ -419,6 +423,8 @@ import {
 } from "vue";
 
 import api from "../../../scripts/api/axios";
+import { useNotice } from "../../../scripts/composables/useNotice";
+import NoticeDialog from "../../../inicio/ui/NoticeDialog.vue";
 
 import "./perfil-avatar-modal.css";
 
@@ -484,6 +490,12 @@ const isDragging = ref(false);
 const dragCounter = ref(0);
 
 let previouslyFocusedElement = null;
+
+const {
+  notice,
+  openNotice,
+  closeNotice,
+} = useNotice();
 
 
 const BODY_LOCK_CLASS =
@@ -1268,26 +1280,7 @@ const uploadAvatar = async () => {
    ELIMINAR AVATAR
 ============================================================ */
 
-const deleteAvatar = async () => {
-  if (
-    busy.value ||
-    !hasCurrentAvatar.value
-  ) {
-    return;
-  }
-
-  const confirmed =
-    window.confirm(
-      (
-        "¿Desea eliminar la fotografía de perfil? " +
-        "El sistema volverá a mostrar sus iniciales."
-      )
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
+const performDeleteAvatar = async () => {
   deleting.value = true;
   localError.value = "";
 
@@ -1342,6 +1335,27 @@ const deleteAvatar = async () => {
   } finally {
     deleting.value = false;
   }
+};
+
+
+const deleteAvatar = () => {
+  if (
+    busy.value ||
+    !hasCurrentAvatar.value
+  ) {
+    return;
+  }
+
+  openNotice({
+    title: "Eliminar fotografía",
+    message:
+      "¿Desea eliminar su fotografía de perfil? " +
+      "El sistema volverá a mostrar sus iniciales.",
+    confirm: true,
+    confirmText: "Eliminar fotografía",
+    cancelText: "Conservar fotografía",
+    onConfirm: performDeleteAvatar,
+  });
 };
 
 

@@ -758,3 +758,59 @@ body.dark .modal-card,
     opacity: 1;
   }
 }
+/* ==========================================================
+   REFINAMIENTO VISUAL EQUILIBRADO · AUTH BASE
+========================================================== */
+
+:root {
+  --auth-radius: 18px;
+  --auth-radius-lg: 15px;
+  --auth-radius-md: 12px;
+  --auth-radius-sm: 9px;
+  --auth-card-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  --auth-card-shadow-strong: 0 20px 58px rgba(15, 23, 42, 0.14);
+}
+
+.auth-container {
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)) !important;
+  background:
+    radial-gradient(circle at 14% 72%, color-mix(in srgb, var(--auth-primary) 6%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--auth-page-top), var(--auth-page-bottom)) !important;
+}
+
+.auth-wrapper {
+  width: min(1160px, 100%) !important;
+}
+
+.input-field {
+  border-radius: 10px !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
+}
+
+.input-field:focus {
+  transform: none !important;
+}
+
+/* ============================================================
+   AJUSTE DE TEMA OSCURO — AUTENTICACIÓN
+   Mantiene la identidad institucional sin saturación excesiva.
+============================================================ */
+:root[data-theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+[data-theme="dark"] {
+  --auth-page-top: color-mix(in srgb, var(--bg-main, #0d1117) 96%, #08101d 4%);
+  --auth-page-bottom: color-mix(in srgb, var(--bg-main, #0d1117) 92%, #07111f 8%);
+  --auth-page-accent: color-mix(in srgb, var(--color-primary, #2563eb) 10%, transparent);
+  --auth-page-highlight: color-mix(in srgb, var(--bg-elevated, #111827) 10%, transparent);
+
+  --auth-card-bg: color-mix(in srgb, var(--bg-elevated, #111827) 97%, transparent);
+  --auth-card-bg-hover: color-mix(in srgb, var(--bg-elevated, #111827) 99%, transparent);
+  --auth-card-border: color-mix(in srgb, var(--border-color, rgba(255, 255, 255, 0.1)) 88%, transparent);
+  --auth-surface: color-mix(in srgb, var(--bg-elevated, #111827) 90%, #15233b 10%);
+  --auth-surface-hover: color-mix(in srgb, var(--bg-elevated, #111827) 86%, #1b2d4a 14%);
+  --auth-input-bg: color-mix(in srgb, var(--bg-input, #1b263a) 94%, #0f1b2d 6%);
+  --auth-focus: color-mix(in srgb, var(--color-primary, #2563eb) 20%, transparent);
+
+  color-scheme: dark;
+}

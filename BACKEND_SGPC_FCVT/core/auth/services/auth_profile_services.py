@@ -13,8 +13,9 @@ Este módulo centraliza:
 La facultad no se almacena directamente en Usuario. Se deriva
 exclusivamente mediante usuario.carrera.facultad.
 
-Los autores externos no pueden registrar Facultad ni Carrera y el
-campo identificacion contiene únicamente una cédula de 10 dígitos.
+Los autores externos no pueden registrar Sede, Facultad ni Carrera. La
+identificación es opcional para cuentas externas y, cuando se proporciona,
+continúa siendo una cédula ecuatoriana de 10 dígitos.
 """
 
 from datetime import timedelta
@@ -162,8 +163,12 @@ def _sync_user_instance(
             ),
         )
 
-    if "carrera_id" in field_names and hasattr(destination, "_state"):
-        destination._state.fields_cache.pop("carrera", None)
+    if hasattr(destination, "_state"):
+        if "sede_id" in field_names:
+            destination._state.fields_cache.pop("sede", None)
+
+        if "carrera_id" in field_names:
+            destination._state.fields_cache.pop("carrera", None)
 
 
 def _get_locked_user(user):
@@ -340,131 +345,176 @@ def get_profile_edit_status(user):
 # VALIDACIÓN DEL PERMISO
 # ============================================================
 
-def ensure_profile_edit_allowed(user):
-    """
-    Verifica que el usuario pueda modificar su perfil.
+def _requested_profile_campaign_fields(requested_fields):
+    """Traduce el contrato del serializer a campos lógicos de campaña."""
+    mapping = {
+        "identificacion": "identificacion",
+        "sede_set": "sede",
+        "facultad_set": "carrera",
+        "carrera_set": "carrera",
+        "nombres": "nombres",
+        "apellidos": "apellidos",
+        "snooze_hours": "snooze_hours",
+    }
+    return {
+        mapping.get(str(field), str(field))
+        for field in (requested_fields or [])
+    }
 
-    Retorna el estado cuando la edición está disponible.
-    Lanza ProfileEditServiceError cuando está bloqueada,
-    vencida o sin intentos.
+
+def _profile_campaign_override(user, requested_fields=None):
+    """Busca una campaña vigente que autorice una edición bloqueada normalmente."""
+    # Importación local para mantener el servicio de autenticación desacoplado
+    # durante el arranque de Django y evitar ciclos entre módulos.
+    from core.actualizaciones.services.actualizaciones_services import (
+        campanias_activas_para_usuario,
+    )
+    from core.models import CampaniaActualizacion
+
+    participants = list(
+        campanias_activas_para_usuario(
+            user,
+            tipo=CampaniaActualizacion.TIPO_PERFIL,
+        )
+    )
+    if not participants:
+        return None
+
+    allowed = set()
+    participant_ids = []
+    campaign_ids = []
+    for participant in participants:
+        participant_ids.append(participant.pk)
+        campaign_ids.append(participant.campania_id)
+        allowed.update(participant.campania.campos_habilitados or [])
+
+    requested = _requested_profile_campaign_fields(requested_fields)
+    if not requested:
+        return None
+
+    # facultad_set es un selector auxiliar de carrera y se traduce a carrera.
+    unauthorized = sorted(requested - allowed)
+    if unauthorized:
+        return {
+            "authorized": False,
+            "allowed_fields": sorted(allowed),
+            "unauthorized_fields": unauthorized,
+            "participant_ids": participant_ids,
+            "campaign_ids": campaign_ids,
+        }
+
+    return {
+        "authorized": True,
+        "allowed_fields": sorted(allowed),
+        "unauthorized_fields": [],
+        "participant_ids": participant_ids,
+        "campaign_ids": campaign_ids,
+    }
+
+
+def ensure_profile_edit_allowed(user, requested_fields=None):
+    """Verifica edición normal y, si está cerrada, una campaña global vigente.
+
+    La campaña es una autorización adicional: nunca reduce permisos que el
+    usuario todavía posea por su ventana individual. Cuando se usa la campaña,
+    únicamente se permiten los campos declarados por Administración.
     """
     if user is None:
         raise ProfileEditServiceError(
-            {
-                "detail": (
-                    "No fue posible determinar "
-                    "el usuario autenticado."
-                )
-            },
-            status_code=(
-                status.HTTP_401_UNAUTHORIZED
-            ),
+            {"detail": "No fue posible determinar el usuario autenticado."},
+            status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    if not bool(
-        getattr(
-            user,
-            "is_active",
-            False,
-        )
-    ):
+    if not bool(getattr(user, "is_active", False)):
         raise ProfileEditServiceError(
-            {
-                "detail": (
-                    "La cuenta del usuario está inactiva."
-                )
-            },
-            status_code=(
-                status.HTTP_403_FORBIDDEN
-            ),
+            {"detail": "La cuenta del usuario está inactiva."},
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
-    edit_status = get_profile_edit_status(
-        user
+    edit_status = get_profile_edit_status(user)
+
+    # Mientras la ventana individual siga disponible, se preserva el
+    # comportamiento histórico sin imponer restricciones de campaña.
+    if edit_status["available"]:
+        return {
+            **edit_status,
+            "via_campaign": False,
+            "campaign_ids": [],
+            "campaign_participant_ids": [],
+        }
+
+    campaign_override = _profile_campaign_override(
+        user,
+        requested_fields=requested_fields,
     )
+    if campaign_override and campaign_override.get("authorized"):
+        return {
+            **edit_status,
+            "available": True,
+            "via_campaign": True,
+            "campaign_ids": campaign_override["campaign_ids"],
+            "campaign_participant_ids": campaign_override["participant_ids"],
+            "campaign_allowed_fields": campaign_override["allowed_fields"],
+        }
 
-    if edit_status[
-        "profile_edit_locked"
-    ]:
+    if campaign_override and campaign_override.get("unauthorized_fields"):
         raise ProfileEditServiceError(
             {
                 "detail": (
-                    "La edición del perfil está bloqueada. "
-                    "Solicite al administrador que habilite "
-                    "nuevamente el periodo de edición."
+                    "La campaña global no habilita uno o más de los campos "
+                    "que intenta modificar."
                 ),
-                "profile_edit_locked": True,
-                "profile_edit_lock_reason": (
-                    edit_status[
-                        "profile_edit_lock_reason"
-                    ]
-                ),
-                "attempts_left": (
-                    edit_status[
-                        "attempts_left"
-                    ]
-                ),
-                "profile_edit_until": (
-                    edit_status[
-                        "profile_edit_until"
-                    ]
-                ),
+                "campos_no_habilitados": campaign_override["unauthorized_fields"],
+                "campos_habilitados": campaign_override["allowed_fields"],
+                "campaign_ids": campaign_override["campaign_ids"],
             },
-            status_code=(
-                status.HTTP_403_FORBIDDEN
-            ),
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
-    if edit_status[
-        "attempts_left"
-    ] <= 0:
+    if edit_status["profile_edit_locked"]:
         raise ProfileEditServiceError(
             {
                 "detail": (
-                    "No quedan intentos disponibles "
-                    "para modificar el perfil."
+                    "La edición del perfil está bloqueada. Solicite al "
+                    "administrador que habilite nuevamente el periodo de edición."
                 ),
                 "profile_edit_locked": True,
-                "profile_edit_lock_reason": (
-                    PROFILE_EDIT_EXHAUSTED_REASON
-                ),
-                "attempts_left": 0,
-                "profile_edit_until": (
-                    edit_status[
-                        "profile_edit_until"
-                    ]
-                ),
+                "profile_edit_lock_reason": edit_status["profile_edit_lock_reason"],
+                "attempts_left": edit_status["attempts_left"],
+                "profile_edit_until": edit_status["profile_edit_until"],
             },
-            status_code=(
-                status.HTTP_403_FORBIDDEN
-            ),
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    if edit_status["attempts_left"] <= 0:
+        raise ProfileEditServiceError(
+            {
+                "detail": "No quedan intentos disponibles para modificar el perfil.",
+                "profile_edit_locked": True,
+                "profile_edit_lock_reason": PROFILE_EDIT_EXHAUSTED_REASON,
+                "attempts_left": 0,
+                "profile_edit_until": edit_status["profile_edit_until"],
+            },
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
     if edit_status["expired"]:
         raise ProfileEditServiceError(
             {
-                "detail": (
-                    "El periodo de edición del perfil "
-                    "ha finalizado."
-                ),
+                "detail": "El periodo de edición del perfil ha finalizado.",
                 "profile_edit_locked": False,
-                "attempts_left": (
-                    edit_status[
-                        "attempts_left"
-                    ]
-                ),
-                "profile_edit_until": (
-                    edit_status[
-                        "profile_edit_until"
-                    ]
-                ),
+                "attempts_left": edit_status["attempts_left"],
+                "profile_edit_until": edit_status["profile_edit_until"],
             },
-            status_code=(
-                status.HTTP_403_FORBIDDEN
-            ),
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
-    return edit_status
+    return {
+        **edit_status,
+        "via_campaign": False,
+        "campaign_ids": [],
+        "campaign_participant_ids": [],
+    }
 
 
 # ============================================================
@@ -575,38 +625,55 @@ def register_failed_profile_attempt(user):
 
 def finalize_profile_update(user):
     """
-    Recalcula la completitud del perfil.
+    Recalcula la completitud del perfil y normaliza la relación académica.
 
     Autor externo local:
-        Requiere una cédula válida de 10 dígitos y no puede tener carrera.
+        La identificación es opcional y nunca puede conservar Sede ni
+        Carrera institucional.
 
     Autor institucional Microsoft:
-        Requiere una cédula válida de 10 dígitos y carrera.
+        Requiere una cédula válida de 10 dígitos, Sede y Carrera. La
+        compatibilidad Sede-Carrera queda protegida por Usuario.clean().
 
-    Una combinación de rol y autenticación inconsistente nunca se
-    considera completa.
+    Una combinación de rol y autenticación inconsistente nunca se considera
+    completa.
     """
     with transaction.atomic():
         locked_user = _get_locked_user(user)
 
-        cedula_complete = _has_valid_cedula(locked_user)
-        career_complete = bool(getattr(locked_user, "carrera_id", None))
         is_external = _is_external_user(locked_user)
         is_institutional = _is_institutional_user(locked_user)
-
-        if is_external:
-            profile_complete = cedula_complete
-        elif is_institutional:
-            profile_complete = bool(cedula_complete and career_complete)
-        else:
-            profile_complete = False
-
         update_fields = []
 
-        # Ninguna cuenta no institucional puede conservar una carrera.
-        if not is_institutional and locked_user.carrera_id is not None:
-            locked_user.carrera_id = None
-            update_fields.append("carrera")
+        # Ninguna cuenta no institucional puede conservar clasificación
+        # académica institucional.
+        if not is_institutional:
+            if getattr(locked_user, "sede_id", None) is not None:
+                locked_user.sede_id = None
+                update_fields.append("sede")
+
+            if getattr(locked_user, "carrera_id", None) is not None:
+                locked_user.carrera_id = None
+                update_fields.append("carrera")
+
+        calcular_perfil = getattr(
+            locked_user,
+            "calcular_perfil_completo",
+            None,
+        )
+
+        if callable(calcular_perfil):
+            profile_complete = bool(calcular_perfil())
+        elif is_external:
+            profile_complete = True
+        elif is_institutional:
+            profile_complete = bool(
+                _has_valid_cedula(locked_user)
+                and getattr(locked_user, "sede_id", None)
+                and getattr(locked_user, "carrera_id", None)
+            )
+        else:
+            profile_complete = False
 
         if locked_user.perfil_completo != profile_complete:
             locked_user.perfil_completo = profile_complete
@@ -649,6 +716,7 @@ def finalize_profile_update(user):
             "profile_edit_lock_reason",
             "profile_edit_until",
             "perfil_banner_snooze_until",
+            "sede_id",
             "carrera_id",
         ]
         _sync_user_instance(user, locked_user, synchronized_fields)

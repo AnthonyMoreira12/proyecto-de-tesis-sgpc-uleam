@@ -11,6 +11,7 @@ from core.models import (
     Carrera,
     Facultad,
     Proyecto,
+    Sede,
     Subarea,
 )
 from core.publicaciones.serializers.base.publicaciones_autores_serializers import (
@@ -409,6 +410,27 @@ class CapituloLibroRegistroSerializer(
         write_only=True,
     )
 
+    sede = serializers.PrimaryKeyRelatedField(
+        queryset=Sede.objects.filter(
+            activa=True
+        ).order_by(
+            "nombre",
+            "id",
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+        error_messages={
+            "does_not_exist": (
+                "La sede seleccionada no existe "
+                "o no está activa."
+            ),
+            "incorrect_type": (
+                "Sede inválida."
+            ),
+        },
+    )
+
     carrera = serializers.PrimaryKeyRelatedField(
         queryset=Carrera.objects.select_related(
             "facultad"
@@ -418,7 +440,9 @@ class CapituloLibroRegistroSerializer(
 
     proyecto = serializers.PrimaryKeyRelatedField(
         queryset=Proyecto.objects.select_related(
-            "carrera"
+            "sede",
+            "carrera",
+            "carrera__facultad",
         ).all(),
         required=False,
         allow_null=True,
@@ -465,6 +489,7 @@ class CapituloLibroRegistroSerializer(
         fields = [
             "id",
             "facultad",
+            "sede",
             "carrera",
             "proyecto",
             "area",
@@ -523,6 +548,10 @@ class CapituloLibroRegistroSerializer(
             "facultad"
         )
 
+        sede = attrs.get(
+            "sede"
+        )
+
         carrera = attrs.get(
             "carrera"
         )
@@ -542,6 +571,42 @@ class CapituloLibroRegistroSerializer(
                     "carrera": [
                         "La carrera seleccionada no pertenece "
                         "a la facultad indicada."
+                    ]
+                }
+            )
+
+        if (
+            sede
+            and carrera
+            and not carrera.sedes_carrera.filter(
+                sede_id=sede.id,
+                activa=True,
+            ).exists()
+        ):
+            raise ValidationError(
+                {
+                    "carrera": [
+                        "La carrera seleccionada no está "
+                        "habilitada en la sede indicada."
+                    ]
+                }
+            )
+
+        if (
+            proyecto
+            and sede
+            and getattr(
+                proyecto,
+                "sede_id",
+                None,
+            )
+            and proyecto.sede_id != sede.id
+        ):
+            raise ValidationError(
+                {
+                    "proyecto": [
+                        "El proyecto seleccionado pertenece "
+                        "a una sede diferente."
                     ]
                 }
             )
@@ -644,6 +709,11 @@ class CapituloLibroRegistroSerializer(
             "facultad"
         )
 
+        sede = validated_data.pop(
+            "sede",
+            None,
+        )
+
         carrera = validated_data.pop(
             "carrera"
         )
@@ -703,6 +773,7 @@ class CapituloLibroRegistroSerializer(
             tipo=tipo,
             usuario=usuario_creador,
             facultad=facultad,
+            sede=sede,
             carrera=carrera,
             area=area,
             subarea=subarea,

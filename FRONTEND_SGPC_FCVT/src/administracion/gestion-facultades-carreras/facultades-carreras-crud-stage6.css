@@ -1,0 +1,43 @@
+/* ============================================================
+   SGPC ULEAM · ETAPA 6
+   Estructura académica — feedback y densidad
+============================================================ */
+
+.crud-catalog .admin-inline-loader {
+  width: fit-content;
+  max-width: calc(100% - 28px);
+  margin: 10px 14px 0;
+}
+
+/* Evita que la banda de resultados parezca otra tarjeta dentro de
+   la tarjeta principal. */
+.crud-catalog__table-head {
+  box-shadow: none;
+}
+
+.crud-catalog__badge {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.crud-catalog__actions {
+  gap: 6px;
+}
+
+.crud-catalog__btn--sm {
+  min-height: 34px;
+  padding-inline: 10px;
+}
+
+/* Durante acciones de guardado no se sustituye la tabla por skeletons:
+   el usuario mantiene visible la referencia sobre la que está trabajando. */
+.crud-catalog[aria-busy="true"] .crud-catalog__table-wrap {
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .crud-catalog .admin-inline-loader {
+    max-width: calc(100% - 20px);
+    margin-inline: 10px;
+  }
+}

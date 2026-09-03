@@ -146,9 +146,7 @@
               </button>
             </template>
 
-            <span v-else class="avn-carousel-counter">
-              Aviso institucional
-            </span>
+            <span v-else class="avn-carousel-counter" aria-hidden="true"></span>
           </div>
 
           <div class="avn-stage-actions">
@@ -158,7 +156,7 @@
               type="button"
               @click="toggleGestion"
             >
-              {{ panelAbierto ? "Cerrar edición" : "Administrar avisos" }}
+              {{ panelAbierto ? "Cerrar administración" : "Administrar" }}
             </button>
 
             <button
@@ -198,8 +196,8 @@
         <p class="avn-empty__text">
           {{
             isAdmin
-              ? "Publica el primer comunicado institucional para mostrarlo a los usuarios."
-              : "En este momento no existen comunicados institucionales activos."
+              ? "Publique el primer aviso para mostrarlo a los usuarios."
+              : "No hay avisos disponibles en este momento."
           }}
         </p>
 
@@ -233,25 +231,16 @@
       <div class="avn-admin">
         <header class="avn-admin__header">
           <div>
-            <p class="avn-admin__eyebrow">
-              Herramientas administrativas
-            </p>
-
             <h3 id="avn-admin-title" class="avn-admin__title">
-              Administración de avisos
+              Administrar avisos
             </h3>
 
             <p class="avn-admin__subtitle">
-              Gestiona los comunicados sin alterar la estructura general del
-              inicio.
+              Publique, organice y elimine los avisos que verán los usuarios.
             </p>
           </div>
 
           <div class="avn-admin__summary">
-            <span class="avn-admin-chip">
-              {{ bannersNormalized.length }}
-              publicado<span v-if="bannersNormalized.length !== 1">s</span>
-            </span>
 
             <span
               v-if="pendingChangeCount"
@@ -325,7 +314,7 @@
               <h4>Avisos publicados</h4>
 
               <p>
-                Selecciona un aviso para visualizarlo, editarlo o eliminarlo.
+                Seleccione un aviso para verlo o eliminarlo.
               </p>
             </div>
 
@@ -358,7 +347,7 @@
             </label>
 
             <div class="avn-bulk-bar__actions">
-              <span>
+              <span v-if="selectedBannerIds.length">
                 {{ selectedBannerIds.length }}
                 seleccionado<span v-if="selectedBannerIds.length !== 1">s</span>
               </span>
@@ -430,7 +419,7 @@
                   v-if="index === currentBanner"
                   class="avn-published-item__active"
                 >
-                  En vista previa
+                  Mostrando
                 </span>
               </div>
 
@@ -440,7 +429,6 @@
                     Aviso {{ index + 1 }}
                   </strong>
 
-                  <span>Imagen institucional</span>
                 </div>
 
                 <div class="avn-published-item__actions">
@@ -495,11 +483,10 @@
         >
           <div class="avn-panel-heading">
             <div>
-              <h4>Diseño y presentación</h4>
+              <h4>Tamaño de los avisos</h4>
 
               <p>
-                Define el tamaño del banner institucional manteniendo una
-                presentación consistente.
+                Seleccione el tamaño en que se mostrarán los avisos.
               </p>
             </div>
           </div>
@@ -510,8 +497,7 @@
               <legend>Tamaño del aviso</legend>
 
               <p>
-                Selecciona una medida predeterminada para el carrusel de
-                imágenes institucionales.
+                Elija una de las opciones disponibles.
               </p>
 
               <div class="avn-choice-grid avn-choice-grid--three">
@@ -542,7 +528,7 @@
               v-if="isLayoutDirty"
               class="avn-unsaved-indicator"
             >
-              Hay cambios de diseño sin guardar.
+              Hay cambios sin guardar.
             </span>
 
             <button
@@ -572,7 +558,7 @@
               <h4>Publicar nuevo aviso</h4>
 
               <p>
-                Agrega imágenes JPG o PNG al carrusel institucional.
+                Puede publicar una o varias imágenes JPG o PNG.
               </p>
             </div>
           </div>
@@ -903,11 +889,11 @@ const SPLITTER_WIDTH =
 const adminTabs = [
   {
     value: "published",
-    label: "Publicados",
+    label: "Avisos",
   },
   {
     value: "design",
-    label: "Diseño",
+    label: "Apariencia",
   },
   {
     value: "publish",
@@ -918,13 +904,13 @@ const adminTabs = [
 const displayModeOptions = [
   {
     value: "mixed",
-    label: "Banner + texto",
+    label: "Imagen y texto",
     description:
       "Presenta la imagen y el contenido informativo.",
   },
   {
     value: "banner",
-    label: "Solo banner",
+    label: "Solo imagen",
     description:
       "Utiliza toda el área para la imagen.",
   },
@@ -962,7 +948,7 @@ const distributionPresets = [
     value: "image",
     label: "Imagen predominante",
     description:
-      "Asigna más espacio visual al banner.",
+      "Asigna más espacio visual a la imagen.",
   },
   {
     value: "balanced",
@@ -1893,6 +1879,46 @@ const setPanelError = (
   }
 };
 
+const TECHNICAL_NOTICE_ERROR_PATTERN =
+  /(backend|endpoint|serializer|queryset|jwt|token|sql|postgres|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|request|response|\/api\/|http\s*\d{3})/i;
+
+const safeNoticeError = (
+  error,
+  fallback
+) => {
+  const status = Number(
+    error?.response?.status || 0
+  );
+
+  if (status === 401) {
+    return "Su sesión ha vencido. Inicie sesión nuevamente.";
+  }
+
+  if (status === 403) {
+    return "No tiene permisos para realizar esta acción.";
+  }
+
+  if (status === 429) {
+    return "Se realizaron demasiadas solicitudes. Intente nuevamente en unos minutos.";
+  }
+
+  const data = error?.response?.data;
+  const candidate = Array.isArray(data?.text)
+    ? data.text[0]
+    : data?.text || data?.detail || data?.message || "";
+
+  const message = String(candidate || "").trim();
+
+  if (
+    !message ||
+    TECHNICAL_NOTICE_ERROR_PATTERN.test(message)
+  ) {
+    return fallback;
+  }
+
+  return message;
+};
+
 const requestVersionSync = async ({
   force = false,
 } = {}) => {
@@ -1942,7 +1968,7 @@ const requestVersionSync = async ({
       true;
 
     console.error(
-      "No fue posible sincronizar la versión de los avisos.",
+      "No pudimos actualizar los avisos en este momento.",
       error
     );
 
@@ -2159,7 +2185,7 @@ const persistRemoteLayout = async ({
 
     if (showFeedback) {
       setEditorStatus(
-        "Diseño guardado correctamente."
+        "Cambios guardados."
       );
     }
 
@@ -2168,7 +2194,7 @@ const persistRemoteLayout = async ({
     console.error(error);
 
     setPanelError(
-      "No fue posible guardar el diseño del aviso."
+      "No pudimos guardar los cambios. Intente nuevamente."
     );
 
     return false;
@@ -2224,7 +2250,7 @@ const saveActiveBannerContent =
       updateBannerInList(data);
 
       setEditorStatus(
-        "Contenido del aviso guardado."
+        "Aviso actualizado."
       );
 
       await requestVersionSync();
@@ -2232,7 +2258,7 @@ const saveActiveBannerContent =
       console.error(error);
 
       setPanelError(
-        "No fue posible guardar el contenido del aviso activo."
+        "No pudimos actualizar el aviso. Intente nuevamente."
       );
     } finally {
       savingBannerContent.value =
@@ -2283,7 +2309,7 @@ const saveGlobalContent = async () => {
     }
 
     setEditorStatus(
-      "Contenido global guardado correctamente."
+      "Cambios guardados."
     );
 
     await requestVersionSync();
@@ -2291,7 +2317,7 @@ const saveGlobalContent = async () => {
     console.error(error);
 
     setPanelError(
-      "No fue posible guardar el contenido global."
+      "No pudimos guardar los cambios. Intente nuevamente."
     );
   } finally {
     savingGlobalContent.value = false;
@@ -2380,7 +2406,7 @@ const resetActiveBannerContent =
       console.error(error);
 
       setPanelError(
-        "No fue posible restablecer el contenido del aviso."
+        "No pudimos restablecer el aviso. Intente nuevamente."
       );
     } finally {
       savingBannerContent.value =
@@ -3003,7 +3029,7 @@ const cargarBanners = async ({
     selectedBannerIds.value = [];
 
     loadError.value =
-      "No fue posible cargar los avisos en este momento.";
+      "No pudimos cargar los avisos. Intente nuevamente.";
 
     heroReady.value = true;
 
@@ -3060,25 +3086,17 @@ const publishTextNotice = async () => {
       "published";
 
     setEditorStatus(
-      "Aviso de texto publicado correctamente."
+      "Aviso publicado."
     );
 
     await requestVersionSync();
   } catch (error) {
     console.error(error);
-
-    const responseData =
-      error?.response?.data;
-
-    const textError =
-      Array.isArray(responseData?.text)
-        ? responseData.text[0]
-        : responseData?.text;
-
     setPanelError(
-      textError ||
-      responseData?.detail ||
-      "No fue posible publicar el aviso de texto."
+      safeNoticeError(
+        error,
+        "No pudimos publicar el aviso. Intente nuevamente."
+      )
     );
   } finally {
     publishingTextNotice.value =
@@ -3168,7 +3186,7 @@ const subirBanners = async () => {
     if (!failedFiles.length) {
       setEditorStatus(
         successCount === 1
-          ? "Aviso publicado correctamente."
+          ? "Aviso publicado."
           : `${successCount} avisos publicados correctamente.`
       );
     } else if (successCount > 0) {
@@ -3177,13 +3195,19 @@ const subirBanners = async () => {
           successCount !== 1 ? "s" : ""
         } publicado${
           successCount !== 1 ? "s" : ""
-        } y ${failedFiles.length} pendiente${
+        }. ${failedFiles.length} imagen${
+          failedFiles.length !== 1 ? "es" : ""
+        } no se pudo${
+          failedFiles.length !== 1 ? "ieron" : ""
+        } publicar y permanece${
+          failedFiles.length !== 1 ? "n" : ""
+        } seleccionada${
           failedFiles.length !== 1 ? "s" : ""
-        } por error. Solo se conservaron en la cola los archivos fallidos.`
+        } para volver a intentar.`
       );
     } else {
       setPanelError(
-        "No fue posible publicar los avisos seleccionados. Los archivos permanecen en la cola para reintentar."
+        "No pudimos publicar las imágenes. Permanecen seleccionadas para volver a intentar."
       );
     }
   } finally {
@@ -3295,7 +3319,7 @@ const eliminarBanner = async (id) => {
     console.error(error);
 
     setPanelError(
-      "No fue posible eliminar el aviso seleccionado."
+      "No pudimos eliminar el aviso. Intente nuevamente."
     );
   } finally {
     deletingId.value = null;
@@ -3406,7 +3430,7 @@ const eliminarSeleccionados =
 
       if (!successCount) {
         setPanelError(
-          "No fue posible eliminar los avisos seleccionados."
+          "No pudimos eliminar los avisos seleccionados. Intente nuevamente."
         );
 
         return;
@@ -3421,7 +3445,7 @@ const eliminarSeleccionados =
           failedIds.length !== 1 ? "s" : ""
         } pendiente${
           failedIds.length !== 1 ? "s" : ""
-        } por error. Los avisos fallidos permanecen seleccionados para reintentar.`
+        } por error. Los avisos que no se pudieron eliminar permanecen seleccionados para volver a intentar.`
       );
     } finally {
       deletingBulk.value = false;

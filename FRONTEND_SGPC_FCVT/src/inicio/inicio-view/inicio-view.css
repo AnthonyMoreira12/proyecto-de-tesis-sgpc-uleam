@@ -1,3 +1,4 @@
+
 /* =========================================================
    SGPC ULEAM
    PANEL ANALÍTICO INSTITUCIONAL
@@ -208,17 +209,25 @@
 
   /* Alturas */
   --ivbi-control-sm:
-    var(--control-height-sm);
+    2.25rem;
 
   --ivbi-control-md:
-    var(--control-height-md);
+    2.625rem;
 
   --ivbi-control-lg:
-    var(--control-height-lg);
+    3rem;
 
   /* Layout */
   --ivbi-nav-offset:
-    var(--sgpc-nav-offset);
+    4.875rem;
+
+  /*
+   * Escala estructural local.
+   * A 16px conserva exactamente las medidas originales.
+   * A 15/18/20px acompaña el tamaño de texto global.
+   */
+  --layout-gap: 1.5rem;
+  --layout-gap-sm: 1rem;
 
   width: 100%;
 
@@ -231,9 +240,9 @@
   margin: 0;
 
   padding:
-    16px
-    clamp(14px, 1.7vw, 28px)
-    28px;
+    1rem
+    clamp(0.875rem, 1.7vw, 1.75rem)
+    1.75rem;
 
   overflow-x: hidden;
 
@@ -278,10 +287,10 @@
 
   max-width:
     min(
-      1600px,
+      100rem,
       calc(
         var(--container-max) +
-        280px
+        17.5rem
       )
     );
 
@@ -308,13 +317,13 @@
 
   display: grid;
 
-  gap: 11px;
+  gap: 0.6875rem;
 }
 
 .ivbi-view-shell {
   display: grid;
 
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 
@@ -327,14 +336,14 @@
 
   position: absolute;
 
-  top: -2px;
+  top: -0.125rem;
   left: 0;
 
   z-index:
     var(--z-dropdown);
 
-  width: 180px;
-  height: 3px;
+  width: 11.25rem;
+  height: 0.1875rem;
 
   border-radius:
     var(--ivbi-radius-pill);
@@ -380,7 +389,7 @@
 .ivbi-header {
   display: grid;
 
-  gap: 9px;
+  gap: 0.5625rem;
 }
 
 
@@ -389,7 +398,7 @@
 ========================================================= */
 
 .ivbi-header__top {
-  min-height: 96px;
+  min-height: 6rem;
 
   display: flex;
 
@@ -400,7 +409,7 @@
 
   gap: var(--layout-gap);
 
-  padding: 14px 20px;
+  padding: 0.875rem 1.25rem;
 
   border:
     1px solid
@@ -429,14 +438,14 @@
 
   align-items: center;
 
-  gap: 14px;
+  gap: 0.875rem;
 }
 
 .ivbi-header__brandmark {
-  width: 56px;
-  height: 56px;
+  width: 3.5rem;
+  height: 3.5rem;
 
-  flex: 0 0 56px;
+  flex: 0 0 3.5rem;
 
   display: grid;
 
@@ -458,8 +467,8 @@
 .ivbi-header__brandmark img {
   display: block;
 
-  width: 48px;
-  height: 48px;
+  width: 3rem;
+  height: 3rem;
 
   object-fit: contain;
 }
@@ -467,7 +476,7 @@
 .ivbi-header__titlebox {
   display: grid;
 
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .ivbi-header__kicker {
@@ -512,7 +521,7 @@
 }
 
 .ivbi-header__meta {
-  margin: 2px 0 0;
+  margin: 0.125rem 0 0;
 
   color:
     var(--ivbi-text-soft);
@@ -551,9 +560,9 @@
 
   justify-content: center;
 
-  gap: 7px;
+  gap: 0.4375rem;
 
-  padding: 0 13px;
+  padding: 0 0.8125rem;
 
   border:
     1px solid
@@ -595,8 +604,8 @@
 }
 
 .ivbi-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
 
   flex: 0 0 auto;
 }
@@ -677,10 +686,10 @@
 }
 
 .ivbi-btn__spinner {
-  width: 15px;
-  height: 15px;
+  width: 0.9375rem;
+  height: 0.9375rem;
 
-  flex: 0 0 15px;
+  flex: 0 0 0.9375rem;
 
   border:
     2px solid
@@ -707,15 +716,15 @@
 ========================================================= */
 
 .ivbi-header__navigation {
-  min-height: 49px;
+  min-height: 3.0625rem;
 
   display: flex;
 
   align-items: center;
 
-  gap: 17px;
+  gap: 1.0625rem;
 
-  padding: 6px 8px;
+  padding: 0.375rem 0.5rem;
 
   border:
     1px solid
@@ -744,9 +753,9 @@
 
   align-items: center;
 
-  gap: 3px;
+  gap: 0.1875rem;
 
-  padding: 3px;
+  padding: 0.1875rem;
 
   border:
     1px solid
@@ -760,11 +769,11 @@
 }
 
 .ivbi-segmented__btn {
-  min-width: 90px;
+  min-width: 5.625rem;
   min-height:
     var(--ivbi-control-sm);
 
-  padding: 0 12px;
+  padding: 0 0.75rem;
 
   border: 1px solid transparent;
 
@@ -824,17 +833,17 @@
 
   align-items: center;
 
-  gap: 7px;
+  gap: 0.4375rem;
 
   color:
     var(--ivbi-text-soft);
 }
 
 .ivbi-header__view-icon {
-  width: 23px;
-  height: 23px;
+  width: 1.4375rem;
+  height: 1.4375rem;
 
-  flex: 0 0 23px;
+  flex: 0 0 1.4375rem;
 
   display: grid;
 
@@ -845,8 +854,8 @@
 }
 
 .ivbi-header__view-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 
 .ivbi-header__view-help {
@@ -856,7 +865,7 @@
 
   align-items: center;
 
-  gap: 4px;
+  gap: 0.25rem;
 
   margin: 0;
 
@@ -895,7 +904,7 @@
 }
 
 .ivbi-filterbar--compact {
-  min-height: 67px;
+  min-height: 4.1875rem;
 
   display: grid;
 
@@ -906,9 +915,9 @@
 
   align-items: end;
 
-  gap: 12px;
+  gap: 0.75rem;
 
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
 
   border:
     1px solid
@@ -942,18 +951,18 @@
   display: grid;
 
   grid-template-columns:
-    28px
+    1.75rem
     auto
     auto;
 
   align-items: center;
 
-  gap: 7px;
+  gap: 0.4375rem;
 }
 
 .ivbi-filterbar__compact-icon {
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
 
   display: grid;
 
@@ -974,14 +983,14 @@
 }
 
 .ivbi-filterbar__compact-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 0.9375rem;
+  height: 0.9375rem;
 }
 
 .ivbi-filterbar__compact-copy {
   display: grid;
 
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .ivbi-filterbar__eyebrow {
@@ -1021,15 +1030,15 @@
 ========================================================= */
 
 .ivbi-filterbar__status {
-  min-height: 24px;
+  min-height: 1.5rem;
 
   display: inline-flex;
 
   align-items: center;
 
-  gap: 5px;
+  gap: 0.3125rem;
 
-  padding: 0 8px;
+  padding: 0 0.5rem;
 
   border:
     1px solid
@@ -1056,10 +1065,10 @@
 .ivbi-filterbar__status:before {
   content: "";
 
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
 
-  flex: 0 0 6px;
+  flex: 0 0 0.375rem;
 
   border-radius: 50%;
 
@@ -1102,12 +1111,25 @@
   grid-template-columns:
     repeat(
       auto-fit,
-      minmax(112px, 1fr)
+      minmax(7rem, 1fr)
     );
 
-  gap: 7px;
+  gap: 0.4375rem;
 
   align-items: end;
+}
+
+.ivbi-field--institutional select {
+  font-weight: 650;
+}
+
+.ivbi-field--institutional select:focus-visible {
+  border-color: var(--ivbi-accent);
+}
+
+.ivbi-field--institutional select:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
 }
 
 .ivbi-field {
@@ -1115,7 +1137,7 @@
 
   display: grid;
 
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .ivbi-field > span {
@@ -1144,9 +1166,9 @@
 
   padding:
     0
-    29px
+    1.8125rem
     0
-    9px;
+    0.5625rem;
 
   border:
     1px solid
@@ -1209,45 +1231,6 @@
   opacity: 0.65;
 }
 
-.ivbi-field--month {
-  min-width: 132px;
-}
-
-.ivbi-field input[type="month"] {
-  padding-right: 8px;
-
-  font-variant-numeric:
-    tabular-nums;
-}
-
-.ivbi-field input[type="month"]::-webkit-calendar-picker-indicator {
-  width: 16px;
-  height: 16px;
-
-  margin: 0;
-  padding: 2px;
-
-  cursor: pointer;
-
-  border-radius: 4px;
-
-  opacity: 0.78;
-
-  transition:
-    opacity
-      var(--ivbi-transition-med),
-    background
-      var(--ivbi-transition-med);
-}
-
-.ivbi-field input[type="month"]:hover::-webkit-calendar-picker-indicator,
-.ivbi-field input[type="month"]:focus::-webkit-calendar-picker-indicator {
-  opacity: 1;
-
-  background:
-    var(--ivbi-accent-soft);
-}
-
 
 /* =========================================================
    13. ACCIONES DE FILTRO
@@ -1260,7 +1243,7 @@
 
   justify-content: flex-end;
 
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .ivbi-filter-action {
@@ -1276,9 +1259,9 @@
 
   justify-content: center;
 
-  gap: 5px;
+  gap: 0.3125rem;
 
-  padding: 0 10px;
+  padding: 0 0.625rem;
 
   border:
     1px solid
@@ -1318,8 +1301,8 @@
 }
 
 .ivbi-filter-action svg {
-  width: 15px;
-  height: 15px;
+  width: 0.9375rem;
+  height: 0.9375rem;
 }
 
 .ivbi-filter-action:hover:not(:disabled) {
@@ -1359,7 +1342,7 @@
 .ivbi-alert {
   width: 100%;
 
-  padding: 11px 13px;
+  padding: 0.6875rem 0.8125rem;
 
   border-radius:
     var(--radius-md);
@@ -1393,11 +1376,11 @@
 
   grid-template-columns:
     repeat(
-      6,
+      4,
       minmax(0, 1fr)
     );
 
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .ivbi-kpi-card {
@@ -1410,19 +1393,19 @@
   --ivbi-kpi-line:
     var(--primary-soft-strong);
 
-  min-height: 94px;
+  min-height: 5.875rem;
 
   display: grid;
 
   grid-template-columns:
-    39px
+    2.4375rem
     minmax(0, 1fr);
 
   align-items: center;
 
-  gap: 10px;
+  gap: 0.625rem;
 
-  padding: 11px;
+  padding: 0.6875rem;
 
   border:
     1px solid
@@ -1499,6 +1482,17 @@
     var(--success-line);
 }
 
+.ivbi-kpi-card--sedes {
+  --ivbi-kpi-color:
+    var(--info);
+
+  --ivbi-kpi-soft:
+    var(--info-soft);
+
+  --ivbi-kpi-line:
+    var(--info-line);
+}
+
 .ivbi-kpi-card--facultades {
   --ivbi-kpi-color:
     var(--pub-pon);
@@ -1543,9 +1537,20 @@
     var(--pub-aai-line);
 }
 
+.ivbi-kpi-card--regionales {
+  --ivbi-kpi-color:
+    var(--pub-ar);
+
+  --ivbi-kpi-soft:
+    var(--ivbi-surface-soft);
+
+  --ivbi-kpi-line:
+    var(--ivbi-line);
+}
+
 .ivbi-kpi-card__icon {
-  width: 39px;
-  height: 39px;
+  width: 2.4375rem;
+  height: 2.4375rem;
 
   display: grid;
 
@@ -1566,14 +1571,14 @@
 }
 
 .ivbi-kpi-card__icon svg {
-  width: 19px;
-  height: 19px;
+  width: 1.1875rem;
+  height: 1.1875rem;
 }
 
 .ivbi-kpi-card__copy {
   display: grid;
 
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .ivbi-kpi-card__label {
@@ -1636,9 +1641,9 @@
 .ivbi-card {
   width: 100%;
 
-  min-height: 255px;
+  min-height: 15.9375rem;
 
-  padding: 18px;
+  padding: 1.125rem;
 
   overflow: hidden;
 
@@ -1677,15 +1682,15 @@
   justify-content:
     space-between;
 
-  gap: 12px;
+  gap: 0.75rem;
 
-  margin-bottom: 15px;
+  margin-bottom: 0.9375rem;
 }
 
 .ivbi-card__head-main {
   display: grid;
 
-  gap: 3px;
+  gap: 0.1875rem;
 }
 
 .ivbi-card__eyebrow {
@@ -1729,13 +1734,13 @@
 
   justify-content: flex-end;
 
-  gap: 7px;
+  gap: 0.4375rem;
 
   flex-wrap: wrap;
 }
 
 .ivbi-card__total {
-  min-height: 27px;
+  min-height: 1.6875rem;
 
   display: inline-flex;
 
@@ -1743,7 +1748,7 @@
 
   justify-content: center;
 
-  padding: 0 9px;
+  padding: 0 0.5625rem;
 
   border:
     1px solid
@@ -1764,13 +1769,13 @@
 }
 
 .ivbi-insight-pill {
-  min-height: 27px;
+  min-height: 1.6875rem;
 
   display: inline-flex;
 
   align-items: center;
 
-  padding: 0 9px;
+  padding: 0 0.5625rem;
 
   border:
     1px solid
@@ -1808,9 +1813,9 @@
 
   grid-template-areas:
     "distribution distribution distribution distribution distribution comparison comparison comparison comparison comparison comparison comparison"
-    "facultades facultades facultades facultades facultades facultades autores autores autores autores autores autores";
+    "sedes sedes sedes sedes facultades facultades facultades facultades autores autores autores autores";
 
-  gap: 11px;
+  gap: 0.6875rem;
 }
 
 .ivbi-card--distribution {
@@ -1819,6 +1824,10 @@
 
 .ivbi-card--comparison {
   grid-area: comparison;
+}
+
+.ivbi-card--sedes {
+  grid-area: sedes;
 }
 
 .ivbi-card--facultades {
@@ -1847,7 +1856,7 @@
     "historica comparativa"
     "mensual mensual";
 
-  gap: 11px;
+  gap: 0.6875rem;
 }
 
 .ivbi-card--historica {
@@ -1877,11 +1886,16 @@
     );
 
   grid-template-areas:
-    "facultades-rank carreras-rank"
-    "autores-rank autores-rank"
-    "revistas proyectos";
+    "sedes-rank facultades-rank"
+    "carreras-rank autores-rank"
+    "areas-rank revistas"
+    "proyectos proyectos";
 
-  gap: 11px;
+  gap: 0.6875rem;
+}
+
+.ivbi-card--sedes-rank {
+  grid-area: sedes-rank;
 }
 
 .ivbi-card--facultades-rank {
@@ -1896,6 +1910,9 @@
   grid-area: autores-rank;
 }
 
+.ivbi-card--areas-rank {
+  grid-area: areas-rank;
+}
 
 .ivbi-card--revistas {
   grid-area: revistas;
@@ -1911,24 +1928,24 @@
 ========================================================= */
 
 .ivbi-donut-panel {
-  min-height: 210px;
+  min-height: 13.125rem;
 
   display: grid;
 
   grid-template-columns:
-    178px
+    11.125rem
     minmax(0, 1fr);
 
   align-items: center;
 
-  gap: 20px;
+  gap: 1.25rem;
 }
 
 .ivbi-donut {
   position: relative;
 
-  width: 174px;
-  height: 174px;
+  width: 10.875rem;
+  height: 10.875rem;
 
   border-radius: 50%;
 
@@ -1947,7 +1964,7 @@
 
   position: absolute;
 
-  inset: 28px;
+  inset: 1.75rem;
 
   border:
     1px solid
@@ -1974,9 +1991,9 @@
 
   justify-content: center;
 
-  gap: 3px;
+  gap: 0.1875rem;
 
-  padding: 40px;
+  padding: 2.5rem;
 
   text-align: center;
 
@@ -2039,25 +2056,25 @@
       minmax(0, 1fr)
     );
 
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .ivbi-legend__item {
   width: 100%;
 
-  min-height: 48px;
+  min-height: 3rem;
 
   display: grid;
 
   grid-template-columns:
-    9px
+    0.5625rem
     minmax(0, 1fr);
 
   align-items: center;
 
-  gap: 8px;
+  gap: 0.5rem;
 
-  padding: 7px 9px;
+  padding: 0.4375rem 0.5625rem;
 
   border:
     1px solid
@@ -2111,8 +2128,8 @@
 }
 
 .ivbi-legend__swatch {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
 
   border-radius: 50%;
 }
@@ -2120,7 +2137,7 @@
 .ivbi-legend__text {
   display: grid;
 
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .ivbi-legend__label {
@@ -2157,10 +2174,10 @@
 .ivbi-info-tip {
   position: relative;
 
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
 
-  flex: 0 0 26px;
+  flex: 0 0 1.625rem;
 
   display: grid;
 
@@ -2193,15 +2210,15 @@
   bottom:
     calc(
       100% +
-      9px
+      0.5625rem
     );
 
   z-index:
     var(--z-dropdown);
 
-  width: 225px;
+  width: 14.0625rem;
 
-  padding: 9px 10px;
+  padding: 0.5625rem 0.625rem;
 
   border:
     1px solid
@@ -2265,7 +2282,7 @@
 .ivbi-grouped-wrap {
   display: grid;
 
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .ivbi-grouped {
@@ -2274,14 +2291,14 @@
   grid-auto-flow: column;
 
   grid-auto-columns:
-    minmax(95px, 1fr);
+    minmax(5.9375rem, 1fr);
 
-  gap: 10px;
+  gap: 0.625rem;
 
   padding:
-    4px
-    2px
-    7px;
+    0.25rem
+    0.75rem
+    0.4375rem;
 
   overflow-x: auto;
 
@@ -2295,19 +2312,19 @@
 }
 
 .ivbi-grouped__group {
-  min-width: 95px;
+  min-width: 5.9375rem;
 
   display: grid;
 
   grid-template-rows:
-    minmax(145px, 1fr)
+    minmax(9.0625rem, 1fr)
     auto;
 
-  gap: 7px;
+  gap: 0.4375rem;
 }
 
 .ivbi-grouped__bars {
-  height: 164px;
+  height: 10.25rem;
 
   display: flex;
 
@@ -2315,11 +2332,11 @@
 
   justify-content: center;
 
-  gap: 4px;
+  gap: 0.25rem;
 
   padding:
-    19px
-    5px
+    1.1875rem
+    0.3125rem
     0;
 
   border-bottom:
@@ -2332,7 +2349,7 @@
 
   width: 100%;
 
-  max-width: 21px;
+  max-width: 1.3125rem;
 
   height: 100%;
 
@@ -2349,7 +2366,7 @@
   bottom:
     calc(
       var(--grouped-h, 0%) +
-      4px
+      0.25rem
     );
 
   color:
@@ -2413,7 +2430,7 @@
 
   justify-content: center;
 
-  gap: 10px 15px;
+  gap: 0.625rem 0.9375rem;
 
   flex-wrap: wrap;
 }
@@ -2423,7 +2440,7 @@
 
   align-items: center;
 
-  gap: 5px;
+  gap: 0.3125rem;
 
   color:
     var(--ivbi-text-soft);
@@ -2436,10 +2453,10 @@
 }
 
 .ivbi-series-legend__swatch {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
 
-  flex: 0 0 8px;
+  flex: 0 0 0.5rem;
 
   border-radius: 2px;
 }
@@ -2452,36 +2469,36 @@
 .ivbi-rank {
   display: grid;
 
-  gap: 9px;
+  gap: 0.5625rem;
 }
 
 .ivbi-rank__row {
   display: grid;
 
   grid-template-columns:
-    minmax(135px, 38%)
+    minmax(8.4375rem, 38%)
     minmax(0, 1fr);
 
   align-items: center;
 
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .ivbi-rank__meta {
   display: grid;
 
   grid-template-columns:
-    26px
+    1.625rem
     minmax(0, 1fr);
 
   align-items: center;
 
-  gap: 7px;
+  gap: 0.4375rem;
 }
 
 .ivbi-rank__index {
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
 
   display: grid;
 
@@ -2526,7 +2543,7 @@
   position: relative;
 
   width: 100%;
-  height: 26px;
+  height: 1.625rem;
 
   overflow: hidden;
 
@@ -2541,7 +2558,7 @@
   width:
     var(--rank-w, 0%);
 
-  min-width: 30px;
+  min-width: 1.875rem;
 
   height: 100%;
 
@@ -2551,7 +2568,7 @@
 
   justify-content: flex-end;
 
-  padding: 0 7px;
+  padding: 0 0.4375rem;
 
   border-radius:
     var(--radius-sm);
@@ -2618,16 +2635,16 @@
   grid-auto-flow: column;
 
   grid-auto-columns:
-    minmax(42px, 1fr);
+    minmax(2.625rem, 1fr);
 
   align-items: end;
 
-  gap: 7px;
+  gap: 0.4375rem;
 
   padding:
-    7px
-    2px
-    4px;
+    0.4375rem
+    0.75rem
+    0.25rem;
 
   overflow-x: auto;
 
@@ -2641,20 +2658,20 @@
 }
 
 .ivbi-vbars--tall {
-  min-height: 210px;
+  min-height: 13.125rem;
 }
 
 .ivbi-vbars__col {
-  min-width: 42px;
+  min-width: 2.625rem;
 
   display: grid;
 
   grid-template-rows:
     auto
-    164px
+    10.25rem
     auto;
 
-  gap: 5px;
+  gap: 0.3125rem;
 
   padding: 0;
 
@@ -2711,7 +2728,7 @@ button.ivbi-vbars__col {
 .ivbi-vbars__track {
   position: relative;
 
-  height: 164px;
+  height: 10.25rem;
 
   display: flex;
 
@@ -2727,7 +2744,7 @@ button.ivbi-vbars__col {
 .ivbi-vbars__bar {
   width: 55%;
 
-  max-width: 27px;
+  max-width: 1.6875rem;
 
   height:
     var(--bar-h, 0%);
@@ -2774,13 +2791,13 @@ button.ivbi-vbars__col {
 ========================================================= */
 
 .ivbi-empty {
-  min-height: 140px;
+  min-height: 8.75rem;
 
   display: grid;
 
   place-items: center;
 
-  padding: 22px;
+  padding: 1.375rem;
 
   color:
     var(--ivbi-text-muted);
@@ -2795,7 +2812,7 @@ button.ivbi-vbars__col {
 }
 
 .ivbi-empty--state {
-  min-height: 240px;
+  min-height: 15rem;
 
   border:
     1px dashed
@@ -2823,9 +2840,9 @@ button.ivbi-vbars__col {
 
   justify-content: center;
 
-  gap: 7px;
+  gap: 0.4375rem;
 
-  padding: 9px 12px;
+  padding: 0.5625rem 0.75rem;
 
   border:
     1px solid
@@ -2848,10 +2865,10 @@ button.ivbi-vbars__col {
 }
 
 .ivbi-dashboard-note__icon {
-  width: 19px;
-  height: 19px;
+  width: 1.1875rem;
+  height: 1.1875rem;
 
-  flex: 0 0 19px;
+  flex: 0 0 1.1875rem;
 
   display: grid;
 
@@ -2862,8 +2879,8 @@ button.ivbi-vbars__col {
 }
 
 .ivbi-dashboard-note__icon svg {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 
 
@@ -2874,7 +2891,7 @@ button.ivbi-vbars__col {
 .ivbi-skeleton-shell {
   display: grid;
 
-  gap: 11px;
+  gap: 0.6875rem;
 }
 
 .ivbi-sk-header {
@@ -2888,7 +2905,7 @@ button.ivbi-vbars__col {
     "hero tabs"
     "filters filters";
 
-  gap: 9px;
+  gap: 0.5625rem;
 }
 
 .ivbi-skeleton-block,
@@ -2909,7 +2926,7 @@ button.ivbi-vbars__col {
 .ivbi-skeleton-block--hero {
   grid-area: hero;
 
-  min-height: 96px;
+  min-height: 6rem;
 
   display: flex;
 
@@ -2917,9 +2934,9 @@ button.ivbi-vbars__col {
 
   justify-content: center;
 
-  gap: 9px;
+  gap: 0.5625rem;
 
-  padding: 18px;
+  padding: 1.125rem;
 
   border-radius:
     var(--card-radius);
@@ -2928,15 +2945,15 @@ button.ivbi-vbars__col {
 .ivbi-sk-tabs {
   grid-area: tabs;
 
-  min-width: 290px;
+  min-width: 18.125rem;
 
   display: flex;
 
   align-items: center;
 
-  gap: 6px;
+  gap: 0.375rem;
 
-  padding: 7px;
+  padding: 0.4375rem;
 
   border-radius:
     var(--panel-radius);
@@ -2953,9 +2970,9 @@ button.ivbi-vbars__col {
       minmax(0, 1fr)
     );
 
-  gap: 7px;
+  gap: 0.4375rem;
 
-  padding: 11px;
+  padding: 0.6875rem;
 
   border-radius:
     var(--panel-radius);
@@ -2978,36 +2995,36 @@ button.ivbi-vbars__col {
 }
 
 .ivbi-sk-line {
-  height: 10px;
+  height: 0.625rem;
 
   border-radius:
     var(--radius-xs);
 }
 
 .ivbi-sk-line--kicker {
-  width: 90px;
+  width: 5.625rem;
 }
 
 .ivbi-sk-line--title {
   width:
     min(
-      410px,
+      25.625rem,
       75%
     );
 
-  height: 24px;
+  height: 1.5rem;
 }
 
 .ivbi-sk-line--meta {
   width:
     min(
-      500px,
+      31.25rem,
       88%
     );
 }
 
 .ivbi-sk-pill {
-  width: 82px;
+  width: 5.125rem;
 
   height:
     var(--control-height-sm);
@@ -3033,7 +3050,7 @@ button.ivbi-vbars__col {
       minmax(0, 1fr)
     );
 
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .ivbi-sk-card {
@@ -3042,13 +3059,13 @@ button.ivbi-vbars__col {
 }
 
 .ivbi-sk-card--kpi {
-  min-height: 94px;
+  min-height: 5.875rem;
 }
 
 .ivbi-sk-grid {
   display: grid;
 
-  gap: 11px;
+  gap: 0.6875rem;
 }
 
 .ivbi-sk-grid--summary {
@@ -3061,12 +3078,12 @@ button.ivbi-vbars__col {
 
 .ivbi-sk-card--distribution,
 .ivbi-sk-card--comparison {
-  min-height: 310px;
+  min-height: 19.375rem;
 }
 
 .ivbi-sk-card--facultades,
 .ivbi-sk-card--autores {
-  min-height: 260px;
+  min-height: 16.25rem;
 }
 
 
@@ -3194,24 +3211,25 @@ button.ivbi-vbars__col {
 
     grid-template-areas:
       "distribution comparison"
-      "facultades autores";
+      "sedes facultades"
+      "autores autores";
   }
 
   .ivbi-donut-panel {
     grid-template-columns:
-      160px
+      10rem
       minmax(0, 1fr);
 
-    gap: 15px;
+    gap: 0.9375rem;
   }
 
   .ivbi-donut {
-    width: 158px;
-    height: 158px;
+    width: 9.875rem;
+    height: 9.875rem;
   }
 
   .ivbi-donut:after {
-    inset: 26px;
+    inset: 1.625rem;
   }
 
   .ivbi-legend {
@@ -3236,7 +3254,7 @@ button.ivbi-vbars__col {
 
   .ivbi-filterbar__compact-title {
     grid-template-columns:
-      28px
+      1.75rem
       minmax(0, 1fr)
       auto;
   }
@@ -3262,6 +3280,7 @@ button.ivbi-vbars__col {
     grid-template-areas:
       "distribution"
       "comparison"
+      "sedes"
       "facultades"
       "autores";
   }
@@ -3305,19 +3324,19 @@ button.ivbi-vbars__col {
 @media (max-width: 760px) {
   .ivbi-page {
     padding:
-      11px
-      10px
-      22px;
+      0.6875rem
+      0.625rem
+      1.375rem;
   }
 
   .ivbi-dashboard,
   .ivbi-view-shell,
   .ivbi-skeleton-shell {
-    gap: 10px;
+    gap: 0.625rem;
   }
 
   .ivbi-header {
-    gap: 8px;
+    gap: 0.5rem;
   }
 
   .ivbi-header__top {
@@ -3325,21 +3344,21 @@ button.ivbi-vbars__col {
 
     display: grid;
 
-    gap: 13px;
+    gap: 0.8125rem;
 
-    padding: 14px;
+    padding: 0.875rem;
   }
 
   .ivbi-header__brandmark {
-    width: 52px;
-    height: 52px;
+    width: 3.25rem;
+    height: 3.25rem;
 
-    flex-basis: 52px;
+    flex-basis: 3.25rem;
   }
 
   .ivbi-header__brandmark img {
-    width: 45px;
-    height: 45px;
+    width: 2.8125rem;
+    height: 2.8125rem;
   }
 
   .ivbi-header__title {
@@ -3359,7 +3378,7 @@ button.ivbi-vbars__col {
   .ivbi-header__navigation {
     display: grid;
 
-    gap: 7px;
+    gap: 0.4375rem;
   }
 
   .ivbi-segmented {
@@ -3415,15 +3434,17 @@ button.ivbi-vbars__col {
     grid-template-columns: 1fr;
 
     grid-template-areas:
+      "sedes-rank"
       "facultades-rank"
       "carreras-rank"
       "autores-rank"
+      "areas-rank"
       "revistas"
       "proyectos";
   }
 
   .ivbi-card {
-    padding: 15px;
+    padding: 0.9375rem;
   }
 
   .ivbi-card__head {
@@ -3448,8 +3469,8 @@ button.ivbi-vbars__col {
   }
 
   .ivbi-donut {
-    width: 170px;
-    height: 170px;
+    width: 10.625rem;
+    height: 10.625rem;
   }
 
   .ivbi-legend {
@@ -3464,7 +3485,7 @@ button.ivbi-vbars__col {
 
   .ivbi-rank__row {
     grid-template-columns:
-      minmax(115px, 40%)
+      minmax(7.1875rem, 40%)
       minmax(0, 1fr);
   }
 
@@ -3491,19 +3512,19 @@ button.ivbi-vbars__col {
     align-items:
       flex-start;
 
-    gap: 9px;
+    gap: 0.5625rem;
   }
 
   .ivbi-header__brandmark {
-    width: 48px;
-    height: 48px;
+    width: 3rem;
+    height: 3rem;
 
-    flex-basis: 48px;
+    flex-basis: 3rem;
   }
 
   .ivbi-header__brandmark img {
-    width: 41px;
-    height: 41px;
+    width: 2.5625rem;
+    height: 2.5625rem;
   }
 
   .ivbi-header__title {
@@ -3530,7 +3551,7 @@ button.ivbi-vbars__col {
 
   .ivbi-filterbar__compact-title {
     grid-template-columns:
-      28px
+      1.75rem
       minmax(0, 1fr)
       auto;
   }
@@ -3548,7 +3569,7 @@ button.ivbi-vbars__col {
   }
 
   .ivbi-kpi-card {
-    min-height: 88px;
+    min-height: 5.5rem;
   }
 
   .ivbi-legend {
@@ -3558,21 +3579,21 @@ button.ivbi-vbars__col {
   .ivbi-rank__row {
     grid-template-columns: 1fr;
 
-    gap: 6px;
+    gap: 0.375rem;
   }
 
   .ivbi-rank__track {
-    height: 24px;
+    height: 1.5rem;
   }
 
   .ivbi-vbars,
   .ivbi-vbars--tall {
-    grid-auto-columns: 42px;
+    grid-auto-columns: 2.625rem;
   }
 
   .ivbi-grouped {
     grid-auto-columns:
-      minmax(100px, 1fr);
+      minmax(6.25rem, 1fr);
   }
 
   .ivbi-dashboard-note {
@@ -3714,13 +3735,12 @@ button.ivbi-vbars__col {
 
 
 /* =========================================================
-   39. ADAPTACIÓN TIPOGRÁFICA SIN REDISEÑAR LA INTERFAZ
+   38. ADAPTACIÓN A LA ESCALA TIPOGRÁFICA GLOBAL
 
-   IMPORTANTE:
-   - No cambia grids, columnas ni breakpoints.
-   - No convierte medidas estructurales de px a rem.
-   - No usa auto-fit para los KPI.
-   - Solo evita cortes cuando el usuario selecciona 18px o 20px.
+   No cambia la interfaz ni la distribución base.
+   Las medidas estructurales de este archivo usan rem, por lo
+   que siguen el font-size raíz definido por themeStore:
+   15px / 16px / 18px / 20px.
 ========================================================= */
 
 .ivbi-page,
@@ -3733,8 +3753,111 @@ button.ivbi-vbars__col {
 .ivbi-header__navigation,
 .ivbi-filterbar,
 .ivbi-filterbar--compact,
-.ivbi-filterbar__fields,
 .ivbi-kpi-strip,
+.ivbi-summary-grid,
+.ivbi-trend-grid,
+.ivbi-rankings-grid,
+.ivbi-card {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* El contenido puede ganar altura cuando aumenta la letra. */
+.ivbi-header__top,
+.ivbi-header__navigation,
+.ivbi-filterbar--compact,
+.ivbi-kpi-card,
+.ivbi-card,
+.ivbi-legend__item {
+  height: auto;
+}
+
+.ivbi-header__identity,
+.ivbi-header__titlebox,
+.ivbi-header__actions,
+.ivbi-header__view-context,
+.ivbi-header__view-help,
+.ivbi-filterbar__compact-copy,
+.ivbi-filterbar__fields,
+.ivbi-filterbar__actions,
+.ivbi-field,
+.ivbi-kpi-card__copy,
+.ivbi-card__head,
+.ivbi-card__head-main,
+.ivbi-card__head-tools,
+.ivbi-legend__text,
+.ivbi-rank__meta,
+.ivbi-rank__track {
+  min-width: 0;
+}
+
+/* Inputs y botones conservan su aspecto, pero su altura escala. */
+.ivbi-field select,
+.ivbi-field input,
+.ivbi-filter-action,
+.ivbi-btn {
+  box-sizing: border-box;
+}
+
+/* Evita desbordamientos cuando la tipografía es grande. */
+.ivbi-header__title,
+.ivbi-header__meta,
+.ivbi-card__title,
+.ivbi-kpi-card__label,
+.ivbi-kpi-card__value,
+.ivbi-kpi-card__hint,
+.ivbi-legend__label,
+.ivbi-legend__meta,
+.ivbi-rank__label {
+  max-width: 100%;
+}
+
+/* Los gráficos conservan su diseño y permiten desplazamiento
+   únicamente cuando el contenido ya no cabe. */
+.ivbi-grouped-wrap,
+.ivbi-grouped,
+.ivbi-vbars {
+  max-width: 100%;
+}
+
+/* =========================================================
+   39. CORRECCIÓN FINAL DE ALINEACIÓN Y ESCALA TIPOGRÁFICA
+   Mantiene la interfaz original.
+========================================================= */
+
+/* Escritorio: ocho KPI se distribuyen en dos filas equilibradas. */
+@media (min-width: 1381px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Las tarjetas pueden crecer en altura con 15/16/18/20 px
+   sin alterar el número de columnas del diseño. */
+.ivbi-kpi-card {
+  min-width: 0;
+  min-height: 5.875rem;
+  height: auto;
+}
+
+.ivbi-kpi-card__copy,
+.ivbi-kpi-card__label,
+.ivbi-kpi-card__value,
+.ivbi-kpi-card__hint {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ivbi-header__top,
+.ivbi-header__navigation,
+.ivbi-filterbar--compact,
+.ivbi-card {
+  height: auto;
+}
+
 .ivbi-summary-grid,
 .ivbi-trend-grid,
 .ivbi-rankings-grid,
@@ -3744,8 +3867,6 @@ button.ivbi-vbars__col {
 .ivbi-card__head-tools,
 .ivbi-donut-panel,
 .ivbi-legend,
-.ivbi-legend__item,
-.ivbi-legend__text,
 .ivbi-rank,
 .ivbi-rank__row,
 .ivbi-rank__meta,
@@ -3753,93 +3874,1927 @@ button.ivbi-vbars__col {
   min-width: 0;
 }
 
-/* El tamaño estándar conserva exactamente el aspecto original. */
-.ivbi-kpi-card,
-.ivbi-card {
+/* Los controles acompañan el tamaño de fuente global. */
+.ivbi-field select,
+.ivbi-field input,
+.ivbi-btn,
+.ivbi-filter-action,
+.ivbi-segmented__btn {
   height: auto;
 }
 
-/* ---------------------------------------------------------
-   TAMAÑO CÓMODO / GRANDE
-   Solo damos más libertad vertical al contenido.
---------------------------------------------------------- */
-
-html[data-font-size="18"] .ivbi-page .ivbi-field select,
-html[data-font-size="18"] .ivbi-page .ivbi-field input,
-html[data-font-size="20"] .ivbi-page .ivbi-field select,
-html[data-font-size="20"] .ivbi-page .ivbi-field input {
-  height: auto;
+.ivbi-field select,
+.ivbi-field input {
   min-height: var(--ivbi-control-sm);
-  padding-top: 6px;
-  padding-bottom: 6px;
 }
 
-html[data-font-size="18"] .ivbi-page .ivbi-filter-action,
-html[data-font-size="20"] .ivbi-page .ivbi-filter-action {
-  height: auto;
-  min-height: var(--ivbi-control-sm);
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-
-html[data-font-size="18"] .ivbi-page .ivbi-btn,
-html[data-font-size="20"] .ivbi-page .ivbi-btn {
-  height: auto;
+.ivbi-btn,
+.ivbi-filter-action,
+.ivbi-segmented__btn {
   min-height: var(--ivbi-control-md);
-  padding-top: 7px;
-  padding-bottom: 7px;
 }
 
-html[data-font-size="18"] .ivbi-page .ivbi-segmented__btn,
-html[data-font-size="20"] .ivbi-page .ivbi-segmented__btn {
-  height: auto;
-  min-height: var(--ivbi-control-sm);
-  padding-top: 6px;
-  padding-bottom: 6px;
+/* Conserva exactamente los breakpoints visuales originales. */
+@media (max-width: 1380px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr)) !important;
+  }
 }
 
-/* KPI: conservan exactamente el mismo grid; solo puede crecer
-   la altura de la tarjeta si el texto realmente lo necesita. */
-html[data-font-size="18"] .ivbi-page .ivbi-kpi-card__hint,
-html[data-font-size="20"] .ivbi-page .ivbi-kpi-card__hint {
-  overflow: visible;
+@media (max-width: 980px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   40. CONSOLIDACIÓN FINAL DEL DASHBOARD
+   - Reduce redundancias sin cambiar la arquitectura.
+   - Mantiene Resumen / Tendencia / Rankings.
+   - Mejora aprovechamiento de espacio y lectura.
+========================================================= */
+
+/* Cabecera: se elimina el logotipo duplicado del contenido porque
+   la identidad ULEAM ya está presente en la navegación global. */
+.ivbi-header {
+  gap: 0.5rem;
+}
+
+.ivbi-header__top {
+  min-height: 4.75rem;
+  padding: 0.75rem 1.125rem;
+}
+
+.ivbi-header__identity {
+  gap: 0;
+}
+
+.ivbi-header__titlebox {
+  gap: 0.1rem;
+}
+
+.ivbi-header__title {
+  font-size: clamp(1.45rem, 1.8vw, 1.95rem);
+}
+
+.ivbi-header__meta {
+  margin-top: 0.08rem;
+  font-size: 0.72rem;
+}
+
+.ivbi-header__navigation {
+  min-height: 2.875rem;
+  gap: 0.875rem;
+  padding: 0.3125rem 0.4375rem;
+}
+
+.ivbi-header__view-help {
+  font-size: 0.67rem;
+}
+
+/* Filtros: el nombre de la vista se conserva como contexto secundario,
+   sin repetirlo como título principal del bloque. */
+.ivbi-filterbar--compact {
+  min-height: 3.875rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.625rem;
+  padding: 0.5625rem 0.6875rem;
+}
+
+.ivbi-filterbar__compact-title {
+  grid-template-columns: 1.75rem auto auto;
+  gap: 0.375rem;
+}
+
+.ivbi-filterbar__compact-copy {
+  align-content: center;
+  gap: 0.08rem;
+}
+
+.ivbi-filterbar__compact-copy h2 {
+  font-size: 0.72rem;
+}
+
+.ivbi-filterbar__scope {
+  color: var(--ivbi-text-muted);
+  font-size: 0.55rem;
+  line-height: 1.05;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* En escritorio se asigna más ancho a Facultad y Carrera, que son
+   los controles con textos más largos. */
+.ivbi-filterbar--compact.is-resumen .ivbi-filterbar__fields {
+  grid-template-columns:
+    minmax(8.75rem, 1fr)
+    minmax(11.5rem, 1.3fr)
+    minmax(11.5rem, 1.3fr)
+    minmax(7.5rem, 0.82fr)
+    minmax(8.75rem, 0.9fr)
+    minmax(8.75rem, 0.9fr);
+}
+
+.ivbi-filterbar--compact.is-tendencia .ivbi-filterbar__fields {
+  grid-template-columns:
+    minmax(8.75rem, 1fr)
+    minmax(11.5rem, 1.3fr)
+    minmax(11.5rem, 1.3fr)
+    minmax(8.5rem, 0.9fr)
+    minmax(8.75rem, 0.9fr)
+    minmax(8.75rem, 0.9fr);
+}
+
+.ivbi-filterbar--compact.is-rankings .ivbi-filterbar__fields {
+  grid-template-columns:
+    minmax(8.5rem, 1fr)
+    minmax(10.75rem, 1.28fr)
+    minmax(10.75rem, 1.28fr)
+    minmax(7.25rem, 0.8fr)
+    minmax(8.25rem, 0.88fr)
+    minmax(8.25rem, 0.88fr)
+    minmax(7.25rem, 0.78fr);
+}
+
+.ivbi-field select,
+.ivbi-field input {
+  font-size: 0.67rem;
+}
+
+.ivbi-field--facultad select,
+.ivbi-field--carrera select {
+  text-overflow: ellipsis;
+}
+
+.ivbi-filterbar__actions {
+  min-width: max-content;
+}
+
+.ivbi-filter-action {
+  min-width: 7.6rem;
+  padding-inline: 0.75rem;
+}
+
+/* Seis KPI: sin repetir Alto impacto y Regionales, que ya se explican
+   de forma completa en Publicaciones por tipo. */
+.ivbi-kpi-strip,
+.ivbi-sk-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.ivbi-kpi-card {
+  min-height: 5.45rem;
+  padding: 0.625rem 0.6875rem;
+}
+
+.ivbi-kpi-card__hint {
   white-space: normal;
   text-overflow: clip;
-  overflow-wrap: anywhere;
 }
 
-html[data-font-size="18"] .ivbi-page .ivbi-kpi-card__copy,
-html[data-font-size="20"] .ivbi-page .ivbi-kpi-card__copy {
+/* Las tarjetas de ranking del resumen se ajustan mejor cuando solo hay
+   una o pocas filas, evitando grandes áreas vacías. */
+.ivbi-card--compact-rank {
+  min-height: 10.5rem;
+}
+
+.ivbi-card--compact-rank .ivbi-card__head {
+  margin-bottom: 0.75rem;
+}
+
+.ivbi-card--compact-rank .ivbi-rank {
+  align-content: start;
+}
+
+/* Comparativa anual: si hay pocos años, las columnas no se estiran hasta
+   ocupar todo el ancho; si hay muchos, se mantiene el desplazamiento. */
+.ivbi-card--comparison .ivbi-grouped,
+.ivbi-card--comparativa .ivbi-grouped {
+  grid-auto-columns: minmax(6.75rem, 8.5rem);
+  justify-content: safe center;
+  gap: 0.75rem;
+}
+
+.ivbi-card--comparison .ivbi-grouped__group,
+.ivbi-card--comparativa .ivbi-grouped__group {
+  min-width: 6.75rem;
+}
+
+/* Mejora de foco para controles principales del dashboard. */
+.ivbi-filter-action:focus-visible,
+.ivbi-segmented__btn:focus-visible,
+.ivbi-btn:focus-visible,
+.ivbi-legend__item:focus-visible,
+.ivbi-info-tip:focus-visible {
+  outline: 2px solid var(--ivbi-accent);
+  outline-offset: 2px;
+}
+
+/* Escritorio ancho: los seis indicadores caben en una sola fila. */
+@media (min-width: 1500px) {
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Escritorio / portátil: los filtros ocupan dos niveles si el ancho deja
+   de ser suficiente, en vez de truncarse agresivamente. */
+@media (max-width: 1450px) {
+  .ivbi-filterbar--compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .ivbi-filterbar__compact-title {
+    grid-column: 1;
+  }
+
+  .ivbi-filterbar__actions {
+    grid-column: 2;
+  }
+
+  .ivbi-filterbar__fields {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .ivbi-filterbar--compact.is-resumen .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-tendencia .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-rankings .ivbi-filterbar__fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .ivbi-header__top {
+    min-height: 0;
+  }
+
+  .ivbi-header__navigation {
+    align-items: flex-start;
+  }
+
+  .ivbi-filterbar--compact.is-resumen .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-tendencia .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-rankings .ivbi-filterbar__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ivbi-card--comparison .ivbi-grouped,
+  .ivbi-card--comparativa .ivbi-grouped {
+    justify-content: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .ivbi-header__top {
+    padding: 0.875rem;
+  }
+
+  .ivbi-header__navigation {
+    gap: 0.5rem;
+  }
+
+  .ivbi-filterbar--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .ivbi-filterbar__compact-title,
+  .ivbi-filterbar__fields,
+  .ivbi-filterbar__actions {
+    grid-column: 1;
+  }
+
+  .ivbi-filterbar__compact-title {
+    grid-row: auto;
+  }
+
+  .ivbi-filterbar__fields {
+    grid-row: auto;
+  }
+
+  .ivbi-filterbar__actions {
+    grid-row: auto;
+    justify-content: stretch;
+  }
+
+  .ivbi-filter-action {
+    width: 100%;
+  }
+
+  .ivbi-filterbar--compact.is-resumen .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-tendencia .ivbi-filterbar__fields,
+  .ivbi-filterbar--compact.is-rankings .ivbi-filterbar__fields,
+  .ivbi-kpi-strip,
+  .ivbi-sk-kpis {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ivbi-card--compact-rank {
+    min-height: 0;
+  }
+}
+
+/* =========================================================
+   D11 — DEPURACIÓN VISUAL PARA USUARIO FINAL
+   Respeta exclusivamente los tokens definidos en theme.css.
+========================================================= */
+
+.ivbi-header__top {
+  min-height: 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.ivbi-header__titlebox {
+  gap: 0.2rem;
+}
+
+.ivbi-header__title {
+  font-size: clamp(1.35rem, 1.8vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.ivbi-header__meta,
+.ivbi-card__title,
+.ivbi-rank__label,
+.ivbi-field > span {
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+.ivbi-header__navigation {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ivbi-segmented {
+  gap: 1.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ivbi-segmented__btn {
   min-width: 0;
+  min-height: 2.5rem;
+  padding: 0 0.1rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
 }
 
-/* Las leyendas pueden usar una segunda línea en tamaños grandes,
-   sin cambiar su número de columnas. */
-html[data-font-size="18"] .ivbi-page .ivbi-legend__label,
-html[data-font-size="20"] .ivbi-page .ivbi-legend__label {
-  overflow: visible;
-  white-space: normal;
-  text-overflow: clip;
-  overflow-wrap: anywhere;
+.ivbi-segmented__btn:hover {
+  background: transparent;
+  color: var(--text-primary);
 }
 
-/* El texto contextual de la cabecera deja de recortarse solo
-   cuando el usuario ha pedido una tipografía mayor. */
-html[data-font-size="18"] .ivbi-page .ivbi-header__view-help,
-html[data-font-size="20"] .ivbi-page .ivbi-header__view-help {
-  flex-wrap: wrap;
-  white-space: normal;
+.ivbi-segmented__btn.is-active {
+  border-color: transparent;
+  border-bottom-color: var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
 }
 
-html[data-font-size="18"] .ivbi-page .ivbi-header__view-help span,
-html[data-font-size="20"] .ivbi-page .ivbi-header__view-help span {
-  overflow: visible;
-  white-space: normal;
-  text-overflow: clip;
+.ivbi-filterbar--compact {
+  min-height: 0;
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
-/* Rankings: nunca deben empujar la barra fuera de la tarjeta. */
-.ivbi-rank__label {
+.ivbi-filterbar__compact-title {
+  min-height: var(--control-height-sm);
+  display: flex;
+  align-items: center;
+  padding-right: 0.25rem;
+}
+
+.ivbi-filterbar__compact-copy h2,
+.ivbi-filterbar__compact-title h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ivbi-btn:hover:not(:disabled),
+.ivbi-filter-action:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.ivbi-kpi-card {
+  min-height: 5.2rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  animation: none;
+}
+
+.ivbi-kpi-card:hover {
+  transform: none;
+  border-color: var(--border-color);
+  background: var(--bg-card);
+  box-shadow: none;
+}
+
+.ivbi-kpi-card__icon {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.ivbi-kpi-card__icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.ivbi-kpi-card__label {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ivbi-card {
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.ivbi-card:hover {
+  border-color: var(--border-color);
+}
+
+.ivbi-card__head-main {
+  gap: 0;
+}
+
+.ivbi-card__title {
+  font-size: 0.95rem;
+  letter-spacing: -0.015em;
+}
+
+.ivbi-card__total,
+.ivbi-insight-pill {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.ivbi-rank__meta {
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+}
+
+.ivbi-rank__index {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.ivbi-empty--state {
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .ivbi-header__navigation {
+    overflow-x: auto;
+  }
+
+  .ivbi-segmented {
+    min-width: max-content;
+  }
+}
+
+@media (max-width: 640px) {
+  .ivbi-header__top {
+    padding: 0.75rem;
+  }
+
+  .ivbi-filterbar--compact {
+    padding: 0.65rem;
+  }
+}
+/* =========================================================
+   D12 — SINCRONIZACIÓN CON EL NUEVO LENGUAJE VISUAL SGPC
+   Aplicado después de las mejoras funcionales del dashboard.
+   - Cabecera contextual plana.
+   - Navegación por pestañas subrayadas.
+   - Filtros operativos sin tarjeta adicional.
+   - KPIs agrupados en una sola superficie.
+   - Sombras y elevaciones reservadas para popovers.
+========================================================= */
+
+.ivbi-page {
+  --ivbi-text-inverse: var(
+    --text-on-primary,
+    var(--button-text, var(--accent-contrast, #ffffff))
+  );
+}
+
+.ivbi-dashboard {
+  gap: 0.75rem;
+}
+
+/* La cabecera deja de competir con los datos como una tarjeta. */
+.ivbi-header__top {
+  min-height: 0;
+  padding: 0.15rem 0.125rem 0.6rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ivbi-header__title {
+  font-size: clamp(1.3rem, 1.75vw, 1.6rem);
+}
+
+.ivbi-header__meta {
+  max-width: 74ch;
+  font-size: 0.72rem;
+  line-height: 1.42;
+}
+
+/* El selector de vista funciona como navegación, no como pill group. */
+.ivbi-header__navigation {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ivbi-line-soft);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ivbi-segmented {
+  gap: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ivbi-segmented__btn {
   min-width: 0;
-  overflow-wrap: anywhere;
+  min-height: 2.5rem;
+  padding: 0 0.1rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ivbi-text-soft);
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.ivbi-segmented__btn:hover {
+  background: transparent;
+  color: var(--ivbi-text);
+}
+
+.ivbi-segmented__btn.is-active {
+  border: 0;
+  border-bottom: 2px solid var(--ivbi-accent);
+  background: transparent;
+  color: var(--ivbi-accent);
+}
+
+/* Filtros: barra funcional plana, alineada con Administración. */
+.ivbi-filterbar--compact {
+  min-height: 0;
+  padding: 0.65rem 0.125rem 0.7rem;
+  border: 0;
+  border-bottom: 1px solid var(--ivbi-line-soft);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ivbi-filterbar__compact-title {
+  padding-left: 0;
+}
+
+.ivbi-field select,
+.ivbi-field input,
+.ivbi-period-trigger {
+  min-height: var(--ivbi-control-md);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.ivbi-filter-action {
+  min-height: var(--ivbi-control-md);
+  border-radius: var(--radius-md);
+}
+
+/* Indicadores: una sola superficie con separadores internos. */
+.ivbi-kpi-strip {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--ivbi-line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--ivbi-surface);
+}
+
+.ivbi-kpi-card {
+  min-height: 5.25rem;
+  padding: 0.72rem 0.78rem;
+  border: 0;
+  border-right: 1px solid var(--ivbi-line-soft);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ivbi-kpi-card:hover {
+  border-color: var(--ivbi-line-soft);
+  background: color-mix(in srgb, var(--ivbi-accent) 2.5%, transparent);
+}
+
+.ivbi-kpi-card__icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  background: transparent;
+  color: var(--ivbi-text-soft);
+}
+
+.ivbi-kpi-card__label {
+  font-size: 0.64rem;
+  font-weight: 680;
+}
+
+.ivbi-kpi-card__value {
+  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
+}
+
+/* Los paneles analíticos sí conservan superficie porque agrupan gráficos. */
+.ivbi-card {
+  border-color: var(--ivbi-line-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.ivbi-card:hover {
+  transform: none;
+  border-color: var(--ivbi-line-soft);
+  box-shadow: none;
+}
+
+.ivbi-card__head {
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--ivbi-line-soft);
+}
+
+.ivbi-card__title {
+  font-size: 0.9rem;
+}
+
+.ivbi-insight-pill,
+.ivbi-card__total {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ivbi-text-soft);
+  font-size: 0.64rem;
+  font-weight: 620;
+}
+
+.ivbi-rank__row {
+  border-bottom-color: var(--ivbi-line-soft);
+}
+
+.ivbi-rank__index {
+  border: 0;
+  background: transparent;
+}
+
+/* Selector temporal: mismo dropdown sobrio usado en reportes. */
+.ivbi-period-popover {
+  z-index: var(--z-dropdown, 60);
+  border-color: var(--ivbi-line);
+  border-radius: var(--radius-lg);
+  background: var(--ivbi-surface);
+  box-shadow: var(--shadow-card, var(--shadow-soft));
+}
+
+.ivbi-period-popover__presets {
+  border-bottom-color: var(--ivbi-line-soft);
+}
+
+.ivbi-period-popover__presets button,
+.ivbi-period-nav-btn,
+.ivbi-period-year-select select,
+.ivbi-period-month,
+.ivbi-period-clear {
+  border-radius: var(--radius-sm);
+}
+
+.ivbi-period-month {
+  box-shadow: none;
+}
+
+.ivbi-period-month.is-selected {
+  border-color: color-mix(in srgb, var(--ivbi-accent) 38%, var(--ivbi-line));
+  background: var(--ivbi-accent-soft);
+  color: var(--ivbi-accent);
+}
+
+.ivbi-btn--primary,
+.ivbi-filter-action.is-primary {
+  color: var(--ivbi-text-inverse);
+}
+
+/* Escritorio ancho: seis KPI, solo el último cierra la fila. */
+@media (min-width: 1500px) {
+  .ivbi-kpi-card:nth-child(6n) {
+    border-right: 0;
+  }
+}
+
+/* 3 columnas. */
+@media (min-width: 981px) and (max-width: 1499px) {
+  .ivbi-kpi-card:nth-child(3n) {
+    border-right: 0;
+  }
+
+  .ivbi-kpi-card:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--ivbi-line-soft);
+  }
+}
+
+/* 2 columnas. */
+@media (min-width: 641px) and (max-width: 980px) {
+  .ivbi-kpi-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .ivbi-kpi-card:nth-child(-n + 4) {
+    border-bottom: 1px solid var(--ivbi-line-soft);
+  }
+}
+
+@media (max-width: 640px) {
+  .ivbi-header__top {
+    padding: 0.1rem 0 0.55rem;
+  }
+
+  .ivbi-header__actions,
+  .ivbi-btn--download {
+    width: 100%;
+  }
+
+  .ivbi-filterbar--compact {
+    padding-inline: 0;
+  }
+
+  .ivbi-kpi-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--ivbi-line-soft);
+  }
+
+  .ivbi-kpi-card:last-child {
+    border-bottom: 0;
+  }
+
+  .ivbi-field select,
+  .ivbi-field input,
+  .ivbi-period-trigger {
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  .ivbi-page button,
+  .ivbi-page select,
+  .ivbi-page input {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivbi-period-popover,
+  .ivbi-period-popover *,
+  .ivbi-kpi-card,
+  .ivbi-card {
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   41. DEPURACIÓN PARA USUARIO FINAL
+   - El resumen evita repetir la comparativa anual.
+   - Los filtros prescinden de un título redundante.
+   - Los tres rankings del resumen son una vista previa breve.
+========================================================= */
+
+/* Filtros: los nombres de cada campo ya explican su función. */
+.ivbi-filterbar--compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.ivbi-filterbar__fields {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ivbi-filterbar__actions {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* Resumen: una distribución general y tres vistas rápidas. */
+.ivbi-summary-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas:
+    "distribution distribution distribution distribution distribution distribution distribution distribution distribution distribution distribution distribution"
+    "sedes sedes sedes sedes facultades facultades facultades facultades autores autores autores autores";
+}
+
+.ivbi-card--compact-rank {
+  min-height: 8.75rem;
+}
+
+/* En el centro de la dona se prioriza el nombre completo y el porcentaje,
+   nunca el código interno del tipo de publicación. */
+.ivbi-donut__center small {
+  max-width: 7.25rem;
+  overflow: visible;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+@media (max-width: 1180px) {
+  .ivbi-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "distribution distribution"
+      "sedes facultades"
+      "autores autores";
+  }
+}
+
+@media (max-width: 980px) {
+  .ivbi-filterbar--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .ivbi-filterbar__fields {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ivbi-filterbar__actions {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+
+  .ivbi-summary-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "distribution"
+      "sedes"
+      "facultades"
+      "autores";
+  }
+}
+
+@media (max-width: 640px) {
+  .ivbi-filterbar__actions {
+    justify-content: stretch;
+  }
+}
+
+/* =========================================================
+   43. AYUDAS CONTEXTUALES
+   Información adicional solo al interactuar.
+========================================================= */
+
+.ivbi-kpi-strip,
+.ivbi-card {
+  overflow: visible;
+}
+
+.ivbi-hover-info {
+  position: relative;
+  z-index: 1;
+}
+
+.ivbi-hover-info:hover,
+.ivbi-hover-info:focus-visible {
+  z-index: 30;
+}
+
+.ivbi-hover-info::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.5rem);
+
+  z-index: 80;
+
+  width: max-content;
+  max-width: min(15rem, 80vw);
+
+  padding: 0.55rem 0.65rem;
+
+  border: 1px solid var(--ivbi-line);
+  border-radius: var(--radius-md);
+
+  background: var(--ivbi-elevated);
+  color: var(--ivbi-text);
+
+  box-shadow:
+    var(--shadow-card, var(--ivbi-shadow-soft));
+
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  font-weight: 500;
+  text-align: left;
+  white-space: pre-line;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translate(-50%, 0.25rem);
+
+  transition:
+    opacity var(--ivbi-transition-fast),
+    transform var(--ivbi-transition-fast),
+    visibility var(--ivbi-transition-fast);
+}
+
+.ivbi-hover-info:hover::after,
+.ivbi-hover-info:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.ivbi-hover-info:focus-visible {
+  outline:
+    2px solid
+    var(--ivbi-accent);
+
+  outline-offset: 2px;
+}
+
+.ivbi-hover-info--chart::after {
+  top: 0.2rem;
+  bottom: auto;
+
+  max-width: 13.5rem;
+
+  transform:
+    translate(-50%, 0.25rem);
+}
+
+.ivbi-hover-info--chart:hover::after,
+.ivbi-hover-info--chart:focus-visible::after {
+  transform:
+    translate(-50%, 0);
+}
+
+.ivbi-hover-info--rank {
+  border-radius:
+    var(--radius-sm);
+
+  transition:
+    background
+      var(--ivbi-transition-fast);
+}
+
+.ivbi-hover-info--rank:hover,
+.ivbi-hover-info--rank:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 4%,
+      transparent
+    );
+}
+
+.ivbi-hover-info--rank:hover
+.ivbi-rank__bar,
+.ivbi-hover-info--rank:focus-visible
+.ivbi-rank__bar {
+  opacity: 1;
+}
+
+.ivbi-grouped__barbox.ivbi-hover-info,
+.ivbi-vbars__col.ivbi-hover-info {
+  border-radius:
+    var(--radius-sm);
+}
+
+@media (max-width: 760px) {
+  .ivbi-hover-info::after {
+    max-width:
+      min(13rem, 72vw);
+
+    font-size: 0.66rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivbi-hover-info::after,
+  .ivbi-hover-info--rank {
+    transition: none;
+  }
+}
+
+
+/* Ajuste final: la barra de filtros ya no necesita un bloque de título visible. */
+.ivbi-filterbar__compact-title {
+  display: none !important;
+}
+
+
+/* Ajuste de ayudas para evitar cortes en elementos cercanos a los bordes */
+.ivbi-tooltip--left::after {
+  left: 0;
+  right: auto;
+  transform: translate(0, 0.25rem);
+}
+
+.ivbi-tooltip--left:hover::after,
+.ivbi-tooltip--left:focus-visible::after {
+  transform: translate(0, 0);
+}
+
+.ivbi-tooltip--right::after {
+  left: auto;
+  right: 0;
+  transform: translate(0, 0.25rem);
+}
+
+.ivbi-tooltip--right:hover::after,
+.ivbi-tooltip--right:focus-visible::after {
+  transform: translate(0, 0);
+}
+
+.ivbi-tooltip--center::after {
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, 0.25rem);
+}
+
+.ivbi-tooltip--center:hover::after,
+.ivbi-tooltip--center:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
+.ivbi-hover-info--chart.ivbi-tooltip--left::after,
+.ivbi-hover-info--chart.ivbi-tooltip--right::after,
+.ivbi-hover-info--chart.ivbi-tooltip--center::after {
+  top: 0.2rem;
+  bottom: auto;
+}
+
+/* =========================================================
+   44. VISUALIZACIONES SEGÚN EL TIPO DE INFORMACIÓN
+   - Tiempo: línea / área.
+   - Comparación institucional: barras.
+   - Personas y entidades: listas.
+========================================================= */
+
+.ivbi-line-chart {
+  width: 100%;
+  min-width: 0;
+  padding-top: 0.4rem;
+}
+
+.ivbi-line-chart__plot {
+  position: relative;
+  width: 100%;
+  height: 13.5rem;
+  min-height: 13.5rem;
+  margin-top: 0.15rem;
+}
+
+.ivbi-line-chart__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ivbi-line-chart__gridline {
+  stroke: var(--ivbi-line-soft);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.ivbi-line-chart__line {
+  fill: none;
+  stroke: var(--ivbi-accent);
+  stroke-width: 2.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.ivbi-line-chart__area {
+  fill:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 12%,
+      transparent
+    );
+  stroke: none;
+}
+
+.ivbi-line-chart__point {
+  position: absolute;
+  z-index: 5;
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ivbi-text);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.ivbi-line-chart__point--static {
+  cursor: default;
+}
+
+.ivbi-line-chart__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.65rem;
+  height: 0.65rem;
+  border: 2px solid var(--ivbi-surface);
+  border-radius: 50%;
+  background: var(--ivbi-accent);
+  box-shadow: 0 0 0 1px var(--ivbi-accent);
+  transform: translate(-50%, -50%);
+  transition:
+    width var(--ivbi-transition-fast),
+    height var(--ivbi-transition-fast),
+    box-shadow var(--ivbi-transition-fast);
+}
+
+.ivbi-line-chart__point:hover .ivbi-line-chart__dot,
+.ivbi-line-chart__point:focus-visible .ivbi-line-chart__dot,
+.ivbi-line-chart__point.is-selected .ivbi-line-chart__dot {
+  width: 0.82rem;
+  height: 0.82rem;
+  box-shadow:
+    0 0 0 2px var(--ivbi-surface),
+    0 0 0 4px
+      color-mix(
+        in srgb,
+        var(--ivbi-accent) 28%,
+        transparent
+      );
+}
+
+.ivbi-line-chart__value {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.15rem);
+  color: var(--ivbi-text-soft);
+  font-size: 0.59rem;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.ivbi-line-chart__axis {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding: 0.2rem 0.3rem 0;
+  border-top: 1px solid var(--ivbi-line);
+}
+
+.ivbi-line-chart__axis-label {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  color: var(--ivbi-text-soft);
+  font-size: 0.59rem;
+  line-height: 1.2;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivbi-chart-note {
+  margin: 0.45rem 0 0;
+  color: var(--ivbi-text-muted);
+  font-size: 0.62rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.ivbi-line-chart .ivbi-hover-info::after {
+  top: auto;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, 0.2rem);
+}
+
+.ivbi-line-chart .ivbi-hover-info:hover::after,
+.ivbi-line-chart .ivbi-hover-info:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
+.ivbi-simple-list {
+  display: grid;
+  align-content: start;
+  gap: 0;
+}
+
+.ivbi-simple-list__row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    1.65rem
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.7rem;
+  padding: 0.42rem 0.22rem;
+  border-bottom: 1px solid var(--ivbi-line-soft);
+}
+
+.ivbi-simple-list__row:last-child {
+  border-bottom: 0;
+}
+
+.ivbi-simple-list__index {
+  width: 1.45rem;
+  height: 1.45rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 8%,
+      transparent
+    );
+  color: var(--ivbi-text-soft);
+  font-size: 0.62rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.ivbi-simple-list__label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ivbi-text);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivbi-simple-list__count {
+  color: var(--ivbi-text-soft);
+  font-size: 0.64rem;
+  line-height: 1;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.ivbi-card--simple-list .ivbi-card__head {
+  margin-bottom: 0.35rem;
+}
+
+.ivbi-card--simple-list .ivbi-hover-info--rank:hover,
+.ivbi-card--simple-list .ivbi-hover-info--rank:focus-visible {
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .ivbi-line-chart__plot {
+    height: 11.75rem;
+    min-height: 11.75rem;
+  }
+
+  .ivbi-line-chart__value {
+    font-size: 0.55rem;
+  }
+
+  .ivbi-line-chart__axis-label {
+    font-size: 0.54rem;
+  }
+
+  .ivbi-simple-list__row {
+    grid-template-columns:
+      1.5rem
+      minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .ivbi-simple-list__count {
+    grid-column: 2;
+    margin-top: -0.2rem;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivbi-line-chart__dot {
+    transition: none;
+  }
+}
+
+
+/* =========================================================
+   45. MENÚ DE DESCARGA DE INFORMES
+   PDF como formato principal; Excel como exportación de datos.
+========================================================= */
+
+.ivbi-report-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.ivbi-report-menu__chevron {
+  width: 0.9rem !important;
+  height: 0.9rem !important;
+  margin-left: 0.1rem;
+}
+
+.ivbi-report-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: var(--z-dropdown, 60);
+
+  width: min(22rem, calc(100vw - 1.5rem));
+  padding: 0.35rem;
+
+  border: 1px solid var(--ivbi-line);
+  border-radius: var(--radius-lg);
+
+  background: var(--ivbi-elevated);
+  box-shadow: var(--shadow-card, var(--ivbi-shadow-soft));
+}
+
+.ivbi-report-option {
+  width: 100%;
+  min-height: 3.6rem;
+
+  display: grid;
+  grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+
+  padding: 0.55rem 0.6rem;
+
+  border: 0;
+  border-radius: var(--radius-md);
+
+  background: transparent;
+  color: var(--ivbi-text);
+
+  cursor: pointer;
+  text-align: left;
+
+  transition:
+    background var(--ivbi-transition-fast),
+    color var(--ivbi-transition-fast);
+}
+
+.ivbi-report-option:hover,
+.ivbi-report-option:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+
+.ivbi-report-option.is-primary {
+  background:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 6%,
+      transparent
+    );
+}
+
+.ivbi-report-option.is-primary:hover,
+.ivbi-report-option.is-primary:focus-visible {
+  background:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 10%,
+      transparent
+    );
+}
+
+.ivbi-report-option__icon {
+  width: 2.35rem;
+  height: 2.35rem;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid var(--ivbi-line);
+  border-radius: var(--radius-md);
+
+  background: var(--ivbi-surface);
+  color: var(--ivbi-text-soft);
+
+  font-size: 0.62rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.ivbi-report-option.is-primary
+.ivbi-report-option__icon {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 28%,
+      var(--ivbi-line)
+    );
+  background: var(--ivbi-accent-soft);
+  color: var(--ivbi-accent);
+}
+
+.ivbi-report-option__copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ivbi-report-option__copy strong {
+  color: var(--ivbi-text);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.ivbi-report-option__copy small {
+  color: var(--ivbi-text-soft);
+  font-size: 0.63rem;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.ivbi-report-option__tag {
+  align-self: start;
+
+  padding: 0.23rem 0.42rem;
+
+  border-radius: var(--radius-pill);
+  background: var(--ivbi-accent-soft);
+  color: var(--ivbi-accent);
+
+  font-size: 0.55rem;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ivbi-report-menu {
+    width: 100%;
+  }
+
+  .ivbi-report-menu__panel {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+
+  .ivbi-report-option {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+  }
+
+  .ivbi-report-option__tag {
+    display: none;
+  }
+}
+/* =========================================================
+   46. EVOLUCIÓN — COMPOSICIÓN ANALÍTICA DE ANCHO COMPLETO
+   - Cada visualización ocupa su propio bloque.
+   - Jerarquía: histórica -> tipos -> mensual.
+   - Mantiene los tokens y modos de theme.css.
+========================================================= */
+
+.ivbi-view-shell--trend {
+  gap: 0.875rem;
+}
+
+.ivbi-trend-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "historica"
+    "comparativa"
+    "mensual";
+  gap: 0.875rem;
+}
+
+.ivbi-card--historica {
+  grid-area: historica;
+}
+
+.ivbi-card--comparativa {
+  grid-area: comparativa;
+}
+
+.ivbi-card--mensual {
+  grid-area: mensual;
+}
+
+.ivbi-card--trend-panel {
+  min-height: 0;
+  padding: 1.05rem 1.2rem 1rem;
+  overflow: visible;
+}
+
+.ivbi-card--trend-panel .ivbi-card__head {
+  min-height: 3.2rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.65rem;
+}
+
+.ivbi-card--trend-panel .ivbi-card__head-main {
+  gap: 0.18rem;
+}
+
+.ivbi-card--trend-panel .ivbi-card__title {
+  font-size: clamp(0.95rem, 1vw, 1.05rem);
+  line-height: 1.18;
+}
+
+.ivbi-card__subtitle {
+  margin: 0;
+  color: var(--ivbi-text-soft);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.ivbi-trend-context {
+  flex: 0 0 auto;
+  padding-top: 0.1rem;
+  color: var(--ivbi-text-soft);
+  font-size: 0.67rem;
+  line-height: 1.2;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* Serie histórica: es la lectura principal de Evolución. */
+.ivbi-card--historica .ivbi-line-chart__plot {
+  height: 16.75rem;
+  min-height: 16.75rem;
+  margin-top: 0.25rem;
+}
+
+.ivbi-card--historica .ivbi-line-chart__line {
+  stroke-width: 2.5;
+}
+
+.ivbi-card--historica .ivbi-line-chart__value {
+  font-size: 0.62rem;
+}
+
+/* Comparativa: aprovecha el ancho completo antes de recurrir a scroll. */
+.ivbi-card--comparativa .ivbi-grouped-wrap {
+  gap: 0.85rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped {
+  width: 100%;
+  grid-auto-columns: minmax(7rem, 1fr);
+  justify-content: stretch;
+  gap: 0.7rem;
+  padding:
+    0.35rem
+    0.35rem
+    0.25rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-padding-inline: 0.35rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__group {
+  min-width: 7rem;
+  grid-template-rows:
+    minmax(12.25rem, 1fr)
+    auto;
+  gap: 0.5rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__bars {
+  height: 13.5rem;
+  padding:
+    1.35rem
+    0.2rem
+    0;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__barbox {
+  max-width: 1.55rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__value {
+  font-size: 0.56rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__label {
+  font-size: 0.62rem;
+}
+
+.ivbi-card--comparativa .ivbi-series-legend {
+  min-height: 2rem;
+  gap: 0.5rem 1.1rem;
+  padding-top: 0.15rem;
+}
+
+.ivbi-card--comparativa .ivbi-series-legend__item {
+  font-size: 0.61rem;
+}
+
+.ivbi-card--comparativa .ivbi-grouped__bar {
+  transition:
+    filter var(--ivbi-transition-fast),
+    box-shadow var(--ivbi-transition-fast),
+    opacity var(--ivbi-transition-fast);
+}
+
+.ivbi-card--comparativa
+.ivbi-grouped__barbox:hover
+.ivbi-grouped__bar,
+.ivbi-card--comparativa
+.ivbi-grouped__barbox:focus-visible
+.ivbi-grouped__bar {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--ivbi-text) 10%,
+      transparent
+    );
+}
+
+/* Vista mensual: suficiente altura para que la forma del área respire. */
+.ivbi-card--mensual .ivbi-line-chart__plot {
+  height: 16rem;
+  min-height: 16rem;
+  margin-top: 0.25rem;
+}
+
+.ivbi-card--mensual .ivbi-line-chart__area {
+  fill:
+    color-mix(
+      in srgb,
+      var(--ivbi-accent) 11%,
+      transparent
+    );
+}
+
+.ivbi-card--mensual .ivbi-line-chart__value {
+  font-size: 0.61rem;
+}
+
+/* Ayuda de interacción: alineada al contenido, no flotando como texto suelto. */
+.ivbi-chart-note--interactive {
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  color: var(--ivbi-text-muted);
+  font-size: 0.61rem;
+  font-weight: 500;
+}
+
+.ivbi-chart-note--interactive::before {
+  content: "i";
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--ivbi-line);
+  border-radius: 50%;
+  color: var(--ivbi-text-soft);
+  font-size: 0.58rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+/* Un poco más de respuesta visual en los puntos sin añadir decoración. */
+.ivbi-card--trend-panel
+.ivbi-line-chart__point:hover
+.ivbi-line-chart__value,
+.ivbi-card--trend-panel
+.ivbi-line-chart__point:focus-visible
+.ivbi-line-chart__value,
+.ivbi-card--trend-panel
+.ivbi-line-chart__point.is-selected
+.ivbi-line-chart__value {
+  color: var(--ivbi-text);
+}
+
+@media (max-width: 1180px) {
+  .ivbi-card--historica .ivbi-line-chart__plot,
+  .ivbi-card--mensual .ivbi-line-chart__plot {
+    height: 14.75rem;
+    min-height: 14.75rem;
+  }
+
+  .ivbi-card--comparativa .ivbi-grouped {
+    grid-auto-columns: minmax(6.5rem, 7.5rem);
+    justify-content: start;
+  }
+
+  .ivbi-card--comparativa .ivbi-grouped__group {
+    min-width: 6.5rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .ivbi-view-shell--trend,
+  .ivbi-trend-grid {
+    gap: 0.65rem;
+  }
+
+  .ivbi-card--trend-panel {
+    padding: 0.85rem;
+  }
+
+  .ivbi-card--trend-panel .ivbi-card__head {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+  }
+
+  .ivbi-card--trend-panel .ivbi-card__title {
+    font-size: 0.92rem;
+  }
+
+  .ivbi-card__subtitle {
+    font-size: 0.64rem;
+  }
+
+  .ivbi-card--historica .ivbi-line-chart__plot,
+  .ivbi-card--mensual .ivbi-line-chart__plot {
+    height: 12.5rem;
+    min-height: 12.5rem;
+  }
+
+  .ivbi-card--comparativa .ivbi-grouped {
+    grid-auto-columns: minmax(6rem, 6.75rem);
+  }
+
+  .ivbi-card--comparativa .ivbi-grouped__group {
+    min-width: 6rem;
+  }
+
+  .ivbi-card--comparativa .ivbi-grouped__bars {
+    height: 11.75rem;
+  }
+
+  .ivbi-chart-note--interactive {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .ivbi-card--trend-panel .ivbi-card__head {
+    grid-template-columns: 1fr;
+  }
+
+  .ivbi-trend-context {
+    padding-top: 0;
+  }
+
+  .ivbi-card--historica .ivbi-line-chart__plot,
+  .ivbi-card--mensual .ivbi-line-chart__plot {
+    height: 11.5rem;
+    min-height: 11.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivbi-card--comparativa .ivbi-grouped__bar {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   47. FILTROS PERTINENTES POR VISTA
+   - Evolución ya no expone un selector Año redundante.
+   - El año mensual se elige directamente en la serie histórica.
+   - Destacados conserva Cantidad porque controla el Top N.
+========================================================= */
+
+@media (min-width: 1451px) {
+  .ivbi-filterbar--compact.is-tendencia .ivbi-filterbar__fields {
+    grid-template-columns:
+      minmax(8.75rem, 1fr)
+      minmax(11.5rem, 1.3fr)
+      minmax(11.5rem, 1.3fr)
+      minmax(8.5rem, 0.9fr)
+      minmax(8.75rem, 0.9fr)
+      minmax(8.75rem, 0.9fr);
+  }
+}
+
+.ivbi-card--historica
+.ivbi-line-chart__point.is-selected
+.ivbi-line-chart__dot {
+  box-shadow:
+    0 0 0 2px var(--ivbi-surface),
+    0 0 0 4px
+      color-mix(
+        in srgb,
+        var(--ivbi-accent) 32%,
+        transparent
+      );
+}
+
+.ivbi-card--mensual .ivbi-trend-context {
+  color: var(--ivbi-accent);
+  font-weight: 700;
 }

@@ -3,6 +3,7 @@ Serializers de los catálogos generales del sistema.
 
 Este módulo gestiona:
 
+- Sedes.
 - Facultades.
 - Carreras.
 - Países.
@@ -28,6 +29,7 @@ from core.models import (
     Ciudad,
     Facultad,
     Pais,
+    Sede,
     Subarea,
 )
 
@@ -217,6 +219,65 @@ class NombreCatalogoSerializerMixin:
         return _normalize_single_line(
             value,
             allow_blank=False,
+        )
+
+
+# ============================================================
+# SEDES
+# ============================================================
+
+class SedeSerializer(
+    NombreCatalogoSerializerMixin,
+    serializers.ModelSerializer,
+):
+    """
+    Serializer de sedes institucionales.
+
+    El código se normaliza en minúsculas para conservar el mismo
+    contrato definido por el modelo Sede.
+    """
+
+    class Meta:
+        model = Sede
+
+        fields = [
+            "id",
+            "nombre",
+            "codigo",
+            "ciudad",
+            "descripcion",
+            "activa",
+        ]
+
+        read_only_fields = [
+            "id",
+        ]
+
+    def validate_codigo(
+        self,
+        value,
+    ):
+        return _normalize_single_line(
+            value,
+            allow_blank=False,
+        ).lower()
+
+    def validate_ciudad(
+        self,
+        value,
+    ):
+        return _normalize_single_line(
+            value,
+            allow_blank=True,
+        )
+
+    def validate_descripcion(
+        self,
+        value,
+    ):
+        return _normalize_multiline(
+            value,
+            allow_blank=True,
         )
 
 

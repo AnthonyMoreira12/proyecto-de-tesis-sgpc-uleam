@@ -3,6 +3,7 @@ ViewSet de selects reutilizables para formularios del sistema.
 
 Centraliza endpoints ligeros para consultar:
 
+- Sedes.
 - Facultades.
 - Carreras.
 - Proyectos.
@@ -36,6 +37,7 @@ from core.catalogos.selectors.catalogos_selects_selectors import (
     build_facultades_select_data,
     build_paises_select_data,
     build_proyectos_select_data,
+    build_sedes_select_data,
     build_subareas_select_data,
 )
 
@@ -207,6 +209,26 @@ class SelectsViewSet(ViewSet):
         )
 
     # ========================================================
+    # SEDES
+    # ========================================================
+
+    def get_sedes(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """
+        Devuelve únicamente las sedes institucionales activas.
+        """
+        return self._catalog_response(
+            build_sedes_select_data,
+            error_context=(
+                "Error al consultar el select de sedes."
+            ),
+        )
+
+    # ========================================================
     # FACULTADES
     # ========================================================
 
@@ -217,10 +239,24 @@ class SelectsViewSet(ViewSet):
         **kwargs,
     ):
         """
-        Devuelve todas las facultades.
+        Devuelve facultades.
+
+        Sin filtros conserva el catálogo completo. Cuando recibe
+        sede o sede_id, devuelve únicamente facultades con al menos
+        una carrera habilitada en esa sede.
         """
+        sede_id = self._get_first_query_parameter(
+            request,
+            (
+                "sede_id",
+                "sede",
+            ),
+            default=None,
+        )
+
         return self._catalog_response(
             build_facultades_select_data,
+            sede_id=sede_id,
             error_context=(
                 "Error al consultar el select de facultades."
             ),
@@ -234,15 +270,51 @@ class SelectsViewSet(ViewSet):
         self,
         request,
         facultad_id=None,
+        sede_id=None,
         *args,
         **kwargs,
     ):
         """
-        Devuelve las carreras correspondientes a una facultad.
+        Devuelve carreras por facultad, por sede o por ambos.
+
+        Compatibilidad:
+
+        - La ruta histórica puede seguir proporcionando
+          facultad_id.
+        - Las rutas nuevas pueden proporcionar sede_id.
+        - También se admiten facultad, facultad_id, sede y sede_id
+          como query params.
         """
+        resolved_facultad_id = (
+            facultad_id
+            if facultad_id is not None
+            else self._get_first_query_parameter(
+                request,
+                (
+                    "facultad_id",
+                    "facultad",
+                ),
+                default=None,
+            )
+        )
+
+        resolved_sede_id = (
+            sede_id
+            if sede_id is not None
+            else self._get_first_query_parameter(
+                request,
+                (
+                    "sede_id",
+                    "sede",
+                ),
+                default=None,
+            )
+        )
+
         return self._catalog_response(
             build_carreras_select_data,
-            facultad_id=facultad_id,
+            facultad_id=resolved_facultad_id,
+            sede_id=resolved_sede_id,
             error_context=(
                 "Error al consultar el select de carreras."
             ),
@@ -280,6 +352,15 @@ class SelectsViewSet(ViewSet):
             "",
         )
 
+        sede_id = self._get_first_query_parameter(
+            request,
+            (
+                "sede_id",
+                "sede",
+            ),
+            default=None,
+        )
+
         include_closed = _is_admin_user(
             request.user
         )
@@ -287,6 +368,7 @@ class SelectsViewSet(ViewSet):
         return self._catalog_response(
             build_proyectos_select_data,
             carrera_id=carrera_id,
+            sede_id=sede_id,
             include_id=include_id,
             q=query,
             incluir_cerrados=include_closed,

@@ -17,8 +17,22 @@ from core.models import (
     Ponencia,
     Proyecto,
     Publicacion,
+    Sede,
     PublicacionAutor,
     Subarea,
+)
+from core.publicaciones.services.publicaciones_duplicados_services import (
+    validar_duplicados_fuerte_publicacion,
+)
+from core.publicaciones.services.publicaciones_historial_services import (
+    registrar_edicion_publicacion,
+)
+from core.publicaciones.services.publicaciones_integridad_services import (
+    validar_integridad_publicacion,
+)
+from core.publicaciones.utils.publicaciones_permissions_utils import (
+    get_publicacion_edit_block_reason,
+    is_publicacion_content_editable,
 )
 from core.utils.files import normalize_optional_text, validate_pdf_file
 
@@ -44,6 +58,12 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
         write_only=True,
+    )
+
+    sede = serializers.PrimaryKeyRelatedField(
+        queryset=Sede.objects.filter(activa=True),
+        required=False,
+        allow_null=True,
     )
 
     carrera = serializers.PrimaryKeyRelatedField(
@@ -214,6 +234,7 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
     )
 
     GENERAL_FIELDS = {
+        "sede",
         "carrera",
         "proyecto",
         "area",
@@ -323,8 +344,35 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         instance = self.instance
+
+        if (
+            instance is not None
+            and not is_publicacion_content_editable(
+                instance
+            )
+        ):
+            raise serializers.ValidationError(
+                {
+                    "estado": [
+                        (
+                            get_publicacion_edit_block_reason(
+                                instance
+                            )
+                            or (
+                                "El estado actual de la publicación "
+                                "no permite modificar su contenido."
+                            )
+                        )
+                    ]
+                }
+            )
+
         faculty_id = attrs.pop("facultad", None)
 
+        site = attrs.get(
+            "sede",
+            getattr(instance, "sede", None),
+        )
         career = attrs.get(
             "carrera",
             getattr(instance, "carrera", None),
@@ -351,6 +399,24 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
                         )
                     }
                 )
+
+        if site is not None and career is not None:
+            if not career.sedes_carrera.filter(
+                sede_id=site.pk, activa=True
+            ).exists():
+                raise serializers.ValidationError({
+                    "carrera": "La carrera seleccionada no está habilitada en la sede indicada."
+                })
+
+        if (
+            project is not None
+            and site is not None
+            and getattr(project, "sede_id", None)
+            and project.sede_id != site.pk
+        ):
+            raise serializers.ValidationError({
+                "proyecto": "El proyecto seleccionado pertenece a una sede diferente."
+            })
 
         if (
             project is not None
@@ -477,6 +543,59 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
                 for index, item in enumerate(authors, start=1)
             ]
 
+        integrity = validar_integridad_publicacion(
+            usuario=getattr(
+                instance,
+                "usuario_creador",
+                None,
+            ),
+            sede=site,
+            carrera=career,
+            proyecto=project,
+            area=attrs.get(
+                "area",
+                getattr(instance, "area", None),
+            ),
+            subarea=attrs.get(
+                "subarea",
+                getattr(instance, "subarea", None),
+            ),
+            pais=attrs.get(
+                "pais",
+                getattr(instance, "pais", None),
+            ),
+            ciudad=attrs.get(
+                "ciudad",
+                getattr(instance, "ciudad", None),
+            ),
+            anio_publicacion=attrs.get(
+                "anio_publicacion",
+                getattr(instance, "anio_publicacion", None),
+            ),
+            mes_publicacion=attrs.get(
+                "mes_publicacion",
+                getattr(instance, "mes_publicacion", None),
+            ),
+            registrado_por_admin=True,
+            require_sede=False,
+            require_carrera=True,
+            require_periodo=True,
+        )
+
+        if (
+            attrs.get("subarea")
+            and not attrs.get("area")
+            and integrity["area"] is not None
+        ):
+            attrs["area"] = integrity["area"]
+
+        attrs["anio_publicacion"] = (
+            integrity["anio_publicacion"]
+        )
+        attrs["mes_publicacion"] = (
+            integrity["mes_publicacion"]
+        )
+
         return attrs
 
     def _update_related(self, instance, category, data):
@@ -521,8 +640,291 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
             relation.full_clean()
             relation.save()
 
+
+    def _normalizar_valor_auditoria(
+        self,
+        value,
+    ):
+        if hasattr(
+            value,
+            "pk",
+        ):
+            return value.pk
+
+        if isinstance(
+            value,
+            (list, tuple),
+        ):
+            return tuple(
+                self._normalizar_valor_auditoria(
+                    item
+                )
+                for item in value
+            )
+
+        return value
+
+    def _autores_actuales_auditoria(
+        self,
+        instance,
+    ):
+        return tuple(
+            PublicacionAutor.objects
+            .filter(
+                publicacion=instance
+            )
+            .order_by(
+                "orden",
+                "id",
+            )
+            .values_list(
+                "autor_id",
+                "orden",
+            )
+        )
+
+    def _autores_nuevos_auditoria(
+        self,
+        autores,
+    ):
+        return tuple(
+            (
+                int(
+                    item["autor_id"]
+                ),
+                int(
+                    item.get(
+                        "orden",
+                        index,
+                    )
+                ),
+            )
+            for index, item in enumerate(
+                autores or [],
+                start=1,
+            )
+        )
+
+    def _categoria_auditoria(
+        self,
+    ):
+        if hasattr(
+            self,
+            "_category",
+        ):
+            return self._category()
+
+        codigo = (
+            self._instance_tipo_codigo()
+            if hasattr(
+                self,
+                "_instance_tipo_codigo",
+            )
+            else ""
+        )
+
+        if codigo in {
+            "articulo",
+            "articulo_regional",
+            "articulo_alto_impacto",
+        }:
+            return "articulo"
+
+        if codigo == "ponencia":
+            return "ponencia"
+
+        if codigo == "libro":
+            return "libro"
+
+        if codigo in {
+            "capitulo",
+            "capitulo_libro",
+        }:
+            return "capitulo"
+
+        return ""
+
+    def _valor_actual_auditoria(
+        self,
+        instance,
+        field,
+    ):
+        fk_fields = {
+            "sede",
+            "carrera",
+            "proyecto",
+            "area",
+            "subarea",
+            "pais",
+            "ciudad",
+        }
+
+        if field in fk_fields:
+            return getattr(
+                instance,
+                f"{field}_id",
+                None,
+            )
+
+        base_fields = {
+            "anio_publicacion",
+            "mes_publicacion",
+            "origen_tipo",
+            "origen_grado",
+        }
+
+        if field in base_fields:
+            return getattr(
+                instance,
+                field,
+                None,
+            )
+
+        if field == "archivo_pdf":
+            archivo = getattr(
+                instance,
+                "archivo_pdf",
+                None,
+            )
+            return (
+                getattr(
+                    archivo,
+                    "name",
+                    None,
+                )
+                or None
+            )
+
+        if field == "autores":
+            return (
+                self._autores_actuales_auditoria(
+                    instance
+                )
+            )
+
+        relation_name = {
+            "ponencia": "ponencia",
+            "articulo": "articulo",
+            "libro": "libro",
+            "capitulo": "capitulo_libro",
+        }.get(
+            self._categoria_auditoria()
+        )
+
+        related = (
+            getattr(
+                instance,
+                relation_name,
+                None,
+            )
+            if relation_name
+            else None
+        )
+
+        if (
+            related is not None
+            and hasattr(
+                related,
+                field,
+            )
+        ):
+            return getattr(
+                related,
+                field,
+                None,
+            )
+
+        return getattr(
+            instance,
+            field,
+            None,
+        )
+
+    def _campos_realmente_modificados(
+        self,
+        instance,
+        validated_data,
+    ):
+        """
+        Calcula los campos cuyo valor realmente cambia.
+
+        ``validate()`` puede insertar valores actuales para validar
+        integridad. Esos valores no deben aparecer en auditoría si
+        permanecen iguales.
+        """
+
+        modified = []
+
+        for field, new_value in (
+            validated_data.items()
+        ):
+            if field == "facultad":
+                continue
+
+            if field == "autores":
+                old_value = (
+                    self._autores_actuales_auditoria(
+                        instance
+                    )
+                )
+                new_value = (
+                    self._autores_nuevos_auditoria(
+                        new_value
+                    )
+                )
+
+            elif field == "archivo_pdf":
+                old_value = (
+                    self._valor_actual_auditoria(
+                        instance,
+                        field,
+                    )
+                )
+                new_value = (
+                    getattr(
+                        new_value,
+                        "name",
+                        None,
+                    )
+                    if new_value
+                    else None
+                )
+
+            else:
+                old_value = (
+                    self._normalizar_valor_auditoria(
+                        self._valor_actual_auditoria(
+                            instance,
+                            field,
+                        )
+                    )
+                )
+                new_value = (
+                    self._normalizar_valor_auditoria(
+                        new_value
+                    )
+                )
+
+            if old_value != new_value:
+                modified.append(
+                    field
+                )
+
+        return sorted(
+            set(
+                modified
+            )
+        )
+
     @transaction.atomic
     def update(self, instance, validated_data):
+        campos_modificados = (
+            self._campos_realmente_modificados(
+                instance,
+                validated_data,
+            )
+        )
+
         locked = (
             Publicacion.objects
             .select_for_update()
@@ -539,7 +941,33 @@ class PublicacionActualizacionSerializer(serializers.Serializer):
         locked.save()
         self._update_related(locked, category, validated_data)
 
+        validar_duplicados_fuerte_publicacion(
+            locked,
+            campos_modificados=(
+                campos_modificados
+            ),
+        )
+
         if authors is not None:
             self._sync_authors(locked, authors)
+
+        request = self.context.get(
+            "request"
+        )
+
+        actor = getattr(
+            request,
+            "user",
+            None,
+        )
+
+        registrar_edicion_publicacion(
+            publicacion=locked,
+            actor=actor,
+            campos_modificados=(
+                campos_modificados
+            ),
+            origen="administracion",
+        )
 
         return locked

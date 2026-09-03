@@ -3,7 +3,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from core.models import Carrera, Facultad
+from core.models import Carrera, CarreraSede, Facultad, Sede
 from core.utils.files import normalize_optional_text, normalize_text
 
 
@@ -178,4 +178,73 @@ class AdminCarreraSerializer(
             )
 
         attrs["nombre"] = name
+        return attrs
+
+
+class AdminSedeSerializer(
+    _ModelValidationMixin,
+    serializers.ModelSerializer,
+):
+    class Meta:
+        model = Sede
+        fields = [
+            "id", "nombre", "codigo", "ciudad", "descripcion", "activa",
+        ]
+        read_only_fields = ["id"]
+
+    def validate_nombre(self, value):
+        value = normalize_text(value)
+        if not value:
+            raise serializers.ValidationError("El nombre de la sede es obligatorio.")
+        qs = Sede.objects.filter(nombre__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe una sede con este nombre.")
+        return value
+
+    def validate_codigo(self, value):
+        value = normalize_text(value).lower()
+        if not value:
+            raise serializers.ValidationError("El código de la sede es obligatorio.")
+        qs = Sede.objects.filter(codigo__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe una sede con este código.")
+        return value
+
+
+class AdminCarreraSedeSerializer(
+    _ModelValidationMixin,
+    serializers.ModelSerializer,
+):
+    sede_nombre = serializers.CharField(source="sede.nombre", read_only=True)
+    carrera_nombre = serializers.CharField(source="carrera.nombre", read_only=True)
+    facultad_nombre = serializers.CharField(source="carrera.facultad.nombre", read_only=True)
+
+    class Meta:
+        model = CarreraSede
+        fields = [
+            "id", "sede", "sede_nombre", "carrera", "carrera_nombre",
+            "facultad_nombre", "activa",
+        ]
+        read_only_fields = ["id", "sede_nombre", "carrera_nombre", "facultad_nombre"]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        instance = self.instance
+        sede = attrs.get("sede", getattr(instance, "sede", None))
+        carrera = attrs.get("carrera", getattr(instance, "carrera", None))
+        if sede is None:
+            raise serializers.ValidationError({"sede": "La sede es obligatoria."})
+        if carrera is None:
+            raise serializers.ValidationError({"carrera": "La carrera es obligatoria."})
+        qs = CarreraSede.objects.filter(sede=sede, carrera=carrera)
+        if instance is not None:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError({
+                "carrera": "Esta carrera ya está relacionada con la sede seleccionada."
+            })
         return attrs

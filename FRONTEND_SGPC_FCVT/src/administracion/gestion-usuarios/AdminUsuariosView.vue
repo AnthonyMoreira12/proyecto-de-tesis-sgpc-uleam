@@ -5,49 +5,39 @@
            ENCABEZADO
       ====================================================== -->
       <header
-        class="users-admin__head adm-surface adm-hero"
+        class="users-admin__head"
         aria-labelledby="users-admin-title"
       >
         <div class="users-admin__head-main">
           <div class="users-admin__copy">
-            <span class="adm-kicker">
-              Administración
-            </span>
-
             <h1
               id="users-admin-title"
               class="users-admin__title"
             >
-              Gestión de usuarios
+              Usuarios
             </h1>
-
-            <p class="users-admin__subtitle">
-              Administre cuentas externas, revise usuarios
-              institucionales y controle el acceso al sistema
-              desde una sola interfaz.
-            </p>
           </div>
 
           <div class="users-admin__head-actions">
             <button
               class="users-btn users-btn--secondary"
               type="button"
-              :disabled="loading"
+              :disabled="refreshingAll || actionProcessing"
               @click="refrescarVista"
             >
               <span aria-hidden="true">↻</span>
 
               {{
-                loading
-                  ? "Actualizando..."
-                  : "Refrescar"
+                refreshingAll
+                  ? "Actualizando…"
+                  : "Actualizar"
               }}
             </button>
 
             <button
               class="users-btn users-btn--primary"
               type="button"
-              :disabled="loading"
+              :disabled="loading || actionProcessing"
               @click="openCreateExterno"
             >
               <span aria-hidden="true">＋</span>
@@ -108,9 +98,13 @@
             <span class="users-sr-only">
               {{ tabCount(tab.key) }}
               {{
-                tabCount(tab.key) === 1
-                  ? "usuario"
-                  : "usuarios"
+                tab.key === "solicitudes"
+                  ? tabCount(tab.key) === 1
+                    ? "solicitud"
+                    : "solicitudes"
+                  : tabCount(tab.key) === 1
+                    ? "usuario"
+                    : "usuarios"
               }}
             </span>
           </button>
@@ -121,9 +115,13 @@
            BÚSQUEDA
       ====================================================== -->
       <section
-        class="users-admin__toolbar adm-surface"
+        class="users-admin__toolbar"
         role="search"
-        aria-label="Buscar usuarios"
+        :aria-label="
+          activeTab === 'solicitudes'
+            ? 'Buscar solicitudes'
+            : 'Buscar usuarios'
+        "
       >
         <div class="users-admin__search">
           <label
@@ -151,16 +149,20 @@
             class="users-admin__search-input"
             type="search"
             autocomplete="off"
-            :disabled="loading"
-            placeholder="Buscar por nombre, correo, cédula, Facultad, Carrera o publicación"
-            @keyup.enter="cargarUsuarios"
+            :disabled="loading || loadingSolicitudes"
+            :placeholder="
+              activeTab === 'solicitudes'
+                ? 'Buscar por usuario, correo o motivo'
+                : 'Buscar usuarios'
+            "
+            @keyup.enter="handleSearch"
           />
 
           <button
             v-if="busquedaTrim"
             class="users-admin__search-clear"
             type="button"
-            :disabled="loading"
+            :disabled="loading || loadingSolicitudes"
             aria-label="Limpiar búsqueda"
             title="Limpiar búsqueda"
             @click="clearSearchAndReload"
@@ -172,22 +174,29 @@
         <button
           class="users-btn users-btn--primary users-admin__search-button"
           type="button"
-          :disabled="loading"
-          @click="cargarUsuarios"
+          :disabled="loading || loadingSolicitudes"
+          @click="handleSearch"
         >
           {{
-            loading
-              ? "Buscando..."
+            loading || loadingSolicitudes
+              ? "Cargando…"
               : "Buscar"
           }}
         </button>
       </section>
 
+      <AdminActionFeedback
+        v-if="actionMessage"
+        class="users-admin__action-feedback"
+        :status="actionStatus"
+        :message="actionMessage"
+      />
+
       <!-- =====================================================
            ERROR
       ====================================================== -->
       <div
-        v-if="errorCarga"
+        v-if="errorCarga && activeTab !== 'solicitudes'"
         class="users-alert users-alert--error"
         role="alert"
         aria-live="assertive"
@@ -208,27 +217,47 @@
         </div>
       </div>
 
+      <div
+        v-if="
+          activeTab === 'solicitudes' &&
+          errorSolicitudes
+        "
+        class="users-alert users-alert--error"
+        role="alert"
+        aria-live="assertive"
+      >
+        <span
+          class="users-alert__icon"
+          aria-hidden="true"
+        >
+          !
+        </span>
+
+        <div>
+          <strong>
+            No se pudieron cargar las solicitudes
+          </strong>
+          <p>{{ errorSolicitudes }}</p>
+        </div>
+      </div>
+
       <!-- =====================================================
            LISTADO
       ====================================================== -->
       <section
         id="users-list-panel"
-        class="users-admin__tablecard adm-surface"
+        class="users-admin__tablecard"
         role="tabpanel"
         :aria-labelledby="
           `users-tab-${activeTab}`
         "
-        :aria-busy="loading"
+        :aria-busy="currentLoading"
       >
         <div class="users-admin__sectionhead">
           <div class="users-admin__sectioncopy">
             <h2 class="users-admin__section-title">
-              Listado de usuarios
+              {{ sectionTitle }}
             </h2>
-
-            <p class="users-admin__section-sub">
-              {{ tableSubtitle }}
-            </p>
           </div>
 
           <span
@@ -236,66 +265,42 @@
             aria-live="polite"
             aria-atomic="true"
           >
-            {{ filteredUsuarios.length }}
-
-            {{
-              filteredUsuarios.length === 1
-                ? "usuario visible"
-                : "usuarios visibles"
-            }}
+            {{ resultCount }}
+            {{ resultCountLabel }}
           </span>
         </div>
 
-        <!-- PROGRESO -->
-        <div
-          v-if="loading"
-          class="users-admin__progress"
-          role="status"
-          aria-live="polite"
-        >
-          <span
-            class="users-admin__spinner"
-            aria-hidden="true"
-          ></span>
-
-          Actualizando listado de usuarios...
-        </div>
+        <!-- ACTUALIZACIÓN SIN VACIAR RESULTADOS -->
+        <AdminInlineLoader
+          v-if="currentRefreshing"
+          class="users-admin__inline-loader"
+          :message="
+            activeTab === 'solicitudes'
+              ? 'Actualizando solicitudes…'
+              : 'Actualizando usuarios…'
+          "
+        />
 
         <!-- CARGA INICIAL -->
-        <div
-          v-if="
-            loading &&
-            !usuarios.length
-          "
+        <AdminLoadingState
+          v-if="currentInitialLoading"
           class="users-admin__loading-state"
-          aria-hidden="true"
-        >
-          <div
-            v-for="index in 5"
-            :key="index"
-            class="users-skeleton-row"
-          >
-            <span
-              class="users-skeleton users-skeleton--name"
-            ></span>
-
-            <span
-              class="users-skeleton users-skeleton--email"
-            ></span>
-
-            <span
-              class="users-skeleton users-skeleton--short"
-            ></span>
-
-            <span
-              class="users-skeleton users-skeleton--status"
-            ></span>
-          </div>
-        </div>
+          :message="
+            activeTab === 'solicitudes'
+              ? 'Cargando solicitudes de edición…'
+              : 'Cargando usuarios…'
+          "
+          :description="
+            activeTab === 'solicitudes'
+              ? 'Consultando las solicitudes pendientes.'
+              : 'Consultando las cuentas registradas.'
+          "
+          :skeleton-rows="5"
+        />
 
         <!-- ESTADO VACÍO -->
         <div
-          v-else-if="!filteredUsuarios.length"
+          v-else-if="!resultCount && !currentError"
           class="users-admin__empty"
         >
           <div
@@ -311,14 +316,26 @@
           </div>
 
           <h3 class="users-admin__empty-title">
-            Sin usuarios para mostrar
+            {{
+              activeTab === "solicitudes"
+                ? busquedaTrim
+                  ? "Sin coincidencias"
+                  : "Sin solicitudes pendientes"
+                : "Sin usuarios"
+            }}
           </h3>
 
-          <p class="users-admin__empty-text">
+          <p
+            class="users-admin__empty-text"
+          >
             {{
-              busquedaTrim
-                ? `No se encontraron coincidencias para “${busquedaTrim}”.`
-                : "No existen usuarios dentro de la clasificación seleccionada."
+              activeTab === "solicitudes"
+                ? busquedaTrim
+                  ? "No hay solicitudes pendientes que coincidan con la búsqueda."
+                  : "No hay solicitudes de extensión del plazo de edición por revisar."
+                : busquedaTrim
+                  ? "Pruebe con otra búsqueda."
+                  : "No hay usuarios para esta clasificación."
             }}
           </p>
 
@@ -333,6 +350,7 @@
             </button>
 
             <button
+              v-if="activeTab !== 'solicitudes'"
               class="users-btn users-btn--primary"
               type="button"
               @click="openCreateExterno"
@@ -346,7 +364,7 @@
              TABLA
         ==================================================== -->
         <div
-          v-else
+          v-else-if="activeTab !== 'solicitudes'"
           class="users-admin__table-wrap"
         >
           <table class="users-admin__table">
@@ -366,19 +384,11 @@
                 </th>
 
                 <th scope="col">
-                  Número de cédula
-                </th>
-
-                <th scope="col">
                   Tipo
                 </th>
 
                 <th scope="col">
-                  Facultad
-                </th>
-
-                <th scope="col">
-                  Carrera
+                  Vinculación
                 </th>
 
                 <th scope="col">
@@ -400,7 +410,7 @@
                 :key="usuario.id"
               >
                 <!-- USUARIO -->
-                <td class="users-admin__cell-user">
+                <td class="users-admin__cell-user" data-label="Usuario">
                   <div class="users-user">
                     <strong class="users-user__name">
                       {{ fullName(usuario) }}
@@ -439,6 +449,17 @@
                             : "publicaciones"
                         }}
                       </span>
+
+                      <span
+                        v-if="hasPendingExtensionRequest(usuario)"
+                        class="
+                          users-pill
+                          users-pill--mini
+                          users-pill--extension
+                        "
+                      >
+                        {{ formatRequestedHours(usuario) }}
+                      </span>
                     </div>
                   </div>
                 </td>
@@ -446,6 +467,7 @@
                 <!-- CORREO -->
                 <td
                   class="users-admin__cell-muted users-admin__cell-email"
+                  data-label="Correo"
                 >
                   {{
                     usuario.email ||
@@ -453,33 +475,27 @@
                   }}
                 </td>
 
-                <!-- CÉDULA -->
-                <td class="users-admin__cell-muted">
-                  {{
-                    usuario.identificacion ||
-                    "No registrada"
-                  }}
-                </td>
-
                 <!-- TIPO -->
-                <td>
+                <td data-label="Tipo">
                   <span class="users-pill">
                     {{ tipoLabelHuman(usuario) }}
                   </span>
                 </td>
 
-                <!-- FACULTAD -->
-                <td class="users-admin__cell-muted">
-                  {{ facultadLabel(usuario) }}
-                </td>
-
-                <!-- CARRERA -->
-                <td class="users-admin__cell-muted">
-                  {{ carreraLabel(usuario) }}
+                <!-- VINCULACIÓN -->
+                <td
+                  class="users-admin__cell-muted users-admin__cell-affiliation"
+                  data-label="Vinculación"
+                >
+                  <div class="users-affiliation">
+                    <strong>{{ carreraLabel(usuario) }}</strong>
+                    <span>{{ facultadLabel(usuario) }}</span>
+                    <small>{{ sedeLabel(usuario) }}</small>
+                  </div>
                 </td>
 
                 <!-- ESTADO -->
-                <td>
+                <td data-label="Estado">
                   <span
                     v-if="isPendiente(usuario)"
                     class="users-pill users-pill--pending"
@@ -505,15 +521,32 @@
                 </td>
 
                 <!-- ACCIONES -->
-                <td class="users-admin__td-actions">
+                <td class="users-admin__td-actions" data-label="Acciones">
                   <div
                     class="users-actions"
                     @click.stop
                   >
                     <button
+                      v-if="hasPendingExtensionRequest(usuario)"
+                      class="
+                        users-btn
+                        users-btn--request
+                        users-btn--sm
+                      "
+                      type="button"
+                      :disabled="loading || loadingSolicitudes || actionProcessing"
+                      :aria-label="
+                        `Revisar solicitud de edición de ${fullName(usuario)}`
+                      "
+                      @click="openExtensionRequestForUser(usuario)"
+                    >
+                      Revisar solicitud
+                    </button>
+
+                    <button
                       class="users-btn users-btn--secondary users-btn--sm"
                       type="button"
-                      :disabled="loading"
+                      :disabled="loading || actionProcessing"
                       :aria-label="
                         `Ver detalle de ${fullName(usuario)}`
                       "
@@ -525,7 +558,7 @@
                     <button
                       class="users-btn users-btn--secondary users-btn--sm"
                       type="button"
-                      :disabled="loading"
+                      :disabled="loading || actionProcessing"
                       :aria-label="
                         `Editar ${fullName(usuario)}`
                       "
@@ -541,7 +574,7 @@
                         "
                         class="users-btn users-btn--secondary users-btn--sm users-btn--more"
                         type="button"
-                        :disabled="loading"
+                        :disabled="loading || actionProcessing"
                         :aria-label="
                           `Más acciones para ${fullName(usuario)}`
                         "
@@ -632,6 +665,91 @@
             </tbody>
           </table>
         </div>
+        <!-- ===================================================
+             COLA DE SOLICITUDES DE EDICIÓN
+        ==================================================== -->
+        <div
+          v-else
+          class="users-admin__requests-wrap"
+        >
+          <table class="users-admin__requests-table">
+            <caption class="users-sr-only">
+              Solicitudes pendientes para ampliar el plazo de edición del perfil
+            </caption>
+
+            <thead>
+              <tr>
+                <th scope="col">Usuario</th>
+                <th scope="col">Solicitud</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Motivo</th>
+                <th
+                  scope="col"
+                  class="users-admin__th-actions"
+                >
+                  Acción
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                v-for="solicitud in filteredSolicitudes"
+                :key="solicitud.id"
+              >
+                <td data-label="Usuario">
+                  <div class="users-request-user">
+                    <strong class="users-request-user__name">
+                      {{ solicitudUserName(solicitud) }}
+                    </strong>
+                    <span class="users-request-user__email">
+                      {{ solicitudUserEmail(solicitud) }}
+                    </span>
+                  </div>
+                </td>
+
+                <td data-label="Solicitud">
+                  <span class="users-request-hours">
+                    {{ formatRequestHours(solicitud) }}
+                  </span>
+                </td>
+
+                <td
+                  class="users-admin__cell-muted"
+                  data-label="Fecha"
+                >
+                  {{ formatRequestDate(solicitud?.solicitada_at) }}
+                </td>
+
+                <td
+                  class="users-request-reason"
+                  data-label="Motivo"
+                >
+                  <span :title="solicitud?.motivo || ''">
+                    {{ truncateRequestReason(solicitud?.motivo) }}
+                  </span>
+                </td>
+
+                <td
+                  class="users-admin__td-actions"
+                  data-label="Acción"
+                >
+                  <button
+                    class="users-btn users-btn--request users-btn--sm"
+                    type="button"
+                    :disabled="loadingSolicitudes || actionProcessing"
+                    :aria-label="
+                      `Revisar solicitud de ${solicitudUserName(solicitud)}`
+                    "
+                    @click="openExtensionRequest(solicitud)"
+                  >
+                    Revisar solicitud
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <!-- =====================================================
@@ -639,8 +757,7 @@
       ====================================================== -->
       <UsuarioModal
         v-if="modal.open"
-        :mode="modal.mode"
-        :usuario="modal.usuario"
+        mode="create"
         @close="closeModal"
         @done="handleUsuarioDone"
       />
@@ -652,10 +769,11 @@
         @done="handleActivated"
       />
 
-      <DetalleAutorUsuarioModal
-        v-if="detailModal.open"
-        :usuario="detailModal.usuario"
-        @close="closeDetailModal"
+      <SolicitudEdicionPerfilModal
+        v-if="extensionModal.open"
+        :solicitud="extensionModal.solicitud"
+        @close="closeExtensionRequest"
+        @resolved="handleExtensionResolved"
       />
 
       <NoticeDialog
@@ -682,7 +800,10 @@ import {
 } from "vue-router";
 
 import { adminApi } from "../../scripts/api/adminApi";
-
+import {
+  listarSolicitudesExtensionPerfil,
+  obtenerSolicitudExtensionPerfil,
+} from "../../scripts/api/profileExtensionApi";
 import {
   getAccountTypeLabel,
   isAdminUser,
@@ -693,8 +814,12 @@ import {
 import { useNotice } from "../../scripts/composables/useNotice";
 
 import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
+import AdminActionFeedback from "../_shared/components/feedback/AdminActionFeedback.vue";
+import AdminInlineLoader from "../_shared/components/feedback/AdminInlineLoader.vue";
+import AdminLoadingState from "../_shared/components/feedback/AdminLoadingState.vue";
+import { useActionState } from "../_shared/composables/useActionState";
 import ActivarUsuarioModal from "./ActivarUsuarioModal.vue";
-import DetalleAutorUsuarioModal from "./DetalleAutorUsuarioModal.vue";
+import SolicitudEdicionPerfilModal from "./SolicitudEdicionPerfilModal.vue";
 import UsuarioModal from "./UsuarioModal.vue";
 
 
@@ -714,12 +839,25 @@ const loading = ref(false);
 const errorCarga = ref("");
 const activeTab = ref("activos");
 const actionMenuId = ref(null);
+const solicitudesExtension = ref([]);
+const solicitudesExtensionCount = ref(0);
+const loadingSolicitudes = ref(false);
+const errorSolicitudes = ref("");
 
+const {
+  status: actionStatus,
+  message: actionMessage,
+  processing: actionProcessing,
+  start: startAction,
+  success: successAction,
+  fail: failAction,
+  reset: resetAction,
+} = useActionState();
+
+let actionFeedbackTimer = null;
 
 const modal = reactive({
   open: false,
-  mode: "create",
-  usuario: null,
 });
 
 
@@ -728,10 +866,9 @@ const activateModal = reactive({
   usuario: null,
 });
 
-
-const detailModal = reactive({
+const extensionModal = reactive({
   open: false,
-  usuario: null,
+  solicitud: null,
 });
 
 
@@ -743,6 +880,10 @@ const tabs = Object.freeze([
   {
     key: "pendientes",
     label: "Pendientes",
+  },
+  {
+    key: "solicitudes",
+    label: "Solicitudes de edición",
   },
   {
     key: "activos",
@@ -757,6 +898,48 @@ const tabs = Object.freeze([
     label: "Externos",
   },
 ]);
+
+
+const refreshingAll = computed(() =>
+  loading.value || loadingSolicitudes.value
+);
+
+const currentLoading = computed(() =>
+  activeTab.value === "solicitudes"
+    ? loadingSolicitudes.value
+    : loading.value
+);
+
+const currentHasData = computed(() =>
+  activeTab.value === "solicitudes"
+    ? solicitudesExtension.value.length > 0
+    : usuarios.value.length > 0
+);
+
+const currentInitialLoading = computed(() =>
+  currentLoading.value && !currentHasData.value
+);
+
+const currentRefreshing = computed(() =>
+  currentLoading.value && currentHasData.value
+);
+
+const currentError = computed(() =>
+  activeTab.value === "solicitudes"
+    ? errorSolicitudes.value
+    : errorCarga.value
+);
+
+const scheduleActionFeedbackReset = () => {
+  if (actionFeedbackTimer) {
+    window.clearTimeout(actionFeedbackTimer);
+  }
+
+  actionFeedbackTimer = window.setTimeout(() => {
+    resetAction();
+    actionFeedbackTimer = null;
+  }, 3600);
+};
 
 
 /* ============================================================
@@ -798,6 +981,29 @@ const normalizeUsersResponse = (data) => {
   }
 
   return [];
+};
+
+
+const normalizeExtensionRequestsResponse = (data) => {
+  const results = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.results)
+      ? data.results
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+
+  const rawCount = Number(
+    data?.count ?? results.length
+  );
+
+  return {
+    results,
+    count:
+      Number.isFinite(rawCount) && rawCount >= 0
+        ? rawCount
+        : results.length,
+  };
 };
 
 
@@ -843,6 +1049,21 @@ const tipoLabelHuman = (usuario) => {
   }
 
   return "Sin clasificación";
+};
+
+
+const sedeLabel = (usuario) => {
+  if (!isInstitucional(usuario)) {
+    return "No aplica";
+  }
+
+  return (
+    usuario?.sede_nombre ||
+    (typeof usuario?.sede === "object"
+      ? usuario.sede?.nombre
+      : usuario?.sede) ||
+    "Sin asignar"
+  );
 };
 
 
@@ -922,6 +1143,170 @@ const totalPublicaciones = (usuario) => {
 
 
 
+const solicitudesPendientes = computed(() => {
+  return (solicitudesExtension.value || []).filter(
+    (solicitud) =>
+      String(solicitud?.estado || "pendiente")
+        .trim()
+        .toLowerCase() === "pendiente"
+  );
+});
+
+
+const solicitudesPendientesPorUsuario = computed(() => {
+  const map = new Map();
+
+  for (const solicitud of solicitudesPendientes.value) {
+    const userId = Number(solicitud?.usuario_id);
+
+    if (
+      !Number.isInteger(userId) ||
+      userId < 1
+    ) {
+      continue;
+    }
+
+    const current = map.get(userId);
+
+    if (!current) {
+      map.set(userId, solicitud);
+      continue;
+    }
+
+    const currentDate = new Date(
+      current?.solicitada_at || 0
+    ).getTime();
+    const nextDate = new Date(
+      solicitud?.solicitada_at || 0
+    ).getTime();
+
+    if (nextDate > currentDate) {
+      map.set(userId, solicitud);
+    }
+  }
+
+  return map;
+});
+
+
+const solicitudPendienteUsuario = (usuario) => {
+  const userId = Number(usuario?.id);
+
+  if (
+    !Number.isInteger(userId) ||
+    userId < 1
+  ) {
+    return null;
+  }
+
+  return (
+    solicitudesPendientesPorUsuario.value.get(userId) ||
+    null
+  );
+};
+
+
+const hasPendingExtensionRequest = (usuario) => {
+  return Boolean(
+    solicitudPendienteUsuario(usuario)
+  );
+};
+
+
+const formatRequestedHours = (usuario) => {
+  const solicitud =
+    solicitudPendienteUsuario(usuario);
+  const horas = Number(
+    solicitud?.horas_solicitadas
+  );
+
+  return Number.isFinite(horas) && horas > 0
+    ? `${horas} h solicitadas`
+    : "Edición solicitada";
+};
+
+
+const solicitudUserName = (solicitud) => {
+  return (
+    normalizeText(solicitud?.usuario_nombre) ||
+    "Usuario"
+  );
+};
+
+
+const solicitudUserEmail = (solicitud) => {
+  return (
+    normalizeText(solicitud?.usuario_email) ||
+    "Correo no disponible"
+  );
+};
+
+
+const formatRequestHours = (solicitud) => {
+  const hours = Number(
+    solicitud?.horas_solicitadas
+  );
+
+  return Number.isFinite(hours) && hours > 0
+    ? `${hours} horas`
+    : "Tiempo no disponible";
+};
+
+
+const formatRequestDate = (value) => {
+  if (!value) {
+    return "No disponible";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No disponible";
+  }
+
+  return new Intl.DateTimeFormat("es-EC", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
+
+const truncateRequestReason = (value) => {
+  const text = normalizeText(value);
+
+  if (!text) {
+    return "Sin motivo registrado";
+  }
+
+  return text.length > 92
+    ? `${text.slice(0, 89)}…`
+    : text;
+};
+
+
+const filteredSolicitudes = computed(() => {
+  const list = solicitudesPendientes.value;
+  const query = normalizeSearchText(
+    busquedaTrim.value
+  );
+
+  if (!query) {
+    return list;
+  }
+
+  return list.filter((solicitud) => {
+    const searchable = normalizeSearchText([
+      solicitud?.usuario_nombre,
+      solicitud?.usuario_email,
+      solicitud?.motivo,
+      solicitud?.horas_solicitadas,
+    ].filter(Boolean).join(" "));
+
+    return searchable.includes(query);
+  });
+});
+
+
 /* ============================================================
    FILTROS
 ============================================================ */
@@ -950,6 +1335,9 @@ const filteredUsuarios = computed(() => {
       return visibleUsers.filter(
         isPendiente
       );
+
+    case "solicitudes":
+      return [];
 
     case "activos":
       return visibleUsers.filter(
@@ -1000,6 +1388,33 @@ const tableSubtitle = computed(() => {
 });
 
 
+const sectionTitle = computed(() => {
+  return activeTab.value === "solicitudes"
+    ? "Solicitudes de edición"
+    : "Resultados";
+});
+
+
+const resultCount = computed(() => {
+  return activeTab.value === "solicitudes"
+    ? filteredSolicitudes.value.length
+    : filteredUsuarios.value.length;
+});
+
+
+const resultCountLabel = computed(() => {
+  if (activeTab.value === "solicitudes") {
+    return resultCount.value === 1
+      ? "solicitud"
+      : "solicitudes";
+  }
+
+  return resultCount.value === 1
+    ? "usuario"
+    : "usuarios";
+});
+
+
 const tabCount = (key) => {
   const list = usuarios.value || [];
 
@@ -1008,6 +1423,9 @@ const tabCount = (key) => {
       return list.filter(
         isPendiente
       ).length;
+
+    case "solicitudes":
+      return solicitudesExtensionCount.value;
 
     case "activos":
       return list.filter(
@@ -1144,6 +1562,129 @@ const resolveLoadError = (error) => {
 };
 
 
+const cargarSolicitudesExtension = async () => {
+  if (loadingSolicitudes.value) {
+    return;
+  }
+
+  loadingSolicitudes.value = true;
+  errorSolicitudes.value = "";
+
+  try {
+    const data =
+      await listarSolicitudesExtensionPerfil({
+        estado: "pendiente",
+        limit: 100,
+      });
+
+    const normalized =
+      normalizeExtensionRequestsResponse(data);
+
+    solicitudesExtension.value =
+      normalized.results;
+    solicitudesExtensionCount.value =
+      normalized.count;
+  } catch (error) {
+    console.error(
+      "Error cargando solicitudes de edición de perfil:",
+      error
+    );
+
+    const baseMessage =
+      error?.response?.data?.detail ||
+      "No se pudieron cargar las solicitudes de edición de perfil.";
+
+    errorSolicitudes.value =
+      solicitudesExtension.value.length
+        ? `${baseMessage} Se mantiene la última información cargada.`
+        : baseMessage;
+  } finally {
+    loadingSolicitudes.value = false;
+  }
+};
+
+
+const retirarSolicitudResueltaLocal = (solicitudId) => {
+  const id = positiveRouteId(
+    solicitudId
+  );
+
+  if (!id) {
+    return false;
+  }
+
+  const previousLength =
+    solicitudesExtension.value.length;
+
+  solicitudesExtension.value =
+    solicitudesExtension.value.filter(
+      (solicitud) =>
+        Number(solicitud?.id) !== id
+    );
+
+  return (
+    solicitudesExtension.value.length !==
+    previousLength
+  );
+};
+
+
+const actualizarUsuarioLocal = (
+  usuarioId,
+  patch = {}
+) => {
+  const id = positiveRouteId(usuarioId);
+
+  if (!id) {
+    return false;
+  }
+
+  const index =
+    usuarios.value.findIndex(
+      (item) =>
+        Number(item?.id) === id
+    );
+
+  if (index < 0) {
+    return false;
+  }
+
+  usuarios.value[index] = {
+    ...usuarios.value[index],
+    ...(patch && typeof patch === "object"
+      ? patch
+      : {}),
+  };
+
+  return true;
+};
+
+
+const retirarUsuarioLocal = (
+  usuarioId
+) => {
+  const id = positiveRouteId(usuarioId);
+
+  if (!id) {
+    return false;
+  }
+
+  const previousLength =
+    usuarios.value.length;
+
+  usuarios.value =
+    usuarios.value.filter(
+      (item) =>
+        Number(item?.id) !== id
+    );
+
+  return (
+    usuarios.value.length !==
+    previousLength
+  );
+};
+
+
 const cargarUsuarios = async () => {
   if (loading.value) {
     return;
@@ -1167,8 +1708,13 @@ const cargarUsuarios = async () => {
       error
     );
 
-    errorCarga.value =
+    const baseMessage =
       resolveLoadError(error);
+
+    errorCarga.value =
+      usuarios.value.length
+        ? `${baseMessage} Se mantiene la última información cargada.`
+        : baseMessage;
   } finally {
     loading.value = false;
   }
@@ -1176,12 +1722,26 @@ const cargarUsuarios = async () => {
 
 
 const refrescarVista = async () => {
-  await cargarUsuarios();
+  await Promise.all([
+    cargarUsuarios(),
+    cargarSolicitudesExtension(),
+  ]);
 };
 
 
 const clearSearchAndReload = async () => {
   busqueda.value = "";
+
+  if (activeTab.value !== "solicitudes") {
+    await cargarUsuarios();
+  }
+};
+
+
+const handleSearch = async () => {
+  if (activeTab.value === "solicitudes") {
+    return;
+  }
 
   await cargarUsuarios();
 };
@@ -1193,25 +1753,137 @@ const clearSearchAndReload = async () => {
 
 const openCreateExterno = () => {
   actionMenuId.value = null;
-
   modal.open = true;
-  modal.mode = "create";
-  modal.usuario = null;
 };
 
 
 const openEdit = (usuario) => {
   actionMenuId.value = null;
 
-  modal.open = true;
-  modal.mode = "edit";
-  modal.usuario = usuario;
+  const id = positiveRouteId(
+    usuario?.id
+  );
+
+  if (!id) {
+    openNotice({
+      title: "No se pudo abrir la edición",
+      message:
+        "El usuario seleccionado no tiene un identificador válido.",
+    });
+    return;
+  }
+
+  router.push({
+    name: "AdminUsuarioEditar",
+    params: {
+      id,
+    },
+    query: {
+      origen: "usuarios",
+      tab: activeTab.value,
+    },
+  });
+};
+
+
+const openExtensionRequest = (solicitud) => {
+  actionMenuId.value = null;
+
+  const requestId = positiveRouteId(
+    solicitud?.id
+  );
+
+  if (!requestId) {
+    openNotice({
+      title: "Solicitud no disponible",
+      message:
+        "No fue posible identificar la solicitud seleccionada.",
+    });
+    return;
+  }
+
+  extensionModal.solicitud = {
+    ...solicitud,
+  };
+  extensionModal.open = true;
+};
+
+
+const openExtensionRequestForUser = (usuario) => {
+  const solicitud =
+    solicitudPendienteUsuario(usuario);
+
+  if (!solicitud) {
+    openNotice({
+      title: "Sin solicitud pendiente",
+      message:
+        "Este usuario ya no tiene una solicitud de edición pendiente.",
+    });
+    return;
+  }
+
+  openExtensionRequest(solicitud);
+};
+
+
+const closeExtensionRequest = async () => {
+  extensionModal.open = false;
+  extensionModal.solicitud = null;
+
+  const nextQuery = {
+    ...route.query,
+  };
+
+  delete nextQuery.solicitud;
+  delete nextQuery.usuario;
+  delete nextQuery.accion;
+  delete nextQuery.horas;
+
+  if (JSON.stringify(nextQuery) !== JSON.stringify(route.query)) {
+    await router.replace({
+      name: "AdminUsuarios",
+      query: nextQuery,
+    });
+  }
+};
+
+
+const handleExtensionResolved = async (payload) => {
+  const solicitud =
+    payload?.solicitud ||
+    extensionModal.solicitud;
+  const requestId = positiveRouteId(
+    solicitud?.id
+  );
+
+  if (requestId) {
+    retirarSolicitudResueltaLocal(requestId);
+  }
+
+  solicitudesExtensionCount.value = Math.max(
+    0,
+    Number(solicitudesExtensionCount.value || 0) -
+      (requestId ? 1 : 0)
+  );
+
+  /*
+    La solicitud ya fue retirada de la cola de forma local.
+    Solo sincronizamos usuarios porque el permiso de edición
+    del perfil sí puede haber cambiado con la resolución.
+  */
+  await cargarUsuarios();
+
+  successAction(
+    payload?.decision === "rechazar"
+      ? "Solicitud de edición rechazada correctamente."
+      : "Solicitud de edición aprobada correctamente."
+  );
+  scheduleActionFeedbackReset();
 };
 
 
 const closeModal = () => {
   modal.open = false;
-  modal.usuario = null;
 };
 
 
@@ -1225,11 +1897,11 @@ const handleUsuarioDone = async (
   openNotice({
     title:
       payload?.title ||
-      "Cambios guardados",
+      "Usuario registrado",
 
     message:
       payload?.message ||
-      "La información del usuario se actualizó correctamente.",
+      "El usuario se registró correctamente.",
   });
 };
 
@@ -1237,6 +1909,7 @@ const handleUsuarioDone = async (
 /* ============================================================
    MODAL DE ACTIVACIÓN
 ============================================================ */
+
 
 const openActivate = (usuario) => {
   actionMenuId.value = null;
@@ -1290,14 +1963,29 @@ const handleActivated = async (
 const openDetalle = (usuario) => {
   actionMenuId.value = null;
 
-  detailModal.open = true;
-  detailModal.usuario = usuario;
-};
+  const id = positiveRouteId(
+    usuario?.id
+  );
 
+  if (!id) {
+    openNotice({
+      title: "No se pudo abrir el usuario",
+      message:
+        "El usuario seleccionado no tiene un identificador válido.",
+    });
+    return;
+  }
 
-const closeDetailModal = () => {
-  detailModal.open = false;
-  detailModal.usuario = null;
+  router.push({
+    name: "AdminUsuarioDetalle",
+    params: {
+      id,
+    },
+    query: {
+      origen: "usuarios",
+      tab: activeTab.value,
+    },
+  });
 };
 
 
@@ -1399,12 +2087,23 @@ const eliminar = async (usuario) => {
     confirmText: "Sí, eliminar",
 
     onConfirm: async () => {
+      if (actionProcessing.value) {
+        return;
+      }
+
+      startAction("Eliminando usuario…");
+
       try {
         await adminApi.eliminarUsuario(
           usuario.id
         );
 
-        await cargarUsuarios();
+        retirarUsuarioLocal(
+          usuario.id
+        );
+
+        successAction("Usuario eliminado correctamente.");
+        scheduleActionFeedbackReset();
 
         deferNotice({
           title:
@@ -1416,6 +2115,12 @@ const eliminar = async (usuario) => {
       } catch (error) {
         const data =
           error?.response?.data;
+
+        failAction(
+          data?.detail ||
+          "No se pudo eliminar el usuario."
+        );
+        scheduleActionFeedbackReset();
 
         deferNotice({
           title:
@@ -1470,13 +2175,33 @@ const toggleActivo = async (
         : "Sí, reactivar",
 
     onConfirm: async () => {
+      if (actionProcessing.value) {
+        return;
+      }
+
+      startAction(
+        desactivar
+          ? "Desactivando usuario…"
+          : "Reactivando usuario…"
+      );
+
       try {
         const data =
           await adminApi.toggleActivo(
             usuario.id
           );
 
-        await cargarUsuarios();
+        actualizarUsuarioLocal(
+          usuario.id,
+          data
+        );
+
+        successAction(
+          data?.is_active
+            ? "Usuario reactivado correctamente."
+            : "Usuario desactivado correctamente."
+        );
+        scheduleActionFeedbackReset();
 
         deferNotice({
           title:
@@ -1490,6 +2215,12 @@ const toggleActivo = async (
       } catch (error) {
         const data =
           error?.response?.data;
+
+        failAction(
+          data?.detail ||
+          "No se pudo cambiar el estado del usuario."
+        );
+        scheduleActionFeedbackReset();
 
         deferNotice({
           title:
@@ -1524,6 +2255,144 @@ const closeActionMenuOnEscape = (
 
 
 /* ============================================================
+   APERTURA DIRECTA DESDE NOTIFICACIONES
+============================================================ */
+
+const positiveRouteId = (value) => {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0
+    ? id
+    : null;
+};
+
+
+const openProfileExtensionFromRoute = async () => {
+  const requestId = positiveRouteId(
+    route.query?.solicitud
+  );
+  const userId = positiveRouteId(
+    route.query?.usuario
+  );
+  const action = normalizeText(
+    route.query?.accion
+  ).toLowerCase();
+
+  if (!requestId && action !== "extension-perfil") {
+    return false;
+  }
+
+  let solicitud = null;
+
+  if (requestId) {
+    solicitud = solicitudesPendientes.value.find(
+      (item) => Number(item?.id) === requestId
+    ) || null;
+
+    if (!solicitud) {
+      try {
+        solicitud =
+          await obtenerSolicitudExtensionPerfil(
+            requestId
+          );
+      } catch (error) {
+        openNotice({
+          title: "Solicitud no disponible",
+          message:
+            error?.response?.data?.detail ||
+            "No se pudo cargar la solicitud seleccionada.",
+        });
+        return false;
+      }
+    }
+  } else if (userId) {
+    solicitud = solicitudesPendientes.value.find(
+      (item) => Number(item?.usuario_id) === userId
+    ) || null;
+
+    if (!solicitud) {
+      try {
+        const payload =
+          await listarSolicitudesExtensionPerfil({
+            estado: "pendiente",
+            usuario_id: userId,
+            limit: 1,
+          });
+
+        solicitud = Array.isArray(payload?.results)
+          ? payload.results[0] || null
+          : null;
+      } catch (error) {
+        openNotice({
+          title: "Solicitud no disponible",
+          message:
+            error?.response?.data?.detail ||
+            "No se pudo verificar la solicitud pendiente de este usuario.",
+        });
+        return false;
+      }
+    }
+  }
+
+  if (!solicitud) {
+    openNotice({
+      title: "Sin solicitud pendiente",
+      message:
+        "La solicitud ya no está pendiente o el usuario no tiene una solicitud por revisar.",
+    });
+
+    const nextQuery = {
+      ...route.query,
+      tab: "solicitudes",
+    };
+
+    delete nextQuery.solicitud;
+    delete nextQuery.usuario;
+    delete nextQuery.accion;
+    delete nextQuery.horas;
+
+    await router.replace({
+      name: "AdminUsuarios",
+      query: nextQuery,
+    });
+
+    return false;
+  }
+
+  if (
+    normalizeText(solicitud?.estado).toLowerCase() !==
+    "pendiente"
+  ) {
+    openNotice({
+      title: "Solicitud ya resuelta",
+      message:
+        "Esta solicitud ya fue procesada y no pertenece a la cola pendiente.",
+    });
+
+    const nextQuery = {
+      ...route.query,
+      tab: "solicitudes",
+    };
+
+    delete nextQuery.solicitud;
+    delete nextQuery.usuario;
+    delete nextQuery.accion;
+    delete nextQuery.horas;
+
+    await router.replace({
+      name: "AdminUsuarios",
+      query: nextQuery,
+    });
+
+    return false;
+  }
+
+  activeTab.value = "solicitudes";
+  openExtensionRequest(solicitud);
+  return true;
+};
+
+
+/* ============================================================
    SINCRONIZACIÓN CON LA RUTA
 ============================================================ */
 
@@ -1540,6 +2409,27 @@ watch(
       )
     ) {
       activeTab.value = key;
+    }
+  }
+);
+
+
+watch(
+  () => [
+    route.query?.accion,
+    route.query?.usuario,
+    route.query?.solicitud,
+  ],
+  async ([action, usuarioId, solicitudId]) => {
+    if (
+      positiveRouteId(solicitudId) ||
+      (
+        String(action || "").toLowerCase() ===
+          "extension-perfil" &&
+        positiveRouteId(usuarioId)
+      )
+    ) {
+      await openProfileExtensionFromRoute();
     }
   }
 );
@@ -1581,11 +2471,21 @@ onMounted(async () => {
     closeActionMenuOnEscape
   );
 
-  await cargarUsuarios();
+  await Promise.all([
+    cargarUsuarios(),
+    cargarSolicitudesExtension(),
+  ]);
+
+  await openProfileExtensionFromRoute();
 });
 
 
 onBeforeUnmount(() => {
+  if (actionFeedbackTimer) {
+    window.clearTimeout(actionFeedbackTimer);
+    actionFeedbackTimer = null;
+  }
+
   document.removeEventListener(
     "click",
     closeActionMenuOnDocumentClick
@@ -1603,4 +2503,9 @@ onBeforeUnmount(() => {
 <style
   scoped
   src="./admin-usuarios.css"
+></style>
+
+<style
+  scoped
+  src="./admin-usuarios-stage4.css"
 ></style>

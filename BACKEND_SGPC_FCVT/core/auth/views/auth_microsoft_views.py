@@ -42,6 +42,9 @@ from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.auditoria.services.auditoria_services import (
+    registrar_evento_auditoria,
+)
 from core.auth.services.auth_microsoft_services import (
     MicrosoftAuthServiceError,
     build_microsoft_auth_payload,
@@ -51,6 +54,9 @@ from core.auth.services.auth_microsoft_services import (
     is_allowed_institutional_email,
     resolve_microsoft_identity,
     sync_microsoft_user,
+)
+from core.auth.services.auth_token_cookie_services import (
+    set_refresh_cookie,
 )
 
 
@@ -507,6 +513,7 @@ def _get_microsoft_user(user_id):
     return (
         User.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
         )
@@ -1042,7 +1049,41 @@ class MicrosoftExchangeView(APIView):
                 status_code=exc.status_code,
             )
 
-        return _no_store_response(
+        tokens = payload.get(
+            "tokens",
+            {},
+        )
+
+        refresh_token = (
+            tokens.pop(
+                "refresh",
+                "",
+            )
+            if isinstance(
+                tokens,
+                dict,
+            )
+            else ""
+        )
+
+        response = _no_store_response(
             payload,
             status_code=status.HTTP_200_OK,
         )
+
+        set_refresh_cookie(
+            response,
+            refresh_token,
+        )
+
+        registrar_evento_auditoria(
+            actor=user,
+            accion="login",
+            modulo="autenticacion",
+            entidad=user,
+            descripcion="Inicio de sesión institucional Microsoft 365 correcto.",
+            contexto={"origen": "microsoft"},
+            request=request,
+        )
+
+        return response

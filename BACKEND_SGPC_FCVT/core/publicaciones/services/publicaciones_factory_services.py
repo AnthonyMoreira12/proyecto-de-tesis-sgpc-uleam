@@ -1,7 +1,13 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
-
 from core.models import Publicacion, TipoPublicacion
+from core.publicaciones.services.publicaciones_historial_services import (
+    registrar_creacion_publicacion,
+)
+from core.publicaciones.services.publicaciones_integridad_services import (
+    validar_integridad_publicacion,
+)
 
 
 def _norm_text(value):
@@ -159,7 +165,8 @@ def crear_publicacion_base(
     proyecto,
     tipo,
     usuario,
-    carrera,
+    sede=None,
+    carrera=None,
     facultad=None,
     area=None,
     subarea=None,
@@ -181,6 +188,7 @@ def crear_publicacion_base(
 
     La relación institucional correcta es:
 
+        Publicacion -> Sede
         Publicacion -> Carrera -> Facultad
 
     El argumento ``facultad`` se conserva temporalmente
@@ -217,6 +225,102 @@ def crear_publicacion_base(
             {
                 "carrera": [
                     "La carrera es obligatoria."
+                ]
+            }
+        )
+
+    # =========================================================
+    # SEDE / CARRERA / PROYECTO
+    # =========================================================
+
+    if sede is None:
+        sede = getattr(
+            usuario,
+            "sede",
+            None,
+        )
+
+    if (
+        sede is None
+        and proyecto is not None
+        and getattr(
+            proyecto,
+            "sede_id",
+            None,
+        )
+    ):
+        sede = proyecto.sede
+
+    integrity = validar_integridad_publicacion(
+        usuario=usuario,
+        sede=sede,
+        carrera=carrera,
+        facultad=facultad,
+        proyecto=proyecto,
+        area=area,
+        subarea=subarea,
+        pais=pais,
+        ciudad=ciudad,
+        anio_publicacion=anio_publicacion,
+        mes_publicacion=mes_publicacion,
+        registrado_por_admin=registrado_por_admin,
+        require_sede=True,
+        require_carrera=True,
+        require_periodo=True,
+    )
+
+    sede = integrity["sede"]
+    carrera = integrity["carrera"]
+    proyecto = integrity["proyecto"]
+    area = integrity["area"]
+    subarea = integrity["subarea"]
+    pais = integrity["pais"]
+    ciudad = integrity["ciudad"]
+    anio_publicacion = integrity["anio_publicacion"]
+    mes_publicacion = integrity["mes_publicacion"]
+
+    if not getattr(
+        sede,
+        "activa",
+        False,
+    ):
+        raise ValidationError(
+            {
+                "sede": [
+                    "La sede seleccionada no está activa."
+                ]
+            }
+        )
+
+    if not carrera.sedes_carrera.filter(
+        sede_id=sede.id,
+        activa=True,
+    ).exists():
+        raise ValidationError(
+            {
+                "carrera": [
+                    "La carrera seleccionada no está habilitada "
+                    "en la sede indicada."
+                ]
+            }
+        )
+
+    usuario_sede_id = getattr(
+        usuario,
+        "sede_id",
+        None,
+    )
+
+    if (
+        usuario_sede_id
+        and not registrado_por_admin
+        and usuario_sede_id != sede.id
+    ):
+        raise ValidationError(
+            {
+                "sede": [
+                    "La sede de la publicación debe corresponder "
+                    "con la sede asignada al usuario institucional."
                 ]
             }
         )
@@ -339,6 +443,28 @@ def crear_publicacion_base(
                     "proyecto": [
                         "El proyecto seleccionado no pertenece "
                         "a la carrera indicada."
+                    ]
+                }
+            )
+
+    if proyecto is not None:
+        proyecto_sede_id = getattr(
+            proyecto,
+            "sede_id",
+            None,
+        )
+
+        # Los proyectos históricos pueden conservar sede NULL
+        # hasta que se ejecute la carga institucional definitiva.
+        if (
+            proyecto_sede_id
+            and proyecto_sede_id != sede.id
+        ):
+            raise ValidationError(
+                {
+                    "proyecto": [
+                        "El proyecto seleccionado pertenece "
+                        "a una sede diferente de la publicación."
                     ]
                 }
             )
@@ -558,7 +684,7 @@ def crear_publicacion_base(
     # CREACIÓN
     # =========================================================
 
-    return Publicacion.objects.create(
+    publicacion = Publicacion(
         proyecto=proyecto,
         tipo=tipo,
         usuario_creador=usuario,
@@ -566,6 +692,7 @@ def crear_publicacion_base(
         # Publicacion no posee una columna facultad.
         # La facultad se obtiene mediante la carrera.
 
+        sede=sede,
         carrera=carrera,
         area=area,
         subarea=subarea,
@@ -581,3 +708,40 @@ def crear_publicacion_base(
         ),
         admin_registrador=admin_registrador,
     )
+
+    try:
+        publicacion.full_clean()
+        publicacion.save()
+    except DjangoValidationError as exc:
+        if hasattr(
+            exc,
+            "message_dict",
+        ):
+            raise ValidationError(
+                exc.message_dict
+            ) from exc
+
+        raise ValidationError(
+            {
+                "detail": list(
+                    getattr(
+                        exc,
+                        "messages",
+                        [str(exc)],
+                    )
+                )
+            }
+        ) from exc
+
+    audit_actor = (
+        admin_registrador
+        if registrado_por_admin
+        else usuario
+    )
+
+    registrar_creacion_publicacion(
+        publicacion=publicacion,
+        actor=audit_actor,
+    )
+
+    return publicacion

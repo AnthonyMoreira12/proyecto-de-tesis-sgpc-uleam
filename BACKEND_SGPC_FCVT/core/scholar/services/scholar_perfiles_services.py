@@ -267,6 +267,22 @@ def get_author_org_label(
 
         return "ULEAM"
 
+    sede = (
+        getattr(
+            user,
+            "sede",
+            None,
+        )
+        if bool(
+            getattr(
+                user,
+                "es_institucional",
+                False,
+            )
+        )
+        else None
+    )
+
     carrera = getattr(
         user,
         "carrera",
@@ -284,6 +300,18 @@ def get_author_org_label(
     )
 
     parts = []
+
+    if (
+        sede
+        and getattr(
+            sede,
+            "nombre",
+            None,
+        )
+    ):
+        parts.append(
+            sede.nombre
+        )
 
     if (
         carrera
@@ -325,6 +353,57 @@ def get_author_org_label(
         return "Autor externo"
 
     return "ULEAM"
+
+
+def get_author_sede_payload(
+    author,
+):
+    user = getattr(
+        author,
+        "usuario",
+        None,
+    )
+
+    if not bool(
+        getattr(
+            user,
+            "es_institucional",
+            False,
+        )
+    ):
+        return {
+            "sede_id": None,
+            "sede": None,
+        }
+
+    sede = getattr(
+        user,
+        "sede",
+        None,
+    )
+
+    if sede is None:
+        return {
+            "sede_id": None,
+            "sede": None,
+        }
+
+    nombre = _to_str(
+        getattr(
+            sede,
+            "nombre",
+            None,
+        )
+    ) or None
+
+    return {
+        "sede_id": getattr(
+            sede,
+            "pk",
+            None,
+        ),
+        "sede": nombre,
+    }
 
 
 # =============================================================
@@ -529,7 +608,7 @@ def publicacion_pdf_url(
 
 
 # =============================================================
-# TÍTULO / SEDE
+# TÍTULO / MEDIO DE PUBLICACIÓN (VENUE)
 # =============================================================
 
 
@@ -824,6 +903,7 @@ def build_public_profile_payload(
             .select_related(
                 "autor",
                 "autor__usuario",
+                "autor__usuario__sede",
                 "autor__usuario__carrera",
                 "autor__usuario__carrera__facultad",
             )
@@ -842,6 +922,7 @@ def build_public_profile_payload(
         .select_related(
             "tipo",
             "proyecto",
+            "sede",
             "carrera",
             "carrera__facultad",
             "articulo",
@@ -859,7 +940,8 @@ def build_public_profile_payload(
             )
         )
         .filter(
-            filtros
+            filtros,
+            estado=Publicacion.ESTADO_APROBADA,
         )
         .distinct()
     )
@@ -966,6 +1048,12 @@ def build_public_profile_payload(
                     None,
                 )
 
+                related_sede = (
+                    get_author_sede_payload(
+                        related_author
+                    )
+                )
+
                 related_authors_map[
                     related_author.id
                 ] = {
@@ -978,6 +1066,12 @@ def build_public_profile_payload(
                             related_author
                         )
                     ),
+                    "sede_id": related_sede[
+                        "sede_id"
+                    ],
+                    "sede": related_sede[
+                        "sede"
+                    ],
                     "avatar": (
                         get_user_avatar_absolute_url(
                             request,
@@ -1000,6 +1094,26 @@ def build_public_profile_payload(
                 ),
 
                 "venue": venue,
+
+                "sede_id": getattr(
+                    pub,
+                    "sede_id",
+                    None,
+                ),
+                "sede": (
+                    _to_str(
+                        getattr(
+                            getattr(
+                                pub,
+                                "sede",
+                                None,
+                            ),
+                            "nombre",
+                            None,
+                        )
+                    )
+                    or None
+                ),
 
                 # No existe todavía un modelo de citas
                 # científicas en el dominio.
@@ -1053,11 +1167,23 @@ def build_public_profile_payload(
         else None
     )
 
+    sede_payload = (
+        get_author_sede_payload(
+            author
+        )
+    )
+
     payload = {
         "id": author.id,
 
         "name": name,
         "org": org,
+        "sede_id": sede_payload[
+            "sede_id"
+        ],
+        "sede": sede_payload[
+            "sede"
+        ],
         "avatar": avatar,
 
         "verified": None,

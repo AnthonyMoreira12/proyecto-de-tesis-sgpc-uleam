@@ -17,6 +17,7 @@ Los selectores:
 - Evitan exponer usuarios inactivos en la búsqueda de cuentas.
 - Incluyen autores externos pendientes en la búsqueda científica.
 - Derivan la facultad desde carrera.facultad.
+- Incorporan la sede institucional cuando corresponde.
 - Buscan publicaciones por sus autores científicos reales.
 - Buscan en los campos específicos de artículos, ponencias,
   libros y capítulos de libro.
@@ -184,6 +185,9 @@ def _user_term_query(term):
         | Q(apellidos__icontains=term)
         | Q(email__icontains=term)
         | Q(identificacion__icontains=term)
+        | Q(sede__nombre__icontains=term)
+        | Q(sede__codigo__icontains=term)
+        | Q(sede__ciudad__icontains=term)
         | Q(carrera__nombre__icontains=term)
         | Q(carrera__facultad__nombre__icontains=term)
     )
@@ -193,6 +197,9 @@ def _project_term_query(term):
     return (
         Q(nombre__icontains=term)
         | Q(descripcion__icontains=term)
+        | Q(sede__nombre__icontains=term)
+        | Q(sede__codigo__icontains=term)
+        | Q(sede__ciudad__icontains=term)
         | Q(carrera__nombre__icontains=term)
         | Q(carrera__facultad__nombre__icontains=term)
         | Q(creado_por__nombres__icontains=term)
@@ -213,6 +220,9 @@ def _publication_term_query(term):
         | Q(tipo__codigo__icontains=term)
         | Q(tipo__categoria__icontains=term)
         | Q(proyecto__nombre__icontains=term)
+        | Q(sede__nombre__icontains=term)
+        | Q(sede__codigo__icontains=term)
+        | Q(sede__ciudad__icontains=term)
         | Q(carrera__facultad__nombre__icontains=term)
         | Q(carrera__nombre__icontains=term)
         | Q(area__nombre__icontains=term)
@@ -276,24 +286,36 @@ def _author_term_query(term):
         | Q(usuario__apellidos__icontains=term)
         | Q(usuario__email__icontains=term)
         | Q(usuario__identificacion__icontains=term)
-        | Q(
-            participaciones__publicacion__articulo__nombre_articulo__icontains=(
-                term
+        | Q(usuario__sede__nombre__icontains=term)
+        | Q(usuario__sede__codigo__icontains=term)
+        | Q(usuario__sede__ciudad__icontains=term)
+        | (
+            Q(
+                participaciones__publicacion__estado=(
+                    Publicacion.ESTADO_APROBADA
+                )
             )
-        )
-        | Q(
-            participaciones__publicacion__ponencia__nombre_ponencia__icontains=(
-                term
-            )
-        )
-        | Q(
-            participaciones__publicacion__libro__nombre_libro__icontains=(
-                term
-            )
-        )
-        | Q(
-            participaciones__publicacion__capitulo_libro__nombre_capitulo__icontains=(
-                term
+            & (
+                Q(
+                    participaciones__publicacion__articulo__nombre_articulo__icontains=(
+                        term
+                    )
+                )
+                | Q(
+                    participaciones__publicacion__ponencia__nombre_ponencia__icontains=(
+                        term
+                    )
+                )
+                | Q(
+                    participaciones__publicacion__libro__nombre_libro__icontains=(
+                        term
+                    )
+                )
+                | Q(
+                    participaciones__publicacion__capitulo_libro__nombre_capitulo__icontains=(
+                        term
+                    )
+                )
             )
         )
     )
@@ -308,6 +330,7 @@ def _publication_participations_queryset():
         .select_related(
             "autor",
             "autor__usuario",
+            "autor__usuario__sede",
         )
         .order_by(
             "orden",
@@ -345,6 +368,7 @@ def buscar_usuarios(
     queryset = (
         Usuario.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
         )
@@ -446,7 +470,7 @@ def buscar_proyectos(
     limit=SEARCH_LIMIT,
 ):
     """
-    Busca proyectos por nombre, descripción, carrera, facultad
+    Busca proyectos por nombre, descripción, sede, carrera, facultad
     o responsable de creación.
     """
     query = _normalize_query(q)
@@ -458,6 +482,7 @@ def buscar_proyectos(
     queryset = (
         Proyecto.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
             "creado_por",
@@ -531,7 +556,7 @@ def buscar_publicaciones(
     - Título general y título específico del subtipo.
     - DOI, ISSN e ISBN.
     - Revista, evento, editorial y libro contenedor.
-    - Proyecto, carrera, facultad, área y subárea.
+    - Sede, proyecto, carrera, facultad, área y subárea.
     - Autores científicos vinculados mediante PublicacionAutor.
 
     Permite restringir los resultados a publicaciones que
@@ -548,7 +573,9 @@ def buscar_publicaciones(
         .select_related(
             "tipo",
             "usuario_creador",
+            "sede",
             "proyecto",
+            "proyecto__sede",
             "carrera",
             "carrera__facultad",
             "area",
@@ -557,6 +584,9 @@ def buscar_publicaciones(
             "ponencia",
             "libro",
             "capitulo_libro",
+        )
+        .filter(
+            estado=Publicacion.ESTADO_APROBADA
         )
         .prefetch_related(
             Prefetch(
@@ -721,6 +751,9 @@ def buscar_autores(
         Autor.objects
         .select_related(
             "usuario",
+            "usuario__sede",
+            "usuario__carrera",
+            "usuario__carrera__facultad",
         )
         .annotate(
             _search_full_name=Concat(

@@ -1,15 +1,17 @@
-"""
-Vistas HTTP para reportes de publicaciones.
+"""Vistas HTTP para reportes de publicaciones.
 
 Endpoints previstos:
 
 - Descarga del archivo Excel:
     GET /reportes/publicaciones/excel/
 
-- Vista previa del total:
+- Descarga del archivo PDF:
+    GET /reportes/publicaciones/pdf/
+
+- Vista previa del total compartida por ambos formatos:
     GET /reportes/publicaciones/excel/preview/
 
-Las dos vistas:
+Las vistas:
 
 - requieren autenticación JWT;
 - admiten los mismos filtros;
@@ -24,6 +26,7 @@ from core.publicaciones.mixins.publicaciones_auth_mixins import (
     PublicacionesJWTAuthAPIViewMixin,
 )
 from core.reportes.services.reportes_publicaciones_services import (
+    build_export_publicaciones_pdf_response,
     build_export_publicaciones_preview,
     build_export_publicaciones_response,
 )
@@ -76,17 +79,27 @@ def build_publicaciones_report_filters(
     Construye el diccionario de filtros compartido por:
 
     - la descarga Excel;
+    - la descarga PDF;
     - la vista previa del conteo.
 
     La validación definitiva se realiza dentro del servicio
     centralizado de publicaciones.
 
-    Filtros temporales admitidos:
+    Filtros admitidos:
 
+    - tipo;
+    - origen_tipo;
     - anio;
     - mes;
     - anio_desde;
-    - anio_hasta.
+    - anio_hasta;
+    - texto;
+    - sede;
+    - facultad;
+    - carrera;
+    - proyecto;
+    - solo_con_pdf;
+    - orden.
     """
 
     params = request.query_params
@@ -161,6 +174,12 @@ def build_publicaciones_report_filters(
         # =====================================================
         # UBICACIÓN ACADÉMICA
         # =====================================================
+
+        "sede": _first_query_param(
+            params,
+            "sede",
+            "sede_id",
+        ),
 
         "facultad": _first_query_param(
             params,
@@ -258,6 +277,39 @@ class ExportarPublicacionesExcelView(
         )
 
         return build_export_publicaciones_response(
+            filters
+        )
+
+
+# ============================================================
+# DESCARGA PDF
+# ============================================================
+
+class ExportarPublicacionesPdfView(
+    PublicacionesReporteBaseAPIView,
+):
+    """
+    Genera y devuelve el archivo PDF de publicaciones.
+
+    Endpoint:
+
+        GET /reportes/publicaciones/pdf/
+
+    Utiliza los mismos filtros y el mismo queryset que la
+    exportación Excel.
+    """
+
+    def get(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        filters = self.get_filters(
+            request
+        )
+
+        return build_export_publicaciones_pdf_response(
             filters
         )
 

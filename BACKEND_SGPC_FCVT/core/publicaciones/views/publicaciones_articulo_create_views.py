@@ -219,8 +219,11 @@ class ArticuloCreateAPIView(
         return Response(
             {
                 "message": (
-                    "Artículo registrado correctamente"
+                    "La publicación se guardó correctamente y quedó "
+                    "en estado Borrador."
                 ),
+                "estado": publicacion.estado,
+                "estado_label": publicacion.get_estado_display(),
                 "articulo": {
                     "id": articulo.id,
                     "nombre_articulo": (

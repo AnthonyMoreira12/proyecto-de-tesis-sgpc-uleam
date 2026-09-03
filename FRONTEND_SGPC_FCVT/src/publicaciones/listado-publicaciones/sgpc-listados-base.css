@@ -578,3 +578,42 @@
     box-shadow: none !important;
   }
 }
+
+
+/* ============================================================
+   CIERRE VISUAL POST-HISTORIAL
+   Base compartida de listados.
+============================================================ */
+
+:where(.sgpc-list-page, .mispub)
+  :where(button, input, select, textarea):focus-visible {
+  outline-offset: 2px;
+}
+
+
+/* ============================================================
+   D8 — BASE VISUAL PARA USUARIO FINAL
+   Reduce elevación, radios y decoración en los listados.
+============================================================ */
+
+:where(.pub-list-page, .mispub) {
+  --sgpc-list-radius-sm: 8px;
+  --sgpc-list-radius-md: 10px;
+  --sgpc-list-radius-lg: 12px;
+  --sgpc-list-radius-xl: 14px;
+  --sgpc-list-radius-2xl: 14px;
+  --sgpc-list-shadow-soft: none;
+  --sgpc-list-shadow-strong: none;
+  --sgpc-list-control-height: 40px;
+  --sgpc-list-control-height-lg: 42px;
+}
+
+:where(.pub-list-page, .mispub)
+:where(button, [role="button"]) {
+  box-shadow: none;
+}
+
+:where(.pub-list-page, .mispub)
+:where(button, [role="button"]):hover {
+  transform: none;
+}

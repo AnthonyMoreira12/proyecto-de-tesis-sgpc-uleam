@@ -9,1140 +9,771 @@
         aria-label="Listado de publicaciones institucionales"
       >
         <div class="pub-header__copy">
-          <span class="pub-eyebrow">
-            Producción científica
-          </span>
-
           <h1 class="pub-title">
-            Publicaciones institucionales
+            Publicaciones
           </h1>
 
           <p class="pub-subtitle">
-            Consulte, filtre y exporte la producción científica registrada en
-            el sistema.
+            Consulte y filtre las publicaciones disponibles en la institución.
           </p>
-
-          <div
-            class="pub-chips"
-            aria-label="Resumen general de publicaciones"
-          >
-            <span class="pub-chip">
-              Total:
-              <strong>{{ totalInstitucional }}</strong>
-            </span>
-
-            <span class="pub-chip">
-              Resultados:
-              <strong>{{ totalResultadosVisibles }}</strong>
-            </span>
-
-            <span
-              v-if="totalActiveFiltersCountVisible"
-              class="pub-chip pub-chip--active"
-            >
-              Filtros:
-              <strong>{{ totalActiveFiltersCountVisible }}</strong>
-            </span>
-          </div>
         </div>
 
-        <div
-          class="pub-header__tools"
-          aria-label="Herramientas principales"
-        >
-          <label
-            class="search search--navbar"
-            aria-label="Buscar publicación"
+        <div class="pub-header__actions" aria-label="Acciones del catálogo">
+          <button
+            v-if="panelLateralActivo === 'export'"
+            type="button"
+            class="pub-btn pub-btn--ghost"
+            @click="abrirPanelFiltros"
           >
-            <span
-              class="search__lead"
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                class="search__svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm6.1-1.06 4.05 4.06a1 1 0 1 1-1.42 1.42l-4.06-4.05a9 9 0 1 1 1.42-1.42Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="m15.4 18.4-6.4-6.4 6.4-6.4L14 4.2 5.8 12l8.2 7.8 1.4-1.4Z"
+              />
+            </svg>
+            Volver a publicaciones
+          </button>
 
-            <input
-              id="fTexto"
-              ref="searchEl"
-              v-model="textoFiltroActivo"
-              class="search__input"
-              type="search"
-              inputmode="search"
-              autocomplete="off"
-              placeholder="Buscar por título, autor, tipo, proyecto, facultad o carrera…"
-            />
-
-            <button
-              type="button"
-              class="search__action"
-              :aria-label="
-                hayBusquedaVisible
-                  ? 'Limpiar búsqueda'
-                  : 'Enfocar campo de búsqueda'
-              "
-              @click="handleSearchAction"
-            >
-              <span
-                v-if="hayBusquedaVisible"
-                class="search__x"
-                aria-hidden="true"
-              >
-                ×
-              </span>
-
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-                class="search__svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm6.1-1.06 4.05 4.06a1 1 0 1 1-1.42 1.42l-4.06-4.05a9 9 0 1 1 1.42-1.42Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-          </label>
-
-          <div
-            class="pub-header__actions"
-            aria-label="Acciones del listado"
+          <button
+            v-else
+            type="button"
+            class="pub-btn pub-btn--primary"
+            :disabled="loading"
+            @click="abrirPanelExportacion"
           >
-            <button
-              class="pub-btn pub-btn--ghost"
-              :class="{
-                'is-active': panelLateralActivo === 'filtros',
-              }"
-              type="button"
-              :aria-pressed="panelLateralActivo === 'filtros'"
-              @click="abrirPanelFiltros"
-            >
-              Filtros
-            </button>
-
-            <button
-              class="pub-btn pub-btn--primary"
-              :class="{
-                'is-active': panelLateralActivo === 'export',
-              }"
-              type="button"
-              :aria-pressed="panelLateralActivo === 'export'"
-              :disabled="loading"
-              @click="abrirPanelExportacion"
-            >
-              Exportar Excel
-            </button>
-          </div>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17V3ZM5 19h14v2H5v-2Z"
+              />
+            </svg>
+            Exportar
+          </button>
         </div>
       </header>
 
       <!-- =====================================================
-        CONTENIDO GENERAL
+        BÚSQUEDA PRINCIPAL
       ====================================================== -->
       <section
-        class="pub-layout page-stage page-stage-2"
-        aria-label="Consulta de publicaciones"
+        class="pub-discovery page-stage page-stage-2"
+        aria-label="Buscar publicaciones"
       >
-        <!-- ===================================================
-          PANEL LATERAL
-        ==================================================== -->
-        <aside
-          class="pub-side"
-          aria-label="Panel lateral de consulta"
-        >
-          <div class="pub-sideStack">
-            <!-- ===============================================
-              FILTROS AVANZADOS
-            ================================================ -->
-            <section
-              v-if="panelLateralActivo === 'filtros'"
-              class="pub-sidePanel"
+        <PublicacionesSearchField
+          ref="searchEl"
+          v-model="textoFiltroActivo"
+          :placeholder="
+            panelLateralActivo === 'export'
+              ? 'Buscar dentro de la descarga'
+              : 'Buscar por título, autor, DOI, ISBN o proyecto'
+          "
+        />
+      </section>
+
+      <!-- =====================================================
+        CATÁLOGO: FILTROS RÁPIDOS + AVANZADOS
+      ====================================================== -->
+      <section
+        v-if="panelLateralActivo === 'filtros'"
+        class="pub-filters page-stage page-stage-3"
+        aria-label="Filtros del catálogo"
+      >
+        <div class="pub-filters__topline">
+          <div>
+            <h2 class="pub-section-title">
+              Filtros
+            </h2>
+          </div>
+
+          <div class="pub-filters__status">
+            <button
+              v-if="hayFiltros || hayBusqueda"
+              type="button"
+              class="pub-text-action"
+              @click="limpiarFiltros"
             >
-              <header class="pub-sidePanel__head">
-                <div>
-                  <span class="pub-sidePanel__eyebrow">
-                    Refinar resultados
-                  </span>
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
 
-                  <h2 class="pub-sidePanel__title">
-                    Filtros
-                  </h2>
-                </div>
+        <div class="pub-quick-filters">
+          <div class="pub-field">
+            <label class="pub-label" for="fSede">Sede</label>
+            <select
+              id="fSede"
+              v-model="filtroSede"
+              class="pub-select"
+              @change="onMainSedeChange"
+            >
+              <option value="">Todas las sedes</option>
+              <option
+                v-for="sede in sedes"
+                :key="`sede-${sede.id}`"
+                :value="String(sede.id)"
+              >
+                {{ sede.nombre }}
+              </option>
+            </select>
+          </div>
 
-                <span
-                  class="pub-sidePanel__badge"
-                  aria-label="Cantidad de filtros avanzados activos"
+          <div class="pub-field">
+            <label class="pub-label" for="fFacultad">Facultad</label>
+            <select
+              id="fFacultad"
+              v-model="filtroFacultad"
+              class="pub-select"
+              @change="onMainFacultadChange"
+            >
+              <option value="">Todas las facultades</option>
+              <option
+                v-for="fac in facultades"
+                :key="`fac-${fac.id}`"
+                :value="String(fac.id)"
+              >
+                {{ fac.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="fCarrera">Carrera</label>
+            <select
+              id="fCarrera"
+              v-model="filtroCarrera"
+              class="pub-select"
+              :disabled="!filtroSede && !filtroFacultad"
+              @change="onMainCarreraChange"
+            >
+              <option value="">
+                {{
+                  !filtroSede && !filtroFacultad
+                    ? 'Seleccione sede o facultad'
+                    : 'Todas las carreras'
+                }}
+              </option>
+              <option
+                v-for="car in carreras"
+                :key="`car-${car.id}`"
+                :value="String(car.id)"
+              >
+                {{ car.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field pub-field--order">
+            <label class="pub-label" for="fOrden">Ordenar por</label>
+            <select id="fOrden" v-model="ordenListado" class="pub-select">
+              <option
+                v-for="option in ORDENES_LIST"
+                :key="`orden-${option.value}`"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <label class="pub-pdf-toggle" for="fSoloPdf">
+            <input
+              id="fSoloPdf"
+              v-model="soloConPdf"
+              class="pub-pdf-toggle__input"
+              type="checkbox"
+            />
+            <span class="pub-pdf-toggle__control" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="m9.2 16.2-3.4-3.4 1.4-1.4 2 2 7.6-7.6 1.4 1.4-9 9Z" />
+              </svg>
+            </span>
+            <span>Solo con documento</span>
+          </label>
+        </div>
+
+        <details
+          class="pub-advanced"
+          :open="advancedOnlyFiltersCount > 0"
+        >
+          <summary class="pub-advanced__summary">
+            <span class="pub-advanced__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M4 6h10v2H4V6Zm0 10h6v2H4v-2Zm0-5h16v2H4v-2Zm14-7h2v6h-2V4Zm-6 10h2v6h-2v-6Z" />
+              </svg>
+            </span>
+            <span class="pub-advanced__copy">
+              <strong>Más filtros</strong>
+              <small>Proyecto, origen y período</small>
+            </span>
+            <span v-if="advancedOnlyFiltersCount" class="pub-advanced__count">
+              {{ advancedOnlyFiltersCount }}
+            </span>
+            <span class="pub-advanced__chevron" aria-hidden="true">⌄</span>
+          </summary>
+
+          <div class="pub-advanced__body">
+            <div class="pub-advanced__row pub-advanced__row--two">
+              <div class="pub-field">
+                <label class="pub-label" for="fProyecto">Proyecto</label>
+                <select
+                  id="fProyecto"
+                  v-model="filtroProyecto"
+                  class="pub-select"
+                  :disabled="!filtroCarrera"
                 >
-                  {{ activeAdvancedFiltersCount }}
-                </span>
-              </header>
-
-              <section class="pub-sidePanel__section">
-                <h3 class="pub-sidePanel__sectionTitle">
-                  Ubicación académica
-                </h3>
-
-                <div class="pub-sidePanel__fields">
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fFacultad"
-                    >
-                      Facultad
-                    </label>
-
-                    <select
-                      id="fFacultad"
-                      v-model="filtroFacultad"
-                      class="pub-select"
-                      @change="onMainFacultadChange"
-                    >
-                      <option value="">
-                        Todas las facultades
-                      </option>
-
-                      <option
-                        v-for="fac in facultades"
-                        :key="`fac-${fac.id}`"
-                        :value="String(fac.id)"
-                      >
-                        {{ fac.nombre }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fCarrera"
-                    >
-                      Carrera
-                    </label>
-
-                    <select
-                      id="fCarrera"
-                      v-model="filtroCarrera"
-                      class="pub-select"
-                      :disabled="!filtroFacultad"
-                      @change="onMainCarreraChange"
-                    >
-                      <option value="">
-                        Todas las carreras
-                      </option>
-
-                      <option
-                        v-for="car in carreras"
-                        :key="`car-${car.id}`"
-                        :value="String(car.id)"
-                      >
-                        {{ car.nombre }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fProyecto"
-                    >
-                      Proyecto
-                    </label>
-
-                    <select
-                      id="fProyecto"
-                      v-model="filtroProyecto"
-                      class="pub-select"
-                      :disabled="!filtroCarrera"
-                    >
-                      <option value="">
-                        Todos los proyectos
-                      </option>
-
-                      <option
-                        v-for="proy in proyectos"
-                        :key="`proy-${proy.id}`"
-                        :value="String(proy.id)"
-                      >
-                        {{ proy.nombre }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-
-              <section class="pub-sidePanel__section">
-                <h3 class="pub-sidePanel__sectionTitle">
-                  Origen y ordenamiento
-                </h3>
-
-                <div class="pub-sidePanel__fields">
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fOrigen"
-                    >
-                      Origen
-                    </label>
-
-                    <select
-                      id="fOrigen"
-                      v-model="filtroOrigen"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="origen in ORIGENES_LIST"
-                        :key="`origen-${origen.value}`"
-                        :value="origen.value"
-                      >
-                        {{ origen.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fOrden"
-                    >
-                      Ordenar por
-                    </label>
-
-                    <select
-                      id="fOrden"
-                      v-model="ordenListado"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="option in ORDENES_LIST"
-                        :key="`orden-${option.value}`"
-                        :value="option.value"
-                      >
-                        {{ option.label }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-
-              <section class="pub-sidePanel__section">
-                <h3 class="pub-sidePanel__sectionTitle">
-                  Disponibilidad
-                </h3>
-
-                <label
-                  class="pub-toggleCard"
-                  for="fSoloPdf"
-                >
-                  <input
-                    id="fSoloPdf"
-                    v-model="soloConPdf"
-                    class="pub-toggleCard__input"
-                    type="checkbox"
-                  />
-
-                  <span
-                    class="pub-toggleCard__control"
-                    aria-hidden="true"
+                  <option value="">
+                    {{ filtroCarrera ? 'Todos los proyectos' : 'Seleccione una carrera' }}
+                  </option>
+                  <option
+                    v-for="proy in proyectos"
+                    :key="`proy-${proy.id}`"
+                    :value="String(proy.id)"
                   >
-                    <span class="pub-toggleCard__thumb"></span>
-                  </span>
+                    {{ proy.nombre }}
+                  </option>
+                </select>
+              </div>
 
-                  <span class="pub-toggleCard__content">
-                    <strong class="pub-toggleCard__title">
-                      Solo con PDF
-                    </strong>
+              <div class="pub-field">
+                <label class="pub-label" for="fOrigen">Origen</label>
+                <select id="fOrigen" v-model="filtroOrigen" class="pub-select">
+                  <option
+                    v-for="origen in ORIGENES_LIST"
+                    :key="`origen-${origen.value}`"
+                    :value="origen.value"
+                  >
+                    {{ origen.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
 
-                    <span class="pub-toggleCard__description">
-                      Incluye PDF principal o archivos adjuntos.
-                    </span>
-                  </span>
-                </label>
-              </section>
+            <div class="pub-period">
+              <div class="pub-period__heading">
+                <span class="pub-label">Período</span>
+                <small>Elija un año concreto o un rango.</small>
+              </div>
 
-              <section class="pub-sidePanel__section">
-                <h3 class="pub-sidePanel__sectionTitle">
-                  Período de publicación
+              <div class="pub-period__options">
+                <div class="pub-period__group">
+                  <span class="pub-period__group-label">Año y mes</span>
+
+                  <div class="pub-period__fields">
+                    <div class="pub-field">
+                      <label class="pub-label pub-label--muted" for="fAnio">Año</label>
+                      <select
+                        id="fAnio"
+                        v-model="filtroAnio"
+                        class="pub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnioDesde || filtroAnioHasta)"
+                      >
+                        <option value="">Todos los años</option>
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`exact-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="pub-field">
+                      <label class="pub-label pub-label--muted" for="fMes">Mes</label>
+                      <select id="fMes" v-model="filtroMes" class="pub-select">
+                        <option
+                          v-for="mes in MESES_LIST"
+                          :key="`mes-${mes.value || 'all'}`"
+                          :value="mes.value"
+                        >
+                          {{ mes.label }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="pub-period__or" aria-hidden="true">o</span>
+
+                <div class="pub-period__group">
+                  <span class="pub-period__group-label">Rango</span>
+
+                  <div class="pub-period__fields">
+                    <div class="pub-field">
+                      <label class="pub-label pub-label--muted" for="fAnioDesde">Desde</label>
+                      <select
+                        id="fAnioDesde"
+                        v-model="filtroAnioDesde"
+                        class="pub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
+                      >
+                        <option value="">Sin mínimo</option>
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`desde-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="pub-field">
+                      <label class="pub-label pub-label--muted" for="fAnioHasta">Hasta</label>
+                      <select
+                        id="fAnioHasta"
+                        v-model="filtroAnioHasta"
+                        class="pub-select"
+                        :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
+                      >
+                        <option value="">Sin máximo</option>
+                        <option
+                          v-for="anio in añosDisponibles"
+                          :key="`hasta-${anio}`"
+                          :value="String(anio)"
+                        >
+                          {{ anio }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div v-if="activeFilterChips.length" class="pub-active-filters" aria-label="Filtros activos">
+          <span class="pub-active-filters__label">Aplicados</span>
+
+          <button
+            v-for="chip in activeFilterChips"
+            :key="chip.key"
+            type="button"
+            class="pub-filter-chip"
+            :aria-label="`Quitar filtro ${chip.label}`"
+            @click="removeActiveFilter(chip.key)"
+          >
+            <span>{{ chip.label }}</span>
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- =====================================================
+        EXPORTACIÓN
+      ====================================================== -->
+      <section
+        v-else
+        class="pub-export page-stage page-stage-3"
+        aria-label="Configuración de exportación"
+      >
+        <header class="pub-export__head">
+          <div>
+            
+            <h2 class="pub-section-title">Descargar publicaciones</h2>
+            <p>
+              Elija el formato y los filtros que desea aplicar al archivo.
+            </p>
+          </div>
+
+          <div class="pub-export__metric">
+            <strong>{{ exportPreviewLoading ? '…' : exportPreviewCount }}</strong>
+            <span>publicaciones</span>
+          </div>
+        </header>
+
+        <div v-if="exportErrorMsg" class="pub-alert" role="alert">
+          {{ exportErrorMsg }}
+        </div>
+
+        <div class="pub-export-format" aria-label="Formato de exportación">
+          <button
+            type="button"
+            class="pub-export-format__option"
+            :class="{ 'is-active': exportFormat === 'excel' }"
+            :aria-pressed="exportFormat === 'excel'"
+            @click="exportFormat = 'excel'"
+          >
+            <span class="pub-export-format__icon pub-export-format__icon--excel" aria-hidden="true">
+              XLSX
+            </span>
+            <span>
+              <strong>Excel</strong>
+              <small>Para analizar y trabajar con los datos.</small>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="pub-export-format__option"
+            :class="{ 'is-active': exportFormat === 'pdf' }"
+            :aria-pressed="exportFormat === 'pdf'"
+            @click="exportFormat = 'pdf'"
+          >
+            <span class="pub-export-format__icon pub-export-format__icon--pdf" aria-hidden="true">
+              PDF
+            </span>
+            <span>
+              <strong>PDF</strong>
+              <small>Para presentar, imprimir o compartir.</small>
+            </span>
+          </button>
+        </div>
+
+        <div class="pub-export__actions">
+          <button type="button" class="pub-btn pub-btn--ghost" @click="syncExportFiltersFromVisible">
+            Usar filtros actuales
+          </button>
+          <button type="button" class="pub-text-action" @click="limpiarExportFilters">
+            Limpiar filtros
+          </button>
+        </div>
+
+        <div class="pub-export__grid">
+          <div class="pub-field">
+            <label class="pub-label" for="expTipo">Tipo</label>
+            <select id="expTipo" v-model="exportFiltroTipo" class="pub-select">
+              <option
+                v-for="tipo in TIPOS_LIST"
+                :key="`exp-${tipo.value}`"
+                :value="tipo.value"
+              >
+                {{ tipo.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expOrigen">Origen</label>
+            <select id="expOrigen" v-model="exportFiltroOrigen" class="pub-select">
+              <option
+                v-for="origen in ORIGENES_LIST"
+                :key="`exp-origen-${origen.value}`"
+                :value="origen.value"
+              >
+                {{ origen.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expSede">Sede</label>
+            <select id="expSede" v-model="exportFiltroSede" class="pub-select" @change="onExportSedeChange">
+              <option value="">Todas las sedes</option>
+              <option
+                v-for="sede in sedes"
+                :key="`exp-sede-${sede.id}`"
+                :value="String(sede.id)"
+              >
+                {{ sede.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expFacultad">Facultad</label>
+            <select id="expFacultad" v-model="exportFiltroFacultad" class="pub-select" @change="onExportFacultadChange">
+              <option value="">Todas las facultades</option>
+              <option
+                v-for="fac in facultades"
+                :key="`exp-fac-${fac.id}`"
+                :value="String(fac.id)"
+              >
+                {{ fac.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expCarrera">Carrera</label>
+            <select
+              id="expCarrera"
+              v-model="exportFiltroCarrera"
+              class="pub-select"
+              :disabled="!exportFiltroSede && !exportFiltroFacultad"
+              @change="onExportCarreraChange"
+            >
+              <option value="">Todas las carreras</option>
+              <option
+                v-for="car in exportCarreras"
+                :key="`exp-car-${car.id}`"
+                :value="String(car.id)"
+              >
+                {{ car.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expProyecto">Proyecto</label>
+            <select id="expProyecto" v-model="exportFiltroProyecto" class="pub-select" :disabled="!exportFiltroCarrera">
+              <option value="">Todos los proyectos</option>
+              <option
+                v-for="proy in exportProyectos"
+                :key="`exp-proy-${proy.id}`"
+                :value="String(proy.id)"
+              >
+                {{ proy.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expAnio">Año</label>
+            <select
+              id="expAnio"
+              v-model="exportFiltroAnio"
+              class="pub-select"
+              :disabled="loadingAnios || !añosDisponibles.length || Boolean(exportFiltroAnioDesde || exportFiltroAnioHasta)"
+            >
+              <option value="">Todos los años</option>
+              <option
+                v-for="anio in añosDisponibles"
+                :key="`exp-exact-${anio}`"
+                :value="String(anio)"
+              >
+                {{ anio }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expMes">Mes</label>
+            <select id="expMes" v-model="exportFiltroMes" class="pub-select">
+              <option
+                v-for="mes in MESES_LIST"
+                :key="`exp-mes-${mes.value || 'all'}`"
+                :value="mes.value"
+              >
+                {{ mes.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expAnioDesde">Desde</label>
+            <select
+              id="expAnioDesde"
+              v-model="exportFiltroAnioDesde"
+              class="pub-select"
+              :disabled="loadingAnios || !añosDisponibles.length || Boolean(exportFiltroAnio)"
+            >
+              <option value="">Sin mínimo</option>
+              <option
+                v-for="anio in añosDisponibles"
+                :key="`exp-desde-${anio}`"
+                :value="String(anio)"
+              >
+                {{ anio }}
+              </option>
+            </select>
+          </div>
+
+          <div class="pub-field">
+            <label class="pub-label" for="expAnioHasta">Hasta</label>
+            <select
+              id="expAnioHasta"
+              v-model="exportFiltroAnioHasta"
+              class="pub-select"
+              :disabled="loadingAnios || !añosDisponibles.length || Boolean(exportFiltroAnio)"
+            >
+              <option value="">Sin máximo</option>
+              <option
+                v-for="anio in añosDisponibles"
+                :key="`exp-hasta-${anio}`"
+                :value="String(anio)"
+              >
+                {{ anio }}
+              </option>
+            </select>
+          </div>
+
+          <label class="pub-pdf-toggle pub-pdf-toggle--export" for="expSoloPdf">
+            <input id="expSoloPdf" v-model="exportSoloConPdf" class="pub-pdf-toggle__input" type="checkbox" />
+            <span class="pub-pdf-toggle__control" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="m9.2 16.2-3.4-3.4 1.4-1.4 2 2 7.6-7.6 1.4 1.4-9 9Z" />
+              </svg>
+            </span>
+            <span>Solo con documento</span>
+          </label>
+        </div>
+
+        <footer class="pub-export__footer">
+          <div class="pub-export__note">
+            <strong>{{ exportPreviewCount }}</strong>
+            <span>{{ exportPreviewCount === 1 ? 'publicación será exportada' : 'publicaciones serán exportadas' }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="pub-btn pub-btn--primary"
+            :disabled="loading || exporting || exportPreviewLoading || !exportPreviewCount"
+            @click="confirmarExportacion"
+          >
+            {{
+              exporting
+                ? 'Preparando…'
+                : exportFormat === 'pdf'
+                  ? 'Descargar PDF'
+                  : 'Descargar Excel'
+            }}
+          </button>
+        </footer>
+      </section>
+
+      <!-- =====================================================
+        CLASIFICACIÓN Y RESULTADOS
+      ====================================================== -->
+      <section class="pub-results page-stage page-stage-4" aria-label="Resultados de publicaciones">
+        <div class="pub-results__head">
+          <div>
+            <h2 class="pub-results__title">
+              {{ totalResultadosVisibles }}
+              {{ totalResultadosVisibles === 1 ? 'publicación' : 'publicaciones' }}
+            </h2>
+
+            <p>
+              {{
+                panelLateralActivo === 'export'
+                  ? `Estas publicaciones se incluirán en el archivo ${exportFormat === 'pdf' ? 'PDF' : 'Excel'}.`
+                  : 'Explore las publicaciones que coinciden con los filtros seleccionados.'
+              }}
+            </p>
+          </div>
+        </div>
+
+        <div class="pub-typeFilter" aria-label="Tipo de publicación">
+          <span class="pub-typeFilter__label">Tipo</span>
+
+          <div class="pub-typeFilter__chips">
+            <button
+              v-for="tipo in TIPOS_LIST"
+              :key="`top-${tipo.value}`"
+              type="button"
+              class="pub-typeFilter__chip"
+              :class="{ 'is-active': tipoFiltroActivo === tipo.value }"
+              :aria-pressed="tipoFiltroActivo === tipo.value"
+              @click="tipoFiltroActivo = tipo.value"
+            >
+              <span class="pub-typeFilter__dot" :data-tipo="tipo.value" aria-hidden="true"></span>
+              <span>{{ tipo.label }}</span>
+              <strong>{{ countByTypeVisible(tipo.value) }}</strong>
+            </button>
+          </div>
+        </div>
+
+        <section v-if="resultadosLoading" class="pub-state" aria-live="polite">
+          <div class="pub-skeleton-grid" aria-label="Cargando publicaciones">
+            <div v-for="n in 6" :key="n" class="pub-skeleton-card">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </section>
+
+        <section v-else-if="resultadosErrorMsg" class="pub-state pub-state--error">
+          <div class="pub-alert" role="alert">{{ resultadosErrorMsg }}</div>
+          <button type="button" class="pub-btn pub-btn--primary" :disabled="resultadosLoading" @click="reintentarCargaVisible">
+            Reintentar
+          </button>
+        </section>
+
+        <section v-else class="pub-content">
+          <div v-if="listaFiltrada.length" class="pub-grid page-stagger page-stagger--mid">
+            <article
+              v-for="pub in listaFiltrada"
+              :key="pub.id"
+              class="pub-card pub-card--interactive"
+              :data-tipo="resolveType(pub)"
+              tabindex="0"
+              role="button"
+              :aria-label="`Ver publicación ${pub.titulo || pub.proyecto || ''}`"
+              @click="verDetalles(pub.id)"
+              @keydown.enter.prevent="verDetalles(pub.id)"
+              @keydown.space.prevent="verDetalles(pub.id)"
+            >
+              <div class="pub-card__accent" aria-hidden="true"></div>
+
+              <div class="pub-card__head">
+                <span class="pub-badge" :data-tipo="resolveType(pub)">
+                  <span class="pub-badge__dot" aria-hidden="true"></span>
+                  {{ resolveLabel(pub) }}
+                </span>
+
+                <time class="pub-date" :datetime="publicationPeriodDatetime(pub)">
+                  {{ formatPublicationPeriod(pub) }}
+                </time>
+              </div>
+
+              <div class="pub-card__body">
+                <h3 class="pub-card__title" :title="pub.titulo || pub.proyecto || 'Sin título'">
+                  {{ pub.titulo || pub.proyecto || 'Sin título' }}
                 </h3>
+
+                <div v-if="pub.autor" class="pub-card__section">
+                  <span class="pub-card__section-label">Autores</span>
+                  <p class="pub-card__authors" :title="pub.autor">
+                    {{ compactAuthors(pub.autor) }}
+                  </p>
+                </div>
+
+                <div class="pub-card__academic" :title="buildAcademicMeta(pub)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="currentColor" d="M12 3 2 8l10 5 8-4v6h2V8L12 3Zm-6 9.1V16c0 2.2 2.7 4 6 4s6-1.8 6-4v-3.9l-6 3-6-3Z" />
+                  </svg>
+                  <span>{{ buildAcademicMeta(pub) }}</span>
+                </div>
 
                 <div
-                  class="
-                    pub-sidePanel__fields
-                    pub-sidePanel__fields--years
-                  "
+                  v-if="(pub.titulo && pub.proyecto) || resolveOrigenResumen(pub) || hasPublicationPdf(pub)"
+                  class="pub-card__tags"
+                  aria-label="Información adicional"
                 >
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fAnio"
-                    >
-                      Año exacto
-                    </label>
-
-                    <select
-                      id="fAnio"
-                      v-model="filtroAnio"
-                      class="pub-select"
-                      :disabled="
-                        loadingAnios ||
-                        !añosDisponibles.length ||
-                        Boolean(filtroAnioDesde || filtroAnioHasta)
-                      "
-                    >
-                      <option value="">
-                        Todos los años
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`exact-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fMes"
-                    >
-                      Mes
-                    </label>
-
-                    <select
-                      id="fMes"
-                      v-model="filtroMes"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="mes in MESES_LIST"
-                        :key="`mes-${mes.value || 'all'}`"
-                        :value="mes.value"
-                      >
-                        {{ mes.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fAnioDesde"
-                    >
-                      Desde
-                    </label>
-
-                    <select
-                      id="fAnioDesde"
-                      v-model="filtroAnioDesde"
-                      class="pub-select"
-                      :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
-                    >
-                      <option value="">
-                        Sin mínimo
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`desde-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="fAnioHasta"
-                    >
-                      Hasta
-                    </label>
-
-                    <select
-                      id="fAnioHasta"
-                      v-model="filtroAnioHasta"
-                      class="pub-select"
-                      :disabled="loadingAnios || !añosDisponibles.length || Boolean(filtroAnio)"
-                    >
-                      <option value="">
-                        Sin máximo
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`hasta-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-
-              <footer class="pub-sidePanel__footer">
-                <button
-                  type="button"
-                  class="pub-btn pub-btn--ghost pub-btn--block"
-                  :disabled="!hayFiltros && !hayBusqueda"
-                  @click="limpiarFiltros"
-                >
-                  Limpiar filtros
-                </button>
-              </footer>
-            </section>
-
-            <!-- ===============================================
-              EXPORTACIÓN
-            ================================================ -->
-            <section
-              v-else
-              class="pub-sidePanel pub-sidePanel--export"
-            >
-              <header class="pub-sidePanel__head">
-                <div>
-                  <span class="pub-sidePanel__eyebrow">
-                    Reporte institucional
-                  </span>
-
-                  <h2 class="pub-sidePanel__title">
-                    Exportar Excel
-                  </h2>
-                </div>
-
-                <span
-                  class="
-                    pub-sidePanel__badge
-                    pub-sidePanel__badge--soft
-                  "
-                  aria-label="Registros incluidos en el reporte"
-                >
-                  {{ exportPreviewLoading ? "…" : exportPreviewCount }}
-                </span>
-              </header>
-
-              <div
-                v-if="exportErrorMsg"
-                class="pub-alert"
-                role="alert"
-              >
-                {{ exportErrorMsg }}
-              </div>
-
-              <div class="pub-sidePanel__actions">
-                <button
-                  type="button"
-                  class="pub-btn pub-btn--ghost"
-                  @click="syncExportFiltersFromVisible"
-                >
-                  Usar visibles
-                </button>
-
-                <button
-                  type="button"
-                  class="pub-btn pub-btn--ghost"
-                  @click="limpiarExportFilters"
-                >
-                  Limpiar
-                </button>
-              </div>
-
-              <section class="pub-sidePanel__section">
-                <h3 class="pub-sidePanel__sectionTitle">
-                  Criterios del reporte
-                </h3>
-
-                <div class="pub-sidePanel__fields">
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expTexto"
-                    >
-                      Texto
-                    </label>
-
-                    <input
-                      id="expTexto"
-                      v-model="exportFiltroTexto"
-                      class="pub-input"
-                      type="search"
-                      inputmode="search"
-                      autocomplete="off"
-                      placeholder="Título, autor, proyecto, facultad o carrera…"
-                    />
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expTipo"
-                    >
-                      Tipo
-                    </label>
-
-                    <select
-                      id="expTipo"
-                      v-model="exportFiltroTipo"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="tipo in TIPOS_LIST"
-                        :key="`exp-${tipo.value}`"
-                        :value="tipo.value"
-                      >
-                        {{ tipo.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expOrigen"
-                    >
-                      Origen
-                    </label>
-
-                    <select
-                      id="expOrigen"
-                      v-model="exportFiltroOrigen"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="origen in ORIGENES_LIST"
-                        :key="`exp-origen-${origen.value}`"
-                        :value="origen.value"
-                      >
-                        {{ origen.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field pub-field--full">
-                    <span class="pub-label">
-                      Disponibilidad
-                    </span>
-
-                    <label
-                      class="pub-toggleCard pub-toggleCard--compact"
-                      for="expSoloPdf"
-                    >
-                      <input
-                        id="expSoloPdf"
-                        v-model="exportSoloConPdf"
-                        class="pub-toggleCard__input"
-                        type="checkbox"
-                      />
-
-                      <span
-                        class="pub-toggleCard__control"
-                        aria-hidden="true"
-                      >
-                        <span class="pub-toggleCard__thumb"></span>
-                      </span>
-
-                      <span class="pub-toggleCard__content">
-                        <strong class="pub-toggleCard__title">
-                          Solo con PDF
-                        </strong>
-
-                        <span class="pub-toggleCard__description">
-                          Exportar únicamente publicaciones con archivos PDF.
-                        </span>
-                      </span>
-                    </label>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expFacultad"
-                    >
-                      Facultad
-                    </label>
-
-                    <select
-                      id="expFacultad"
-                      v-model="exportFiltroFacultad"
-                      class="pub-select"
-                      @change="onExportFacultadChange"
-                    >
-                      <option value="">
-                        Todas las facultades
-                      </option>
-
-                      <option
-                        v-for="fac in facultades"
-                        :key="`exp-fac-${fac.id}`"
-                        :value="String(fac.id)"
-                      >
-                        {{ fac.nombre }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expCarrera"
-                    >
-                      Carrera
-                    </label>
-
-                    <select
-                      id="expCarrera"
-                      v-model="exportFiltroCarrera"
-                      class="pub-select"
-                      :disabled="!exportFiltroFacultad"
-                      @change="onExportCarreraChange"
-                    >
-                      <option value="">
-                        Todas las carreras
-                      </option>
-
-                      <option
-                        v-for="car in exportCarreras"
-                        :key="`exp-car-${car.id}`"
-                        :value="String(car.id)"
-                      >
-                        {{ car.nombre }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expProyecto"
-                    >
-                      Proyecto
-                    </label>
-
-                    <select
-                      id="expProyecto"
-                      v-model="exportFiltroProyecto"
-                      class="pub-select"
-                      :disabled="!exportFiltroCarrera"
-                    >
-                      <option value="">
-                        Todos los proyectos
-                      </option>
-
-                      <option
-                        v-for="proy in exportProyectos"
-                        :key="`exp-proy-${proy.id}`"
-                        :value="String(proy.id)"
-                      >
-                        {{ proy.nombre }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expAnio"
-                    >
-                      Año exacto
-                    </label>
-
-                    <select
-                      id="expAnio"
-                      v-model="exportFiltroAnio"
-                      class="pub-select"
-                      :disabled="
-                        loadingAnios ||
-                        !añosDisponibles.length ||
-                        Boolean(
-                          exportFiltroAnioDesde ||
-                            exportFiltroAnioHasta
-                        )
-                      "
-                    >
-                      <option value="">
-                        Todos los años
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`exp-exact-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expMes"
-                    >
-                      Mes
-                    </label>
-
-                    <select
-                      id="expMes"
-                      v-model="exportFiltroMes"
-                      class="pub-select"
-                    >
-                      <option
-                        v-for="mes in MESES_LIST"
-                        :key="`exp-mes-${mes.value || 'all'}`"
-                        :value="mes.value"
-                      >
-                        {{ mes.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expAnioDesde"
-                    >
-                      Desde
-                    </label>
-
-                    <select
-                      id="expAnioDesde"
-                      v-model="exportFiltroAnioDesde"
-                      class="pub-select"
-                      :disabled="loadingAnios || !añosDisponibles.length || Boolean(exportFiltroAnio)"
-                    >
-                      <option value="">
-                        Sin mínimo
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`exp-desde-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="pub-field">
-                    <label
-                      class="pub-label"
-                      for="expAnioHasta"
-                    >
-                      Hasta
-                    </label>
-
-                    <select
-                      id="expAnioHasta"
-                      v-model="exportFiltroAnioHasta"
-                      class="pub-select"
-                      :disabled="loadingAnios || !añosDisponibles.length || Boolean(exportFiltroAnio)"
-                    >
-                      <option value="">
-                        Sin máximo
-                      </option>
-
-                      <option
-                        v-for="anio in añosDisponibles"
-                        :key="`exp-hasta-${anio}`"
-                        :value="String(anio)"
-                      >
-                        {{ anio }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-
-              <footer
-                class="
-                  pub-sidePanel__footer
-                  pub-sidePanel__footer--stack
-                "
-              >
-                <button
-                  type="button"
-                  class="pub-btn pub-btn--ghost pub-btn--block"
-                  :disabled="exporting"
-                  @click="abrirPanelFiltros"
-                >
-                  Volver a filtros
-                </button>
-
-                <button
-                  type="button"
-                  class="pub-btn pub-btn--primary pub-btn--block"
-                  :disabled="
-                    loading ||
-                      exporting ||
-                      exportPreviewLoading ||
-                      !exportPreviewCount
-                  "
-                  @click="confirmarExportacion"
-                >
-                  {{
-                    exporting
-                      ? "Generando..."
-                      : "Generar Excel"
-                  }}
-                </button>
-              </footer>
-            </section>
-          </div>
-        </aside>
-
-        <!-- ===================================================
-          RESULTADOS
-        ==================================================== -->
-        <section class="pub-main">
-          <section
-            class="pub-typeFilter"
-            aria-label="Filtrado por tipo de publicación"
-          >
-            <header class="pub-typeFilter__head">
-              <div>
-                <span class="pub-typeFilter__eyebrow">
-                  {{
-                    panelLateralActivo === "export"
-                      ? "Vista previa del reporte"
-                      : "Clasificación"
-                  }}
-                </span>
-
-                <h2 class="pub-typeFilter__title">
-                  Tipo de publicación
-                </h2>
-              </div>
-
-              <button
-                v-if="hayFiltrosVisibles || hayBusquedaVisible"
-                type="button"
-                class="pub-inlineAction"
-                @click="limpiarFiltrosVisibles"
-              >
-                Limpiar todo
-              </button>
-            </header>
-
-            <div class="pub-typeFilter__chips">
-              <button
-                v-for="tipo in TIPOS_LIST"
-                :key="`top-${tipo.value}`"
-                type="button"
-                class="pub-typeFilter__chip"
-                :class="{
-                  'is-active': tipoFiltroActivo === tipo.value,
-                }"
-                :aria-pressed="tipoFiltroActivo === tipo.value"
-                @click="tipoFiltroActivo = tipo.value"
-              >
-                <span
-                  class="pub-typeFilter__dot"
-                  :data-tipo="tipo.value"
-                  aria-hidden="true"
-                ></span>
-
-                <span class="pub-typeFilter__label">
-                  {{ tipo.label }}
-                </span>
-
-                <span class="pub-typeFilter__count">
-                  {{ countByTypeVisible(tipo.value) }}
-                </span>
-              </button>
-            </div>
-          </section>
-
-          <!-- ===============================================
-            CARGA
-          ================================================ -->
-          <section
-            v-if="resultadosLoading"
-            class="pub-state"
-            aria-live="polite"
-          >
-            <div
-              class="pub-skeleton-grid"
-              aria-label="Cargando publicaciones"
-            >
-              <div
-                v-for="n in 6"
-                :key="n"
-                class="pub-skeleton-card"
-              ></div>
-            </div>
-          </section>
-
-          <!-- ===============================================
-            ERROR
-          ================================================ -->
-          <section
-            v-else-if="resultadosErrorMsg"
-            class="pub-state pub-state--error"
-          >
-            <div
-              class="pub-alert"
-              role="alert"
-            >
-              {{ resultadosErrorMsg }}
-            </div>
-
-            <button
-              type="button"
-              class="pub-btn pub-btn--primary"
-              :disabled="resultadosLoading"
-              @click="reintentarCargaVisible"
-            >
-              Reintentar
-            </button>
-          </section>
-
-          <!-- ===============================================
-            CONTENIDO
-          ================================================ -->
-          <section
-            v-else
-            class="pub-content"
-          >
-            <div
-              v-if="listaFiltrada.length"
-              class="pub-grid page-stagger page-stagger--mid"
-            >
-              <article
-                v-for="pub in listaFiltrada"
-                :key="pub.id"
-                class="pub-card pub-card--interactive"
-                :data-tipo="resolveType(pub)"
-                tabindex="0"
-                role="button"
-                :aria-label="
-                  `Ver detalle de ${
-                    pub.titulo ||
-                    pub.proyecto ||
-                    'la publicación'
-                  }`
-                "
-                @click="verDetalles(pub.id)"
-                @keydown.enter.prevent="verDetalles(pub.id)"
-                @keydown.space.prevent="verDetalles(pub.id)"
-              >
-                <div class="pub-card__head">
                   <span
-                    class="pub-badge"
-                    :data-tipo="resolveType(pub)"
-                  >
-                    {{ resolveLabel(pub) }}
-                  </span>
-
-                  <time
-                    class="pub-date"
-                    :datetime="publicationPeriodDatetime(pub)"
-                  >
-                    {{ formatPublicationPeriod(pub) }}
-                  </time>
-                </div>
-
-                <div class="pub-card__body">
-                  <h3
-                    class="pub-card__title"
-                    :title="
-                      pub.titulo ||
-                        pub.proyecto ||
-                        'Sin título'
-                    "
-                  >
-                    {{
-                      pub.titulo ||
-                        pub.proyecto ||
-                        "Sin título"
-                    }}
-                  </h3>
-
-                  <p
-                    v-if="pub.autor"
-                    class="
-                      pub-card__meta
-                      pub-card__meta--soft
-                    "
-                    :title="pub.autor"
-                  >
-                    {{ pub.autor }}
-                  </p>
-
-                  <p
-                    v-if="pub.proyecto"
-                    class="pub-card__meta"
+                    v-if="pub.titulo && pub.proyecto"
+                    class="pub-meta-chip pub-meta-chip--project"
                     :title="pub.proyecto"
                   >
                     {{ pub.proyecto }}
-                  </p>
-
-                  <p
-                    class="pub-card__meta"
-                    :title="buildAcademicMeta(pub)"
-                  >
-                    {{ buildAcademicMeta(pub) }}
-                  </p>
-
-                  <p
-                    v-if="resolveOrigenResumen(pub)"
-                    class="pub-card__meta pub-card__meta--origin"
-                    :title="resolveOrigenResumen(pub)"
-                  >
-                    <strong>Origen:</strong>
-                    {{ resolveOrigenResumen(pub) }}
-                  </p>
-                </div>
-
-                <footer class="pub-card__footer">
-                  <span class="pub-card__action">
-                    Ver detalle
                   </span>
-                </footer>
-              </article>
-            </div>
+                  <span v-if="resolveOrigenResumen(pub)" class="pub-meta-chip pub-meta-chip--origin" :title="resolveOrigenResumen(pub)">
+                    {{ resolveOrigenResumen(pub) }}
+                  </span>
+                  <span v-if="hasPublicationPdf(pub)" class="pub-meta-chip pub-meta-chip--pdf">
+                    Documento disponible
+                  </span>
+                </div>
+              </div>
 
-            <div
-              v-else
-              class="pub-empty"
-              role="status"
-              aria-live="polite"
+              <footer class="pub-card__footer">
+                <span class="pub-card__action">
+                  Ver publicación
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="currentColor" d="m13.2 5.6 6.4 6.4-6.4 6.4-1.4-1.4 4-4H4v-2h11.8l-4-4 1.4-1.4Z" />
+                  </svg>
+                </span>
+              </footer>
+            </article>
+          </div>
+
+          <div v-else class="pub-empty" role="status" aria-live="polite">
+            <div class="pub-empty__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M4 3h11l5 5v13H4V3Zm2 2v14h12V9h-4V5H6Zm3 8h6v2H9v-2Zm0-4h3v2H9V9Z" />
+              </svg>
+            </div>
+            <h3 class="pub-empty__title">{{ emptyTitle }}</h3>
+            <p class="pub-empty__text">{{ emptyText }}</p>
+            <button
+              v-if="hayFiltrosVisibles || hayBusquedaVisible"
+              class="pub-btn pub-btn--primary"
+              type="button"
+              @click="limpiarFiltrosVisibles"
             >
-              <div
-                class="pub-empty__mark"
-                aria-hidden="true"
-              ></div>
-
-              <h3 class="pub-empty__title">
-                {{ emptyTitle }}
-              </h3>
-
-              <p class="pub-empty__text">
-                {{ emptyText }}
-              </p>
-
-              <button
-                v-if="hayFiltrosVisibles || hayBusquedaVisible"
-                class="pub-btn pub-btn--primary"
-                type="button"
-                @click="limpiarFiltrosVisibles"
-              >
-                Limpiar filtros
-              </button>
-            </div>
-          </section>
+              Limpiar filtros
+            </button>
+          </div>
         </section>
       </section>
     </main>
@@ -1160,6 +791,7 @@ import {
 import { useRouter } from "vue-router";
 
 import api from "../../scripts/api/axios";
+import PublicacionesSearchField from "./PublicacionesSearchField.vue";
 
 import {
   PUBLICACION_TIPOS,
@@ -1172,7 +804,8 @@ import {
 
 const LIST_ENDPOINT = "/publicaciones/";
 const YEARS_ENDPOINT = "/publicaciones/anios-disponibles/";
-const EXPORT_ENDPOINT = "/reportes/publicaciones/excel/";
+const EXPORT_EXCEL_ENDPOINT = "/reportes/publicaciones/excel/";
+const EXPORT_PDF_ENDPOINT = "/reportes/publicaciones/pdf/";
 const EXPORT_PREVIEW_ENDPOINT =
   "/reportes/publicaciones/excel/preview/";
 
@@ -1253,7 +886,7 @@ const ORIGENES_LIST = Object.freeze([
     value: "ALL",
   },
   {
-    label: "Ninguno",
+    label: "Sin origen académico",
     value: "ninguno",
   },
   {
@@ -1275,7 +908,7 @@ const ORIGENES_LIST = Object.freeze([
 ]);
 
 const ORIGEN_LABELS = Object.freeze({
-  ninguno: "Ninguno",
+  ninguno: "Sin origen académico",
   tic: "Trabajo de integración curricular",
   maestria: "Tesis de maestría",
   doctoral: "Tesis doctoral",
@@ -1332,6 +965,7 @@ const MESES_LIST = Object.freeze([
 const publicaciones = ref([]);
 const exportPreviewPublicaciones = ref([]);
 
+const sedes = ref([]);
 const facultades = ref([]);
 const carreras = ref([]);
 const proyectos = ref([]);
@@ -1350,6 +984,7 @@ const filtroMes = ref("");
 const filtroAnioDesde = ref("");
 const filtroAnioHasta = ref("");
 const filtroTexto = ref("");
+const filtroSede = ref("");
 const filtroFacultad = ref("");
 const filtroCarrera = ref("");
 const filtroProyecto = ref("");
@@ -1366,6 +1001,7 @@ const exportFiltroMes = ref("");
 const exportFiltroAnioDesde = ref("");
 const exportFiltroAnioHasta = ref("");
 const exportFiltroTexto = ref("");
+const exportFiltroSede = ref("");
 const exportFiltroFacultad = ref("");
 const exportFiltroCarrera = ref("");
 const exportFiltroProyecto = ref("");
@@ -1381,6 +1017,7 @@ const exportProyectos = ref([]);
 const loading = ref(false);
 const loadingAnios = ref(true);
 const exporting = ref(false);
+const exportFormat = ref("excel");
 const exportPreviewLoading = ref(false);
 
 const errorMsg = ref("");
@@ -1497,33 +1134,48 @@ function extractErrorMessage(
   error,
   fallback = "No se pudieron cargar los datos."
 ) {
-  const responseData = error?.response?.data;
+  const status = Number(error?.response?.status || 0);
 
+  if (status === 401) {
+    return "Su sesión ha vencido. Inicie sesión nuevamente.";
+  }
+
+  if (status === 403) {
+    return "No tiene permisos para realizar esta acción.";
+  }
+
+  if (status === 404) {
+    return "No encontramos la información solicitada.";
+  }
+
+  if (status === 429) {
+    return "Se realizaron demasiadas solicitudes. Intente nuevamente en unos minutos.";
+  }
+
+  const responseData = error?.response?.data;
   const detail =
     responseData?.detail ||
     responseData?.message ||
-    responseData?.error ||
-    error?.message;
+    responseData?.error;
 
-  if (Array.isArray(detail)) {
-    return detail.join(", ");
+  const text = Array.isArray(detail)
+    ? detail.join(" ")
+    : typeof detail === "string"
+      ? detail
+      : "";
+
+  const technicalPattern =
+    /(backend|endpoint|serializer|queryset|jwt|token|sql|postgres|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|http\s*\d{3}|request|response)/i;
+
+  if (
+    text &&
+    text.length <= 240 &&
+    !technicalPattern.test(text)
+  ) {
+    return text;
   }
 
-  if (detail && typeof detail === "object") {
-    return Object.entries(detail)
-      .flatMap(([field, value]) => {
-        const messages = Array.isArray(value)
-          ? value
-          : [value];
-
-        return messages.map(
-          (message) => `${field}: ${String(message)}`
-        );
-      })
-      .join(" ");
-  }
-
-  return String(detail || fallback);
+  return fallback;
 }
 
 /* ============================================================
@@ -1610,6 +1262,12 @@ function resolveOrigenResumen(publicacion) {
 }
 
 function buildAcademicMeta(publicacion) {
+  const sede = String(
+    publicacion?.sede ||
+      publicacion?.sede_nombre ||
+      ""
+  ).trim();
+
   const facultad = String(
     publicacion?.facultad || ""
   ).trim();
@@ -1618,15 +1276,15 @@ function buildAcademicMeta(publicacion) {
     publicacion?.carrera || ""
   ).trim();
 
-  if (facultad && carrera) {
-    return `${facultad} · ${carrera}`;
-  }
+  const parts = [
+    sede,
+    facultad,
+    carrera,
+  ].filter(Boolean);
 
-  return (
-    facultad ||
-    carrera ||
-    "Sin ubicación académica"
-  );
+  return parts.length
+    ? parts.join(" · ")
+    : "Sin ubicación académica";
 }
 
 function resolvePublicationYear(publicacion) {
@@ -1730,6 +1388,7 @@ function buildParamsFromState({
   anioDesde,
   anioHasta,
   texto,
+  sede,
   facultad,
   carrera,
   proyecto,
@@ -1766,6 +1425,10 @@ function buildParamsFromState({
 
   if (texto?.trim()) {
     params.texto = texto.trim();
+  }
+
+  if (sede) {
+    params.sede = sede;
   }
 
   if (facultad) {
@@ -1805,6 +1468,7 @@ function getMainFilterState({
     anioDesde: filtroAnioDesde.value,
     anioHasta: filtroAnioHasta.value,
     texto: filtroTexto.value,
+    sede: filtroSede.value,
     facultad: filtroFacultad.value,
     carrera: filtroCarrera.value,
     proyecto: filtroProyecto.value,
@@ -1824,6 +1488,7 @@ function getExportFilterState() {
     anioDesde: exportFiltroAnioDesde.value,
     anioHasta: exportFiltroAnioHasta.value,
     texto: exportFiltroTexto.value,
+    sede: exportFiltroSede.value,
     facultad: exportFiltroFacultad.value,
     carrera: exportFiltroCarrera.value,
     proyecto: exportFiltroProyecto.value,
@@ -1918,6 +1583,7 @@ const hayFiltros = computed(() => {
     Boolean(filtroMes.value) ||
     Boolean(filtroAnioDesde.value) ||
     Boolean(filtroAnioHasta.value) ||
+    Boolean(filtroSede.value) ||
     Boolean(filtroFacultad.value) ||
     Boolean(filtroCarrera.value) ||
     Boolean(filtroProyecto.value) ||
@@ -1933,6 +1599,7 @@ const hayFiltrosExportacion = computed(() => {
     Boolean(exportFiltroMes.value) ||
     Boolean(exportFiltroAnioDesde.value) ||
     Boolean(exportFiltroAnioHasta.value) ||
+    Boolean(exportFiltroSede.value) ||
     Boolean(exportFiltroFacultad.value) ||
     Boolean(exportFiltroCarrera.value) ||
     Boolean(exportFiltroProyecto.value) ||
@@ -1961,6 +1628,7 @@ const activeAdvancedFiltersCount = computed(() => {
   );
 
   return [
+    Boolean(filtroSede.value),
     Boolean(filtroFacultad.value),
     Boolean(filtroCarrera.value),
     Boolean(filtroProyecto.value),
@@ -2009,6 +1677,217 @@ const totalActiveFiltersCountVisible = computed(() => {
     ? exportActiveFiltersCount.value
     : totalActiveFiltersCount.value;
 });
+
+
+const advancedOnlyFiltersCount = computed(() => {
+  const hasPeriod = Boolean(
+    filtroAnio.value ||
+      filtroMes.value ||
+      filtroAnioDesde.value ||
+      filtroAnioHasta.value
+  );
+
+  return [
+    Boolean(filtroProyecto.value),
+    filtroOrigen.value !== "ALL",
+    hasPeriod,
+  ].filter(Boolean).length;
+});
+
+function findCatalogLabel(items, value, fallback = "") {
+  if (!value) return fallback;
+
+  const item = items.find(
+    (entry) => String(entry?.id) === String(value)
+  );
+
+  return String(item?.nombre || fallback || value).trim();
+}
+
+function getMonthLabel(value) {
+  if (!value) return "";
+
+  return (
+    MESES_LIST.find(
+      (item) => String(item.value) === String(value)
+    )?.label || ""
+  );
+}
+
+const periodFilterLabel = computed(() => {
+  if (filtroAnio.value) {
+    const month = getMonthLabel(filtroMes.value);
+    return month
+      ? `${month} de ${filtroAnio.value}`
+      : `Año ${filtroAnio.value}`;
+  }
+
+  if (filtroAnioDesde.value || filtroAnioHasta.value) {
+    if (filtroAnioDesde.value && filtroAnioHasta.value) {
+      return `${filtroAnioDesde.value}–${filtroAnioHasta.value}`;
+    }
+
+    if (filtroAnioDesde.value) {
+      return `Desde ${filtroAnioDesde.value}`;
+    }
+
+    return `Hasta ${filtroAnioHasta.value}`;
+  }
+
+  if (filtroMes.value) {
+    return getMonthLabel(filtroMes.value);
+  }
+
+  return "";
+});
+
+const activeFilterChips = computed(() => {
+  const chips = [];
+
+  if (filtroSede.value) {
+    chips.push({
+      key: "sede",
+      label: findCatalogLabel(
+        sedes.value,
+        filtroSede.value,
+        "Sede"
+      ),
+    });
+  }
+
+  if (filtroFacultad.value) {
+    chips.push({
+      key: "facultad",
+      label: findCatalogLabel(
+        facultades.value,
+        filtroFacultad.value,
+        "Facultad"
+      ),
+    });
+  }
+
+  if (filtroCarrera.value) {
+    chips.push({
+      key: "carrera",
+      label: findCatalogLabel(
+        carreras.value,
+        filtroCarrera.value,
+        "Carrera"
+      ),
+    });
+  }
+
+  if (filtroProyecto.value) {
+    chips.push({
+      key: "proyecto",
+      label: findCatalogLabel(
+        proyectos.value,
+        filtroProyecto.value,
+        "Proyecto"
+      ),
+    });
+  }
+
+  if (filtroOrigen.value !== "ALL") {
+    const origin = ORIGENES_LIST.find(
+      (item) => item.value === filtroOrigen.value
+    );
+
+    chips.push({
+      key: "origen",
+      label: origin?.label || "Origen",
+    });
+  }
+
+  if (periodFilterLabel.value) {
+    chips.push({
+      key: "periodo",
+      label: periodFilterLabel.value,
+    });
+  }
+
+  if (soloConPdf.value) {
+    chips.push({
+      key: "pdf",
+      label: "Solo con PDF",
+    });
+  }
+
+  return chips;
+});
+
+async function removeActiveFilter(key) {
+  if (key === "sede") {
+    filtroSede.value = "";
+    await onMainSedeChange();
+    return;
+  }
+
+  if (key === "facultad") {
+    filtroFacultad.value = "";
+    await onMainFacultadChange();
+    return;
+  }
+
+  if (key === "carrera") {
+    filtroCarrera.value = "";
+    await onMainCarreraChange();
+    return;
+  }
+
+  if (key === "proyecto") {
+    filtroProyecto.value = "";
+    return;
+  }
+
+  if (key === "origen") {
+    filtroOrigen.value = "ALL";
+    return;
+  }
+
+  if (key === "periodo") {
+    filtroAnio.value = "";
+    filtroMes.value = "";
+    filtroAnioDesde.value = "";
+    filtroAnioHasta.value = "";
+    return;
+  }
+
+  if (key === "pdf") {
+    soloConPdf.value = false;
+  }
+}
+
+function compactAuthors(value, maxVisible = 2) {
+  const text = String(value || "").trim();
+
+  if (!text) return "";
+
+  const authors = text
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (authors.length <= maxVisible) {
+    return text;
+  }
+
+  const visible = authors.slice(0, maxVisible).join(", ");
+  const remaining = authors.length - maxVisible;
+
+  return `${visible} · +${remaining} ${remaining === 1 ? "autor" : "autores"}`;
+}
+
+function hasPublicationPdf(publicacion) {
+  return Boolean(
+    publicacion?.tiene_pdf ||
+      publicacion?.archivo_pdf ||
+      publicacion?.archivo_pdf_url ||
+      publicacion?.pdf ||
+      publicacion?.pdf_url ||
+      publicacion?.documento_pdf
+  );
+}
 
 const emptyTitle = computed(() => {
   if (hayBusquedaVisible.value || hayFiltrosVisibles.value) {
@@ -2331,6 +2210,14 @@ function scheduleMainReload(delay = MAIN_FILTER_DEBOUNCE_MS) {
   CATÁLOGOS
 ============================================================ */
 
+async function loadSedes() {
+  const response = await api.get(
+    "/selects/sedes/"
+  );
+
+  sedes.value = extractArray(response.data);
+}
+
 async function loadFacultades() {
   const response = await api.get(
     "/selects/facultades/"
@@ -2339,25 +2226,42 @@ async function loadFacultades() {
   facultades.value = extractArray(response.data);
 }
 
-async function fetchCarrerasByFacultad(facultadId) {
-  if (!facultadId) {
+async function fetchCarrerasByFacultad(
+  facultadId,
+  sedeId = ""
+) {
+  if (!facultadId && !sedeId) {
     return [];
   }
 
   const response = await api.get(
-    `/selects/carreras/${facultadId}/`
+    "/selects/carreras/",
+    {
+      params: {
+        facultad_id: facultadId || undefined,
+        sede_id: sedeId || undefined,
+      },
+    }
   );
 
   return extractArray(response.data);
 }
 
-async function fetchProyectosByCarrera(carreraId) {
+async function fetchProyectosByCarrera(
+  carreraId,
+  sedeId = ""
+) {
   if (!carreraId) {
     return [];
   }
 
   const response = await api.get(
-    `/selects/proyectos/${carreraId}/`
+    `/selects/proyectos/${carreraId}/`,
+    {
+      params: {
+        sede_id: sedeId || undefined,
+      },
+    }
   );
 
   return extractArray(response.data);
@@ -2376,6 +2280,7 @@ function limpiarFiltros() {
   filtroAnioDesde.value = "";
   filtroAnioHasta.value = "";
   filtroTexto.value = "";
+  filtroSede.value = "";
   filtroFacultad.value = "";
   filtroCarrera.value = "";
   filtroProyecto.value = "";
@@ -2393,6 +2298,7 @@ function limpiarExportFilters() {
   exportFiltroAnioDesde.value = "";
   exportFiltroAnioHasta.value = "";
   exportFiltroTexto.value = "";
+  exportFiltroSede.value = "";
   exportFiltroFacultad.value = "";
   exportFiltroCarrera.value = "";
   exportFiltroProyecto.value = "";
@@ -2435,6 +2341,7 @@ async function syncExportFiltersFromVisible() {
   exportFiltroAnioHasta.value =
     filtroAnioHasta.value;
   exportFiltroTexto.value = filtroTexto.value;
+  exportFiltroSede.value = filtroSede.value;
   exportFiltroFacultad.value =
     filtroFacultad.value;
   exportFiltroCarrera.value =
@@ -2449,17 +2356,22 @@ async function syncExportFiltersFromVisible() {
   exportErrorMsg.value = "";
 
   try {
-    if (exportFiltroFacultad.value) {
+    if (
+      exportFiltroSede.value ||
+      exportFiltroFacultad.value
+    ) {
       exportCarreras.value =
         await fetchCarrerasByFacultad(
-          exportFiltroFacultad.value
+          exportFiltroFacultad.value,
+          exportFiltroSede.value
         );
     }
 
     if (exportFiltroCarrera.value) {
       exportProyectos.value =
         await fetchProyectosByCarrera(
-          exportFiltroCarrera.value
+          exportFiltroCarrera.value,
+          exportFiltroSede.value
         );
     }
   } catch (error) {
@@ -2476,6 +2388,36 @@ async function syncExportFiltersFromVisible() {
   CATÁLOGOS DEPENDIENTES PRINCIPALES
 ============================================================ */
 
+async function onMainSedeChange() {
+  filtroCarrera.value = "";
+  filtroProyecto.value = "";
+
+  carreras.value = [];
+  proyectos.value = [];
+
+  if (
+    !filtroSede.value &&
+    !filtroFacultad.value
+  ) {
+    return;
+  }
+
+  try {
+    carreras.value =
+      await fetchCarrerasByFacultad(
+        filtroFacultad.value,
+        filtroSede.value
+      );
+  } catch (error) {
+    console.error(
+      "Error cargando carreras por sede:",
+      error
+    );
+
+    carreras.value = [];
+  }
+}
+
 async function onMainFacultadChange() {
   filtroCarrera.value = "";
   filtroProyecto.value = "";
@@ -2483,14 +2425,18 @@ async function onMainFacultadChange() {
   carreras.value = [];
   proyectos.value = [];
 
-  if (!filtroFacultad.value) {
+  if (
+    !filtroSede.value &&
+    !filtroFacultad.value
+  ) {
     return;
   }
 
   try {
     carreras.value =
       await fetchCarrerasByFacultad(
-        filtroFacultad.value
+        filtroFacultad.value,
+        filtroSede.value
       );
   } catch (error) {
     console.error(
@@ -2513,7 +2459,8 @@ async function onMainCarreraChange() {
   try {
     proyectos.value =
       await fetchProyectosByCarrera(
-        filtroCarrera.value
+        filtroCarrera.value,
+        filtroSede.value
       );
   } catch (error) {
     console.error(
@@ -2529,6 +2476,36 @@ async function onMainCarreraChange() {
   CATÁLOGOS DEPENDIENTES DE EXPORTACIÓN
 ============================================================ */
 
+async function onExportSedeChange() {
+  exportFiltroCarrera.value = "";
+  exportFiltroProyecto.value = "";
+
+  exportCarreras.value = [];
+  exportProyectos.value = [];
+
+  if (
+    !exportFiltroSede.value &&
+    !exportFiltroFacultad.value
+  ) {
+    return;
+  }
+
+  try {
+    exportCarreras.value =
+      await fetchCarrerasByFacultad(
+        exportFiltroFacultad.value,
+        exportFiltroSede.value
+      );
+  } catch (error) {
+    console.error(
+      "Error cargando carreras por sede para exportación:",
+      error
+    );
+
+    exportCarreras.value = [];
+  }
+}
+
 async function onExportFacultadChange() {
   exportFiltroCarrera.value = "";
   exportFiltroProyecto.value = "";
@@ -2536,14 +2513,18 @@ async function onExportFacultadChange() {
   exportCarreras.value = [];
   exportProyectos.value = [];
 
-  if (!exportFiltroFacultad.value) {
+  if (
+    !exportFiltroSede.value &&
+    !exportFiltroFacultad.value
+  ) {
     return;
   }
 
   try {
     exportCarreras.value =
       await fetchCarrerasByFacultad(
-        exportFiltroFacultad.value
+        exportFiltroFacultad.value,
+        exportFiltroSede.value
       );
   } catch (error) {
     console.error(
@@ -2566,7 +2547,8 @@ async function onExportCarreraChange() {
   try {
     exportProyectos.value =
       await fetchProyectosByCarrera(
-        exportFiltroCarrera.value
+        exportFiltroCarrera.value,
+        exportFiltroSede.value
       );
   } catch (error) {
     console.error(
@@ -2722,7 +2704,7 @@ async function loadExportPreview() {
 
     exportErrorMsg.value = extractErrorMessage(
       error,
-      "No se pudo calcular la vista previa del reporte."
+      "No se pudo preparar la vista previa de la descarga."
     );
   } finally {
     if (
@@ -2757,22 +2739,44 @@ async function confirmarExportacion() {
       getExportFilterState()
     );
 
+    const isPdf =
+      exportFormat.value === "pdf";
+
+    const endpoint = isPdf
+      ? EXPORT_PDF_ENDPOINT
+      : EXPORT_EXCEL_ENDPOINT;
+
     const response = await api.get(
-      EXPORT_ENDPOINT,
+      endpoint,
       {
         params,
         responseType: "blob",
       }
     );
 
-    const blob = new Blob([response.data], {
-      type:
-        "application/vnd.openxmlformats-" +
-        "officedocument.spreadsheetml.sheet",
-    });
+    const mimeType = isPdf
+      ? "application/pdf"
+      : (
+          "application/vnd.openxmlformats-" +
+          "officedocument.spreadsheetml.sheet"
+        );
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const extension = isPdf
+      ? "pdf"
+      : "xlsx";
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: mimeType,
+      }
+    );
+
+    const url =
+      window.URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
 
     const timestamp = new Date()
       .toISOString()
@@ -2782,7 +2786,7 @@ async function confirmarExportacion() {
     link.href = url;
     link.setAttribute(
       "download",
-      `reporte_publicaciones_${timestamp}.xlsx`
+      `reporte_publicaciones_${timestamp}.${extension}`
     );
 
     document.body.appendChild(link);
@@ -2794,14 +2798,17 @@ async function confirmarExportacion() {
     }, 1000);
   } catch (error) {
     console.error(
-      "Error exportando Excel:",
+      `Error exportando ${exportFormat.value}:`,
       error
     );
 
-    exportErrorMsg.value = extractErrorMessage(
-      error,
-      "No se pudo generar el archivo Excel."
-    );
+    exportErrorMsg.value =
+      extractErrorMessage(
+        error,
+        exportFormat.value === "pdf"
+          ? "No se pudo generar el archivo PDF."
+          : "No se pudo generar el archivo Excel."
+      );
   } finally {
     exporting.value = false;
   }
@@ -2932,6 +2939,7 @@ watch(
     filtroAnioDesde,
     filtroAnioHasta,
     filtroTexto,
+    filtroSede,
     filtroFacultad,
     filtroCarrera,
     filtroProyecto,
@@ -2950,6 +2958,7 @@ watch(
     exportFiltroAnioDesde,
     exportFiltroAnioHasta,
     exportFiltroTexto,
+    exportFiltroSede,
     exportFiltroFacultad,
     exportFiltroCarrera,
     exportFiltroProyecto,
@@ -2971,6 +2980,7 @@ async function cargarDatosIniciales() {
 
   try {
     await Promise.all([
+      loadSedes(),
       loadFacultades(),
       loadAvailableYears(),
       loadTotalInstitucional(),

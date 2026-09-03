@@ -15,14 +15,14 @@
           id="avn-overlay-title"
           class="avn-sr-only"
         >
-          Avisos institucionales del SGPC ULEAM
+          Avisos
         </h2>
 
         <button
           class="avn-overlay__backdrop"
           type="button"
           tabindex="-1"
-          aria-label="Cerrar avisos"
+          aria-label="Cerrar"
           @click="solicitarCierre"
         ></button>
 

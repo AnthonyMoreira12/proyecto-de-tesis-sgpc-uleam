@@ -1,0 +1,1195 @@
+/* ============================================================
+   SGPC ULEAM
+   ACTUALIZACIÓN CONTROLADA DE REGISTROS
+============================================================ */
+
+
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.record-update-page {
+  padding-bottom: 72px;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+}
+
+
+.record-update-shell {
+  width: min(980px, 100%);
+
+  margin: 0 auto;
+
+  display: grid;
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.record-update-hero {
+  display: grid;
+
+  gap: 10px;
+
+  min-height: 92px;
+
+  padding: 20px 4px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: transparent;
+}
+
+
+.record-update-hero__copy {
+  display: grid;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+
+.record-update-hero__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+}
+
+
+.record-update-hero h1 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.75rem,
+      1.5rem + 0.75vw,
+      2.2rem
+    );
+
+  font-weight: 780;
+
+  line-height: 1.08;
+
+  letter-spacing: -0.035em;
+}
+
+
+.record-update-hero p {
+  max-width: 760px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   VOLVER
+============================================================ */
+
+.record-back {
+  appearance: none;
+
+  width: fit-content;
+
+  min-height: 36px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: var(--color-primary);
+
+  font: inherit;
+
+  font-size: 0.72rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    color var(--t-fast);
+}
+
+
+.record-back:hover {
+  border-color: var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+/* ============================================================
+   PANEL
+============================================================ */
+
+.record-panel {
+  padding: 20px 22px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+}
+
+
+/* ============================================================
+   FORMULARIO
+============================================================ */
+
+.record-form {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 16px;
+}
+
+
+.record-field {
+  display: grid;
+
+  align-content: start;
+
+  gap: 6px;
+
+  min-width: 0;
+}
+
+
+.record-field > span {
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+
+  font-weight: 750;
+}
+
+
+.record-form input,
+.record-form select,
+.record-form textarea {
+  width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-input);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.76rem;
+
+  outline: none;
+
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.record-form input,
+.record-form select {
+  min-height: 44px;
+
+  padding: 0 11px;
+}
+
+
+.record-form textarea {
+  min-height: 112px;
+
+  padding: 10px 11px;
+
+  resize: vertical;
+
+  line-height: 1.5;
+}
+
+
+.record-form input:hover:not(:disabled),
+.record-form select:hover:not(:disabled),
+.record-form textarea:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+
+.record-form input:focus,
+.record-form select:focus,
+.record-form textarea:focus {
+  border-color: var(--color-primary);
+
+  box-shadow: var(--ring-primary);
+}
+
+
+.record-form input:disabled,
+.record-form select:disabled,
+.record-form textarea:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+
+  background: var(--bg-soft);
+}
+
+
+.record-wide {
+  grid-column:
+    1 / -1;
+}
+
+
+/* ============================================================
+   AYUDA
+============================================================ */
+
+.record-help {
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   CAMPOS HABILITADOS
+============================================================ */
+
+.record-fields-note {
+  grid-column:
+    1 / -1;
+
+  display: grid;
+
+  gap: 10px;
+
+  padding: 13px 14px;
+
+  border:
+    1px solid
+    var(--info-line);
+
+  border-radius: 11px;
+
+  background: var(--info-soft);
+}
+
+
+.record-fields-note > div:first-child {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.record-fields-note strong {
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  font-weight: 760;
+}
+
+
+.record-fields-note small {
+  color: var(--text-secondary);
+
+  font-size: 0.65rem;
+
+  line-height: 1.4;
+}
+
+
+.record-field-chips {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  flex-wrap: wrap;
+}
+
+
+.record-field-chips span {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 26px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 7px;
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+
+  font-size: 0.63rem;
+
+  font-weight: 760;
+}
+
+
+/* ============================================================
+   ACCIONES
+============================================================ */
+
+.record-actions {
+  grid-column:
+    1 / -1;
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding-top: 16px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+.record-actions button,
+.record-empty button {
+  appearance: none;
+
+  min-height: 40px;
+
+  padding: 0 14px;
+
+  border:
+    1px solid
+    var(--color-primary);
+
+  border-radius: 9px;
+
+  background: var(--color-primary);
+
+  color: var(--text-on-primary);
+
+  font: inherit;
+
+  font-size: 0.74rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.record-actions button:hover:not(:disabled),
+.record-empty button:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-primary) 88%,
+      var(--text-primary)
+    );
+}
+
+
+.record-actions button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+.record-actions .record-secondary,
+.record-empty .record-secondary {
+  border-color: var(--border-color);
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+}
+
+
+.record-actions .record-secondary:hover:not(:disabled),
+.record-empty .record-secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+
+  background: var(--bg-soft);
+
+  color: var(--color-primary);
+}
+
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.record-alert {
+  margin: 0;
+
+  padding: 13px 15px;
+
+  border-radius: 11px;
+
+  font-size: 0.74rem;
+
+  line-height: 1.45;
+}
+
+
+.record-alert--error {
+  border:
+    1px solid
+    var(--danger-line);
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+}
+
+
+/* ============================================================
+   CARGA
+============================================================ */
+
+.record-loading {
+  min-height: 100px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  color: var(--text-secondary);
+}
+
+
+.record-loading > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.record-loading strong {
+  color: var(--text-primary);
+
+  font-size: 0.76rem;
+
+  font-weight: 760;
+}
+
+
+.record-loading span {
+  font-size: 0.68rem;
+}
+
+
+.record-spinner {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  border:
+    3px solid
+    color-mix(
+      in srgb,
+      var(--color-primary) 18%,
+      transparent
+    );
+
+  border-top-color:
+    var(--color-primary);
+
+  border-radius: 50%;
+
+  animation:
+    record-spin
+    800ms
+    linear
+    infinite;
+}
+
+
+/* ============================================================
+   VACÍO
+============================================================ */
+
+.record-empty {
+  min-height: 120px;
+
+  display: grid;
+
+  place-items: center;
+
+  gap: 5px;
+
+  text-align: center;
+}
+
+
+.record-empty strong {
+  color: var(--text-primary);
+
+  font-size: 0.8rem;
+
+  font-weight: 760;
+}
+
+
+.record-empty span {
+  max-width: 560px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  line-height: 1.45;
+}
+
+
+.record-empty button {
+  margin-top: 8px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 700px) {
+
+  .record-update-shell {
+    gap: 14px;
+  }
+
+  .record-update-hero {
+    padding: 14px 2px;
+  }
+
+  .record-panel {
+    padding: 16px;
+  }
+
+  .record-form {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .record-wide,
+  .record-fields-note,
+  .record-actions {
+    grid-column: auto;
+  }
+
+  .record-actions {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .record-actions button {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   ANIMACIÓN
+============================================================ */
+
+@keyframes record-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .record-update-page *,
+  .record-update-page *::before,
+  .record-update-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   INFORMACIÓN ACTUAL / SOLO LECTURA
+============================================================ */
+
+.record-current-info,
+.record-pending-heading {
+  grid-column: 1 / -1;
+}
+
+
+.record-current-info {
+  display: grid;
+
+  gap: 14px;
+
+  padding: 16px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 12px;
+
+  background: var(--bg-soft);
+}
+
+
+.record-section-heading,
+.record-pending-heading {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 14px;
+}
+
+
+.record-section-heading > div,
+.record-pending-heading > div {
+  display: grid;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+
+.record-section-heading strong,
+.record-pending-heading strong {
+  color: var(--text-primary);
+
+  font-size: 0.78rem;
+
+  font-weight: 780;
+}
+
+
+.record-section-heading small,
+.record-pending-heading small {
+  max-width: 720px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.66rem;
+
+  line-height: 1.45;
+}
+
+
+.record-readonly-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 26px;
+
+  flex: 0 0 auto;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 7px;
+
+  background: var(--bg-card);
+
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+
+  font-weight: 740;
+}
+
+
+.record-current-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 0;
+
+  margin: 0;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  background: var(--bg-card);
+}
+
+
+.record-current-item {
+  display: grid;
+
+  align-content: start;
+
+  gap: 4px;
+
+  min-width: 0;
+
+  min-height: 72px;
+
+  padding: 12px 13px;
+
+  border-right:
+    1px solid
+    var(--border-color);
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+}
+
+
+.record-current-item:nth-child(3n) {
+  border-right: 0;
+}
+
+
+.record-current-item dt,
+.record-current-item dd {
+  margin: 0;
+}
+
+
+.record-current-item dt {
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+
+  font-weight: 720;
+}
+
+
+.record-current-item dd {
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  font-weight: 680;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   INFORMACIÓN PENDIENTE
+============================================================ */
+
+.record-pending-heading {
+  margin-top: 2px;
+
+  padding: 4px 1px 12px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+}
+
+
+.record-field__context {
+  display: block;
+
+  margin-top: -1px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.63rem;
+
+  font-weight: 540;
+
+  line-height: 1.4;
+}
+
+
+@media (max-width: 900px) {
+
+  .record-current-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .record-current-item,
+  .record-current-item:nth-child(3n) {
+    border-right:
+      1px solid
+      var(--border-color);
+  }
+
+  .record-current-item:nth-child(2n) {
+    border-right: 0;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .record-section-heading {
+    display: grid;
+  }
+
+  .record-readonly-badge {
+    width: fit-content;
+  }
+
+  .record-current-grid {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .record-current-item,
+  .record-current-item:nth-child(2n),
+  .record-current-item:nth-child(3n) {
+    border-right: 0;
+  }
+}
+
+
+/* ============================================================
+   CONFIRMACIÓN DE ACTUALIZACIÓN
+============================================================ */
+
+.record-success-modal {
+  position: fixed;
+
+  inset: 0;
+
+  z-index:
+    var(
+      --z-modal,
+      1000
+    );
+
+  display: grid;
+
+  place-items: center;
+
+  padding: 20px;
+}
+
+
+.record-success-modal__backdrop {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    var(
+      --overlay,
+      rgba(15, 23, 42, 0.58)
+    );
+
+  backdrop-filter:
+    blur(3px);
+
+  -webkit-backdrop-filter:
+    blur(3px);
+}
+
+
+.record-success-modal__card {
+  position: relative;
+
+  z-index: 1;
+
+  width:
+    min(
+      430px,
+      100%
+    );
+
+  display: grid;
+
+  justify-items: center;
+
+  gap: 18px;
+
+  padding: 28px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius:
+    var(
+      --radius-xl,
+      18px
+    );
+
+  background:
+    var(--bg-elevated);
+
+  color:
+    var(--text-primary);
+
+  box-shadow:
+    var(--shadow-strong);
+
+  text-align: center;
+}
+
+
+.record-success-modal__icon {
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+
+  place-items: center;
+
+  border:
+    1px solid
+    var(--success-line);
+
+  border-radius:
+    50%;
+
+  background:
+    var(--success-soft);
+
+  color:
+    var(--success);
+}
+
+
+.record-success-modal__icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+
+.record-success-modal__content {
+  display: grid;
+
+  gap: 7px;
+}
+
+
+.record-success-modal__eyebrow {
+  color:
+    var(--success);
+
+  font-size:
+    0.67rem;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.07em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.record-success-modal__content h2 {
+  margin: 0;
+
+  color:
+    var(--text-primary);
+
+  font-family:
+    var(--font-heading);
+
+  font-size:
+    1.18rem;
+
+  font-weight:
+    780;
+
+  line-height:
+    1.2;
+}
+
+
+.record-success-modal__content p {
+  margin: 0;
+
+  color:
+    var(--text-secondary);
+
+  font-size:
+    0.75rem;
+
+  line-height:
+    1.55;
+}
+
+
+.record-success-modal__button {
+  appearance: none;
+
+  min-width: 118px;
+  min-height: 40px;
+
+  padding: 0 16px;
+
+  border:
+    1px solid
+    var(--button-border);
+
+  border-radius:
+    9px;
+
+  background:
+    var(--button-bg);
+
+  color:
+    var(--button-text);
+
+  font: inherit;
+
+  font-size:
+    0.74rem;
+
+  font-weight:
+    760;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast);
+}
+
+
+.record-success-modal__button:hover {
+  border-color:
+    var(--button-hover-bg);
+
+  background:
+    var(--button-hover-bg);
+
+  transform:
+    translateY(-1px);
+}
+
+
+.record-success-modal__button:focus-visible {
+  outline:
+    2px solid
+    var(
+      --focus-outline,
+      var(--color-primary)
+    );
+
+  outline-offset:
+    3px;
+}
+
+
+@media (max-width: 520px) {
+
+  .record-success-modal {
+    padding: 14px;
+  }
+
+  .record-success-modal__card {
+    padding:
+      24px
+      18px;
+  }
+
+  .record-success-modal__button {
+    width: 100%;
+  }
+}

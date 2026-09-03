@@ -2,117 +2,72 @@
   <div class="sgpc-admin-page">
     <div class="catalogos-manager">
       <!-- =====================================================
-           ENCABEZADO
+           NAVEGACIÓN DEL MÓDULO
       ====================================================== -->
-      <header
-        class="catalog-head adm-surface adm-hero"
-        aria-labelledby="catalog-page-title"
-      >
-        <div class="catalog-head__main">
-          <div class="catalog-head__copy">
-            <span class="adm-kicker">
-              Administración académica
-            </span>
-
-            <h1
-              id="catalog-page-title"
-              class="adm-title catalog-head__title"
+      <header class="catalog-modulebar">
+        <div class="catalog-modulebar__top">
+          <button
+            class="catalog-back"
+            type="button"
+            aria-label="Volver a Administración"
+            @click="goBack"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
-              Facultades y carreras
+              <path
+                fill="currentColor"
+                d="m10.6 5.3-6 6a1 1 0 0 0 0 1.4l6 6 1.4-1.4L7.7 13H20v-2H7.7L12 6.7l-1.4-1.4Z"
+              />
+            </svg>
+
+            Administración
+          </button>
+
+          <div class="catalog-modulebar__copy">
+            <h1 class="catalog-modulebar__title">
+              Estructura académica
             </h1>
 
-            <p class="adm-subtitle catalog-head__subtitle">
-              Mantenga actualizada la estructura académica institucional
-              y la relación entre las facultades y sus carreras.
+            <p class="catalog-modulebar__subtitle">
+              Administre facultades, carreras y sedes.
             </p>
-          </div>
-
-          <div class="catalog-head__actions">
-            <button
-              class="catalog-back btn-soft"
-              type="button"
-              aria-label="Volver al panel administrativo"
-              @click="goBack"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fill="currentColor"
-                  d="m10.6 5.3-6 6a1 1 0 0 0 0 1.4l6 6 1.4-1.4L7.7 13H20v-2H7.7L12 6.7l-1.4-1.4Z"
-                />
-              </svg>
-
-              Volver al panel
-            </button>
           </div>
         </div>
 
-        <!-- ===================================================
-             PESTAÑAS
-        ==================================================== -->
-        <div
-          class="adm-tabs catalog-tabs"
+        <nav
+          class="catalog-tabs"
           role="tablist"
-          aria-label="Seleccionar catálogo académico"
+          aria-label="Secciones de estructura académica"
+          @keydown="handleTabsKeydown"
         >
           <button
             v-for="tab in tabs"
-            :id="`catalog-tab-${tab.key}`"
             :key="tab.key"
-            class="adm-tab catalog-tabs__btn"
+            class="catalog-tabs__btn"
             :class="{ active: active === tab.key }"
+            :id="`catalog-tab-${tab.key}`"
             type="button"
             role="tab"
             :aria-selected="active === tab.key"
-            aria-controls="catalog-tabpanel"
+            :aria-controls="`catalog-panel-${tab.key}`"
             :tabindex="active === tab.key ? 0 : -1"
             @click="setActive(tab.key)"
-            @keydown.left.prevent="moveTab(tab.key, -1)"
-            @keydown.right.prevent="moveTab(tab.key, 1)"
-            @keydown.home.prevent="focusBoundaryTab('first')"
-            @keydown.end.prevent="focusBoundaryTab('last')"
           >
-            <span
-              class="catalog-tabs__icon"
-              aria-hidden="true"
-            >
-              <svg
-                v-if="tab.key === 'facultades'"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="currentColor"
-                  d="M3 10.5 12 4l9 6.5v1.8H3v-1.8ZM5 14h2v5H5v-5Zm4 0h2v5H9v-5Zm4 0h2v5h-2v-5Zm4 0h2v5h-2v-5ZM3 21v-2h18v2H3Z"
-                />
-              </svg>
-
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="currentColor"
-                  d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
-                />
-              </svg>
-            </span>
-
             {{ tab.label }}
           </button>
-        </div>
+        </nav>
       </header>
 
       <!-- =====================================================
            CONTENIDO DEL CATÁLOGO
       ====================================================== -->
       <section
-        id="catalog-tabpanel"
+        :id="`catalog-panel-${active}`"
         class="catalog-content"
         role="tabpanel"
         :aria-labelledby="`catalog-tab-${active}`"
-        tabindex="0"
       >
         <Transition
           name="catalog-switch"
@@ -122,7 +77,10 @@
             v-if="active === 'facultades'"
             key="facultades"
             title="Facultades"
-            description="Cree, edite y mantenga actualizadas las facultades registradas en la institución."
+            description="Gestione las facultades disponibles para la organización académica."
+            create-label="Registrar facultad"
+            create-title="Registrar facultad"
+            embedded
             :fetchRows="fetchFacultades"
             :createRow="createFacultad"
             :updateRow="updateFacultad"
@@ -132,16 +90,51 @@
           />
 
           <CatalogCrud
-            v-else
+            v-else-if="active === 'carreras'"
             key="carreras"
             title="Carreras"
-            description="Administre las carreras y mantenga correctamente su relación con cada facultad."
+            description="Gestione las carreras y su facultad de pertenencia."
+            create-label="Registrar carrera"
+            create-title="Registrar carrera"
+            embedded
             :fetchRows="fetchCarreras"
             :createRow="createCarrera"
             :updateRow="updateCarrera"
             :deleteRow="deleteCarrera"
             :columns="carreraColumns"
             :fields="carreraFields"
+          />
+
+          <CatalogCrud
+            v-else-if="active === 'sedes'"
+            key="sedes"
+            title="Sedes"
+            description="Gestione las sedes habilitadas para usuarios, proyectos y publicaciones."
+            create-label="Registrar sede"
+            create-title="Registrar sede"
+            embedded
+            :fetchRows="fetchSedes"
+            :createRow="createSede"
+            :updateRow="updateSede"
+            :deleteRow="deleteSede"
+            :columns="sedeColumns"
+            :fields="sedeFields"
+          />
+
+          <CatalogCrud
+            v-else
+            key="carreras-sedes"
+            title="Carreras por sede"
+            description="Defina en qué sedes está disponible cada carrera."
+            create-label="Asignar carrera"
+            create-title="Asignar carrera a sede"
+            embedded
+            :fetchRows="fetchCarrerasSedes"
+            :createRow="createCarreraSede"
+            :updateRow="updateCarreraSede"
+            :deleteRow="deleteCarreraSede"
+            :columns="carreraSedeColumns"
+            :fields="carreraSedeFields"
           />
         </Transition>
       </section>
@@ -152,7 +145,6 @@
 <script setup>
 import {
   computed,
-  nextTick,
   onMounted,
   ref,
   watch,
@@ -172,10 +164,22 @@ const tabs = [
   {
     key: "facultades",
     label: "Facultades",
+    routeName: "AdminEstructuraFacultades",
   },
   {
     key: "carreras",
     label: "Carreras",
+    routeName: "AdminEstructuraCarreras",
+  },
+  {
+    key: "sedes",
+    label: "Sedes",
+    routeName: "AdminEstructuraSedes",
+  },
+  {
+    key: "carreras-sedes",
+    label: "Carreras por sede",
+    routeName: "AdminEstructuraCarrerasSedes",
   },
 ];
 
@@ -184,7 +188,10 @@ const VALID_TABS = tabs.map(
 );
 
 const active = ref("facultades");
+
 const facultades = ref([]);
+const sedes = ref([]);
+const carrerasCatalogo = ref([]);
 
 /* ============================================================
    UTILIDADES
@@ -204,7 +211,9 @@ const normalizeList = (data) => {
 
 const syncTabFromRoute = () => {
   const tab = String(
-    route.query?.tab || ""
+    route.meta?.structureTab ||
+    route.query?.tab ||
+    ""
   )
     .trim()
     .toLowerCase();
@@ -212,14 +221,6 @@ const syncTabFromRoute = () => {
   active.value = VALID_TABS.includes(tab)
     ? tab
     : "facultades";
-};
-
-const focusTab = async (key) => {
-  await nextTick();
-
-  document
-    .getElementById(`catalog-tab-${key}`)
-    ?.focus();
 };
 
 /* ============================================================
@@ -235,50 +236,76 @@ const setActive = (key) => {
     return;
   }
 
-  active.value = key;
-
-  router.replace({
-    query: {
-      ...route.query,
-      tab: key,
-    },
-  });
-};
-
-const moveTab = (currentKey, offset) => {
-  const currentIndex = tabs.findIndex(
-    (tab) => tab.key === currentKey
+  const targetTab = tabs.find(
+    (tab) => tab.key === key
   );
 
-  if (currentIndex < 0) {
+  if (!targetTab) {
     return;
   }
 
-  const nextIndex =
-    (
-      currentIndex +
-      offset +
-      tabs.length
-    ) % tabs.length;
+  active.value = key;
 
-  const nextKey = tabs[nextIndex].key;
+  if (route.name === targetTab.routeName) {
+    return;
+  }
 
-  setActive(nextKey);
-  focusTab(nextKey);
+  const query = {
+    ...route.query,
+  };
+
+  delete query.tab;
+
+  router.replace({
+    name: targetTab.routeName,
+    query,
+  });
 };
 
-const focusBoundaryTab = (position) => {
-  const targetTab =
-    position === "last"
-      ? tabs[tabs.length - 1]
-      : tabs[0];
+const handleTabsKeydown = (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+    return;
+  }
 
-  setActive(targetTab.key);
-  focusTab(targetTab.key);
+  const tablist = event.currentTarget;
+  const current = event.target?.closest?.('[role="tab"]');
+
+  if (!(tablist instanceof HTMLElement) || !(current instanceof HTMLElement)) {
+    return;
+  }
+
+  const availableTabs = Array.from(
+    tablist.querySelectorAll('[role="tab"]:not(:disabled)')
+  );
+
+  if (!availableTabs.length) return;
+
+  const currentIndex = Math.max(0, availableTabs.indexOf(current));
+  let targetIndex = currentIndex;
+
+  if (event.key === "Home") {
+    targetIndex = 0;
+  } else if (event.key === "End") {
+    targetIndex = availableTabs.length - 1;
+  } else if (event.key === "ArrowRight") {
+    targetIndex = (currentIndex + 1) % availableTabs.length;
+  } else {
+    targetIndex = (currentIndex - 1 + availableTabs.length) % availableTabs.length;
+  }
+
+  event.preventDefault();
+
+  const target = availableTabs[targetIndex];
+  target?.focus();
+  target?.click();
 };
 
 watch(
-  () => route.query?.tab,
+  () => [
+    route.name,
+    route.meta?.structureTab,
+    route.query?.tab,
+  ],
   syncTabFromRoute,
   {
     immediate: true,
@@ -354,9 +381,8 @@ const facultadFields = [
     required: true,
     placeholder:
       "Ej.: Facultad de Ciencias de la Vida y Tecnologías",
-    helpTitle: "Nombre",
     help:
-      "Use el nombre institucional completo y consistente.",
+      "Escriba el nombre oficial de la facultad.",
     maxLength: 140,
   },
   {
@@ -364,9 +390,8 @@ const facultadFields = [
     label: "Siglas",
     required: true,
     placeholder: "Ej.: FCVT",
-    helpTitle: "Siglas",
     help:
-      "Utilice una abreviatura corta y reconocible.",
+      "Escriba las siglas oficiales de la facultad.",
     maxLength: 20,
   },
 ];
@@ -395,6 +420,8 @@ const createCarrera = async (payload) => {
     payload
   );
 
+  await loadCarrerasForSedeRelations();
+
   return data;
 };
 
@@ -416,6 +443,8 @@ const updateCarrera = async (
     payload
   );
 
+  await loadCarrerasForSedeRelations();
+
   return data;
 };
 
@@ -423,6 +452,8 @@ const deleteCarrera = async (id) => {
   const { data } = await api.delete(
     `admin/carreras/${id}/`
   );
+
+  await loadCarrerasForSedeRelations();
 
   return data;
 };
@@ -480,9 +511,8 @@ const carreraFields = computed(() => {
       required: true,
       placeholder:
         "Ej.: Tecnologías de la Información",
-      helpTitle: "Nombre",
       help:
-        "Use el nombre institucional formal de la carrera.",
+        "Escriba el nombre oficial de la carrera.",
       maxLength: 140,
     },
     {
@@ -494,9 +524,271 @@ const carreraFields = computed(() => {
         ? "Seleccione una facultad"
         : "Registre primero una facultad",
       options: facultadOptions,
-      helpTitle: "Relación académica",
       help:
-        "Cada carrera debe estar asociada a una facultad.",
+        "Seleccione la facultad a la que pertenece la carrera.",
+    },
+  ];
+});
+
+/* ============================================================
+   SEDES
+============================================================ */
+
+const fetchSedes = async () => {
+  const { data } = await api.get(
+    "admin/sedes/"
+  );
+
+  const list = normalizeList(data);
+  sedes.value = list;
+  return list;
+};
+
+const buildSedeCode = (nombre) =>
+  String(nombre || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+
+const createSede = async (payload) => {
+  const { data } = await api.post(
+    "admin/sedes/",
+    {
+      ...payload,
+      codigo: buildSedeCode(payload?.nombre),
+    }
+  );
+
+  await loadSedesForRelations();
+  return data;
+};
+
+const updateSede = async (
+  id,
+  payload
+) => {
+  const { data } = await api.patch(
+    `admin/sedes/${id}/`,
+    payload
+  );
+
+  await loadSedesForRelations();
+  return data;
+};
+
+const deleteSede = async (id) => {
+  const { data } = await api.delete(
+    `admin/sedes/${id}/`
+  );
+
+  await loadSedesForRelations();
+  return data;
+};
+
+const sedeColumns = [
+  {
+    key: "nombre",
+    label: "Sede",
+  },
+  {
+    key: "ciudad",
+    label: "Ciudad",
+    map: (row) => row?.ciudad || "—",
+  },
+  {
+    key: "activa",
+    label: "Estado",
+    map: (row) => row?.activa ? "Activa" : "Inactiva",
+  },
+];
+
+const sedeFields = [
+  {
+    key: "nombre",
+    label: "Nombre de la sede",
+    required: true,
+    placeholder: "Ej.: Matriz Manta",
+    help: "Escriba el nombre oficial de la sede.",
+    maxLength: 150,
+  },
+  {
+    key: "ciudad",
+    label: "Ciudad",
+    required: false,
+    placeholder: "Ej.: Manta",
+    maxLength: 100,
+  },
+  {
+    key: "descripcion",
+    label: "Descripción (opcional)",
+    required: false,
+    placeholder: "Ej.: Campus principal de Manta",
+  },
+  {
+    key: "activa",
+    label: "Estado",
+    required: true,
+    type: "select",
+    placeholder: "Seleccione el estado",
+    options: [
+      { value: true, label: "Activa" },
+      { value: false, label: "Inactiva" },
+    ],
+    help: "Las sedes inactivas no estarán disponibles al registrar información.",
+  },
+];
+
+/* ============================================================
+   CARRERAS POR SEDE
+============================================================ */
+
+const loadSedesForRelations = async () => {
+  try {
+    const { data } = await api.get(
+      "admin/sedes/"
+    );
+
+    sedes.value = normalizeList(data);
+  } catch {
+    sedes.value = [];
+  }
+};
+
+const loadCarrerasForSedeRelations = async () => {
+  try {
+    const { data } = await api.get(
+      "admin/carreras/"
+    );
+
+    carrerasCatalogo.value = normalizeList(data);
+  } catch {
+    carrerasCatalogo.value = [];
+  }
+};
+
+const fetchCarrerasSedes = async () => {
+  const { data } = await api.get(
+    "admin/carreras-sedes/"
+  );
+
+  return normalizeList(data);
+};
+
+const createCarreraSede = async (payload) => {
+  if (!payload?.sede || !payload?.carrera) {
+    throw new Error(
+      "Seleccione la sede y la carrera."
+    );
+  }
+
+  const { data } = await api.post(
+    "admin/carreras-sedes/",
+    payload
+  );
+
+  return data;
+};
+
+const updateCarreraSede = async (
+  id,
+  payload
+) => {
+  const { data } = await api.patch(
+    `admin/carreras-sedes/${id}/`,
+    payload
+  );
+
+  return data;
+};
+
+const deleteCarreraSede = async (id) => {
+  const { data } = await api.delete(
+    `admin/carreras-sedes/${id}/`
+  );
+
+  return data;
+};
+
+const carreraSedeColumns = [
+  {
+    key: "sede_nombre",
+    label: "Sede",
+    map: (row) => row?.sede_nombre || "Sin sede",
+  },
+  {
+    key: "carrera_nombre",
+    label: "Carrera",
+    map: (row) => row?.carrera_nombre || "Sin carrera",
+  },
+  {
+    key: "facultad_nombre",
+    label: "Facultad",
+    map: (row) => row?.facultad_nombre || "—",
+  },
+  {
+    key: "activa",
+    label: "Estado",
+    map: (row) => row?.activa ? "Activa" : "Inactiva",
+  },
+];
+
+const carreraSedeFields = computed(() => {
+  const siteOptions = (sedes.value || []).map(
+    (sede) => ({
+      value: sede.id,
+      label: `${sede.nombre}${sede.activa ? "" : " · Inactiva"}`,
+    })
+  );
+
+  const careerOptions = (
+    carrerasCatalogo.value || []
+  ).map((carrera) => ({
+    value: carrera.id,
+    label: `${carrera.nombre}${
+      carrera.facultad_nombre
+        ? ` · ${carrera.facultad_nombre}`
+        : ""
+    }`,
+  }));
+
+  return [
+    {
+      key: "sede",
+      label: "Sede",
+      required: true,
+      type: "select",
+      placeholder: siteOptions.length
+        ? "Seleccione una sede"
+        : "Registre primero una sede",
+      options: siteOptions,
+      help: "Seleccione la sede donde estará disponible la carrera.",
+    },
+    {
+      key: "carrera",
+      label: "Carrera",
+      required: true,
+      type: "select",
+      placeholder: careerOptions.length
+        ? "Seleccione una carrera"
+        : "Registre primero una carrera",
+      options: careerOptions,
+      help: "Una carrera puede estar disponible en varias sedes.",
+    },
+    {
+      key: "activa",
+      label: "Estado",
+      required: true,
+      type: "select",
+      placeholder: "Seleccione el estado",
+      options: [
+        { value: true, label: "Activa" },
+        { value: false, label: "Inactiva" },
+      ],
+      help: "Si está inactiva, la carrera no podrá seleccionarse en esa sede.",
     },
   ];
 });
@@ -506,7 +798,11 @@ const carreraFields = computed(() => {
 ============================================================ */
 
 onMounted(async () => {
-  await loadFacultadesForCarreras();
+  await Promise.all([
+    loadFacultadesForCarreras(),
+    loadSedesForRelations(),
+    loadCarrerasForSedeRelations(),
+  ]);
 });
 </script>
 

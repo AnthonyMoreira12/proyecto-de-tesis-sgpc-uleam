@@ -2998,3 +2998,175 @@ body.dark .avn-stage__aside,
       auto !important;
   }
 }
+
+
+/* ============================================================
+   D11 — DEPURACIÓN VISUAL Y COMPATIBILIDAD CON theme.css
+============================================================ */
+
+.avn-stage-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-strong);
+}
+
+.avn-close {
+  box-shadow: none;
+}
+
+.avn-close:hover,
+.avn-btn:hover:not(:disabled),
+.avn-published-item:hover,
+.avn-choice-card:hover:not(:disabled) {
+  transform: none;
+}
+
+.avn-stage-card.has-media .avn-close {
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.avn-stage__media {
+  background: var(--bg-soft);
+}
+
+.avn-stage__aside {
+  background: var(--bg-card);
+}
+
+.avn-media__brand {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 4px rgba(15, 23, 42, 0.55);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.avn-carousel-counter:empty {
+  display: none;
+}
+
+.avn-admin {
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.avn-admin__header {
+  padding: 18px 20px 15px;
+}
+
+.avn-admin__subtitle {
+  margin-top: 4px;
+}
+
+.avn-admin__summary {
+  align-self: center;
+}
+
+.avn-admin-chip,
+.avn-admin-chip--accent {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.avn-admin-tabs {
+  background: transparent;
+}
+
+.avn-admin-tab__count {
+  min-width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.avn-admin-panel {
+  padding: 20px;
+}
+
+.avn-bulk-bar {
+  margin-bottom: 14px;
+  padding: 8px 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+}
+
+.avn-published-item {
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.avn-published-item:hover {
+  box-shadow: none;
+}
+
+.avn-published-item.is-active {
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+.avn-published-item__preview img {
+  transition: none;
+}
+
+.avn-published-item:hover .avn-published-item__preview img {
+  transform: none;
+}
+
+.avn-published-item__text-preview {
+  background: var(--bg-soft);
+}
+
+.avn-published-item__check,
+.avn-published-item__active {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.avn-choice-card {
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.avn-choice-card:hover:not(:disabled) {
+  box-shadow: none;
+}
+
+.avn-dropzone {
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.avn-alert {
+  border-radius: var(--radius-md);
+}
+
+.avn-confirm__card {
+  border-radius: var(--radius-lg);
+}
+
+.avn-admin__title,
+.avn-admin__subtitle,
+.avn-panel-heading h4,
+.avn-panel-heading p,
+.avn-option-group legend,
+.avn-option-group > p,
+.avn-published-item__body strong,
+.avn-published-item__body span {
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}

@@ -1,0 +1,71 @@
+/* ============================================================
+   SGPC · ADMINISTRACIÓN · DETALLE DE REVISIÓN
+   ETAPA 3 — feedback de acciones y flujo "Revisar siguiente"
+============================================================ */
+
+.adm-review-detail-stage3-inline,
+.adm-review-detail-stage3-loading {
+  width: 100%;
+}
+
+.adm-review-detail-stage3-inline {
+  margin: 0 0 10px;
+}
+
+.adm-review-detail-stage3-loading {
+  min-height: 170px;
+}
+
+.adm-review-detail-stage3-action-feedback {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.adm-review-detail-stage3-success {
+  align-items: center;
+}
+
+.adm-review-detail-stage3-success__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.adm-review-detail-stage3-next {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid currentColor;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.adm-review-detail-stage3-next:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.adm-review-detail-stage3-next:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+@media (max-width: 700px) {
+  .adm-review-detail-stage3-success {
+    align-items: stretch;
+  }
+
+  .adm-review-detail-stage3-success__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .adm-review-detail-stage3-next {
+    flex: 1 1 auto;
+  }
+}

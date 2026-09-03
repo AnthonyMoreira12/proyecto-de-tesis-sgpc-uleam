@@ -1355,3 +1355,149 @@ body.dark .login-visual__logo-surface,
     transform: none !important;
   }
 }
+/* ==========================================================
+   REFINAMIENTO VISUAL EQUILIBRADO · LOGIN
+========================================================== */
+
+.auth-container--login .auth-wrapper--login-scene {
+  width: min(1160px, 100%) !important;
+}
+
+.login-shell {
+  min-height: min(650px, calc(100dvh - 42px)) !important;
+  grid-template-columns: minmax(470px, 1fr) minmax(350px, 0.82fr) !important;
+  border-radius: 18px !important;
+  border-color: color-mix(in srgb, var(--login-line) 90%, transparent) !important;
+  box-shadow: 0 20px 58px rgba(15, 23, 42, 0.14) !important;
+}
+
+.login-panel {
+  padding: clamp(26px, 3vw, 42px) clamp(28px, 3.5vw, 48px) !important;
+}
+
+.login-panel::before {
+  width: 3px !important;
+}
+
+.login-panel__brand-logo {
+  width: 46px !important;
+}
+
+.login-panel__content {
+  width: min(470px, 100%) !important;
+}
+
+.login-panel__title {
+  font-size: clamp(1.65rem, 2.2vw, 2.05rem) !important;
+}
+
+.auth-container--login .btn-microsoft--login,
+.auth-container--login .btn-primary--login,
+.auth-container--login .login-field__control {
+  border-radius: 10px !important;
+}
+
+.auth-container--login .btn-microsoft--login,
+.auth-container--login .btn-primary--login {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease !important;
+}
+
+.auth-container--login .btn-microsoft--login:hover,
+.auth-container--login .btn-primary--login:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+.login-visual {
+  background: color-mix(in srgb, var(--login-primary) 92%, #0f2b62 8%) !important;
+}
+
+.login-visual__glow {
+  opacity: 0.28 !important;
+}
+
+.login-visual__logo-surface {
+  border-radius: 18px !important;
+  box-shadow: 0 14px 36px rgba(3, 18, 48, 0.16) !important;
+}
+
+@media (max-width: 900px) {
+  .login-shell {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+}
+
+/* =========================================================
+   AJUSTE FINAL — VIDA VISUAL SIN SOBREDISEÑO
+========================================================= */
+.login-visual {
+  background:
+    radial-gradient(
+      circle at 72% 22%,
+      color-mix(in srgb, var(--login-primary) 20%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--login-primary) 66%, #244a79 34%),
+      color-mix(in srgb, var(--login-primary) 44%, #182d4b 56%)
+    ) !important;
+}
+
+.login-visual::before {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* En oscuro, el panel derecho acompaña al resto de la pantalla.
+   Conserva azul institucional, pero baja saturación y luminancia. */
+:root.dark .login-visual,
+html.dark .login-visual,
+body.dark .login-visual,
+.dark .login-visual,
+:root[data-theme="dark"] .login-visual,
+html[data-theme="dark"] .login-visual,
+body[data-theme="dark"] .login-visual,
+[data-theme="dark"] .login-visual {
+  background:
+    radial-gradient(
+      circle at 72% 20%,
+      color-mix(in srgb, var(--login-primary) 15%, transparent),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 18% 82%,
+      rgba(80, 121, 184, 0.10),
+      transparent 38%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--login-card, #172238) 76%, var(--login-primary) 24%),
+      color-mix(in srgb, var(--login-bg, #0f1728) 90%, var(--login-primary) 10%)
+    ) !important;
+}
+
+:root.dark .login-visual__glow,
+html.dark .login-visual__glow,
+body.dark .login-visual__glow,
+.dark .login-visual__glow,
+[data-theme="dark"] .login-visual__glow {
+  opacity: 0.16 !important;
+}
+
+:root.dark .login-visual::before,
+html.dark .login-visual::before,
+body.dark .login-visual::before,
+.dark .login-visual::before,
+[data-theme="dark"] .login-visual::before {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root.dark .login-visual__logo-surface,
+html.dark .login-visual__logo-surface,
+body.dark .login-visual__logo-surface,
+.dark .login-visual__logo-surface,
+[data-theme="dark"] .login-visual__logo-surface {
+  background: rgba(248, 250, 252, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24) !important;
+}

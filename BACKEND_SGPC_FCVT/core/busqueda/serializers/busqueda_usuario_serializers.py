@@ -17,7 +17,7 @@ Por seguridad no se exponen:
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
-from core.models import Usuario
+from core.models import Publicacion, Usuario
 
 
 # ============================================================
@@ -88,6 +88,11 @@ def _build_full_name(user):
     return full_name or None
 
 
+def _site(user):
+    """Obtiene la sede institucional del Usuario."""
+    return getattr(user, "sede", None) if user is not None else None
+
+
 def _career(user):
     """Obtiene la carrera del Usuario."""
     return getattr(user, "carrera", None) if user is not None else None
@@ -144,7 +149,17 @@ def _publications_count(author):
         return 0
 
     try:
-        return relation_manager.values("publicacion_id").distinct().count()
+        return (
+            relation_manager
+            .filter(
+                publicacion__estado=(
+                    Publicacion.ESTADO_APROBADA
+                )
+            )
+            .values("publicacion_id")
+            .distinct()
+            .count()
+        )
     except (AttributeError, TypeError, ValueError):
         return 0
 
@@ -171,6 +186,8 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
     rol_label = serializers.SerializerMethodField(read_only=True)
     es_externo = serializers.SerializerMethodField(read_only=True)
 
+    sede_id = serializers.SerializerMethodField(read_only=True)
+    sede = serializers.SerializerMethodField(read_only=True)
     carrera_id = serializers.SerializerMethodField(read_only=True)
     carrera = serializers.SerializerMethodField(read_only=True)
     facultad_id = serializers.SerializerMethodField(read_only=True)
@@ -203,6 +220,8 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
             "name",
             "rol_label",
             "es_externo",
+            "sede_id",
+            "sede",
             "carrera_id",
             "carrera",
             "facultad_id",
@@ -270,8 +289,16 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
         )
 
     # ========================================================
-    # CARRERA Y FACULTAD
+    # SEDE, CARRERA Y FACULTAD
     # ========================================================
+
+    def get_sede_id(self, obj):
+        site = _site(obj)
+        return getattr(site, "pk", None) if site is not None else None
+
+    def get_sede(self, obj):
+        site = _site(obj)
+        return _optional_text(getattr(site, "nombre", None))
 
     def get_carrera_id(self, obj):
         career = _career(obj)
@@ -298,6 +325,7 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
 
         values = _unique_text_list(
             [
+                self.get_sede(obj),
                 self.get_facultad(obj),
                 self.get_carrera(obj),
             ]
@@ -308,6 +336,7 @@ class UsuarioBusquedaSerializer(serializers.ModelSerializer):
     def get_tags(self, obj):
         return _unique_text_list(
             [
+                self.get_sede(obj),
                 self.get_facultad(obj),
                 self.get_carrera(obj),
             ]

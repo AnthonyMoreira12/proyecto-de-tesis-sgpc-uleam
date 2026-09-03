@@ -1,620 +1,437 @@
 """
 Views del perfil del usuario autenticado.
-
-Gestiona:
-
-- Consulta del perfil.
-- Actualización controlada del perfil.
-- Intentos fallidos de edición.
-- Sincronización del autor relacionado.
-- Solicitudes de ampliación del periodo de edición.
-
-Las operaciones de actualización se ejecutan de forma
-transaccional para evitar estados parciales.
 """
 
 import logging
 
-from django.contrib.auth import get_user_model
-from django.core.exceptions import (
-    ValidationError as DjangoValidationError,
-)
-from django.db import IntegrityError, transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import DatabaseError, IntegrityError
+from django.utils import timezone
 
 from rest_framework import status
-from rest_framework.exceptions import (
-    ValidationError as DRFValidationError,
-)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from rest_framework_simplejwt.authentication import (
-    JWTAuthentication,
-)
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.auth.serializers.auth_profile_extension_serializers import (
     ProfileEditExtensionRequestSerializer,
 )
-from core.auth.serializers.auth_profile_read_serializers import (
-    ProfileSerializer,
-)
-from core.auth.serializers.auth_profile_update_serializers import (
-    ProfileUpdateSerializer,
-)
-from core.auth.services.auth_author_sync_services import (
-    asegurar_autor_para_usuario,
-)
+from core.auth.serializers.auth_profile_read_serializers import ProfileSerializer
+from core.auth.serializers.auth_profile_update_serializers import ProfileUpdateSerializer
+from core.auth.services.auth_author_sync_services import asegurar_autor_para_usuario
 from core.auth.services.auth_profile_extension_services import (
     ProfileExtensionRequestError,
-    send_profile_edit_extension_request,
+    create_profile_edit_extension_request,
+    get_current_profile_extension_request,
+    get_profile_extension_request_for_admin,
+    list_profile_extension_requests,
+    resolve_profile_edit_extension_request,
+    serialize_profile_extension_request,
 )
+from core.actualizaciones.services.actualizaciones_services import (
+    recalcular_participante,
+)
+from core.auditoria.services.auditoria_services import (
+    registrar_evento_auditoria,
+)
+from core.models import CampaniaActualizacionUsuario
+from core.permisos.es_admin import EsAdmin
+
+logger = logging.getLogger(__name__)
+
+
 from core.auth.services.auth_profile_services import (
     ProfileEditServiceError,
     ensure_profile_edit_allowed,
     finalize_profile_update,
-    get_profile_edit_status,
     register_failed_profile_attempt,
 )
 
 
-logger = logging.getLogger(__name__)
+def _profile_extension_database_response(exc, operation):
+    """Registra el fallo de BD y evita exponer un 500 sin contexto.
 
-User = get_user_model()
-
-
-# ============================================================
-# UTILIDADES
-# ============================================================
-
-def _profile_queryset():
+    Un error de esquema (por ejemplo, una migración pendiente) o una
+    indisponibilidad temporal de PostgreSQL no debe convertirse en una
+    respuesta HTML 500 para el frontend. El traceback completo queda en
+    el log del backend y la API devuelve un 503 estable.
     """
-    Queryset optimizado para consultar el perfil y su relación
-    académica.
-    """
-    return (
-        User.objects
-        .select_related(
-            "carrera",
-            "carrera__facultad",
-        )
+    logger.exception(
+        "Error de base de datos en solicitudes de extensión (%s): %s",
+        operation,
+        exc,
     )
 
-
-def _get_current_user(user):
-    """
-    Obtiene una instancia actualizada del usuario autenticado.
-    """
-    user_id = getattr(
-        user,
-        "pk",
-        None,
-    )
-
-    if not user_id:
-        return None
-
-    return (
-        _profile_queryset()
-        .filter(
-            pk=user_id
-        )
-        .first()
+    return Response(
+        {
+            "detail": (
+                "El servicio de solicitudes de extensión no está "
+                "disponible temporalmente. Intente nuevamente en unos "
+                "momentos."
+            )
+        },
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
     )
 
 
 def _django_validation_to_payload(exc):
-    """
-    Convierte ValidationError de Django en una respuesta
-    compatible con Django REST Framework.
-    """
-    if hasattr(
-        exc,
-        "message_dict",
-    ):
+    if hasattr(exc, "message_dict"):
         return exc.message_dict
 
-    if hasattr(
-        exc,
-        "messages",
-    ):
-        return {
-            "detail": list(
-                exc.messages
-            )
-        }
+    if hasattr(exc, "messages"):
+        return {"detail": exc.messages}
 
-    return {
-        "detail": str(exc),
-    }
+    return {"detail": str(exc)}
 
-
-def _edit_status_payload(edit_status):
-    """
-    Convierte el estado interno de edición en los nombres de
-    campos consumidos por el frontend.
-    """
-    edit_status = edit_status or {}
-
-    return {
-        "profile_edit_locked": bool(
-            edit_status.get(
-                "profile_edit_locked",
-                False,
-            )
-        ),
-
-        "profile_edit_lock_reason": (
-            edit_status.get(
-                "profile_edit_lock_reason"
-            )
-        ),
-
-        "attempts_left": int(
-            edit_status.get(
-                "attempts_left",
-                0,
-            )
-            or 0
-        ),
-
-        "profile_edit_until": (
-            edit_status.get(
-                "profile_edit_until"
-            )
-        ),
-
-        "profile_edit_expired": bool(
-            edit_status.get(
-                "expired",
-                False,
-            )
-        ),
-
-        "profile_edit_available": bool(
-            edit_status.get(
-                "available",
-                False,
-            )
-        ),
-    }
-
-
-def _build_validation_error_response(
-    *,
-    user,
-    errors,
-    decrement_attempt=True,
-):
-    """
-    Construye una respuesta de validación y, cuando corresponde,
-    descuenta un intento de edición de forma transaccional.
-    """
-    if decrement_attempt:
-        try:
-            edit_status = (
-                register_failed_profile_attempt(
-                    user
-                )
-            )
-
-        except ProfileEditServiceError as exc:
-            payload = dict(
-                errors
-            )
-
-            if isinstance(
-                exc.detail,
-                dict,
-            ):
-                payload.update(
-                    exc.detail
-                )
-
-            else:
-                payload["detail"] = (
-                    exc.detail
-                )
-
-            return Response(
-                payload,
-                status=exc.status_code,
-            )
-
-    else:
-        edit_status = (
-            get_profile_edit_status(
-                user
-            )
-        )
-
-    payload = dict(
-        errors
-    )
-
-    payload.update(
-        _edit_status_payload(
-            edit_status
-        )
-    )
-
-    return Response(
-        payload,
-        status=status.HTTP_400_BAD_REQUEST,
-    )
-
-
-def _serialize_profile(
-    *,
-    user,
-    request,
-):
-    """
-    Serializa el perfil con el contexto necesario para construir
-    la URL absoluta del avatar.
-    """
-    return ProfileSerializer(
-        user,
-        context={
-            "request": request,
-        },
-    ).data
-
-
-# ============================================================
-# PERFIL
-# ============================================================
 
 class ProfileView(APIView):
-    """
-    Consulta y actualización del perfil autenticado.
-    """
-
-    authentication_classes = [
-        JWTAuthentication,
-    ]
-
-    permission_classes = [
-        IsAuthenticated,
-    ]
-
-    # ========================================================
-    # CONSULTA
-    # ========================================================
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = _get_current_user(
-            request.user
+        serializer = ProfileSerializer(
+            request.user,
+            context={"request": request},
         )
-
-        if user is None:
-            return Response(
-                {
-                    "detail": (
-                        "No se encontró el usuario "
-                        "autenticado."
-                    )
-                },
-                status=(
-                    status.HTTP_404_NOT_FOUND
-                ),
-            )
-
-        return Response(
-            _serialize_profile(
-                user=user,
-                request=request,
-            ),
-            status=status.HTTP_200_OK,
-        )
-
-    # ========================================================
-    # ACTUALIZACIÓN
-    # ========================================================
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request):
-        """
-        Actualiza el perfil dentro de una única transacción.
+        user = request.user
 
-        Orden de ejecución:
+        try:
+            edit_permission = ensure_profile_edit_allowed(
+                user,
+                requested_fields=request.data.keys(),
+            )
+        except ProfileEditServiceError as exc:
+            return Response(exc.detail, status=exc.status_code)
 
-        1. Bloquea la fila del usuario.
-        2. Verifica el permiso de edición.
-        3. Valida la información.
-        4. Guarda el perfil.
-        5. Recalcula la completitud.
-        6. Sincroniza el autor relacionado.
-        """
+        via_campaign = bool(edit_permission.get("via_campaign"))
+        participant_ids = edit_permission.get("campaign_participant_ids", [])
+        campaign_ids = edit_permission.get("campaign_ids", [])
 
-        user_id = getattr(
-            request.user,
-            "pk",
-            None,
+        before = {
+            "nombres": getattr(user, "nombres", None),
+            "apellidos": getattr(user, "apellidos", None),
+            "identificacion": getattr(user, "identificacion", None),
+            "sede_id": getattr(user, "sede_id", None),
+            "carrera_id": getattr(user, "carrera_id", None),
+            "perfil_completo": getattr(user, "perfil_completo", False),
+        }
+
+        serializer = ProfileUpdateSerializer(
+            user,
+            data=request.data,
+            partial=True,
         )
 
-        if not user_id:
+        if not serializer.is_valid():
+            # Una campaña global no consume los intentos de la ventana
+            # individual; ambos mecanismos permanecen independientes.
+            if not via_campaign:
+                register_failed_profile_attempt(user)
+
             return Response(
                 {
-                    "detail": (
-                        "No fue posible determinar "
-                        "el usuario autenticado."
-                    )
+                    **serializer.errors,
+                    "profile_edit_locked": getattr(
+                        user,
+                        "profile_edit_locked",
+                        False,
+                    ),
+                    "attempts_left": getattr(
+                        user,
+                        "profile_edit_attempts_left",
+                        0,
+                    ),
+                    "profile_edit_until": getattr(
+                        user,
+                        "profile_edit_until",
+                        None,
+                    ),
+                    "via_campaign": via_campaign,
+                    "campaign_ids": campaign_ids,
                 },
-                status=(
-                    status.HTTP_401_UNAUTHORIZED
-                ),
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            with transaction.atomic():
-                # Se bloquea únicamente la fila de Usuario.
-                # _profile_queryset() contiene relaciones opcionales y no
-                # debe combinarse con select_for_update() en PostgreSQL.
-                locked_user = (
-                    User.objects
-                    .select_for_update()
-                    .get(
-                        pk=user_id
-                    )
-                )
+            serializer.save()
+            finalize_profile_update(user)
+            asegurar_autor_para_usuario(user)
+        except DjangoValidationError as exc:
+            if not via_campaign:
+                register_failed_profile_attempt(user)
 
-                try:
-                    ensure_profile_edit_allowed(
-                        locked_user
-                    )
+            return Response(
+                {
+                    **_django_validation_to_payload(exc),
+                    "profile_edit_locked": getattr(
+                        user,
+                        "profile_edit_locked",
+                        False,
+                    ),
+                    "attempts_left": getattr(
+                        user,
+                        "profile_edit_attempts_left",
+                        0,
+                    ),
+                    "profile_edit_until": getattr(
+                        user,
+                        "profile_edit_until",
+                        None,
+                    ),
+                    "via_campaign": via_campaign,
+                    "campaign_ids": campaign_ids,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except IntegrityError:
+            if not via_campaign:
+                register_failed_profile_attempt(user)
 
-                except ProfileEditServiceError as exc:
-                    return Response(
-                        exc.detail,
-                        status=exc.status_code,
-                    )
-
-                serializer = (
-                    ProfileUpdateSerializer(
-                        locked_user,
-                        data=request.data,
-                        partial=True,
-                        context={
-                            "request": request,
-                        },
-                    )
-                )
-
-                if not serializer.is_valid():
-                    return (
-                        _build_validation_error_response(
-                            user=locked_user,
-                            errors=dict(
-                                serializer.errors
-                            ),
-                            decrement_attempt=True,
-                        )
-                    )
-
-                updated_user = serializer.save()
-
-                updated_user = (
-                    finalize_profile_update(
-                        updated_user
-                    )
-                )
-
-                asegurar_autor_para_usuario(
-                    updated_user
-                )
-
-        except User.DoesNotExist:
             return Response(
                 {
                     "detail": (
-                        "El usuario autenticado "
-                        "ya no existe."
-                    )
+                        "No se pudo actualizar el perfil por conflicto "
+                        "de unicidad."
+                    ),
+                    "profile_edit_locked": getattr(
+                        user,
+                        "profile_edit_locked",
+                        False,
+                    ),
+                    "attempts_left": getattr(
+                        user,
+                        "profile_edit_attempts_left",
+                        0,
+                    ),
+                    "profile_edit_until": getattr(
+                        user,
+                        "profile_edit_until",
+                        None,
+                    ),
+                    "via_campaign": via_campaign,
+                    "campaign_ids": campaign_ids,
                 },
-                status=(
-                    status.HTTP_404_NOT_FOUND
-                ),
+                status=status.HTTP_409_CONFLICT,
             )
 
-        except DjangoValidationError as exc:
-            return _build_validation_error_response(
-                user=request.user,
-                errors=(
-                    _django_validation_to_payload(
-                        exc
+        user.refresh_from_db()
+
+        after = {
+            "nombres": getattr(user, "nombres", None),
+            "apellidos": getattr(user, "apellidos", None),
+            "identificacion": getattr(user, "identificacion", None),
+            "sede_id": getattr(user, "sede_id", None),
+            "carrera_id": getattr(user, "carrera_id", None),
+            "perfil_completo": getattr(user, "perfil_completo", False),
+        }
+        changed_before = {}
+        changed_after = {}
+        for field, old_value in before.items():
+            new_value = after.get(field)
+            if old_value != new_value:
+                changed_before[field] = old_value
+                changed_after[field] = new_value
+
+        if via_campaign and participant_ids:
+            participants = (
+                CampaniaActualizacionUsuario.objects
+                .filter(
+                    pk__in=participant_ids,
+                    usuario=user,
+                )
+                .select_related("campania", "usuario")
+            )
+            for participant in participants:
+                if participant.iniciada_at is None:
+                    participant.iniciada_at = timezone.now()
+                    participant.estado = (
+                        CampaniaActualizacionUsuario.ESTADO_EN_PROGRESO
                     )
+                    participant.save(
+                        update_fields=[
+                            "iniciada_at",
+                            "estado",
+                            "updated_at",
+                        ]
+                    )
+                recalcular_participante(participant)
+
+        if changed_after:
+            registrar_evento_auditoria(
+                actor=user,
+                accion="actualizar",
+                modulo="perfil",
+                entidad=user,
+                descripcion=(
+                    "El usuario actualizó su perfil mediante una campaña global."
+                    if via_campaign
+                    else "El usuario actualizó su perfil."
                 ),
-                decrement_attempt=True,
+                datos_anteriores=changed_before,
+                datos_nuevos=changed_after,
+                contexto={
+                    "origen": (
+                        "actualizacion_global"
+                        if via_campaign
+                        else "edicion_individual"
+                    ),
+                    "campanias": campaign_ids,
+                },
+                request=request,
             )
 
-        except DRFValidationError as exc:
-            error_payload = (
-                exc.detail
-                if isinstance(
-                    exc.detail,
-                    dict,
-                )
-                else {
-                    "detail": exc.detail,
-                }
-            )
+        response_serializer = ProfileSerializer(
+            user,
+            context={"request": request},
+        )
+        payload = dict(response_serializer.data)
+        payload["via_campaign"] = via_campaign
+        payload["campaign_ids"] = campaign_ids
+        return Response(payload, status=status.HTTP_200_OK)
 
-            return _build_validation_error_response(
-                user=request.user,
-                errors=error_payload,
-                decrement_attempt=True,
-            )
 
-        except IntegrityError:
-            logger.exception(
-                (
-                    "Conflicto de integridad al actualizar "
-                    "el perfil del usuario %s."
-                ),
-                user_id,
-            )
+class ProfileEditExtensionRequestView(APIView):
+    """Consulta o crea la solicitud de extensión del usuario autenticado."""
 
-            current_user = (
-                _get_current_user(
-                    request.user
-                )
-                or request.user
-            )
+    permission_classes = [IsAuthenticated]
 
-            edit_status = (
-                get_profile_edit_status(
-                    current_user
-                )
-            )
-
-            payload = {
-                "detail": (
-                    "No se pudo actualizar el perfil "
-                    "porque los datos entran en conflicto "
-                    "con otro registro existente."
-                )
-            }
-
-            payload.update(
-                _edit_status_payload(
-                    edit_status
-                )
-            )
-
-            return Response(
-                payload,
-                status=(
-                    status.HTTP_409_CONFLICT
-                ),
-            )
-
-        refreshed_user = (
-            _get_current_user(
+    def get(self, request):
+        try:
+            solicitud = get_current_profile_extension_request(
                 request.user
             )
-        )
-
-        if refreshed_user is None:
-            return Response(
-                {
-                    "detail": (
-                        "El perfil se actualizó, pero no "
-                        "fue posible volver a consultarlo."
-                    )
-                },
-                status=(
-                    status.HTTP_200_OK
-                ),
+        except DatabaseError as exc:
+            return _profile_extension_database_response(
+                exc,
+                "consulta del usuario",
             )
 
         return Response(
-            _serialize_profile(
-                user=refreshed_user,
-                request=request,
-            ),
+            {
+                "solicitud": (
+                    serialize_profile_extension_request(solicitud)
+                    if solicitud is not None
+                    else None
+                )
+            },
             status=status.HTTP_200_OK,
         )
 
-
-# ============================================================
-# SOLICITUD DE EXTENSIÓN
-# ============================================================
-
-class ProfileEditExtensionRequestView(APIView):
-    """
-    Envía por correo una solicitud de extensión del periodo de
-    edición.
-
-    Esta vista no ejecuta ensure_profile_edit_allowed porque se
-    utiliza precisamente cuando el plazo ha vencido o el perfil
-    se encuentra bloqueado.
-    """
-
-    authentication_classes = [
-        JWTAuthentication,
-    ]
-
-    permission_classes = [
-        IsAuthenticated,
-    ]
-
     def post(self, request):
-        serializer = (
-            ProfileEditExtensionRequestSerializer(
-                data=request.data,
-                context={
-                    "request": request,
-                },
-            )
+        serializer = ProfileEditExtensionRequestSerializer(
+            data=request.data
         )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-
-        user = _get_current_user(
-            request.user
-        )
-
-        if user is None:
-            return Response(
-                {
-                    "detail": (
-                        "No se encontró el usuario "
-                        "autenticado."
-                    )
-                },
-                status=(
-                    status.HTTP_404_NOT_FOUND
-                ),
-            )
+        serializer.is_valid(raise_exception=True)
 
         try:
-            result = (
-                send_profile_edit_extension_request(
-                    user=user,
-                    motivo=(
-                        serializer.validated_data[
-                            "motivo"
-                        ]
-                    ),
-                    horas_solicitadas=(
-                        serializer.validated_data[
-                            "horas_solicitadas"
-                        ]
-                    ),
-                    request=request,
-                )
+            solicitud = create_profile_edit_extension_request(
+                user=request.user,
+                motivo=serializer.validated_data["motivo"],
+                horas_solicitadas=serializer.validated_data[
+                    "horas_solicitadas"
+                ],
+                request=request,
             )
-
         except ProfileExtensionRequestError as exc:
-            return Response(
-                exc.detail,
-                status=exc.status_code,
+            return Response(exc.detail, status=exc.status_code)
+        except DatabaseError as exc:
+            return _profile_extension_database_response(
+                exc,
+                "creación de solicitud",
             )
 
         return Response(
             {
                 "detail": (
-                    "La solicitud de extensión fue "
-                    "enviada correctamente al "
-                    "administrador."
+                    "La solicitud fue registrada. Administración recibió "
+                    "una notificación dentro del SGPC."
                 ),
-
-                "email_sent": True,
-
-                "sent_count": result.get(
-                    "sent_count",
-                    0,
+                "solicitud": serialize_profile_extension_request(
+                    solicitud
                 ),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
-                "requested_hours": result[
-                    "requested_hours"
-                ],
 
-                "recipient_count": result[
-                    "recipient_count"
-                ],
+class AdminProfileEditExtensionRequestsView(APIView):
+    """Listado administrativo de solicitudes de extensión."""
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, EsAdmin]
+
+    def get(self, request):
+        try:
+            payload = list_profile_extension_requests(
+                estado=request.query_params.get("estado", "pendiente"),
+                limit=request.query_params.get("limit", 20),
+                usuario_id=request.query_params.get("usuario_id"),
+            )
+        except ProfileExtensionRequestError as exc:
+            return Response(exc.detail, status=exc.status_code)
+        except DatabaseError as exc:
+            return _profile_extension_database_response(
+                exc,
+                "listado administrativo",
+            )
+
+        return Response(payload, status=status.HTTP_200_OK)
+
+
+class AdminProfileEditExtensionRequestDetailView(APIView):
+    """Detalle y resolución de una solicitud de extensión."""
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, EsAdmin]
+
+    def get(self, request, pk):
+        try:
+            solicitud = get_profile_extension_request_for_admin(pk)
+        except ProfileExtensionRequestError as exc:
+            return Response(exc.detail, status=exc.status_code)
+        except DatabaseError as exc:
+            return _profile_extension_database_response(
+                exc,
+                "detalle administrativo",
+            )
+
+        return Response(
+            serialize_profile_extension_request(solicitud),
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, pk):
+        try:
+            solicitud = resolve_profile_edit_extension_request(
+                solicitud_id=pk,
+                admin_user=request.user,
+                decision=request.data.get("decision"),
+                motivo_resolucion=request.data.get(
+                    "motivo_resolucion", ""
+                ),
+                horas_aprobadas=request.data.get(
+                    "horas_aprobadas"
+                ),
+            )
+        except ProfileExtensionRequestError as exc:
+            return Response(exc.detail, status=exc.status_code)
+        except DatabaseError as exc:
+            return _profile_extension_database_response(
+                exc,
+                "resolución administrativa",
+            )
+
+        return Response(
+            {
+                "detail": (
+                    "La solicitud fue resuelta correctamente."
+                ),
+                "solicitud": serialize_profile_extension_request(
+                    solicitud
+                ),
             },
             status=status.HTTP_200_OK,
         )
