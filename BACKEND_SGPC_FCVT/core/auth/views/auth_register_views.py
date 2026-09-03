@@ -4,8 +4,8 @@ View para el registro público de usuarios externos.
 La operación garantiza que:
 
 - El usuario se cree como autor externo local.
-- La cédula tenga exactamente 10 dígitos.
-- La cuenta no reciba Carrera.
+- La cédula sea opcional y, si se proporciona, tenga 10 dígitos.
+- La cuenta no reciba Sede ni Carrera.
 - La cuenta no reciba permisos administrativos.
 - El registro Autor asociado se cree o sincronice.
 - Usuario y Autor se guarden dentro de una misma transacción.
@@ -33,6 +33,9 @@ from core.auth.serializers.auth_register_serializers import (
 )
 from core.auth.services.auth_author_sync_services import (
     asegurar_autor_para_usuario,
+)
+from core.auth.services.auth_token_cookie_services import (
+    set_refresh_cookie,
 )
 from core.auth.views.auth_login_views import (
     build_local_auth_user_payload,
@@ -132,6 +135,7 @@ def _get_registered_user(user_id):
     return (
         User.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
             "autor",
@@ -211,6 +215,20 @@ def _validate_registered_user(user):
 
     if getattr(
         user,
+        "sede_id",
+        None,
+    ) is not None:
+        raise ValidationError(
+            {
+                "sede": (
+                    "Los usuarios externos no pueden tener "
+                    "una Sede asignada."
+                )
+            }
+        )
+
+    if getattr(
+        user,
         "carrera_id",
         None,
     ) is not None:
@@ -279,8 +297,11 @@ def _validate_registered_user(user):
         )
     )
 
-    if not CEDULA_PATTERN.fullmatch(
+    if (
         identificacion
+        and not CEDULA_PATTERN.fullmatch(
+            identificacion
+        )
     ):
         raise ValidationError(
             {
@@ -412,8 +433,8 @@ class RegisterView(APIView):
                 {
                     "detail": (
                         "No se pudo completar el registro "
-                        "porque el correo o la cédula ya "
-                        "pertenecen a otra cuenta."
+                        "porque el correo o la cédula proporcionada "
+                        "ya pertenecen a otra cuenta."
                     )
                 }
             ) from exc
@@ -482,13 +503,23 @@ class RegisterView(APIView):
             registered_user
         )
 
+        refresh_token = tokens.get(
+            "refresh",
+            "",
+        )
+
         response = Response(
             {
                 "message": (
                     "Usuario registrado correctamente."
                 ),
 
-                "tokens": tokens,
+                "tokens": {
+                    "access": tokens.get(
+                        "access",
+                        "",
+                    ),
+                },
 
                 "user": (
                     build_local_auth_user_payload(
@@ -498,6 +529,11 @@ class RegisterView(APIView):
                 ),
             },
             status=status.HTTP_201_CREATED,
+        )
+
+        set_refresh_cookie(
+            response,
+            refresh_token,
         )
 
         # Impide que el navegador o un proxy almacenen los

@@ -12,6 +12,7 @@ from core.models import (
     Pais,
     Ponencia,
     Proyecto,
+    Sede,
     Subarea,
 )
 from core.publicaciones.serializers.base.publicaciones_autores_serializers import (
@@ -26,6 +27,9 @@ from core.publicaciones.services.publicaciones_autores_services import (
 from core.publicaciones.services.publicaciones_factory_services import (
     crear_publicacion_base,
     obtener_o_crear_tipo_publicacion,
+)
+from core.publicaciones.services.publicaciones_duplicados_services import (
+    validar_duplicados_fuerte_publicacion,
 )
 from core.publicaciones.utils.publicaciones_creation_context_utils import (
     resolve_publicacion_creation_context,
@@ -412,6 +416,27 @@ class PonenciaRegistroSerializer(
         required=True,
     )
 
+    sede = serializers.PrimaryKeyRelatedField(
+        queryset=Sede.objects.filter(
+            activa=True
+        ).order_by(
+            "nombre",
+            "id",
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+        error_messages={
+            "does_not_exist": (
+                "La sede seleccionada no existe "
+                "o no está activa."
+            ),
+            "incorrect_type": (
+                "Sede inválida."
+            ),
+        },
+    )
+
     carrera = serializers.PrimaryKeyRelatedField(
         queryset=Carrera.objects.select_related(
             "facultad"
@@ -421,7 +446,9 @@ class PonenciaRegistroSerializer(
 
     proyecto = serializers.PrimaryKeyRelatedField(
         queryset=Proyecto.objects.select_related(
-            "carrera"
+            "sede",
+            "carrera",
+            "carrera__facultad",
         ).all(),
         required=False,
         allow_null=True,
@@ -495,6 +522,7 @@ class PonenciaRegistroSerializer(
 
         fields = [
             "id",
+            "sede",
             "carrera",
             "proyecto",
             "area",
@@ -565,6 +593,10 @@ class PonenciaRegistroSerializer(
             attrs
         )
 
+        sede = attrs.get(
+            "sede"
+        )
+
         carrera = attrs.get(
             "carrera"
         )
@@ -572,6 +604,42 @@ class PonenciaRegistroSerializer(
         proyecto = attrs.get(
             "proyecto"
         )
+
+        if (
+            sede
+            and carrera
+            and not carrera.sedes_carrera.filter(
+                sede_id=sede.id,
+                activa=True,
+            ).exists()
+        ):
+            raise ValidationError(
+                {
+                    "carrera": [
+                        "La carrera seleccionada no está "
+                        "habilitada en la sede indicada."
+                    ]
+                }
+            )
+
+        if (
+            proyecto
+            and sede
+            and getattr(
+                proyecto,
+                "sede_id",
+                None,
+            )
+            and proyecto.sede_id != sede.id
+        ):
+            raise ValidationError(
+                {
+                    "proyecto": [
+                        "El proyecto seleccionado pertenece "
+                        "a una sede diferente."
+                    ]
+                }
+            )
 
         if (
             proyecto
@@ -816,6 +884,13 @@ class PonenciaRegistroSerializer(
             self
         )
 
+        sede = (
+            validated_data.pop(
+                "sede",
+                None,
+            )
+        )
+
         carrera = (
             validated_data.pop(
                 "carrera"
@@ -894,6 +969,7 @@ class PonenciaRegistroSerializer(
             tipo=tipo,
             usuario=usuario_creador,
             facultad=facultad,
+            sede=sede,
             carrera=carrera,
             area=area,
             subarea=subarea,
@@ -919,6 +995,10 @@ class PonenciaRegistroSerializer(
         ponencia = Ponencia.objects.create(
             publicacion=publicacion,
             **validated_data,
+        )
+
+        validar_duplicados_fuerte_publicacion(
+            publicacion
         )
 
         registrar_autores_publicacion(

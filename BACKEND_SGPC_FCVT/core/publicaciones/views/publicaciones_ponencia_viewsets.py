@@ -64,6 +64,7 @@ class PonenciaViewSet(
                 "publicacion",
                 "publicacion__usuario_creador",
                 "publicacion__admin_registrador",
+                "publicacion__sede",
                 "publicacion__carrera",
                 "publicacion__carrera__facultad",
                 "publicacion__area",
@@ -133,8 +134,11 @@ class PonenciaViewSet(
         return Response(
             {
                 "message": (
-                    "Ponencia registrada correctamente"
+                    "La publicación se guardó correctamente y quedó "
+                    "en estado Borrador."
                 ),
+                "estado": publicacion.estado,
+                "estado_label": publicacion.get_estado_display(),
                 "id": ponencia.id,
                 "publicacion_id": (
                     ponencia.publicacion_id

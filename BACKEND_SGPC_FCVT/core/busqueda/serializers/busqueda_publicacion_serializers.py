@@ -5,7 +5,7 @@ Expone:
 
 - Título resuelto desde el subtipo correspondiente.
 - Tipo general y tipo final.
-- Proyecto, carrera y facultad.
+- Sede, proyecto, carrera y facultad.
 - Área y subárea.
 - Autores científicos obtenidos desde PublicacionAutor.
 - Primer autor como alias de compatibilidad, sin jerarquía de autoría.
@@ -780,10 +780,18 @@ class PublicacionBusquedaSerializer(
     )
 
     # --------------------------------------------------------
-    # Carrera y facultad
+    # Sede, carrera y facultad
     # --------------------------------------------------------
 
+    sede_id = serializers.IntegerField(
+        read_only=True,
+    )
+
     carrera_id = serializers.IntegerField(
+        read_only=True,
+    )
+
+    sede = serializers.SerializerMethodField(
         read_only=True,
     )
 
@@ -924,7 +932,9 @@ class PublicacionBusquedaSerializer(
             "evento",
             "snippet",
 
-            # Carrera y facultad
+            # Sede, carrera y facultad
+            "sede_id",
+            "sede",
             "carrera_id",
             "carrera",
             "facultad_id",
@@ -1116,8 +1126,29 @@ class PublicacionBusquedaSerializer(
         return _resolve_snippet(obj)
 
     # ========================================================
-    # CARRERA Y FACULTAD
+    # SEDE, CARRERA Y FACULTAD
     # ========================================================
+
+    def get_sede(
+        self,
+        obj,
+    ):
+        site = getattr(
+            obj,
+            "sede",
+            None,
+        )
+
+        if site is None:
+            return None
+
+        return _optional_text(
+            getattr(
+                site,
+                "nombre",
+                None,
+            )
+        )
 
     def get_carrera(
         self,

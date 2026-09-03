@@ -418,6 +418,11 @@ class UsuarioManager(
             None,
         )
 
+        extra_fields.setdefault(
+            "sede",
+            None,
+        )
+
         if (
             extra_fields.get(
                 "is_staff"
@@ -514,6 +519,14 @@ class Usuario(
 
     carrera = models.ForeignKey(
         "core.Carrera",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="usuarios",
+    )
+
+    sede = models.ForeignKey(
+        "core.Sede",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -689,6 +702,7 @@ class Usuario(
             "nombres",
         ]
 
+
         indexes = [
             models.Index(
                 fields=[
@@ -722,6 +736,19 @@ class Usuario(
 
             models.Index(
                 fields=[
+                    "sede",
+                ]
+            ),
+
+            models.Index(
+                fields=[
+                    "sede",
+                    "carrera",
+                ]
+            ),
+
+            models.Index(
+                fields=[
                     "rol",
                     "is_active",
                 ]
@@ -738,7 +765,10 @@ class Usuario(
                 fields=[
                     "creado_desde_selector",
                 ]
+                
             ),
+
+
         ]
 
     # ========================================================
@@ -841,23 +871,27 @@ class Usuario(
         Reglas de completitud:
 
         Cuenta externa:
-            Cédula válida.
+            La identificación es opcional. Si se proporciona,
+            su formato se valida en clean(). La cuenta se considera
+            completa con los datos básicos obligatorios del modelo.
 
         Cuenta institucional:
-            Cédula válida y Carrera.
+            Requiere cédula válida, sede y carrera.
+
+            Si Microsoft no permite identificar una sede válida,
+            el usuario debe completarla desde Cuenta personal.
 
         Cuenta local no clasificada:
             No se considera completa.
         """
-        if not self.tiene_cedula_valida():
-            return False
-
         if self.es_externo:
             return True
 
         if self.es_institucional:
             return bool(
-                self.carrera_id
+                self.tiene_cedula_valida()
+                and self.sede_id
+                and self.carrera_id
             )
 
         return False
@@ -1047,6 +1081,47 @@ class Usuario(
                 "autenticados mediante Microsoft pueden "
                 "tener una carrera asignada."
             )
+
+        if (
+            self.sede_id is not None
+            and not self.es_institucional
+        ):
+            errors["sede"] = (
+                "Solo los usuarios institucionales "
+                "pueden tener una sede asignada."
+            )
+
+        # =====================================================
+        # COHERENCIA SEDE / CARRERA
+        # =====================================================
+
+        if self.es_institucional and self.sede_id:
+            if not getattr(self.sede, "activa", False):
+                errors["sede"] = (
+                    "La sede seleccionada no está activa."
+                )
+
+        if (
+            self.es_institucional
+            and self.sede_id
+            and self.carrera_id
+        ):
+            relacion_activa = (
+                self.carrera
+                .sedes_carrera
+                .filter(
+                    sede_id=self.sede_id,
+                    activa=True,
+                )
+                .exists()
+            )
+
+            if not relacion_activa:
+                errors["carrera"] = (
+                    "La carrera seleccionada no está "
+                    "habilitada en la sede asignada "
+                    "al usuario."
+                )
 
         if (
             self.is_superuser

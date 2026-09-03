@@ -6,6 +6,7 @@ from django.core.exceptions import (
 from django.db import IntegrityError, transaction
 from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import (
     FormParser,
     JSONParser,
@@ -48,6 +49,22 @@ from core.publicaciones.serializers.create.publicaciones_libro_create_serializer
 )
 from core.publicaciones.serializers.create.publicaciones_ponencia_create_serializers import (
     PonenciaRegistroSerializer,
+)
+from core.publicaciones.services.publicaciones_estado_services import (
+    PublicacionEstadoServiceError,
+    aprobar,
+    build_transition_payload,
+    observar,
+    rechazar,
+)
+from core.publicaciones.services.publicaciones_historial_services import (
+    listar_historial_publicacion,
+)
+from core.publicaciones.utils.publicaciones_permissions_utils import (
+    can_delete_publicacion,
+    can_edit_publicacion,
+    get_publicacion_delete_block_reason,
+    get_publicacion_edit_block_reason,
 )
 
 
@@ -151,6 +168,18 @@ class AdminPublicacionViewSet(
                     "admin_registrador_id"
                 )
             ),
+            estado=(
+                params.get(
+                    "estado"
+                )
+                or params.get(
+                    "estado_publicacion"
+                )
+                or params.get(
+                    "status"
+                )
+            ),
+            sede_id=(params.get("sede_id") or params.get("sede")),
             facultad_id=params.get(
                 "facultad_id"
             ),
@@ -268,6 +297,22 @@ class AdminPublicacionViewSet(
                 )
             )
 
+            if not can_edit_publicacion(
+                request.user,
+                locked,
+            ):
+                raise PermissionDenied(
+                    (
+                        get_publicacion_edit_block_reason(
+                            locked
+                        )
+                        or (
+                            "No tiene permisos para editar "
+                            "esta publicación."
+                        )
+                    )
+                )
+
             serializer = (
                 PublicacionActualizacionSerializer(
                     locked,
@@ -291,6 +336,363 @@ class AdminPublicacionViewSet(
         return Response(
             self._serialize_detail(
                 publication
+            )
+        )
+
+    # ========================================================
+    # HISTORIAL / AUDITORÍA
+    # ========================================================
+
+    @action(
+        detail=True,
+        methods=[
+            "get",
+        ],
+        url_path="historial",
+    )
+    def historial(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        GET /admin/publicaciones/<id>/historial/
+
+        Devuelve la trazabilidad de la publicación en orden
+        cronológico descendente.
+        """
+
+        publication = (
+            self.get_object()
+        )
+
+        items = (
+            listar_historial_publicacion(
+                publicacion_id=(
+                    publication.pk
+                )
+            )
+        )
+
+        return Response(
+            {
+                "publicacion_id": (
+                    publication.pk
+                ),
+                "total": len(
+                    items
+                ),
+                "items": items,
+            },
+            status=(
+                status.HTTP_200_OK
+            ),
+        )
+
+    # ========================================================
+    # FLUJO FORMAL DE REVISIÓN
+    # ========================================================
+
+    @action(
+        detail=True,
+        methods=[
+            "post",
+        ],
+        url_path="aprobar",
+    )
+    def aprobar_publicacion(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        Aprueba una publicación que se encuentre En revisión.
+
+        Ruta generada por el router:
+            POST /admin/publicaciones/<id>/aprobar/
+        """
+
+        try:
+            result = aprobar(
+                publicacion_id=pk,
+                actor=request.user,
+                comentario=(
+                    request.data.get(
+                        "comentario"
+                    )
+                    if hasattr(
+                        request.data,
+                        "get",
+                    )
+                    else None
+                ),
+            )
+
+        except PublicacionEstadoServiceError as exc:
+            detail = exc.detail
+
+            if isinstance(
+                detail,
+                dict,
+            ):
+                payload = dict(
+                    detail
+                )
+                payload[
+                    "codigo"
+                ] = exc.code
+            else:
+                payload = {
+                    "detail": detail,
+                    "codigo": exc.code,
+                }
+
+            return Response(
+                payload,
+                status=exc.status_code,
+            )
+
+        publication = result[
+            "publicacion"
+        ]
+
+        payload = build_transition_payload(
+            result,
+            message=(
+                "La publicación fue aprobada "
+                "correctamente."
+            ),
+        )
+
+        payload[
+            "publicacion"
+        ] = self._serialize_detail(
+            publication
+        )
+
+        return Response(
+            payload,
+            status=(
+                status.HTTP_200_OK
+            ),
+        )
+
+    @action(
+        detail=True,
+        methods=[
+            "post",
+        ],
+        url_path="observar",
+    )
+    def observar_publicacion(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        POST /admin/publicaciones/<id>/observar/
+
+        Requiere:
+            comentario
+        """
+
+        comentario = (
+            request.data.get(
+                "comentario"
+            )
+            if hasattr(
+                request.data,
+                "get",
+            )
+            else None
+        )
+
+        try:
+            result = observar(
+                publicacion_id=pk,
+                actor=request.user,
+                comentario=comentario,
+            )
+
+        except PublicacionEstadoServiceError as exc:
+            detail = exc.detail
+
+            if isinstance(
+                detail,
+                dict,
+            ):
+                payload = dict(
+                    detail
+                )
+                payload[
+                    "codigo"
+                ] = exc.code
+            else:
+                payload = {
+                    "detail": detail,
+                    "codigo": exc.code,
+                }
+
+            return Response(
+                payload,
+                status=exc.status_code,
+            )
+
+        publication = result[
+            "publicacion"
+        ]
+
+        payload = build_transition_payload(
+            result,
+            message=(
+                "La publicación fue observada "
+                "correctamente."
+            ),
+        )
+
+        payload[
+            "publicacion"
+        ] = self._serialize_detail(
+            publication
+        )
+
+        return Response(
+            payload,
+            status=(
+                status.HTTP_200_OK
+            ),
+        )
+
+    @action(
+        detail=True,
+        methods=[
+            "post",
+        ],
+        url_path="rechazar",
+    )
+    def rechazar_publicacion(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        POST /admin/publicaciones/<id>/rechazar/
+
+        Requiere:
+            comentario
+        """
+
+        comentario = (
+            request.data.get(
+                "comentario"
+            )
+            if hasattr(
+                request.data,
+                "get",
+            )
+            else None
+        )
+
+        try:
+            result = rechazar(
+                publicacion_id=pk,
+                actor=request.user,
+                comentario=comentario,
+            )
+
+        except PublicacionEstadoServiceError as exc:
+            detail = exc.detail
+
+            if isinstance(
+                detail,
+                dict,
+            ):
+                payload = dict(
+                    detail
+                )
+                payload[
+                    "codigo"
+                ] = exc.code
+            else:
+                payload = {
+                    "detail": detail,
+                    "codigo": exc.code,
+                }
+
+            return Response(
+                payload,
+                status=exc.status_code,
+            )
+
+        publication = result[
+            "publicacion"
+        ]
+
+        payload = build_transition_payload(
+            result,
+            message=(
+                "La publicación fue rechazada "
+                "correctamente."
+            ),
+        )
+
+        payload[
+            "publicacion"
+        ] = self._serialize_detail(
+            publication
+        )
+
+        return Response(
+            payload,
+            status=(
+                status.HTTP_200_OK
+            ),
+        )
+
+    # ========================================================
+    # ELIMINACIÓN CONTROLADA
+    # ========================================================
+
+    def destroy(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        current = self.get_object()
+
+        with transaction.atomic():
+            locked = (
+                Publicacion.objects
+                .select_for_update()
+                .get(
+                    pk=current.pk
+                )
+            )
+
+            if not can_delete_publicacion(
+                request.user,
+                locked,
+            ):
+                raise PermissionDenied(
+                    (
+                        get_publicacion_delete_block_reason(
+                            locked
+                        )
+                        or (
+                            "No tiene permisos para eliminar "
+                            "esta publicación."
+                        )
+                    )
+                )
+
+            self.perform_destroy(
+                locked
+            )
+
+        return Response(
+            status=(
+                status.HTTP_204_NO_CONTENT
             )
         )
 

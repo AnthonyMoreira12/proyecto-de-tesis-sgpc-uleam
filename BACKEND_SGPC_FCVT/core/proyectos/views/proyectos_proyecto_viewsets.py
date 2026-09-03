@@ -5,7 +5,7 @@ Funcionalidades:
 
 - Listado paginado de proyectos.
 - Consulta de proyectos según la visibilidad del usuario.
-- Búsqueda y filtros por texto, año y estado.
+- Búsqueda y filtros por texto, sede, año y estado.
 - Consulta de años disponibles.
 - Creación, actualización y eliminación administrativa.
 - Gestión del equipo investigador.
@@ -47,7 +47,10 @@ from rest_framework import (
     viewsets,
 )
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import (
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import (
     FormParser,
@@ -63,7 +66,18 @@ from rest_framework_simplejwt.authentication import (
     JWTAuthentication,
 )
 
-from core.models import Proyecto
+from core.actualizaciones.services.actualizaciones_services import (
+    actualizar_progreso_participantes_campania,
+    autorizacion_edicion_registro_por_campania,
+    campanias_activas_para_usuario,
+)
+from core.auditoria.services.auditoria_services import (
+    registrar_evento_auditoria,
+)
+from core.models import (
+    CampaniaActualizacion,
+    Proyecto,
+)
 from core.proyectos.serializers.proyectos_proyecto_serializers import (
     ProyectoAutorReadSerializer,
     ProyectoAutorResumenSerializer,
@@ -74,6 +88,10 @@ from core.proyectos.selectors.proyectos_proyecto_selectors import (
     get_filtered_proyectos_queryset_for_user,
     get_proyectos_available_years_for_user,
     proyectos_base_queryset,
+)
+from core.proyectos.services.proyectos_produccion_services import (
+    obtener_comparativa_produccion_proyectos,
+    obtener_produccion_cientifica_proyecto,
 )
 from core.proyectos.services.proyectos_proyecto_services import (
     normalize_proyecto_autores_payload,
@@ -220,11 +238,11 @@ class ProyectoViewSet(viewsets.ModelViewSet):
 
         administrative_actions = {
             "create",
-            "update",
-            "partial_update",
             "destroy",
             "cambiar_estado",
             "extender_fecha",
+            "produccion",
+            "comparativa_produccion",
         }
 
         authors_write = bool(
@@ -280,6 +298,7 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         Alias admitidos:
 
         - q o search
+        - sede o sede_id
         - anio o year
         - estado o status
         """
@@ -288,6 +307,12 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         query = (
             query_params.get("q")
             or query_params.get("search")
+            or ""
+        )
+
+        site = (
+            query_params.get("sede")
+            or query_params.get("sede_id")
             or ""
         )
 
@@ -303,10 +328,31 @@ class ProyectoViewSet(viewsets.ModelViewSet):
             or ""
         )
 
+        # Durante una campaña de actualización un investigador puede necesitar
+        # completar un proyecto histórico ya cerrado. Para update/partial_update
+        # ampliamos únicamente a proyectos en los que participa; el permiso de
+        # campos se valida después, antes de guardar.
+        if (
+            getattr(self, "action", None) in {"update", "partial_update"}
+            and not user_is_project_admin(self.request.user)
+            and campanias_activas_para_usuario(
+                self.request.user,
+                tipo=CampaniaActualizacion.TIPO_PROYECTO,
+            ).exists()
+        ):
+            return (
+                proyectos_base_queryset()
+                .filter(
+                    participaciones__autor__usuario=self.request.user,
+                )
+                .distinct()
+            )
+
         return (
             get_filtered_proyectos_queryset_for_user(
                 self.request.user,
                 q=query,
+                sede=site,
                 anio=year,
                 estado=project_status,
             )
@@ -331,18 +377,178 @@ class ProyectoViewSet(viewsets.ModelViewSet):
             creado_por=self.request.user
         )
 
+    def _project_campaign_snapshot(
+        self,
+        project,
+        fields,
+    ):
+        snapshot = {}
+        for field in fields or []:
+            if field in {"sede", "carrera"}:
+                snapshot[field] = getattr(
+                    project,
+                    f"{field}_id",
+                    None,
+                )
+            elif field in {
+                "descripcion",
+                "fecha_inicio",
+                "fecha_fin_planificada",
+                "fecha_fin_prorrogada",
+            }:
+                snapshot[field] = getattr(
+                    project,
+                    field,
+                    None,
+                )
+        return snapshot
+
+    def _resolve_project_update_permission(
+        self,
+        project,
+        requested_fields,
+    ):
+        if user_is_project_admin(self.request.user):
+            return {
+                "via_campaign": False,
+                "campaign_ids": [],
+                "participant_ids": [],
+                "requested_fields": [],
+            }
+
+        permission = autorizacion_edicion_registro_por_campania(
+            self.request.user,
+            tipo=CampaniaActualizacion.TIPO_PROYECTO,
+            registro=project,
+            requested_fields=requested_fields,
+        )
+
+        if permission is None:
+            raise PermissionDenied(
+                "No tiene permisos para modificar este proyecto."
+            )
+
+        if not permission.get("authorized"):
+            raise PermissionDenied(
+                {
+                    "detail": (
+                        "La campaña global no habilita uno o más de "
+                        "los campos que intenta modificar."
+                    ),
+                    "campos_no_habilitados": permission.get(
+                        "unauthorized_fields",
+                        [],
+                    ),
+                    "campos_habilitados": permission.get(
+                        "allowed_fields",
+                        [],
+                    ),
+                    "campanias": permission.get(
+                        "campaign_ids",
+                        [],
+                    ),
+                }
+            )
+
+        return {
+            "via_campaign": True,
+            **permission,
+        }
+
+    def update(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        """Actualización administrativa o extraordinaria mediante campaña."""
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        edit_permission = self._resolve_project_update_permission(
+            instance,
+            request.data.keys(),
+        )
+
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial,
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(
+            serializer,
+            edit_permission=edit_permission,
+        )
+
+        if getattr(instance, "_prefetched_objects_cache", None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
     def perform_update(
         self,
         serializer,
+        *,
+        edit_permission=None,
     ):
-        """
-        Actualiza el proyecto después de verificar permisos.
-        """
-        require_project_admin(
-            self.request.user
+        """Actualiza el proyecto preservando permisos y trazabilidad."""
+        edit_permission = edit_permission or {}
+        via_campaign = bool(edit_permission.get("via_campaign"))
+
+        if not via_campaign:
+            require_project_admin(
+                self.request.user
+            )
+            serializer.save()
+            return
+
+        fields = edit_permission.get("requested_fields", [])
+        before = self._project_campaign_snapshot(
+            serializer.instance,
+            fields,
         )
 
-        serializer.save()
+        project = serializer.save()
+        project.refresh_from_db()
+
+        after = self._project_campaign_snapshot(
+            project,
+            fields,
+        )
+        changed_before = {}
+        changed_after = {}
+        for field, old_value in before.items():
+            new_value = after.get(field)
+            if old_value != new_value:
+                changed_before[field] = old_value
+                changed_after[field] = new_value
+
+        actualizar_progreso_participantes_campania(
+            self.request.user,
+            edit_permission.get("participant_ids", []),
+        )
+
+        if changed_after:
+            registrar_evento_auditoria(
+                actor=self.request.user,
+                accion="actualizar",
+                modulo="proyectos",
+                entidad=project,
+                descripcion=(
+                    "El usuario actualizó información de un proyecto "
+                    "mediante una campaña global."
+                ),
+                datos_anteriores=changed_before,
+                datos_nuevos=changed_after,
+                contexto={
+                    "origen": "actualizacion_global",
+                    "campanias": edit_permission.get(
+                        "campaign_ids",
+                        [],
+                    ),
+                },
+                request=self.request,
+            )
 
     # ========================================================
     # UTILIDADES INTERNAS
@@ -720,6 +926,204 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         )
 
     # ========================================================
+    # COMPARATIVA INSTITUCIONAL DE PROYECTOS
+    # ========================================================
+
+    @action(
+        detail=False,
+        methods=[
+            "get",
+        ],
+        url_path="comparativa-produccion",
+        url_name="comparativa-produccion",
+    )
+    def comparativa_produccion(
+        self,
+        request,
+    ):
+        """
+        Compara la producción científica de los proyectos.
+
+        Solo administradores.
+
+        Filtros de proyecto:
+        - sede / sede_id
+        - carrera / carrera_id
+        - facultad / facultad_id
+        - estado_proyecto / project_status
+
+        Filtros de publicaciones:
+        - estado_publicacion / publication_status
+        - anio / year
+        - tipo / tipo_id
+
+        Presentación:
+        - limite / limit
+        """
+
+        require_project_admin(
+            request.user
+        )
+
+        query_params = request.query_params
+
+        site = (
+            query_params.get("sede")
+            or query_params.get("sede_id")
+            or ""
+        )
+
+        career = (
+            query_params.get("carrera")
+            or query_params.get("carrera_id")
+            or ""
+        )
+
+        faculty = (
+            query_params.get("facultad")
+            or query_params.get("facultad_id")
+            or ""
+        )
+
+        project_state = (
+            query_params.get("estado_proyecto")
+            or query_params.get("project_status")
+            or ""
+        )
+
+        publication_state = (
+            query_params.get("estado_publicacion")
+            or query_params.get("publication_status")
+            or ""
+        )
+
+        year = (
+            query_params.get("anio")
+            or query_params.get("year")
+            or ""
+        )
+
+        publication_type = (
+            query_params.get("tipo")
+            or query_params.get("tipo_id")
+            or ""
+        )
+
+        ranking_limit = (
+            query_params.get("limite")
+            or query_params.get("limit")
+            or ""
+        )
+
+        try:
+            payload = obtener_comparativa_produccion_proyectos(
+                sede_id=site,
+                carrera_id=career,
+                facultad_id=faculty,
+                estado_proyecto=project_state,
+                estado_publicacion=publication_state,
+                anio=year,
+                tipo_id=publication_type,
+                limite=ranking_limit,
+            )
+
+        except DatabaseError:
+            logger.exception(
+                (
+                    "Error de base de datos al calcular "
+                    "la comparativa de producción "
+                    "científica de proyectos."
+                )
+            )
+
+            return self._database_unavailable_response(
+                (
+                    "No fue posible calcular la comparativa "
+                    "de producción científica de proyectos "
+                    "debido a un error temporal de la base "
+                    "de datos."
+                )
+            )
+
+        return Response(
+            payload,
+            status=status.HTTP_200_OK,
+        )
+
+    # ========================================================
+    # PRODUCCIÓN CIENTÍFICA DEL PROYECTO
+    # ========================================================
+
+    @action(
+        detail=True,
+        methods=[
+            "get",
+        ],
+        url_path="produccion",
+        url_name="produccion",
+    )
+    def produccion(
+        self,
+        request,
+        pk=None,
+    ):
+        """
+        Devuelve indicadores de producción científica asociados
+        al proyecto.
+
+        Solo administradores.
+
+        Filtros opcionales:
+        - estado / status
+        - anio / year
+        - tipo / tipo_id
+        """
+        require_project_admin(
+            request.user
+        )
+
+        project = self.get_object()
+
+        publication_state = (
+            request.query_params.get("estado")
+            or request.query_params.get("status")
+            or ""
+        )
+
+        year = (
+            request.query_params.get("anio")
+            or request.query_params.get("year")
+            or ""
+        )
+
+        publication_type = (
+            request.query_params.get("tipo")
+            or request.query_params.get("tipo_id")
+            or ""
+        )
+
+        try:
+            payload = obtener_produccion_cientifica_proyecto(
+                proyecto=project,
+                estado=publication_state,
+                anio=year,
+                tipo_id=publication_type,
+            )
+        except DatabaseError:
+            logger.exception(
+                "Error de base de datos al calcular la producción científica del proyecto %s.",
+                project.pk,
+            )
+            return self._database_unavailable_response(
+                "No fue posible calcular la producción científica del proyecto debido a un error temporal de la base de datos."
+            )
+
+        return Response(
+            payload,
+            status=status.HTTP_200_OK,
+        )
+
+    # ========================================================
     # AÑOS DISPONIBLES
     # ========================================================
 
@@ -747,6 +1151,12 @@ class ProyectoViewSet(viewsets.ModelViewSet):
             or ""
         )
 
+        site = (
+            request.query_params.get("sede")
+            or request.query_params.get("sede_id")
+            or ""
+        )
+
         project_status = (
             request.query_params.get("estado")
             or request.query_params.get("status")
@@ -758,6 +1168,7 @@ class ProyectoViewSet(viewsets.ModelViewSet):
                 get_proyectos_available_years_for_user(
                     request.user,
                     q=query,
+                    sede=site,
                     estado=project_status,
                 )
             )

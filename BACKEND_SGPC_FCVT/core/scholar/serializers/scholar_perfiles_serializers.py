@@ -13,7 +13,7 @@ import re
 
 from rest_framework import serializers
 
-from core.models import Autor
+from core.models import Autor, Publicacion
 
 
 class PerfilAutorListSerializer(
@@ -21,6 +21,8 @@ class PerfilAutorListSerializer(
 ):
     name = serializers.SerializerMethodField()
     org = serializers.SerializerMethodField()
+    sede_id = serializers.SerializerMethodField()
+    sede = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     publications = serializers.SerializerMethodField()
 
@@ -31,6 +33,8 @@ class PerfilAutorListSerializer(
             "id",
             "name",
             "org",
+            "sede_id",
+            "sede",
             "avatar",
             "publications",
         ]
@@ -179,6 +183,73 @@ class PerfilAutorListSerializer(
 
         return "ULEAM"
 
+    def get_sede_id(
+        self,
+        obj,
+    ):
+        user = getattr(
+            obj,
+            "usuario",
+            None,
+        )
+
+        if not bool(
+            getattr(
+                user,
+                "es_institucional",
+                False,
+            )
+        ):
+            return None
+
+        sede = getattr(
+            user,
+            "sede",
+            None,
+        )
+
+        return getattr(
+            sede,
+            "pk",
+            None,
+        )
+
+    def get_sede(
+        self,
+        obj,
+    ):
+        user = getattr(
+            obj,
+            "usuario",
+            None,
+        )
+
+        if not bool(
+            getattr(
+                user,
+                "es_institucional",
+                False,
+            )
+        ):
+            return None
+
+        sede = getattr(
+            user,
+            "sede",
+            None,
+        )
+
+        nombre = str(
+            getattr(
+                sede,
+                "nombre",
+                "",
+            )
+            or ""
+        ).strip()
+
+        return nombre or None
+
     def get_avatar(
         self,
         obj,
@@ -264,7 +335,11 @@ class PerfilAutorListSerializer(
 
         try:
             return int(
-                obj.publicaciones.count()
+                obj.publicaciones.filter(
+                    estado=(
+                        Publicacion.ESTADO_APROBADA
+                    )
+                ).count()
             )
         except Exception:
             return 0

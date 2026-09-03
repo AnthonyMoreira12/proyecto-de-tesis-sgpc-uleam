@@ -4,16 +4,18 @@ Serializer para actualización controlada del perfil.
 Permite modificar:
 
 - Nombres y apellidos, únicamente para autores externos locales.
-- Cédula de 10 dígitos.
-- Carrera institucional.
-- Facultad utilizada para validar la carrera.
+- Cédula ecuatoriana de 10 dígitos cuando se proporciona.
+- Sede institucional.
+- Carrera institucional habilitada en la sede seleccionada.
+- Facultad utilizada para mantener compatibilidad con el frontend.
 - Tiempo de aplazamiento del aviso de perfil.
 
 Los nombres de usuarios institucionales no se editan aquí porque
 provienen de Microsoft 365.
 
 La facultad no se almacena directamente en Usuario. Se deriva
-exclusivamente desde usuario.carrera.facultad.
+exclusivamente desde usuario.carrera.facultad. La relación Sede-Carrera
+se valida mediante CarreraSede activa.
 """
 
 import re
@@ -23,7 +25,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
-from core.models import Carrera
+from core.models import Carrera, Sede
 
 
 User = get_user_model()
@@ -114,14 +116,17 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     Reglas:
 
-    - El autor externo puede corregir nombres, apellidos y cédula.
-    - El usuario institucional puede completar cédula y carrera.
+    - El autor externo puede corregir nombres, apellidos y una cédula
+      opcional.
+    - El usuario institucional puede completar cédula, sede y carrera.
     - Los nombres institucionales continúan administrados por
       Microsoft 365.
-    - El autor externo nunca puede tener Facultad ni Carrera.
+    - El autor externo nunca puede tener Sede, Facultad ni Carrera.
+    - La Carrera institucional debe estar habilitada mediante una
+      relación CarreraSede activa.
 
     Los nombres facultad_set y carrera_set se conservan para no
-    romper el contrato actual del frontend.
+    romper el contrato actual del frontend. Se incorpora sede_set.
     """
 
     nombres = serializers.CharField(
@@ -154,23 +159,23 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     identificacion = serializers.CharField(
         required=False,
-        allow_null=False,
-        allow_blank=False,
+        allow_null=True,
+        allow_blank=True,
         trim_whitespace=True,
-        min_length=10,
         max_length=10,
         error_messages={
-            "null": "El número de cédula es obligatorio.",
-            "blank": "El número de cédula es obligatorio.",
-            "min_length": (
-                "La cédula debe contener exactamente "
-                "10 dígitos numéricos."
-            ),
             "max_length": (
                 "La cédula debe contener exactamente "
                 "10 dígitos numéricos."
             ),
         },
+    )
+
+    sede_set = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        write_only=True,
     )
 
     facultad_set = serializers.IntegerField(
@@ -207,6 +212,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             "nombres",
             "apellidos",
             "identificacion",
+            "sede_set",
             "facultad_set",
             "carrera_set",
             "snooze_hours",
@@ -252,16 +258,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     def validate_identificacion(self, value):
         """
-        Exige exactamente 10 dígitos numéricos.
+        Valida la cédula únicamente cuando se proporciona.
 
-        No aplica validación matemática del dígito verificador.
+        Para autores externos la identificación es opcional. Si existe,
+        continúa siendo una cédula ecuatoriana de exactamente 10 dígitos.
         """
         normalized = _normalize_optional_text(value)
 
         if normalized is None:
-            raise serializers.ValidationError(
-                "El número de cédula es obligatorio."
-            )
+            return None
 
         if not CEDULA_PATTERN.fullmatch(normalized):
             raise serializers.ValidationError(
@@ -290,8 +295,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Aplica las reglas de edición según el tipo de cuenta y
-        valida la relación Carrera-Facultad.
+        Aplica las reglas de edición según el tipo de cuenta y valida
+        Sede-Carrera-Facultad.
         """
         user = self.instance
 
@@ -310,9 +315,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             or "apellidos" in attrs
         )
 
+        site_was_sent = "sede_set" in attrs
         faculty_was_sent = "facultad_set" in attrs
         career_was_sent = "carrera_set" in attrs
 
+        selected_site_id = attrs.get("sede_set")
         selected_faculty_id = attrs.get("facultad_set")
         selected_career_id = attrs.get("carrera_set")
 
@@ -321,22 +328,26 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         # ====================================================
 
         if _is_external_user(user):
-            if (
-                selected_faculty_id is not None
-                or selected_career_id is not None
+            if any(
+                value is not None
+                for value in (
+                    selected_site_id,
+                    selected_faculty_id,
+                    selected_career_id,
+                )
             ):
                 raise serializers.ValidationError(
                     {
-                        "carrera_set": (
+                        "sede_set": (
                             "Los autores externos no pueden "
-                            "tener una carrera institucional."
+                            "tener sede ni carrera institucional."
                         )
                     }
                 )
 
+            attrs["sede_set"] = None
             attrs["facultad_set"] = None
             attrs["carrera_set"] = None
-
             return attrs
 
         # ====================================================
@@ -354,27 +365,65 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # Solo una cuenta institucional Microsoft puede conservar
-        # o modificar una relación académica.
         if not _is_institutional_user(user):
-            if (
-                selected_faculty_id is not None
-                or selected_career_id is not None
+            if any(
+                value is not None
+                for value in (
+                    selected_site_id,
+                    selected_faculty_id,
+                    selected_career_id,
+                )
             ):
                 raise serializers.ValidationError(
                     {
-                        "carrera_set": (
+                        "sede_set": (
                             "Solo los usuarios institucionales "
-                            "autenticados mediante Microsoft "
-                            "pueden tener una carrera asignada."
+                            "autenticados mediante Microsoft pueden "
+                            "tener sede y carrera asignadas."
                         )
                     }
                 )
 
+            attrs["sede_set"] = None
             attrs["facultad_set"] = None
             attrs["carrera_set"] = None
-
             return attrs
+
+        # ====================================================
+        # SEDE INSTITUCIONAL
+        # ====================================================
+
+        site = None
+
+        if site_was_sent:
+            if selected_site_id is not None:
+                site = (
+                    Sede.objects
+                    .filter(
+                        pk=selected_site_id,
+                        activa=True,
+                    )
+                    .first()
+                )
+
+                if site is None:
+                    raise serializers.ValidationError(
+                        {
+                            "sede_set": (
+                                "La sede seleccionada no existe "
+                                "o no está activa."
+                            )
+                        }
+                    )
+        elif getattr(user, "sede_id", None):
+            site = (
+                Sede.objects
+                .filter(
+                    pk=user.sede_id,
+                    activa=True,
+                )
+                .first()
+            )
 
         # ====================================================
         # CARRERA INSTITUCIONAL
@@ -399,7 +448,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                             )
                         }
                     )
-
         elif getattr(user, "carrera_id", None):
             career = (
                 Carrera.objects
@@ -407,6 +455,53 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 .filter(pk=user.carrera_id)
                 .first()
             )
+
+        # Si cambia únicamente la Sede y la Carrera actual deja de ser
+        # válida en la nueva Sede, se limpia la Carrera para obligar una
+        # nueva selección sin rechazar el cambio de Sede.
+        if site_was_sent and not career_was_sent and career is not None:
+            relation_is_active = bool(
+                site is not None
+                and career.sedes_carrera.filter(
+                    sede_id=site.pk,
+                    activa=True,
+                ).exists()
+            )
+
+            if not relation_is_active:
+                career = None
+                attrs["carrera_set"] = None
+                career_was_sent = True
+
+        if (
+            career is not None
+            and site is None
+            and (site_was_sent or career_was_sent)
+        ):
+            raise serializers.ValidationError(
+                {
+                    "sede_set": (
+                        "Debe seleccionar una sede antes de "
+                        "seleccionar la carrera."
+                    )
+                }
+            )
+
+        if site is not None and career is not None:
+            relation_is_active = career.sedes_carrera.filter(
+                sede_id=site.pk,
+                activa=True,
+            ).exists()
+
+            if not relation_is_active:
+                raise serializers.ValidationError(
+                    {
+                        "carrera_set": (
+                            "La carrera seleccionada no está "
+                            "habilitada en la sede indicada."
+                        )
+                    }
+                )
 
         if (
             career is not None
@@ -422,8 +517,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # Si cambia solamente la Facultad y la Carrera actual
-        # pertenece a otra Facultad, se elimina la Carrera.
+        # Si cambia solamente la Facultad y la Carrera actual pertenece
+        # a otra Facultad, se elimina la Carrera.
         if (
             faculty_was_sent
             and not career_was_sent
@@ -433,10 +528,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 or career.facultad_id != selected_faculty_id
             )
         ):
+            career = None
             attrs["carrera_set"] = None
 
         # La Facultad real siempre se deriva de la Carrera.
-        if career_was_sent and career is not None:
+        if career is not None:
             attrs["facultad_set"] = career.facultad_id
 
         return attrs
@@ -449,10 +545,18 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         """
         Actualiza exclusivamente campos reales del modelo.
 
-        facultad_set nunca se asigna al Usuario porque Usuario no
-        contiene un campo Facultad.
+        facultad_set nunca se asigna al Usuario porque Usuario no contiene
+        un campo Facultad. sede_set y carrera_set se traducen a las FK
+        reales sede y carrera.
         """
         update_fields = []
+
+        site_was_sent = "sede_set" in validated_data
+        selected_site_id = (
+            validated_data.pop("sede_set", None)
+            if site_was_sent
+            else None
+        )
 
         faculty_was_sent = "facultad_set" in validated_data
         selected_faculty_id = validated_data.pop(
@@ -503,7 +607,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                     update_fields.append("apellidos")
 
         # ====================================================
-        # CÉDULA
+        # CÉDULA OPCIONAL
         # ====================================================
 
         if "identificacion" in validated_data:
@@ -514,38 +618,50 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 update_fields.append("identificacion")
 
         # ====================================================
-        # CARRERA
+        # SEDE / CARRERA
         # ====================================================
 
         if not _is_institutional_user(instance):
+            if instance.sede_id is not None:
+                instance.sede_id = None
+                update_fields.append("sede")
+
             if instance.carrera_id is not None:
                 instance.carrera_id = None
                 update_fields.append("carrera")
 
-        elif career_was_sent:
-            new_career_id = selected_career_id or None
+        else:
+            if site_was_sent:
+                new_site_id = selected_site_id or None
 
-            if instance.carrera_id != new_career_id:
-                instance.carrera_id = new_career_id
-                update_fields.append("carrera")
+                if instance.sede_id != new_site_id:
+                    instance.sede_id = new_site_id
+                    update_fields.append("sede")
 
-        elif faculty_was_sent:
-            current_career = getattr(instance, "carrera", None)
-            current_faculty_id = getattr(
-                current_career,
-                "facultad_id",
-                None,
-            )
+            if career_was_sent:
+                new_career_id = selected_career_id or None
 
-            if (
-                instance.carrera_id
-                and (
-                    selected_faculty_id is None
-                    or current_faculty_id != selected_faculty_id
+                if instance.carrera_id != new_career_id:
+                    instance.carrera_id = new_career_id
+                    update_fields.append("carrera")
+
+            elif faculty_was_sent:
+                current_career = getattr(instance, "carrera", None)
+                current_faculty_id = getattr(
+                    current_career,
+                    "facultad_id",
+                    None,
                 )
-            ):
-                instance.carrera_id = None
-                update_fields.append("carrera")
+
+                if (
+                    instance.carrera_id
+                    and (
+                        selected_faculty_id is None
+                        or current_faculty_id != selected_faculty_id
+                    )
+                ):
+                    instance.carrera_id = None
+                    update_fields.append("carrera")
 
         # ====================================================
         # GUARDADO

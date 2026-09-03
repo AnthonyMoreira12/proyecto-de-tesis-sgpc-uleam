@@ -4,14 +4,14 @@ Serializer para el registro público de usuarios externos.
 Responsabilidades:
 
 - Normalizar el correo, los nombres y los apellidos.
-- Exigir una cédula de exactamente 10 dígitos numéricos.
+- Validar la cédula de 10 dígitos únicamente cuando se proporciona.
 - Validar la contraseña mediante las reglas configuradas
   en Django.
-- Evitar correos y cédulas duplicados.
+- Evitar correos duplicados y cédulas duplicadas cuando se proporcionan.
 - Impedir que los correos institucionales se registren como
   cuentas externas locales.
 - Crear exclusivamente usuarios externos locales.
-- Impedir que el cliente asigne Carrera o privilegios
+- Impedir que el cliente asigne Sede, Carrera o privilegios
   administrativos.
 - Ejecutar la creación dentro de una transacción.
 """
@@ -191,6 +191,7 @@ class RegisterSerializer(
 
     - rol
     - auth_source
+    - sede
     - carrera
     - is_active
     - is_staff
@@ -266,11 +267,10 @@ class RegisterSerializer(
     )
 
     identificacion = serializers.CharField(
-        required=True,
-        allow_null=False,
-        allow_blank=False,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
         trim_whitespace=True,
-        min_length=10,
         max_length=10,
 
         # La unicidad se comprueba manualmente para controlar
@@ -278,19 +278,6 @@ class RegisterSerializer(
         validators=[],
 
         error_messages={
-            "required": (
-                "El número de cédula es obligatorio."
-            ),
-            "null": (
-                "El número de cédula es obligatorio."
-            ),
-            "blank": (
-                "El número de cédula es obligatorio."
-            ),
-            "min_length": (
-                "La cédula debe contener exactamente "
-                "10 dígitos numéricos."
-            ),
             "max_length": (
                 "La cédula debe contener exactamente "
                 "10 dígitos numéricos."
@@ -457,22 +444,17 @@ class RegisterSerializer(
         value,
     ):
         """
-        Valida únicamente el formato acordado:
+        La identificación es opcional para el autor externo.
 
-        - Obligatoria.
-        - Exactamente 10 caracteres.
-        - Únicamente números.
-
-        No aplica validación matemática del dígito verificador.
+        Cuando se proporciona, debe contener exactamente 10 dígitos
+        numéricos y no puede pertenecer a otro Usuario.
         """
         normalized_cedula = _normalize_cedula(
             value
         )
 
         if not normalized_cedula:
-            raise serializers.ValidationError(
-                "El número de cédula es obligatorio."
-            )
+            return None
 
         if not CEDULA_PATTERN.fullmatch(
             normalized_cedula
@@ -556,6 +538,8 @@ class RegisterSerializer(
                 _local_auth_source_value()
             ),
 
+            sede=None,
+
             carrera=None,
 
             is_active=True,
@@ -618,9 +602,9 @@ class RegisterSerializer(
             ],
 
             "identificacion": (
-                validated_data[
+                validated_data.get(
                     "identificacion"
-                ]
+                )
             ),
 
             "rol": (
@@ -631,7 +615,10 @@ class RegisterSerializer(
                 _local_auth_source_value()
             ),
 
-            # Los usuarios externos nunca reciben una Carrera.
+            # Los usuarios externos nunca reciben clasificación
+            # académica institucional.
+            "sede": None,
+
             "carrera": None,
 
             # El registro público incluye contraseña y devuelve
@@ -646,7 +633,9 @@ class RegisterSerializer(
 
             "creado_desde_selector": False,
 
-            # La cédula es obligatoria y válida en este punto.
+            # Un autor externo puede tener el perfil completo aun
+            # cuando no proporcione cédula. La regla definitiva se
+            # recalcula también en Usuario.clean().
             "perfil_completo": True,
         }
 
@@ -723,4 +712,4 @@ class RegisterSerializer(
                         "debido a un conflicto de integridad."
                     )
                 }
-            ) from exc
+            ) from exc  

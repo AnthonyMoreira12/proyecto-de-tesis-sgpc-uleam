@@ -10,6 +10,7 @@ Genera una hoja diferente según el tipo:
 
 Regla institucional:
 
+    Publicacion -> Sede
     Publicacion -> Carrera -> Facultad
 
 Los filtros, la búsqueda y el ordenamiento se delegan al
@@ -583,6 +584,11 @@ def _origen_publicacion_data(
 def _base_common(
     publicacion,
 ):
+    sede = _safe_related(
+        publicacion,
+        "sede",
+    )
+
     facultad = (
         _facultad_from_publicacion(
             publicacion
@@ -621,6 +627,16 @@ def _base_common(
             "N°": (
                 publicacion.numero
                 or publicacion.id
+            ),
+            "Sede": (
+                _normalize_text(
+                    getattr(
+                        sede,
+                        "nombre",
+                        "",
+                    )
+                )
+                or "—"
             ),
             "Facultad": (
                 _normalize_text(

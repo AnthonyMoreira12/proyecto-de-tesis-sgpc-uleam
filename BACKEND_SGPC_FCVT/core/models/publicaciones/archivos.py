@@ -1,7 +1,11 @@
+import hashlib
 import os
+import re
+from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import get_valid_filename
 
 
 MAX_ADJUNTO_PDF_BYTES = 3 * 1024 * 1024
@@ -15,6 +19,8 @@ ALLOWED_PDF_CONTENT_TYPES = {
 
 PDF_SIGNATURE = b"%PDF-"
 PDF_SIGNATURE_SCAN_BYTES = 1024
+PDF_TRAILER = b"%%EOF"
+PDF_TRAILER_SCAN_BYTES = 4096
 
 
 def _norm_text(value):
@@ -99,20 +105,138 @@ def _has_pdf_signature(field_file):
     return PDF_SIGNATURE in header
 
 
+def _read_tail(
+    field_file,
+    max_bytes=4096,
+):
+    file_obj = getattr(
+        field_file,
+        "file",
+        field_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+        or not hasattr(file_obj, "seek")
+    ):
+        return b""
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    try:
+        file_obj.seek(0, os.SEEK_END)
+        total = file_obj.tell()
+        start = max(0, int(total) - int(max_bytes))
+        file_obj.seek(start)
+        content = file_obj.read()
+
+        if isinstance(content, str):
+            content = content.encode(
+                "utf-8",
+                errors="ignore",
+            )
+
+        return bytes(content or b"")
+
+    except (OSError, ValueError, TypeError):
+        return b""
+
+    finally:
+        try:
+            file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _compute_sha256(field_file):
+    file_obj = getattr(
+        field_file,
+        "file",
+        field_file,
+    )
+
+    if (
+        file_obj is None
+        or not hasattr(file_obj, "read")
+    ):
+        return None
+
+    original_position = 0
+
+    try:
+        if hasattr(file_obj, "tell"):
+            original_position = file_obj.tell()
+    except (OSError, ValueError):
+        original_position = 0
+
+    digest = hashlib.sha256()
+
+    try:
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+        while True:
+            chunk = file_obj.read(64 * 1024)
+
+            if not chunk:
+                break
+
+            if isinstance(chunk, str):
+                chunk = chunk.encode(
+                    "utf-8",
+                    errors="ignore",
+                )
+
+            digest.update(bytes(chunk))
+
+        return digest.hexdigest()
+
+    except (OSError, ValueError, TypeError):
+        return None
+
+    finally:
+        try:
+            if hasattr(file_obj, "seek"):
+                file_obj.seek(original_position)
+        except (OSError, ValueError):
+            pass
+
+
+def _safe_original_filename(field_file):
+    raw = os.path.basename(
+        str(
+            getattr(field_file, "name", "")
+            or ""
+        )
+    )
+
+    return raw[:255] or None
+
+
 def publicacion_archivo_upload_path(
     instance,
     filename,
 ):
-    safe_filename = os.path.basename(
-        str(filename or "archivo.pdf")
+    _ = get_valid_filename(
+        os.path.basename(
+            str(filename or "archivo.pdf")
+        )
     )
 
     return os.path.join(
         "publicaciones",
         "adjuntos",
         str(instance.publicacion_id or "tmp"),
-        safe_filename,
+        f"{uuid4().hex}.pdf",
     )
+
 
 
 class PublicacionArchivo(models.Model):
@@ -129,6 +253,27 @@ class PublicacionArchivo(models.Model):
     archivo = models.FileField(
         upload_to=publicacion_archivo_upload_path,
         max_length=255,
+    )
+
+    nombre_original = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    tamano_bytes = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    sha256 = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        editable=False,
     )
 
     orden = models.PositiveIntegerField(
@@ -262,6 +407,34 @@ class PublicacionArchivo(models.Model):
                     "una firma PDF válida."
                 )
 
+            tail = _read_tail(
+                self.archivo,
+                max_bytes=PDF_TRAILER_SCAN_BYTES,
+            )
+
+            if (
+                "archivo" not in errors
+                and (
+                    not tail
+                    or PDF_TRAILER not in tail
+                )
+            ):
+                errors["archivo"] = (
+                    "El archivo adjunto no contiene una estructura "
+                    "PDF completa (marcador %%EOF ausente)."
+                )
+
+        if (
+            self.sha256
+            and not re.fullmatch(
+                r"[0-9a-f]{64}",
+                str(self.sha256).lower(),
+            )
+        ):
+            errors["sha256"] = (
+                "La huella SHA-256 del archivo no es válida."
+            )
+
         if self.orden is None or self.orden < 1:
             errors["orden"] = (
                 "El orden debe ser mayor o igual a 1."
@@ -303,17 +476,54 @@ class PublicacionArchivo(models.Model):
             except PublicacionArchivo.DoesNotExist:
                 old_file = None
 
+        old_name = getattr(
+            old_file,
+            "name",
+            None,
+        )
+
+        current_name = getattr(
+            self.archivo,
+            "name",
+            None,
+        )
+
+        file_changed = bool(
+            self.archivo
+        ) and (
+            not self.pk
+            or current_name != old_name
+            or not self.sha256
+        )
+
+        if file_changed:
+            self.nombre_original = (
+                _safe_original_filename(
+                    self.archivo
+                )
+            )
+
+            try:
+                self.tamano_bytes = int(
+                    getattr(
+                        self.archivo,
+                        "size",
+                        0,
+                    )
+                    or 0
+                )
+            except (TypeError, ValueError):
+                self.tamano_bytes = None
+
+            self.sha256 = _compute_sha256(
+                self.archivo
+            )
+
         self.full_clean()
 
         result = super().save(
             *args,
             **kwargs,
-        )
-
-        old_name = getattr(
-            old_file,
-            "name",
-            None,
         )
 
         new_name = getattr(

@@ -29,6 +29,7 @@ from core.models import (
     Ponencia,
     Publicacion,
     PublicacionAutor,
+    PublicacionRevision,
 )
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     annotate_tipo_publicacion_final,
@@ -386,15 +387,27 @@ def _build_archivos_payload(
     )
 
     if principal_url:
+        principal_original_name = (
+            _to_str(
+                publicacion.archivo_pdf_nombre_original
+            )
+        )
+
+        principal_display_name = (
+            principal_original_name
+            or _safe_file_name(
+                publicacion.archivo_pdf
+            )
+            or "PDF principal"
+        )
+
         archivos.append(
             {
                 "id": None,
                 "tipo": "principal",
-                "nombre": (
-                    _safe_file_name(
-                        publicacion.archivo_pdf
-                    )
-                    or "PDF principal"
+                "nombre": principal_display_name,
+                "nombre_original": (
+                    principal_original_name
                 ),
                 "archivo": principal_url,
                 "url": principal_url,
@@ -456,10 +469,18 @@ def _build_archivos_payload(
                     _to_str(
                         adjunto.nombre
                     )
+                    or _to_str(
+                        adjunto.nombre_original
+                    )
                     or _safe_file_name(
                         adjunto.archivo
                     )
                     or "Adjunto"
+                ),
+                "nombre_original": (
+                    _to_str(
+                        adjunto.nombre_original
+                    )
                 ),
                 "archivo": url,
                 "url": url,
@@ -619,6 +640,66 @@ def _get_articulo_payload(
     }
 
 
+def _build_revision_payload(
+    revision,
+):
+    if revision is None:
+        return None
+
+    revisor = getattr(
+        revision,
+        "revisor",
+        None,
+    )
+
+    revisor_nombre = ""
+
+    if revisor is not None:
+        try:
+            revisor_nombre = (
+                revisor.get_full_name()
+                or ""
+            ).strip()
+        except Exception:
+            revisor_nombre = ""
+
+        if not revisor_nombre:
+            revisor_nombre = _to_str(
+                getattr(
+                    revisor,
+                    "email",
+                    None,
+                )
+            )
+
+    return {
+        "id": revision.id,
+        "decision": revision.decision,
+        "decision_label": (
+            revision.get_decision_display()
+        ),
+        "comentario": (
+            revision.comentario
+        ),
+        "estado_anterior": (
+            revision.estado_anterior
+        ),
+        "estado_resultante": (
+            revision.estado_resultante
+        ),
+        "revisor_id": (
+            revision.revisor_id
+        ),
+        "revisor": (
+            revisor_nombre
+            or None
+        ),
+        "created_at": (
+            revision.created_at
+        ),
+    }
+
+
 def construir_detalle_publicacion(
     *,
     publicacion_id,
@@ -638,6 +719,21 @@ def construir_detalle_publicacion(
         to_attr="participaciones_ordenadas",
     )
 
+    revisiones_prefetch = Prefetch(
+        "revisiones",
+        queryset=(
+            PublicacionRevision.objects
+            .select_related(
+                "revisor"
+            )
+            .order_by(
+                "-created_at",
+                "-id",
+            )
+        ),
+        to_attr="revisiones_ordenadas",
+    )
+
     queryset = (
         Publicacion.objects
         .select_related(
@@ -646,7 +742,9 @@ def construir_detalle_publicacion(
 
             "tipo",
             "proyecto",
+            "proyecto__sede",
 
+            "sede",
             "carrera",
             "carrera__facultad",
 
@@ -663,6 +761,7 @@ def construir_detalle_publicacion(
         )
         .prefetch_related(
             autores_prefetch,
+            revisiones_prefetch,
             "archivos",
         )
     )
@@ -733,6 +832,18 @@ def construir_detalle_publicacion(
         )
     )
 
+    revisiones = getattr(
+        publicacion,
+        "revisiones_ordenadas",
+        [],
+    )
+
+    ultima_revision = (
+        revisiones[0]
+        if revisiones
+        else None
+    )
+
     data = {
         # -----------------------------------------------------
         # Identidad
@@ -767,6 +878,15 @@ def construir_detalle_publicacion(
         "proyecto": (
             publicacion.proyecto.nombre
             if publicacion.proyecto
+            else None
+        ),
+
+        "sede_id": (
+            publicacion.sede_id
+        ),
+        "sede": (
+            publicacion.sede.nombre
+            if publicacion.sede
             else None
         ),
 
@@ -843,6 +963,23 @@ def construir_detalle_publicacion(
         ),
 
         # -----------------------------------------------------
+        # Estado de gestión
+        # -----------------------------------------------------
+
+        "estado": (
+            publicacion.estado
+        ),
+        "estado_label": (
+            publicacion.get_estado_display()
+        ),
+
+        "ultima_revision": (
+            _build_revision_payload(
+                ultima_revision
+            )
+        ),
+
+        # -----------------------------------------------------
         # Origen
         # -----------------------------------------------------
 
@@ -900,6 +1037,15 @@ def construir_detalle_publicacion(
         ),
         "pdf_url": (
             archivo_pdf_url
+        ),
+        "archivo_pdf_nombre_original": (
+            publicacion.archivo_pdf_nombre_original
+        ),
+        "archivo_pdf_tamano_bytes": (
+            publicacion.archivo_pdf_tamano_bytes
+        ),
+        "archivo_pdf_sha256": (
+            publicacion.archivo_pdf_sha256
         ),
 
         "tiene_pdf": bool(

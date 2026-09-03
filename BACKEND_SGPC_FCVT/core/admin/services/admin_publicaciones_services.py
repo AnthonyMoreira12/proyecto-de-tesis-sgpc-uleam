@@ -817,6 +817,12 @@ def prepare_admin_publicacion_payload(
         )
 
     if (
+        not data.get("sede")
+        and getattr(user, "sede_id", None)
+    ):
+        data["sede"] = user.sede_id
+
+    if (
         not data.get(
             "carrera"
         )

@@ -658,7 +658,9 @@ class PublicacionesScholarServicio:
             .select_related(
                 "tipo",
                 "proyecto",
+                "proyecto__sede",
                 "usuario_creador",
+                "sede",
                 "carrera",
                 "carrera__facultad",
                 "area",
@@ -667,6 +669,9 @@ class PublicacionesScholarServicio:
                 "ponencia",
                 "libro",
                 "capitulo_libro",
+            )
+            .filter(
+                estado=Publicacion.ESTADO_APROBADA
             )
             .prefetch_related(
                 autores_prefetch,
@@ -733,6 +738,21 @@ class PublicacionesScholarServicio:
                 )
                 | Q(
                     proyecto__nombre__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    sede__nombre__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    sede__codigo__icontains=(
+                        q_norm
+                    )
+                )
+                | Q(
+                    sede__ciudad__icontains=(
                         q_norm
                     )
                 )
@@ -1246,6 +1266,26 @@ class PublicacionesScholarServicio:
 
             "title": title,
             "titulo": title,
+
+            "sede_id": getattr(
+                publication,
+                "sede_id",
+                None,
+            ),
+            "sede": (
+                _to_str(
+                    getattr(
+                        getattr(
+                            publication,
+                            "sede",
+                            None,
+                        ),
+                        "nombre",
+                        None,
+                    )
+                )
+                or None
+            ),
 
             "year": (
                 publication.anio_publicacion

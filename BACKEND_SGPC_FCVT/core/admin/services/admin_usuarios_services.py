@@ -14,6 +14,10 @@ from django.core.validators import validate_email
 from django.db.models import Q
 from django.utils import timezone
 
+from core.models.notificaciones import (
+    SolicitudExtensionPerfil,
+)
+
 
 User = get_user_model()
 
@@ -628,6 +632,10 @@ def activate_external_user(
         "password",
     )
 
+    if getattr(user, "sede_id", None) is not None:
+        user.sede_id = None
+        _append_field(update_fields, "sede")
+
     if user.carrera_id is not None:
         user.carrera_id = None
 
@@ -652,9 +660,7 @@ def activate_external_user(
             "is_active",
         )
 
-    profile_complete = _has_valid_cedula(
-        user
-    )
+    profile_complete = True
 
     if (
         user.perfil_completo
@@ -670,6 +676,64 @@ def activate_external_user(
         )
 
     return update_fields
+
+
+# ============================================================
+# PROTECCIÓN DEL FLUJO DE SOLICITUDES DE PERFIL
+# ============================================================
+
+def ensure_manual_profile_edit_action_allowed(user):
+    """Impide modificar manualmente el permiso si hay una solicitud pendiente.
+
+    La solicitud pendiente debe resolverse mediante el flujo administrativo
+    específico. Esto evita que una habilitación, extensión o bloqueo manual
+    deje la solicitud abierta y produzca estados contradictorios.
+    """
+    if user is None:
+        raise AdminUsuariosServiceError(
+            {
+                "detail": (
+                    "No fue posible determinar "
+                    "el usuario seleccionado."
+                )
+            },
+            status_code=404,
+        )
+
+    pending = (
+        SolicitudExtensionPerfil.objects
+        .filter(
+            usuario_id=user.pk,
+            estado=SolicitudExtensionPerfil.ESTADO_PENDIENTE,
+        )
+        .only(
+            "id",
+            "usuario_id",
+            "horas_solicitadas",
+            "solicitada_at",
+        )
+        .first()
+    )
+
+    if pending is None:
+        return None
+
+    raise AdminUsuariosServiceError(
+        {
+            "detail": (
+                "Este usuario tiene una solicitud de edición pendiente. "
+                "Resuelva primero la solicitud correspondiente desde "
+                "Usuarios → Solicitudes de edición."
+            ),
+            "solicitud_extension_pendiente": {
+                "id": pending.pk,
+                "usuario_id": pending.usuario_id,
+                "horas_solicitadas": pending.horas_solicitadas,
+                "solicitada_at": pending.solicitada_at,
+            },
+        },
+        status_code=409,
+    )
 
 
 # ============================================================
@@ -696,6 +760,10 @@ def enable_profile_edit(
             },
             status_code=404,
         )
+
+    ensure_manual_profile_edit_action_allowed(
+        user
+    )
 
     try:
         normalized_hours = int(
@@ -787,6 +855,10 @@ def extend_profile_edit(
             },
             status_code=404,
         )
+
+    ensure_manual_profile_edit_action_allowed(
+        user
+    )
 
     try:
         normalized_hours = int(
@@ -897,6 +969,10 @@ def block_profile_edit(
             },
             status_code=404,
         )
+
+    ensure_manual_profile_edit_action_allowed(
+        user
+    )
 
     normalized_reason = (
         _text(

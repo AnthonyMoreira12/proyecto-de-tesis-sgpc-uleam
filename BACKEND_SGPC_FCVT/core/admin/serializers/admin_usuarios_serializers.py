@@ -6,6 +6,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
+from core.auth.services.auth_microsoft_services import (
+    is_allowed_institutional_email,
+)
+from core.models import Sede
+
 
 User = get_user_model()
 
@@ -207,10 +212,10 @@ def _calculate_profile_complete(user):
     Calcula la completitud efectiva del perfil.
 
     Externo:
-        Requiere cédula.
+        No requiere cédula, Sede ni Carrera.
 
     Institucional:
-        Requiere cédula y Carrera.
+        Requiere cédula, Sede y Carrera.
 
     Otras combinaciones:
         No se consideran perfiles completos.
@@ -223,16 +228,13 @@ def _calculate_profile_complete(user):
     )
 
     if _is_external_user(user):
-        return cedula_complete
+        return True
 
     if _is_institutional_user(user):
         return bool(
             cedula_complete
-            and getattr(
-                user,
-                "carrera_id",
-                None,
-            )
+            and getattr(user, "sede_id", None)
+            and getattr(user, "carrera_id", None)
         )
 
     return False
@@ -297,6 +299,10 @@ class AdminUsuarioSerializer(
     # RELACIÓN ACADÉMICA
     # ========================================================
 
+    sede_nombre = serializers.SerializerMethodField(
+        read_only=True,
+    )
+
     facultad_id = serializers.SerializerMethodField(
         read_only=True,
     )
@@ -355,6 +361,8 @@ class AdminUsuarioSerializer(
             "avatar_url",
 
             # Relación académica
+            "sede",
+            "sede_nombre",
             "facultad_id",
             "facultad_nombre",
             "carrera",
@@ -397,6 +405,7 @@ class AdminUsuarioSerializer(
             "es_admin",
             "avatar_url",
 
+            "sede_nombre",
             "facultad_id",
             "facultad_nombre",
             "carrera_nombre",
@@ -445,6 +454,11 @@ class AdminUsuarioSerializer(
                 "allow_null": True,
                 "allow_blank": True,
                 "trim_whitespace": True,
+            },
+
+            "sede": {
+                "required": False,
+                "allow_null": True,
             },
 
             "carrera": {
@@ -651,6 +665,17 @@ class AdminUsuarioSerializer(
     # ========================================================
     # RELACIÓN ACADÉMICA
     # ========================================================
+
+    def get_sede_nombre(
+        self,
+        obj,
+    ):
+        if not _is_institutional_user(obj):
+            return None
+        site = getattr(obj, "sede", None)
+        if site is None:
+            return None
+        return _text(getattr(site, "nombre", "")) or None
 
     def get_facultad_id(
         self,
@@ -992,6 +1017,62 @@ class AdminUsuarioSerializer(
                 )
             )
 
+        # La creación administrativa registra exclusivamente
+        # cuentas externas locales. Un correo autorizado para
+        # Microsoft 365 no puede utilizarse para crear una cuenta
+        # externa. Esta validación vive en backend para que también
+        # proteja peticiones realizadas fuera de la interfaz.
+        is_institutional_email = (
+            is_allowed_institutional_email(
+                email
+            )
+        )
+
+        if is_institutional_email:
+            if self.instance is None:
+                raise serializers.ValidationError(
+                    (
+                        "Este correo corresponde a una cuenta "
+                        "institucional ULEAM. Los usuarios "
+                        "institucionales deben ingresar mediante "
+                        "Microsoft 365 y no pueden registrarse "
+                        "como usuarios externos."
+                    )
+                )
+
+            # No permitir convertir una cuenta externa existente
+            # en una cuenta con correo institucional mediante una
+            # edición administrativa. Se toleran únicamente datos
+            # históricos que ya tuvieran exactamente ese mismo
+            # correo para no bloquear otras correcciones del perfil.
+            if not _is_institutional_user(
+                self.instance
+            ):
+                current_email = (
+                    User.objects.normalize_email(
+                        str(
+                            getattr(
+                                self.instance,
+                                "email",
+                                "",
+                            )
+                            or ""
+                        )
+                    )
+                    .strip()
+                    .lower()
+                )
+
+                if current_email != email:
+                    raise serializers.ValidationError(
+                        (
+                            "Una cuenta externa no puede utilizar "
+                            "un correo institucional ULEAM. Ese "
+                            "usuario debe autenticarse mediante "
+                            "Microsoft 365."
+                        )
+                    )
+
         duplicates = User.objects.filter(
             email__iexact=email
         )
@@ -1157,9 +1238,15 @@ class AdminUsuarioSerializer(
             )
         ).lower()
 
+        site_was_sent = ("sede" in attrs)
         career_was_sent = (
             "carrera"
             in attrs
+        )
+
+        site = attrs.get(
+            "sede",
+            getattr(instance, "sede", None),
         )
 
         career = attrs.get(
@@ -1212,6 +1299,14 @@ class AdminUsuarioSerializer(
                 }
             )
 
+        if site is not None and not is_institutional:
+            raise serializers.ValidationError({
+                "sede": (
+                    "Solo los usuarios institucionales autenticados "
+                    "mediante Microsoft pueden tener una sede asignada."
+                )
+            })
+
         if (
             career is not None
             and not is_institutional
@@ -1227,6 +1322,24 @@ class AdminUsuarioSerializer(
                     "carrera": message,
                 }
             )
+
+        if is_institutional and site is not None:
+            if not getattr(site, "activa", False):
+                raise serializers.ValidationError({"sede": "La sede seleccionada está inactiva."})
+            if career is not None and not career.sedes_carrera.filter(
+                sede_id=site.pk, activa=True
+            ).exists():
+                raise serializers.ValidationError({
+                    "carrera": "La carrera seleccionada no está habilitada en la sede indicada."
+                })
+
+        if (
+            not is_institutional
+            and not site_was_sent
+            and instance is not None
+            and getattr(instance, "sede_id", None)
+        ):
+            attrs["sede"] = None
 
         # Si existen datos antiguos inconsistentes y se edita
         # una cuenta no institucional sin enviar Carrera, se
@@ -1246,6 +1359,7 @@ class AdminUsuarioSerializer(
         # Para cuentas externas se asegura que nunca quede una
         # Carrera asignada.
         if is_external:
+            attrs["sede"] = None
             attrs["carrera"] = None
 
         attrs["rol"] = role
@@ -1272,6 +1386,8 @@ class AdminUsuarioSerializer(
         if not _is_institutional_user(
             instance
         ):
+            data["sede"] = None
+            data["sede_nombre"] = None
             data["facultad_id"] = None
             data["facultad_nombre"] = None
             data["carrera"] = None

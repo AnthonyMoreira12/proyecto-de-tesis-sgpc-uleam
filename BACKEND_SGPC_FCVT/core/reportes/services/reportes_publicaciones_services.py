@@ -22,6 +22,10 @@ from core.publicaciones.services.publicaciones_excel_services import (
     count_publicaciones_excel,
     workbook_to_bytes,
 )
+from core.reportes.services.reportes_publicaciones_pdf_services import (
+    build_publicaciones_pdf_bytes,
+    publicaciones_pdf_filename,
+)
 
 
 # ============================================================
@@ -32,6 +36,7 @@ EXCEL_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument."
     "spreadsheetml.sheet"
 )
+PDF_CONTENT_TYPE = "application/pdf"
 
 
 # ============================================================
@@ -64,7 +69,7 @@ def _normalize_filters(
         return {}
 
 
-def _build_filename():
+def _build_excel_filename():
     """
     Genera un nombre único y seguro para el archivo Excel.
 
@@ -195,7 +200,7 @@ def build_export_publicaciones_response(
         workbook
     )
 
-    filename = _build_filename()
+    filename = _build_excel_filename()
 
     # ========================================================
     # 3. CONSTRUIR RESPUESTA HTTP
@@ -237,6 +242,70 @@ def build_export_publicaciones_response(
 
     # Evita que el navegador intente interpretar el archivo
     # utilizando un tipo de contenido diferente.
+    response[
+        "X-Content-Type-Options"
+    ] = "nosniff"
+
+    return response
+
+# ============================================================
+# DESCARGA PDF
+# ============================================================
+
+def build_export_publicaciones_pdf_response(
+    filters=None,
+):
+    """
+    Genera el reporte PDF de publicaciones y devuelve una
+    respuesta HTTP lista para descargar.
+
+    El PDF reutiliza exactamente el mismo queryset centralizado
+    que el Excel, de modo que ambos formatos respetan los mismos
+    filtros y la misma regla de visibilidad institucional.
+    """
+
+    normalized_filters = _normalize_filters(
+        filters
+    )
+
+    file_bytes = build_publicaciones_pdf_bytes(
+        normalized_filters
+    )
+
+    filename = publicaciones_pdf_filename()
+
+    response = HttpResponse(
+        file_bytes,
+        content_type=PDF_CONTENT_TYPE,
+    )
+
+    response[
+        "Content-Disposition"
+    ] = _build_content_disposition(
+        filename
+    )
+
+    response[
+        "Content-Length"
+    ] = str(
+        len(file_bytes)
+    )
+
+    response[
+        "Cache-Control"
+    ] = (
+        "private, no-store, "
+        "no-cache, must-revalidate"
+    )
+
+    response[
+        "Pragma"
+    ] = "no-cache"
+
+    response[
+        "Expires"
+    ] = "0"
+
     response[
         "X-Content-Type-Options"
     ] = "nosniff"

@@ -6,7 +6,7 @@ Este módulo centraliza:
 - Queryset base de proyectos.
 - Visibilidad según el usuario.
 - Búsqueda por texto.
-- Filtros por año y estado.
+- Filtros por sede, año y estado.
 - Cálculo de años disponibles.
 - Precarga optimizada del equipo investigador.
 
@@ -169,6 +169,27 @@ def _parse_year(value):
     return year
 
 
+def _parse_positive_id(value):
+    """
+    Convierte un identificador opcional en entero positivo.
+
+    Los valores vacíos o inválidos se ignoran para mantener la
+    compatibilidad de los filtros de lectura existentes.
+    """
+    if value in (None, ""):
+        return None
+
+    if isinstance(value, bool):
+        return None
+
+    try:
+        parsed = int(str(value).strip())
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+    return parsed if parsed > 0 else None
+
+
 # ============================================================
 # PERMISOS
 # ============================================================
@@ -221,6 +242,7 @@ def proyectos_base_queryset():
     return (
         Proyecto.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
             "creado_por",
@@ -336,6 +358,15 @@ def _apply_q_filter(
                 carrera__facultad__nombre__icontains=term
             )
             | Q(
+                sede__nombre__icontains=term
+            )
+            | Q(
+                sede__codigo__icontains=term
+            )
+            | Q(
+                sede__ciudad__icontains=term
+            )
+            | Q(
                 participaciones__autor__nombres__icontains=term
             )
             | Q(
@@ -387,6 +418,10 @@ def _apply_q_filter(
                     carrera__facultad__nombre__iexact=normalized_query,
                     then=Value(2),
                 ),
+                When(
+                    sede__nombre__iexact=normalized_query,
+                    then=Value(2),
+                ),
                 default=Value(3),
                 output_field=IntegerField(),
             )
@@ -398,6 +433,30 @@ def _apply_q_filter(
             "nombre",
             "id",
         )
+    )
+
+
+# ============================================================
+# FILTRO DE SEDE
+# ============================================================
+
+def _apply_sede_filter(
+    queryset,
+    sede,
+):
+    """
+    Restringe el listado a una Sede concreta.
+
+    Los proyectos históricos con sede NULL permanecen visibles
+    cuando no se aplica este filtro.
+    """
+    sede_id = _parse_positive_id(sede)
+
+    if sede_id is None:
+        return queryset
+
+    return queryset.filter(
+        sede_id=sede_id
     )
 
 
@@ -507,6 +566,7 @@ def filter_proyectos_queryset(
     queryset,
     *,
     q="",
+    sede="",
     anio="",
     estado="",
     is_admin=False,
@@ -518,6 +578,11 @@ def filter_proyectos_queryset(
         queryset,
         q,
         is_admin=is_admin,
+    )
+
+    queryset = _apply_sede_filter(
+        queryset,
+        sede,
     )
 
     queryset = _apply_anio_filter(
@@ -538,6 +603,7 @@ def get_filtered_proyectos_queryset_for_user(
     user,
     *,
     q="",
+    sede="",
     anio="",
     estado="",
 ):
@@ -557,6 +623,7 @@ def get_filtered_proyectos_queryset_for_user(
     return filter_proyectos_queryset(
         queryset,
         q=q,
+        sede=sede,
         anio=anio,
         estado=estado,
         is_admin=is_admin,
@@ -711,6 +778,7 @@ def get_proyectos_available_years_for_user(
     user,
     *,
     q="",
+    sede="",
     estado="",
 ):
     """
@@ -721,6 +789,7 @@ def get_proyectos_available_years_for_user(
         get_filtered_proyectos_queryset_for_user(
             user,
             q=q,
+            sede=sede,
             anio="",
             estado=estado,
         )

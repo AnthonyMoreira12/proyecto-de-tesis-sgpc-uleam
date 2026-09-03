@@ -10,7 +10,8 @@ Este módulo centraliza las consultas ligeras utilizadas por:
 Los selectores:
 
 - Validan identificadores antes de consultar.
-- Mantienen la relación Facultad -> Carrera.
+- Mantienen compatibilidad con Facultad -> Carrera.
+- Incorporan Sede -> Facultad -> Carrera mediante CarreraSede activa.
 - Derivan la facultad desde Carrera.
 - Controlan proyectos activos y cerrados.
 - Mantienen visible un proyecto previamente seleccionado.
@@ -37,6 +38,7 @@ from core.models import (
     Facultad,
     Pais,
     Proyecto,
+    Sede,
     Subarea,
 )
 
@@ -294,15 +296,135 @@ def _is_admin_user(user):
 
 
 # ============================================================
+# SEDES
+# ============================================================
+
+def build_sedes_select_data(
+    *,
+    incluir_inactivas=False,
+):
+    """
+    Construye el catálogo ligero de sedes institucionales.
+
+    Por defecto únicamente devuelve sedes activas. La opción
+    incluir_inactivas se conserva para usos administrativos
+    controlados sin alterar el comportamiento de los formularios.
+    """
+    queryset = Sede.objects.all()
+
+    if not incluir_inactivas:
+        queryset = queryset.filter(
+            activa=True
+        )
+
+    data = []
+
+    for sede in queryset.order_by(
+        "nombre",
+        "id",
+    ):
+        sede_name = _norm_text(
+            getattr(
+                sede,
+                "nombre",
+                "",
+            )
+        )
+
+        data.append(
+            {
+                "id": sede.id,
+                "nombre": sede_name,
+                "label": sede_name,
+                "codigo": _norm_text(
+                    getattr(
+                        sede,
+                        "codigo",
+                        "",
+                    )
+                ),
+                "ciudad": _norm_text(
+                    getattr(
+                        sede,
+                        "ciudad",
+                        "",
+                    )
+                ),
+                "descripcion": _norm_text(
+                    getattr(
+                        sede,
+                        "descripcion",
+                        "",
+                    )
+                ),
+                "activa": bool(
+                    getattr(
+                        sede,
+                        "activa",
+                        False,
+                    )
+                ),
+            }
+        )
+
+    return data
+
+
+# ============================================================
 # FACULTADES
 # ============================================================
 
-def build_facultades_select_data():
+def build_facultades_select_data(
+    *,
+    sede_id=None,
+):
     """
     Construye el catálogo ligero de facultades.
+
+    Cuando sede_id es proporcionado, devuelve únicamente las
+    facultades que poseen al menos una Carrera habilitada mediante
+    una relación CarreraSede activa dentro de una Sede activa.
+
+    Si sede_id no se proporciona, conserva el comportamiento
+    histórico y devuelve todas las facultades.
     """
+    was_sede_provided, normalized_sede_id = (
+        _parse_optional_positive_int(
+            sede_id
+        )
+    )
+
+    if (
+        was_sede_provided
+        and normalized_sede_id is None
+    ):
+        return []
+
+    queryset = Facultad.objects.all()
+
+    if normalized_sede_id is not None:
+        sede_exists = (
+            Sede.objects
+            .filter(
+                pk=normalized_sede_id,
+                activa=True,
+            )
+            .exists()
+        )
+
+        if not sede_exists:
+            return []
+
+        queryset = queryset.filter(
+            carreras__sedes_carrera__sede_id=(
+                normalized_sede_id
+            ),
+            carreras__sedes_carrera__activa=True,
+            carreras__sedes_carrera__sede__activa=True,
+        ).distinct()
+
     return list(
-        Facultad.objects
+        queryset
         .values(
             "id",
             "nombre",
@@ -321,24 +443,59 @@ def build_facultades_select_data():
 def build_carreras_select_data(
     *,
     facultad_id=None,
+    sede_id=None,
 ):
     """
     Construye el catálogo de carreras.
 
-    Cuando facultad_id es proporcionado, solo devuelve las
-    carreras pertenecientes a dicha facultad.
+    Compatibilidad:
+
+    - facultad_id sigue siendo admitido para los formularios
+      existentes.
+    - sede_id permite obtener únicamente las carreras habilitadas
+      mediante una relación CarreraSede activa dentro de una Sede
+      también activa.
+    - Cuando ambos filtros son proporcionados, ambos deben
+      cumplirse.
     """
-    was_provided, normalized_faculty_id = (
+    was_faculty_provided, normalized_faculty_id = (
         _parse_optional_positive_int(
             facultad_id
         )
     )
 
     if (
-        was_provided
+        was_faculty_provided
         and normalized_faculty_id is None
     ):
         return []
+
+    was_sede_provided, normalized_sede_id = (
+        _parse_optional_positive_int(
+            sede_id
+        )
+    )
+
+    if (
+        was_sede_provided
+        and normalized_sede_id is None
+    ):
+        return []
+
+    selected_sede = None
+
+    if normalized_sede_id is not None:
+        selected_sede = (
+            Sede.objects
+            .filter(
+                pk=normalized_sede_id,
+                activa=True,
+            )
+            .first()
+        )
+
+        if selected_sede is None:
+            return []
 
     queryset = (
         Carrera.objects
@@ -353,9 +510,26 @@ def build_carreras_select_data(
             facultad_id=normalized_faculty_id
         )
 
+    if normalized_sede_id is not None:
+        queryset = queryset.filter(
+            sedes_carrera__sede_id=(
+                normalized_sede_id
+            ),
+            sedes_carrera__activa=True,
+            sedes_carrera__sede__activa=True,
+        )
+
     data = []
 
-    for career in queryset.order_by(
+    sede_name = _norm_text(
+        getattr(
+            selected_sede,
+            "nombre",
+            "",
+        )
+    ) if selected_sede is not None else ""
+
+    for career in queryset.distinct().order_by(
         "nombre",
         "id",
     ):
@@ -391,11 +565,25 @@ def build_carreras_select_data(
                 ),
                 "facultad": faculty_name,
                 "facultad_nombre": faculty_name,
+                "sede_id": (
+                    normalized_sede_id
+                    if selected_sede is not None
+                    else None
+                ),
+                "sede": (
+                    sede_name
+                    if selected_sede is not None
+                    else None
+                ),
+                "sede_nombre": (
+                    sede_name
+                    if selected_sede is not None
+                    else None
+                ),
             }
         )
 
     return data
-
 
 # ============================================================
 # PROYECTOS
@@ -404,22 +592,28 @@ def build_carreras_select_data(
 def build_proyectos_select_data(
     *,
     carrera_id=None,
+    sede_id=None,
     include_id=None,
     q="",
     incluir_cerrados=False,
 ):
     """
-    Construye el catálogo de proyectos dependiente de carrera.
+    Construye el catálogo de proyectos dependiente de carrera y
+    opcionalmente de sede.
 
     Reglas:
 
-    - El proyecto se filtra por carrera_id.
+    - El proyecto se puede filtrar por carrera_id.
+    - Cuando se proporciona sede_id, solo se muestran proyectos de
+      dicha sede.
     - Los estados activos son nuevo y arrastre.
     - Los administradores pueden consultar proyectos cerrados.
     - include_id conserva visible un proyecto previamente
       seleccionado, aunque se encuentre cerrado.
-    - El proyecto incluido debe pertenecer a la carrera
-      actualmente seleccionada.
+    - Un include_id nunca puede pertenecer a otra carrera o a otra
+      sede. Por compatibilidad con datos históricos, un proyecto
+      incluido con sede NULL puede mantenerse visible si pertenece
+      a la carrera seleccionada.
     """
     was_career_provided, normalized_career_id = (
         _parse_optional_positive_int(
@@ -433,6 +627,27 @@ def build_proyectos_select_data(
     ):
         return []
 
+    was_sede_provided, normalized_sede_id = (
+        _parse_optional_positive_int(
+            sede_id
+        )
+    )
+
+    if (
+        was_sede_provided
+        and normalized_sede_id is None
+    ):
+        return []
+
+    if (
+        normalized_sede_id is not None
+        and not Sede.objects.filter(
+            pk=normalized_sede_id,
+            activa=True,
+        ).exists()
+    ):
+        return []
+
     _, normalized_include_id = (
         _parse_optional_positive_int(
             include_id
@@ -443,9 +658,10 @@ def build_proyectos_select_data(
         q
     )
 
-    base_queryset = (
+    unrestricted_queryset = (
         Proyecto.objects
         .select_related(
+            "sede",
             "carrera",
             "carrera__facultad",
         )
@@ -453,8 +669,17 @@ def build_proyectos_select_data(
     )
 
     if normalized_career_id is not None:
+        unrestricted_queryset = (
+            unrestricted_queryset.filter(
+                carrera_id=normalized_career_id
+            )
+        )
+
+    base_queryset = unrestricted_queryset
+
+    if normalized_sede_id is not None:
         base_queryset = base_queryset.filter(
-            carrera_id=normalized_career_id
+            sede_id=normalized_sede_id
         )
 
     filtered_queryset = base_queryset
@@ -469,6 +694,21 @@ def build_proyectos_select_data(
                 )
                 | Q(
                     descripcion__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    sede__nombre__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    sede__codigo__icontains=(
+                        normalized_query
+                    )
+                )
+                | Q(
+                    sede__ciudad__icontains=(
                         normalized_query
                     )
                 )
@@ -503,8 +743,10 @@ def build_proyectos_select_data(
         )
     )
 
-    # include_id no depende del texto buscado.
-    # Solo respeta el filtro de carrera.
+    # include_id no depende del texto buscado ni del estado.
+    # Sí debe respetar la carrera y la sede seleccionadas.
+    # Los proyectos históricos con sede NULL se toleran únicamente
+    # para conservar visible una selección existente.
     if normalized_include_id is not None:
         already_included = any(
             project.id
@@ -513,12 +755,28 @@ def build_proyectos_select_data(
         )
 
         if not already_included:
-            included_project = (
-                base_queryset
-                .filter(
+            inclusion_queryset = (
+                unrestricted_queryset.filter(
                     pk=normalized_include_id
                 )
-                .first()
+            )
+
+            if normalized_sede_id is not None:
+                inclusion_queryset = (
+                    inclusion_queryset.filter(
+                        Q(
+                            sede_id=(
+                                normalized_sede_id
+                            )
+                        )
+                        | Q(
+                            sede__isnull=True
+                        )
+                    )
+                )
+
+            included_project = (
+                inclusion_queryset.first()
             )
 
             if included_project is not None:
@@ -547,6 +805,12 @@ def build_proyectos_select_data(
     data = []
 
     for project in projects:
+        sede = getattr(
+            project,
+            "sede",
+            None,
+        )
+
         career = getattr(
             project,
             "carrera",
@@ -575,6 +839,14 @@ def build_proyectos_select_data(
             getattr(
                 project,
                 "descripcion",
+                "",
+            )
+        )
+
+        sede_name = _norm_text(
+            getattr(
+                sede,
+                "nombre",
                 "",
             )
         )
@@ -630,6 +902,14 @@ def build_proyectos_select_data(
                     project_status
                     in ESTADOS_PROYECTO_ACTIVOS
                 ),
+
+                "sede_id": getattr(
+                    project,
+                    "sede_id",
+                    None,
+                ),
+                "sede": sede_name or None,
+                "sede_nombre": sede_name or None,
 
                 "carrera_id": (
                     getattr(
@@ -690,7 +970,6 @@ def build_proyectos_select_data(
         )
 
     return data
-
 
 # ============================================================
 # PAÍSES

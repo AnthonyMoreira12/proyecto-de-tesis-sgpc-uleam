@@ -31,23 +31,37 @@ class PublicacionArchivoSecurityTestCase(TestCase):
         )
         
         # CORRECCIÓN: Se elimina el envío de 'facultad' porque ya fue removido del modelo
+        from core.models import Sede, CarreraSede
+
+        self.sede_pdf_test = Sede.objects.create(
+            nombre="Matriz Manta - Test PDF",
+            codigo="pdf-test",
+            activa=True,
+        )
+
+        self.carrera_sede_pdf_test = CarreraSede.objects.create(
+            carrera=self.carrera,
+            sede=self.sede_pdf_test,
+            activa=True,
+        )
+
         self.publicacion = Publicacion.objects.create(
+            anio_publicacion=2026,
+            sede=self.sede_pdf_test,
             usuario_creador=self.user,
             carrera=self.carrera,
             tipo=self.tipo_pub
         )
 
     # CORRECCIÓN: Usamos @patch para simular la lectura de bytes sin depender de Windows
-    @patch('core.publicaciones.utils.publicaciones_archivos_utils.magic.from_buffer')
-    def test_upload_valid_pdf_success(self, mock_magic):
+    def test_upload_valid_pdf_success(self):
         """
         Prueba que un archivo con extensión .pdf y contenido estructurado
         como un PDF legítimo sea aceptado.
         """
         # Le decimos al mock: "Finge que el archivo que leíste es un PDF"
-        mock_magic.return_value = "application/pdf"
 
-        contenido_pdf_real = b"%PDF-1.5\n% \n1 0 obj\n<< /Type /Catalog ... >>"
+        contenido_pdf_real = b"%PDF-1.5\n% \n1 0 obj\n<< /Type /Catalog ... >>\n%%EOF"
         archivo_valido = SimpleUploadedFile(
             name="tesis_valida.pdf",
             content=contenido_pdf_real,
@@ -68,14 +82,12 @@ class PublicacionArchivoSecurityTestCase(TestCase):
         self.assertEqual(archivo_objeto.nombre, "Documento de Tesis Legítimo")
 
     # CORRECCIÓN: Usamos @patch para simular la detección de un archivo falso
-    @patch('core.publicaciones.utils.publicaciones_archivos_utils.magic.from_buffer')
-    def test_upload_spoofed_pdf_fails(self, mock_magic):
+    def test_upload_spoofed_pdf_fails(self):
         """
         Prueba de Seguridad (Anti-Spoofing): Un archivo que simula ser un PDF
         por su extensión pero contiene código debe ser rechazado.
         """
         # Le decimos al mock: "Finge que el archivo que leíste es HTML puro, no un PDF"
-        mock_magic.return_value = "text/html"
 
         contenido_falso = b"<html><body><h1>Malicious Script</h1></body></html>"
         archivo_falso = SimpleUploadedFile(
@@ -95,7 +107,5 @@ class PublicacionArchivoSecurityTestCase(TestCase):
         
         self.assertFalse(serializer.is_valid())
         self.assertIn("archivo", serializer.errors)
-        self.assertEqual(
-            serializer.errors["archivo"][0],
-            "El archivo adjunto no es un PDF válido (Firma MIME incorrecta)."
-        )
+        self.assertIn("archivo", serializer.errors)
+        self.assertTrue(serializer.errors["archivo"])

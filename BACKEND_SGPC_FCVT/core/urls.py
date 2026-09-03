@@ -23,21 +23,43 @@ from core.publicaciones.views.publicaciones_archivos_viewsets import (
     PublicacionArchivoViewSet,
 )
 
+from core.publicaciones.solicitudes.solicitudes_modificacion_views import (
+    SolicitudModificacionPublicacionViewSet,
+    AdminSolicitudModificacionPublicacionViewSet,
+)
+
 # Base
 from core.banners.views.banners_banner_viewsets import BannerViewSet
 from core.proyectos.views.proyectos_proyecto_viewsets import ProyectoViewSet
 from core.autores.views.autores_autor_viewsets import AutoresViewSet
 from core.catalogos.views.catalogos_selects_viewsets import SelectsViewSet
+from core.notificaciones.views.notificaciones_viewsets import (
+    NotificacionViewSet,
+)
+from core.comunicaciones.views.comunicaciones_viewsets import (
+    ComunicacionGlobalViewSet,
+)
 
 # Admin
 from core.admin.views.admin_catalogos_views import (
     AdminFacultadViewSet,
     AdminCarreraViewSet,
+    AdminSedeViewSet,
+    AdminCarreraSedeViewSet,
 )
 from core.admin.views.admin_usuarios_views import AdminUsuariosViewSet
 from core.admin.views.admin_autores_views import AdminAutorViewSet
 from core.admin.views.admin_publicaciones_views import (
     AdminPublicacionViewSet,
+)
+
+# Actualizaciones globales / Auditoría
+from core.actualizaciones.views.actualizaciones_viewsets import (
+    AdminCampaniaActualizacionViewSet,
+    MisActualizacionesViewSet,
+)
+from core.auditoria.views.auditoria_viewsets import (
+    AdminAuditoriaSistemaViewSet,
 )
 
 # ============================================================
@@ -62,11 +84,44 @@ from core.publicaciones.views.publicaciones_articulo_create_views import (
 from core.publicaciones.views.publicaciones_pdf_views import (
     PublicacionPdfInlineAPIView,
 )
+from core.publicaciones.views.publicaciones_estado_views import (
+    PublicacionEnviarRevisionAPIView,
+    PublicacionReenviarRevisionAPIView,
+)
+from core.publicaciones.views.publicaciones_duplicados_views import (
+    PublicacionValidarDuplicadosAPIView,
+)
+from core.publicaciones.views.publicaciones_prevalidacion_views import (
+    PublicacionPrevalidarAPIView,
+)
+
+from core.publicaciones.views.publicaciones_integridad_admin_views import (
+    AdminIntegridadDocumentalDiagnosticoAPIView,
+    AdminIntegridadDocumentalBackfillAPIView,
+)
+
+from core.migracion_produccion.views.migracion_produccion_views import (
+    AdminPreparacionProduccionDiagnosticoAPIView,
+    AdminPreparacionProduccionNormalizarAPIView,
+    AdminPreparacionProduccionVerificarAPIView,
+)
 
 # Reportes
 from core.reportes.views.reportes_publicaciones_views import (
     ExportarPublicacionesExcelView,
+    ExportarPublicacionesPdfView,
     VistaPreviaPublicacionesExcelView,
+)
+from core.reportes.views.reportes_gestion_views import (
+    ExportarReporteGestionExcelView,
+    VistaPreviaReporteGestionView,
+)
+from core.reportes.views.reportes_produccion_views import (
+    ExportarMiReporteProduccionExcelView,
+    ExportarMiReporteProduccionPdfView,
+    ExportarReporteProduccionAdminExcelView,
+    VistaPreviaMiReporteProduccionView,
+    VistaPreviaReporteProduccionAdminView,
 )
 
 # Búsqueda
@@ -94,6 +149,10 @@ from core.scholar.views.scholar_tipos_publicacion_views import (
 from core.dashboard import (
     DashboardResumenView,
     DashboardReporteExcelView,
+    DashboardReportePdfView,
+)
+from core.dashboard_gestion import (
+    DashboardGestionView,
 )
 
 # Auth
@@ -104,6 +163,8 @@ from core.auth.views.auth_refresh_token_views import RefreshTokenView
 from core.auth.views.auth_profile_views import (
     ProfileView,
     ProfileEditExtensionRequestView,
+    AdminProfileEditExtensionRequestsView,
+    AdminProfileEditExtensionRequestDetailView,
 )
 from core.auth.views.auth_avatar_views import UpdateAvatarView
 from core.auth.views.auth_password_reset_views import (
@@ -147,6 +208,12 @@ router.register(
     basename="archivos-publicacion",
 )
 
+router.register(
+    r"solicitudes-modificacion-publicaciones",
+    SolicitudModificacionPublicacionViewSet,
+    basename="solicitudes-modificacion-publicaciones",
+)
+
 # Base
 router.register(
     r"banners",
@@ -166,11 +233,35 @@ router.register(
     basename="autores",
 )
 
+router.register(
+    r"notificaciones",
+    NotificacionViewSet,
+    basename="notificaciones",
+)
+
+router.register(
+    r"comunicaciones-globales",
+    ComunicacionGlobalViewSet,
+    basename="comunicaciones-globales",
+)
+
 # Admin
 router.register(
     r"admin/facultades",
     AdminFacultadViewSet,
     basename="admin-facultades",
+)
+
+router.register(
+    r"admin/sedes",
+    AdminSedeViewSet,
+    basename="admin-sedes",
+)
+
+router.register(
+    r"admin/carreras-sedes",
+    AdminCarreraSedeViewSet,
+    basename="admin-carreras-sedes",
 )
 
 router.register(
@@ -195,6 +286,30 @@ router.register(
     r"admin/publicaciones",
     AdminPublicacionViewSet,
     basename="admin-publicaciones",
+)
+
+router.register(
+    r"admin/solicitudes-modificacion-publicaciones",
+    AdminSolicitudModificacionPublicacionViewSet,
+    basename="admin-solicitudes-modificacion-publicaciones",
+)
+
+router.register(
+    r"admin/actualizaciones",
+    AdminCampaniaActualizacionViewSet,
+    basename="admin-actualizaciones",
+)
+
+router.register(
+    r"admin/auditoria",
+    AdminAuditoriaSistemaViewSet,
+    basename="admin-auditoria",
+)
+
+router.register(
+    r"mis-actualizaciones",
+    MisActualizacionesViewSet,
+    basename="mis-actualizaciones",
 )
 
 # ============================================================
@@ -241,6 +356,19 @@ urlpatterns = [
         "auth/profile/solicitar-extension/",
         ProfileEditExtensionRequestView.as_view(),
         name="auth-profile-solicitar-extension",
+    ),
+
+    # Gestión administrativa de solicitudes de extensión.
+    path(
+        "admin/profile-extension-requests/",
+        AdminProfileEditExtensionRequestsView.as_view(),
+        name="admin-profile-extension-requests",
+    ),
+
+    path(
+        "admin/profile-extension-requests/<int:pk>/",
+        AdminProfileEditExtensionRequestDetailView.as_view(),
+        name="admin-profile-extension-request-detail",
     ),
 
     path(
@@ -304,9 +432,21 @@ urlpatterns = [
     ),
 
     path(
+        "dashboard/gestion/",
+        DashboardGestionView.as_view(),
+        name="dashboard-gestion",
+    ),
+
+    path(
         "dashboard/reporte/excel/",
         DashboardReporteExcelView.as_view(),
         name="dashboard-reporte-excel",
+    ),
+
+    path(
+        "dashboard/reporte/pdf/",
+        DashboardReportePdfView.as_view(),
+        name="dashboard-reporte-pdf",
     ),
 
     # ========================================================
@@ -349,6 +489,30 @@ urlpatterns = [
     ),
 
     path(
+        "publicaciones/validar-duplicados/",
+        PublicacionValidarDuplicadosAPIView.as_view(),
+        name="publicacion-validar-duplicados",
+    ),
+
+    path(
+        "publicaciones/prevalidar/",
+        PublicacionPrevalidarAPIView.as_view(),
+        name="publicacion-prevalidar",
+    ),
+
+    path(
+        "publicaciones/<int:id>/enviar-revision/",
+        PublicacionEnviarRevisionAPIView.as_view(),
+        name="publicacion-enviar-revision",
+    ),
+
+    path(
+        "publicaciones/<int:id>/reenviar-revision/",
+        PublicacionReenviarRevisionAPIView.as_view(),
+        name="publicacion-reenviar-revision",
+    ),
+
+    path(
         "publicaciones/<int:id>/",
         PublicacionDetailAPIView.as_view(),
         name="publicacion-detalle",
@@ -364,9 +528,60 @@ urlpatterns = [
     ),
 
     path(
+        "reportes/publicaciones/pdf/",
+        ExportarPublicacionesPdfView.as_view(),
+        name="exportar-publicaciones-pdf",
+    ),
+
+    path(
         "reportes/publicaciones/excel/preview/",
         VistaPreviaPublicacionesExcelView.as_view(),
         name="preview-publicaciones-excel",
+    ),
+
+    path(
+        "reportes/gestion/preview/",
+        VistaPreviaReporteGestionView.as_view(),
+        name="preview-reporte-gestion",
+    ),
+
+    path(
+        "reportes/gestion/excel/",
+        ExportarReporteGestionExcelView.as_view(),
+        name="exportar-reporte-gestion-excel",
+    ),
+
+    # Producción científica aprobada - alcance institucional
+    path(
+        "reportes/produccion/preview/",
+        VistaPreviaReporteProduccionAdminView.as_view(),
+        name="preview-reporte-produccion-admin",
+    ),
+
+    path(
+        "reportes/produccion/excel/",
+        ExportarReporteProduccionAdminExcelView.as_view(),
+        name="exportar-reporte-produccion-admin-excel",
+    ),
+
+    # Producción científica del usuario autenticado. El backend determina
+    # el docente desde request.user; no recibe IDs de usuario desde Vue.
+    path(
+        "reportes/mios/preview/",
+        VistaPreviaMiReporteProduccionView.as_view(),
+        name="preview-mi-reporte-produccion",
+    ),
+
+    path(
+        "reportes/mios/excel/",
+        ExportarMiReporteProduccionExcelView.as_view(),
+        name="exportar-mi-reporte-produccion-excel",
+    ),
+
+    path(
+        "reportes/mios/pdf/",
+        ExportarMiReporteProduccionPdfView.as_view(),
+        name="exportar-mi-reporte-produccion-pdf",
     ),
 
     # ========================================================
@@ -415,6 +630,16 @@ urlpatterns = [
     # SELECTS DINÁMICOS
     # ========================================================
     path(
+        "selects/sedes/",
+        SelectsViewSet.as_view(
+            {
+                "get": "get_sedes",
+            }
+        ),
+        name="select-sedes",
+    ),
+
+    path(
         "selects/facultades/",
         SelectsViewSet.as_view(
             {
@@ -422,6 +647,26 @@ urlpatterns = [
             }
         ),
         name="select-facultades",
+    ),
+
+    path(
+        "selects/carreras/",
+        SelectsViewSet.as_view(
+            {
+                "get": "get_carreras",
+            }
+        ),
+        name="select-carreras-filtros",
+    ),
+
+    path(
+        "selects/carreras/sede/<int:sede_id>/",
+        SelectsViewSet.as_view(
+            {
+                "get": "get_carreras",
+            }
+        ),
+        name="select-carreras-sede",
     ),
 
     path(
@@ -501,4 +746,30 @@ urlpatterns = [
         "",
         include(router.urls),
     ),
+    path(
+        "admin/integridad-documental/diagnostico/",
+        AdminIntegridadDocumentalDiagnosticoAPIView.as_view(),
+        name="admin-integridad-documental-diagnostico",
+    ),
+    path(
+        "admin/integridad-documental/backfill/",
+        AdminIntegridadDocumentalBackfillAPIView.as_view(),
+        name="admin-integridad-documental-backfill",
+    ),
+    path(
+        "admin/preparacion-produccion/diagnostico/",
+        AdminPreparacionProduccionDiagnosticoAPIView.as_view(),
+        name="admin-preparacion-produccion-diagnostico",
+    ),
+    path(
+        "admin/preparacion-produccion/normalizar/",
+        AdminPreparacionProduccionNormalizarAPIView.as_view(),
+        name="admin-preparacion-produccion-normalizar",
+    ),
+    path(
+        "admin/preparacion-produccion/verificar/",
+        AdminPreparacionProduccionVerificarAPIView.as_view(),
+        name="admin-preparacion-produccion-verificar",
+    ),
+
 ]

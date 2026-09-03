@@ -37,6 +37,9 @@ from core.models import (
 from core.publicaciones.utils.publicaciones_permissions_utils import (
     resolve_user_autor_id,
 )
+from core.publicaciones.utils.publicaciones_visibilidad_utils import (
+    apply_public_publicaciones_scope,
+)
 from core.publicaciones.utils.publicaciones_tipo_resolver_utils import (
     annotate_tipo_publicacion_final,
     normalize_tipo_publicacion_final,
@@ -53,6 +56,12 @@ ORIGENES_VALIDOS = {
     "maestria",
     "doctoral",
     "otro",
+}
+
+ESTADOS_VALIDOS = {
+    value
+    for value, _label
+    in Publicacion.ESTADOS
 }
 
 ORDENES_VALIDOS = {
@@ -234,6 +243,9 @@ def extract_publicaciones_filters(
     origen
     origen_tipo
 
+    estado
+    status
+
     anio
     mes
     anio_desde
@@ -243,6 +255,7 @@ def extract_publicaciones_filters(
     q
     search
 
+    sede
     facultad
     carrera
     proyecto
@@ -309,6 +322,30 @@ def extract_publicaciones_filters(
                 }
             )
 
+    raw_estado = _first_value(
+        query_params,
+        "estado",
+        "estado_publicacion",
+        "status",
+    )
+
+    estado = None
+
+    if raw_estado:
+        estado = _to_lower(
+            raw_estado
+        )
+
+        if estado not in ESTADOS_VALIDOS:
+            raise ValidationError(
+                {
+                    "estado": [
+                        "El estado de la publicación "
+                        "seleccionado no es válido."
+                    ]
+                }
+            )
+
     anio = _parse_positive_int(
         _first_value(
             query_params,
@@ -366,6 +403,15 @@ def extract_publicaciones_filters(
             anio_hasta,
             anio_desde,
         )
+
+    sede_id = _parse_positive_int(
+        _first_value(
+            query_params,
+            "sede",
+            "sede_id",
+        ),
+        field_name="sede",
+    )
 
     facultad_id = _parse_positive_int(
         _first_value(
@@ -434,11 +480,13 @@ def extract_publicaciones_filters(
     return {
         "tipo": tipo,
         "origen_tipo": origen_tipo,
+        "estado": estado,
         "anio": anio,
         "mes": mes,
         "anio_desde": anio_desde,
         "anio_hasta": anio_hasta,
         "texto": texto,
+        "sede_id": sede_id,
         "facultad_id": facultad_id,
         "carrera_id": carrera_id,
         "proyecto_id": proyecto_id,
@@ -482,12 +530,14 @@ def build_publicaciones_base_queryset():
         .select_related(
             "tipo",
             "proyecto",
+            "proyecto__sede",
             "proyecto__carrera",
             "proyecto__carrera__facultad",
 
             "usuario_creador",
             "admin_registrador",
 
+            "sede",
             "carrera",
             "carrera__facultad",
 
@@ -622,6 +672,17 @@ def apply_publicaciones_filters(
             origen_tipo=origen_tipo
         )
 
+    estado = _to_lower(
+        filters.get(
+            "estado"
+        )
+    )
+
+    if estado:
+        queryset = queryset.filter(
+            estado=estado
+        )
+
     anio = filters.get(
         "anio"
     )
@@ -661,6 +722,15 @@ def apply_publicaciones_filters(
     if mes:
         queryset = queryset.filter(
             mes_publicacion=mes
+        )
+
+    sede_id = filters.get(
+        "sede_id"
+    )
+
+    if sede_id:
+        queryset = queryset.filter(
+            sede_id=sede_id
         )
 
     facultad_id = filters.get(
@@ -751,11 +821,27 @@ def _build_text_search_query(
         Q(
             tipo__codigo__icontains=texto
         )
+        |
+        Q(
+            estado__icontains=texto
+        )
 
         # -----------------------------------------------------
         # Ubicación académica y proyecto
         # -----------------------------------------------------
 
+        |
+        Q(
+            sede__nombre__icontains=texto
+        )
+        |
+        Q(
+            sede__codigo__icontains=texto
+        )
+        |
+        Q(
+            sede__ciudad__icontains=texto
+        )
         |
         Q(
             carrera__nombre__icontains=texto
@@ -1112,10 +1198,20 @@ def get_publicaciones_available_years(
     )
 
     if solo_mias:
+        # "Mis publicaciones" conserva todos los estados del usuario.
         queryset = (
             apply_user_publicaciones_scope(
                 queryset,
                 user=user,
+            )
+        )
+
+    else:
+        # El listado institucional/general solo expone publicaciones
+        # que terminaron el flujo administrativo como Aprobadas.
+        queryset = (
+            apply_public_publicaciones_scope(
+                queryset
             )
         )
 
@@ -1190,10 +1286,20 @@ def build_publicaciones_queryset(
     )
 
     if solo_mias:
+        # "Mis publicaciones" conserva todos los estados del usuario.
         queryset = (
             apply_user_publicaciones_scope(
                 queryset,
                 user=user,
+            )
+        )
+
+    else:
+        # El listado institucional/general solo expone publicaciones
+        # que terminaron el flujo administrativo como Aprobadas.
+        queryset = (
+            apply_public_publicaciones_scope(
+                queryset
             )
         )
 

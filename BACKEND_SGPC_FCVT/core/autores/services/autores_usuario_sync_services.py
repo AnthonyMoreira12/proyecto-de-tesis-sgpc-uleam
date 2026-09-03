@@ -576,6 +576,17 @@ def _update_pending_user(
         user.apellidos = surnames
         changed.append("apellidos")
 
+    # Una cuenta externa local nunca debe conservar clasificación
+    # académica institucional. También sanea posibles datos
+    # residuales de cuentas pendientes creadas antes de Sedes.
+    if getattr(user, "carrera_id", None) is not None:
+        user.carrera = None
+        changed.append("carrera")
+
+    if getattr(user, "sede_id", None) is not None:
+        user.sede = None
+        changed.append("sede")
+
     if changed:
         user.save(update_fields=_unique_fields(changed))
 
@@ -622,6 +633,7 @@ def _create_pending_user(*, email, identification, names, surnames):
         rol=ROLE_EXTERNAL_AUTHOR,
         auth_source=AUTH_SOURCE_LOCAL,
         carrera=None,
+        sede=None,
         is_active=False,
         is_staff=False,
         is_superuser=False,
@@ -752,3 +764,4 @@ def asegurar_usuario_pendiente_para_autor(autor):
             },
             status_code=status.HTTP_409_CONFLICT,
         ) from exc
+

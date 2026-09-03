@@ -36,7 +36,7 @@ from core.admin.services.admin_usuarios_services import (
 from core.auth.services.auth_author_sync_services import (
     asegurar_autor_para_usuario,
 )
-from core.models import Autor
+from core.models import Autor, Sede
 from core.permisos.es_admin import EsAdmin
 
 
@@ -394,6 +394,7 @@ class AdminUsuariosViewSet(
             # Valores controlados exclusivamente por backend.
             "rol": ROLE_EXTERNAL,
             "auth_source": AUTH_SOURCE_LOCAL,
+            "sede": None,
             "carrera": None,
             "is_active": False,
             "is_staff": False,
@@ -421,6 +422,7 @@ class AdminUsuariosViewSet(
             AUTH_SOURCE_LOCAL
         )
 
+        validated_data["sede"] = None
         validated_data["carrera"] = None
         validated_data["is_active"] = False
         validated_data["is_staff"] = False
@@ -430,11 +432,7 @@ class AdminUsuariosViewSet(
             "creado_desde_selector"
         ] = False
 
-        validated_data["perfil_completo"] = bool(
-            validated_data.get(
-                "identificacion"
-            )
-        )
+        validated_data["perfil_completo"] = True
 
         try:
             with transaction.atomic():
@@ -517,6 +515,7 @@ class AdminUsuariosViewSet(
             "apellidos",
             "email",
             "identificacion",
+            "sede",
             "carrera",
             "facultad",
             "is_active",
@@ -621,6 +620,27 @@ class AdminUsuariosViewSet(
                 serializer.is_valid(
                     raise_exception=True
                 )
+
+                validated_site = serializer.validated_data.get(
+                    "sede", getattr(locked_user, "sede", None)
+                )
+                validated_career = serializer.validated_data.get(
+                    "carrera", getattr(locked_user, "carrera", None)
+                )
+
+                if _is_institutional_user(locked_user):
+                    if validated_site is not None and not validated_site.activa:
+                        raise ValidationError({"sede": "La sede seleccionada está inactiva."})
+                    if validated_site is not None and validated_career is not None:
+                        if not validated_career.sedes_carrera.filter(
+                            sede_id=validated_site.pk, activa=True
+                        ).exists():
+                            raise ValidationError({
+                                "carrera": "La carrera seleccionada no está habilitada en la sede indicada."
+                            })
+                else:
+                    serializer.validated_data["sede"] = None
+                    serializer.validated_data["carrera"] = None
 
                 if faculty_was_sent:
                     selected_faculty_id = (

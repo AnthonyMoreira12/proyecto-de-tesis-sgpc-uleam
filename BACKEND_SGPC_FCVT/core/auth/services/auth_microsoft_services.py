@@ -13,11 +13,14 @@ Este módulo gestiona:
 - Generación del payload JWT para el frontend.
 
 La facultad del usuario se deriva exclusivamente desde
-usuario.carrera.facultad.
+usuario.carrera.facultad. La Sede se obtiene desde Usuario.sede y puede
+resolverse automáticamente desde Microsoft Graph únicamente cuando la
+coincidencia con una Sede activa es inequívoca.
 """
 
 import logging
 import re
+import unicodedata
 from urllib.parse import quote
 
 import msal
@@ -39,6 +42,7 @@ from core.auth.services.auth_author_sync_services import (
 from core.auth.services.auth_profile_services import (
     get_profile_edit_status,
 )
+from core.models import Sede
 
 
 logger = logging.getLogger(__name__)
@@ -1463,6 +1467,132 @@ def _validate_existing_account_link(
 
 
 # ============================================================
+# RESOLUCIÓN SEGURA DE SEDE
+# ============================================================
+
+def _normalize_site_match_text(value):
+    """Normaliza texto para comparar officeLocation con Sede."""
+    normalized = unicodedata.normalize(
+        "NFKD",
+        _normalize_text(value),
+    )
+    normalized = "".join(
+        character
+        for character in normalized
+        if not unicodedata.combining(character)
+    )
+    return " ".join(normalized.lower().split())
+
+
+def _resolve_unambiguous_sede_from_graph(
+    graph,
+    *,
+    carrera_id=None,
+):
+    """
+    Resuelve una Sede activa desde Graph de forma conservadora.
+
+    Se usa principalmente officeLocation. Solo se retorna una Sede cuando
+    existe exactamente una coincidencia. Si la cuenta ya posee Carrera, la
+    Sede candidata además debe tener esa Carrera habilitada mediante una
+    relación CarreraSede activa.
+    """
+    if not isinstance(graph, dict):
+        return None
+
+    office_location = _normalize_site_match_text(
+        graph.get("officeLocation")
+    )
+
+    if not office_location:
+        return None
+
+    sedes = list(
+        Sede.objects
+        .filter(activa=True)
+        .order_by("id")
+    )
+
+    exact_matches = []
+    partial_matches = []
+
+    for sede in sedes:
+        values = {
+            _normalize_site_match_text(getattr(sede, "nombre", None)),
+            _normalize_site_match_text(getattr(sede, "codigo", None)),
+            _normalize_site_match_text(getattr(sede, "ciudad", None)),
+        }
+        values.discard("")
+
+        if office_location in values:
+            exact_matches.append(sede)
+            continue
+
+        if any(
+            candidate in office_location
+            or office_location in candidate
+            for candidate in values
+            if len(candidate) >= 4
+        ):
+            partial_matches.append(sede)
+
+    candidates = (
+        exact_matches
+        if exact_matches
+        else partial_matches
+    )
+
+    unique_candidates = {
+        sede.pk: sede
+        for sede in candidates
+    }
+
+    if len(unique_candidates) != 1:
+        return None
+
+    sede = next(iter(unique_candidates.values()))
+
+    if carrera_id:
+        compatible = sede.carreras_sede.filter(
+            carrera_id=carrera_id,
+            activa=True,
+        ).exists()
+
+        if not compatible:
+            return None
+
+    return sede
+
+
+def _assign_sede_from_graph_if_safe(
+    user,
+    graph,
+    updated_fields,
+):
+    """
+    Asigna Sede únicamente si el usuario todavía no tiene una selección.
+
+    Una Sede elegida previamente por el usuario nunca se sobreescribe en
+    cada inicio de sesión Microsoft.
+    """
+    if getattr(user, "sede_id", None):
+        return
+
+    sede = _resolve_unambiguous_sede_from_graph(
+        graph,
+        carrera_id=getattr(user, "carrera_id", None),
+    )
+
+    if sede is None:
+        return
+
+    user.sede = sede
+
+    if "sede" not in updated_fields:
+        updated_fields.append("sede")
+
+
+# ============================================================
 # SINCRONIZACIÓN DEL USUARIO
 # ============================================================
 
@@ -1602,6 +1732,12 @@ def sync_microsoft_user(
                     updated_fields,
                 )
 
+                _assign_sede_from_graph_if_safe(
+                    user,
+                    graph,
+                    updated_fields,
+                )
+
                 user.save()
 
             else:
@@ -1615,6 +1751,27 @@ def sync_microsoft_user(
                 )
 
                 updated_fields = []
+
+                # Una cuenta que pasa a autenticarse mediante
+                # Microsoft no debe conservar una contraseña local
+                # utilizable. Esto también sanea cuentas antiguas
+                # que pudieron crearse inicialmente como locales.
+                try:
+                    has_local_password = (
+                        user.has_usable_password()
+                    )
+                except (
+                    AttributeError,
+                    TypeError,
+                    ValueError,
+                ):
+                    has_local_password = False
+
+                if has_local_password:
+                    user.set_unusable_password()
+                    updated_fields.append(
+                        "password"
+                    )
 
                 _assign_if_changed(
                     user,
@@ -1697,6 +1854,12 @@ def sync_microsoft_user(
                 )
 
                 _apply_graph_fields(
+                    user,
+                    graph,
+                    updated_fields,
+                )
+
+                _assign_sede_from_graph_if_safe(
                     user,
                     graph,
                     updated_fields,
@@ -1881,6 +2044,12 @@ def build_microsoft_auth_payload(
             status_code=status.HTTP_403_FORBIDDEN,
         )
 
+    site = getattr(
+        user,
+        "sede",
+        None,
+    )
+
     career = getattr(
         user,
         "carrera",
@@ -1942,9 +2111,13 @@ def build_microsoft_auth_payload(
             "perfil_completo": bool(
                 getattr(
                     user,
-                    "perfil_completo",
-                    False,
-                )
+                    "calcular_perfil_completo",
+                    lambda: getattr(
+                        user,
+                        "perfil_completo",
+                        False,
+                    ),
+                )()
             ),
 
             "is_active": bool(
@@ -1982,6 +2155,19 @@ def build_microsoft_auth_payload(
                     "is_superuser",
                     False,
                 )
+            ),
+
+            # Sede institucional.
+            "sede_id": getattr(
+                site,
+                "pk",
+                None,
+            ),
+
+            "sede": getattr(
+                site,
+                "nombre",
+                None,
             ),
 
             # Facultad derivada desde carrera.

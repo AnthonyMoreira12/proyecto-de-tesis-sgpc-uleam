@@ -159,6 +159,7 @@ def _get_author_by_user(
         Autor.objects
         .select_related(
             "usuario",
+            "usuario__sede",
             "usuario__carrera",
             "usuario__carrera__facultad",
         )
@@ -243,6 +244,7 @@ class PerfilesScholarAPIView(
             Autor.objects
             .select_related(
                 "usuario",
+                "usuario__sede",
                 "usuario__carrera",
                 "usuario__carrera__facultad",
             )
@@ -388,6 +390,7 @@ class PerfilScholarDetailAPIView(
             Autor.objects
             .select_related(
                 "usuario",
+                "usuario__sede",
                 "usuario__carrera",
                 "usuario__carrera__facultad",
             )

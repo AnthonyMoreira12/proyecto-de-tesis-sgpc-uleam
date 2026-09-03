@@ -4,9 +4,11 @@ APIViews de catálogos académicos y geográficos.
 Este módulo expone listados ligeros para poblar selects
 dependientes en los formularios del sistema:
 
+- Sedes activas.
 - Facultades.
 - Carreras por facultad.
-- Proyectos por carrera.
+- Carreras por sede.
+- Proyectos por carrera y sede.
 - Países.
 - Ciudades por país.
 - Áreas de conocimiento.
@@ -40,6 +42,7 @@ from core.catalogos.selectors.catalogos_selects_selectors import (
     build_facultades_select_data,
     build_paises_select_data,
     build_proyectos_select_data,
+    build_sedes_select_data,
     build_subareas_select_data,
 )
 
@@ -145,6 +148,31 @@ class AuthenticatedSelectAPIView(APIView):
 
 
 # ============================================================
+# SEDES
+# ============================================================
+
+class SedesSelect(
+    AuthenticatedSelectAPIView
+):
+    """
+    Devuelve únicamente las sedes institucionales activas.
+    """
+
+    def get(
+        self,
+        request,
+        *args,
+        **kwargs,
+    ):
+        return self.catalog_response(
+            build_sedes_select_data,
+            error_detail=(
+                "Error al consultar el catálogo de sedes."
+            ),
+        )
+
+
+# ============================================================
 # FACULTADES
 # ============================================================
 
@@ -193,6 +221,38 @@ class CarrerasByFacultadSelect(
             error_detail=(
                 "Error al consultar las carreras "
                 "de una facultad."
+            ),
+        )
+
+
+class CarrerasBySedeSelect(
+    AuthenticatedSelectAPIView
+):
+    """
+    Devuelve las carreras habilitadas en una sede activa.
+
+    Opcionalmente admite facultad_id como query param para
+    combinar ambos filtros sin romper el contrato existente.
+    """
+
+    def get(
+        self,
+        request,
+        sid,
+        *args,
+        **kwargs,
+    ):
+        facultad_id = request.query_params.get(
+            "facultad_id"
+        )
+
+        return self.catalog_response(
+            build_carreras_select_data,
+            sede_id=sid,
+            facultad_id=facultad_id,
+            error_detail=(
+                "Error al consultar las carreras "
+                "de una sede."
             ),
         )
 
@@ -257,9 +317,19 @@ class ProyectosByCarreraSelect(
             "",
         )
 
+        sede_id = (
+            request.query_params.get(
+                "sede_id"
+            )
+            or request.query_params.get(
+                "sede"
+            )
+        )
+
         return self.catalog_response(
             build_proyectos_select_data,
             carrera_id=cid,
+            sede_id=sede_id,
             include_id=include_id,
             q=query,
             incluir_cerrados=_is_admin_user(

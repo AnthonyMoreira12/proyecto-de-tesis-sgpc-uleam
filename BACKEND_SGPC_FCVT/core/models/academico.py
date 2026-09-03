@@ -167,7 +167,80 @@ def proyecto_pdf_upload_path(instance, filename):
         f"{safe_base}{extension}",
     )
 
+class Sede(models.Model):
+    nombre = models.CharField(
+        max_length=150,
+        unique=True,
+    )
 
+    codigo = models.SlugField(
+        max_length=50,
+        unique=True,
+    )
+
+    ciudad = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
+    descripcion = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    activa = models.BooleanField(
+        default=True,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = "sedes"
+        ordering = ["nombre"]
+        indexes = [
+            models.Index(
+                fields=["activa"],
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+
+        self.nombre = _norm_text(self.nombre)
+        self.codigo = (
+            _norm_text(self.codigo).lower()
+        )
+        self.ciudad = _norm_optional_text(
+            self.ciudad
+        )
+        self.descripcion = _norm_optional_text(
+            self.descripcion
+        )
+
+        if not self.nombre:
+            errors["nombre"] = (
+                "El nombre de la sede es obligatorio."
+            )
+
+        if not self.codigo:
+            errors["codigo"] = (
+                "El código de la sede es obligatorio."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
+
+
+    
 class Facultad(models.Model):
     nombre = models.CharField(
         max_length=255,
@@ -220,7 +293,80 @@ class Facultad(models.Model):
 
     def __str__(self):
         return self.nombre
+class CarreraSede(models.Model):
+    sede = models.ForeignKey(
+        Sede,
+        on_delete=models.PROTECT,
+        related_name="carreras_sede",
+    )
 
+    carrera = models.ForeignKey(
+        "Carrera",
+        on_delete=models.PROTECT,
+        related_name="sedes_carrera",
+    )
+
+    activa = models.BooleanField(
+        default=True,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = "carreras_sedes"
+        ordering = [
+            "sede__nombre",
+            "carrera__nombre",
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "sede",
+                    "carrera",
+                ],
+                name="unique_carrera_por_sede",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=[
+                    "sede",
+                    "activa",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "carrera",
+                    "activa",
+                ],
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+
+        if not self.sede_id:
+            errors["sede"] = (
+                "La sede es obligatoria."
+            )
+
+        if not self.carrera_id:
+            errors["carrera"] = (
+                "La carrera es obligatoria."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.carrera} · {self.sede}"
+        )
 
 class Carrera(models.Model):
     nombre = models.CharField(
@@ -297,6 +443,18 @@ class Proyecto(models.Model):
     descripcion = models.TextField(
         null=True,
         blank=True,
+    )
+
+    # =========================================================
+    # CLASIFICACIÓN INSTITUCIONAL
+    # =========================================================
+
+    sede = models.ForeignKey(
+        "core.Sede",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="proyectos",
     )
 
     carrera = models.ForeignKey(
@@ -379,20 +537,49 @@ class Proyecto(models.Model):
 
     class Meta:
         db_table = "proyectos"
+
         ordering = [
             "-anio_inicio",
             "nombre",
             "id",
         ]
+
         indexes = [
-            models.Index(fields=["estado"]),
-            models.Index(fields=["anio_inicio"]),
-            models.Index(fields=["anio_fin"]),
             models.Index(
-                fields=["estado", "anio_inicio"],
+                fields=["estado"]
             ),
-            models.Index(fields=["carrera"]),
-            models.Index(fields=["creado_por"]),
+            models.Index(
+                fields=["anio_inicio"]
+            ),
+            models.Index(
+                fields=["anio_fin"]
+            ),
+            models.Index(
+                fields=[
+                    "estado",
+                    "anio_inicio",
+                ]
+            ),
+            models.Index(
+                fields=["carrera"]
+            ),
+
+            # NUEVO
+            models.Index(
+                fields=["sede"]
+            ),
+
+            # NUEVO
+            models.Index(
+                fields=[
+                    "sede",
+                    "anio_inicio",
+                ]
+            ),
+
+            models.Index(
+                fields=["creado_por"]
+            ),
         ]
 
     @property
@@ -414,10 +601,14 @@ class Proyecto(models.Model):
 
         errors = {}
 
-        self.nombre = _norm_text(self.nombre)
+        self.nombre = _norm_text(
+            self.nombre
+        )
+
         self.descripcion = _norm_optional_text(
             self.descripcion
         )
+
         self.estado = _norm_text(
             self.estado
         ).lower()
@@ -438,10 +629,39 @@ class Proyecto(models.Model):
                 "La carrera es obligatoria."
             )
 
+        # =====================================================
+        # SEDE / CARRERA
+        # =====================================================
+
+        if (
+            self.sede_id
+            and self.carrera_id
+        ):
+            relacion_activa = (
+                self.carrera
+                .sedes_carrera
+                .filter(
+                    sede_id=self.sede_id,
+                    activa=True,
+                )
+                .exists()
+            )
+
+            if not relacion_activa:
+                errors["carrera"] = (
+                    "La carrera seleccionada no está "
+                    "habilitada en la sede indicada."
+                )
+
+        # =====================================================
+        # ADMINISTRADOR CREADOR
+        # =====================================================
+
         if not self.creado_por_id:
             errors["creado_por"] = (
                 "Debe indicar el administrador creador."
             )
+
         elif not (
             getattr(
                 self.creado_por,
@@ -459,10 +679,18 @@ class Proyecto(models.Model):
                 "privilegios administrativos."
             )
 
+        # =====================================================
+        # ESTADO
+        # =====================================================
+
         if self.estado not in valid_states:
             errors["estado"] = (
                 "El estado del proyecto es inválido."
             )
+
+        # =====================================================
+        # FECHAS
+        # =====================================================
 
         if (
             self.fecha_inicio
@@ -509,7 +737,9 @@ class Proyecto(models.Model):
             )
 
         if self.fecha_inicio:
-            self.anio_inicio = self.fecha_inicio.year
+            self.anio_inicio = (
+                self.fecha_inicio.year
+            )
 
         final_reference = (
             self.fecha_cierre
@@ -518,7 +748,9 @@ class Proyecto(models.Model):
         )
 
         if final_reference:
-            self.anio_fin = final_reference.year
+            self.anio_fin = (
+                final_reference.year
+            )
 
         if (
             self.anio_inicio is not None
@@ -548,6 +780,10 @@ class Proyecto(models.Model):
                 "menor al año de inicio."
             )
 
+        # =====================================================
+        # PDF
+        # =====================================================
+
         if self.archivo_pdf:
             pdf_errors = _validate_pdf(
                 self.archivo_pdf,
@@ -556,7 +792,9 @@ class Proyecto(models.Model):
             )
 
             if pdf_errors:
-                errors["archivo_pdf"] = pdf_errors
+                errors["archivo_pdf"] = (
+                    pdf_errors
+                )
 
         if errors:
             raise ValidationError(errors)
@@ -580,10 +818,12 @@ class Proyecto(models.Model):
                 self.anio_inicio = (
                     self.fecha_inicio.year
                 )
+
             elif self.fecha_creacion:
                 self.anio_inicio = (
                     self.fecha_creacion.year
                 )
+
             else:
                 self.anio_inicio = (
                     timezone.now().year
@@ -615,6 +855,7 @@ class Proyecto(models.Model):
             "name",
             None,
         )
+
         new_name = getattr(
             self.archivo_pdf,
             "name",
@@ -622,7 +863,9 @@ class Proyecto(models.Model):
         )
 
         if old_name and old_name != new_name:
-            _delete_storage_file(old_pdf)
+            _delete_storage_file(
+                old_pdf
+            )
 
         return result
 
@@ -634,7 +877,9 @@ class Proyecto(models.Model):
             **kwargs,
         )
 
-        _delete_storage_file(pdf_to_delete)
+        _delete_storage_file(
+            pdf_to_delete
+        )
 
         return result
 
