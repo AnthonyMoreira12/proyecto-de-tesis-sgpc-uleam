@@ -168,10 +168,6 @@
 
           <div class="gsp-profile__main">
             <div class="gsp-profile__heading">
-              <p class="gsp-profile__eyebrow">
-                Perfil académico
-              </p>
-
               <h1
                 id="academic-profile-name"
                 class="gsp-profile__name"
@@ -216,7 +212,7 @@
                 </svg>
               </span>
 
-              <span>Correo verificado</span>
+              <span>Verificado</span>
             </div>
 
             <div
@@ -307,24 +303,12 @@
         >
           <header class="gsp-identifiers__head">
             <div>
-              <span class="gsp-identifiers__eyebrow">
-                Identidad académica
-              </span>
-
               <h2
                 id="academic-identifiers-title"
                 class="gsp-identifiers__title"
               >
-                Identificadores académicos
+                Identificadores
               </h2>
-
-              <p class="gsp-identifiers__description">
-                {{
-                  isMyProfile
-                    ? "Mantenga actualizados sus identificadores de investigación. Todos son opcionales."
-                    : "Identificadores académicos registrados para este investigador."
-                }}
-              </p>
             </div>
 
             <div
@@ -337,7 +321,7 @@
                 type="button"
                 @click="startIdentifiersEdit"
               >
-                Editar identificadores
+                Editar
               </button>
             </div>
           </header>
@@ -359,9 +343,6 @@
                 autocomplete="off"
               />
 
-              <small>
-                Puede pegar el identificador o la URL completa de ORCID.
-              </small>
             </label>
 
             <label class="gsp-identifiers__field">
@@ -472,11 +453,7 @@
             class="gsp-identifiers__empty"
           >
             <p>
-              {{
-                isMyProfile
-                  ? "Aún no ha registrado identificadores académicos."
-                  : "Este perfil no tiene identificadores académicos registrados."
-              }}
+              Sin identificadores registrados
             </p>
 
             <button
@@ -485,7 +462,7 @@
               type="button"
               @click="startIdentifiersEdit"
             >
-              Registrar identificadores
+              Agregar
             </button>
           </div>
 
@@ -494,7 +471,7 @@
             class="gsp-identifiers__message gsp-identifiers__message--success"
             role="status"
           >
-            Los identificadores académicos se actualizaron correctamente.
+            Identificadores actualizados.
           </p>
         </section>
 
@@ -507,33 +484,28 @@
         >
           <header class="gsp-publications__header">
             <div class="gsp-publications__heading">
-              <span class="gsp-publications__label">
-                Producción científica
-              </span>
-
               <h2
                 id="profile-publications-title"
                 class="gsp-publications__title"
               >
                 Publicaciones
               </h2>
-
-              <p class="gsp-publications__description">
-                Consulte los trabajos registrados para este perfil académico.
-              </p>
             </div>
 
             <div
+              v-if="localQuery"
               class="gsp-publications__count"
               aria-live="polite"
             >
-              <strong>{{ filteredPubs.length }}</strong>
+              <strong>
+                {{ filteredPubs.length }}
+              </strong>
 
               <span>
                 {{
                   filteredPubs.length === 1
-                    ? "resultado"
-                    : "resultados"
+                    ? "coincidencia"
+                    : "coincidencias"
                 }}
               </span>
             </div>
@@ -580,7 +552,7 @@
                 v-model="localQuery"
                 class="gsp-input"
                 type="search"
-                placeholder="Buscar por título, autor, período, tipo, área o DOI"
+                placeholder="Buscar publicaciones"
                 autocomplete="off"
               />
 
@@ -768,7 +740,7 @@
                     :disabled="!pub.id"
                     @click="openPublication(pub.id)"
                   >
-                    <span>Ver detalle</span>
+                    <span>Ver publicación</span>
 
                     <svg
                       viewBox="0 0 20 20"
@@ -828,16 +800,19 @@
               <h3 class="gsp-state__title">
                 {{
                   localQuery
-                    ? "No se encontraron coincidencias"
-                    : "Este perfil no tiene publicaciones"
+                    ? "Sin coincidencias"
+                    : "Sin publicaciones"
                 }}
               </h3>
 
-              <p class="gsp-state__text">
+              <p
+                v-if="localQuery"
+                class="gsp-state__text"
+              >
                 {{
                   localQuery
-                    ? "Pruebe con otro título, autor, período, área o DOI."
-                    : "Las publicaciones registradas aparecerán en esta sección."
+                    ? "Pruebe con otra búsqueda."
+                    : ""
                 }}
               </p>
 
@@ -892,10 +867,6 @@
           <h1 class="gsp-state__title">
             Perfil no disponible
           </h1>
-
-          <p class="gsp-state__text">
-            No se encontró información académica para este perfil.
-          </p>
 
           <button
             v-if="cameFromQuery"

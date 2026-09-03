@@ -1,103 +1,119 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal-fade">
+    <Transition name="notice-fade">
       <div
-        v-if="isOpen"
-        class="notice-shell"
-        role="presentation"
+        v-if="modelValue?.open"
+        class="notice-overlay"
+        @click.self="handleBackdropClick"
       >
-        <div
-          class="notice-backdrop"
-          aria-hidden="true"
-          @click="tryClose"
-        ></div>
-
         <div
           ref="dialogRef"
           class="notice"
           :class="[
             `notice--${variant}`,
-            { 'notice--confirm': !!modelValue?.confirm }
+            { 'notice--confirm': !!modelValue?.confirm },
           ]"
-          role="dialog"
+          :role="modelValue?.confirm ? 'alertdialog' : 'dialog'"
           aria-modal="true"
           aria-labelledby="notice-title"
-          aria-describedby="notice-body"
+          :aria-describedby="
+            modelValue?.details
+              ? 'notice-body notice-details'
+              : 'notice-body'
+          "
+          :aria-busy="busy ? 'true' : 'false'"
           tabindex="-1"
+          @keydown="handleDialogKeydown"
         >
-          <div class="notice-accent" aria-hidden="true"></div>
-
-          <div class="notice-header">
+          <header class="notice-header">
             <div class="notice-headcopy">
-              <div class="notice-eyebrowrow">
-                <div class="notice-icon" :class="`notice-icon--${variant}`" aria-hidden="true">
-                  <span v-if="variant === 'danger'">!</span>
-                  <span v-else-if="variant === 'warning'">!</span>
-                  <span v-else>i</span>
-                </div>
+              <span
+                class="notice-icon"
+                :class="`notice-icon--${variant}`"
+                aria-hidden="true"
+              >
+                <span v-if="variant === 'success'">✓</span>
+                <span v-else-if="variant === 'danger'">!</span>
+                <span v-else-if="variant === 'warning'">!</span>
+                <span v-else>i</span>
+              </span>
 
-                <div class="notice-kicker" :class="`notice-kicker--${variant}`">
-                  {{ kickerLabel }}
-                </div>
+              <div class="notice-heading">
+                <h3 id="notice-title" class="notice-title">
+                  {{ modelValue.title || defaultTitle }}
+                </h3>
               </div>
-
-              <h3 id="notice-title" class="notice-title">
-                {{ modelValue.title || "Aviso" }}
-              </h3>
             </div>
 
             <button
-              ref="closeBtnRef"
+              v-if="!modelValue.confirm"
               class="notice-close"
               type="button"
-              @click="tryClose"
               :disabled="busy"
-              aria-label="Cerrar"
-              title="Cerrar"
+              aria-label="Cerrar aviso"
+              @click="tryClose"
             >
-              <span aria-hidden="true">✕</span>
+              <span aria-hidden="true">×</span>
             </button>
-          </div>
+          </header>
 
           <div class="notice-content">
             <p id="notice-body" class="notice-body">
               {{ modelValue.message || "" }}
             </p>
+
+            <p
+              v-if="modelValue.details"
+              id="notice-details"
+              class="notice-details"
+            >
+              {{ modelValue.details }}
+            </p>
           </div>
 
-          <div class="notice-actions">
+          <footer class="notice-actions">
             <template v-if="modelValue.confirm">
               <button
-                class="notice-btn notice-btn--ghost"
+                ref="cancelButtonRef"
+                class="notice-btn notice-btn--secondary"
                 type="button"
-                @click="handleCancel"
                 :disabled="busy"
+                @click="handleCancel"
               >
-                {{ busy ? "..." : (modelValue.cancelText || "Cancelar") }}
+                {{
+                  busy
+                    ? "Espere..."
+                    : (modelValue.cancelText || "Cancelar")
+                }}
               </button>
 
               <button
                 class="notice-btn"
                 :class="confirmBtnClass"
                 type="button"
-                @click="handleConfirm"
                 :disabled="busy"
+                @click="handleConfirm"
               >
-                {{ busy ? "Procesando..." : (modelValue.confirmText || "Confirmar") }}
+                {{
+                  busy
+                    ? "Procesando..."
+                    : (modelValue.confirmText || "Confirmar")
+                }}
               </button>
             </template>
 
             <template v-else>
               <button
+                ref="primaryButtonRef"
                 class="notice-btn notice-btn--primary"
                 type="button"
-                @click="tryClose"
                 :disabled="busy"
+                @click="tryClose"
               >
-                Entendido
+                Cerrar
               </button>
             </template>
-          </div>
+          </footer>
         </div>
       </div>
     </Transition>
@@ -106,59 +122,116 @@
 
 <script setup>
 import {
-  ref,
-  Teleport,
-  Transition,
   computed,
-  watch,
   nextTick,
-  onMounted,
   onBeforeUnmount,
+  ref,
+  watch,
 } from "vue";
 
 const props = defineProps({
-  modelValue: { type: Object, required: true },
+  modelValue: {
+    type: Object,
+    default: () => ({}),
+  },
 });
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits([
+  "close",
+]);
 
 const busy = ref(false);
 const dialogRef = ref(null);
-const closeBtnRef = ref(null);
+const cancelButtonRef = ref(null);
+const primaryButtonRef = ref(null);
 
-const isOpen = computed(() => !!props.modelValue?.open);
+let previouslyFocusedElement = null;
+let previousBodyOverflow = "";
+let bodyLockedByNotice = false;
 
-const normalize = (v) =>
-  String(v || "")
+const normalize = (value) =>
+  String(value || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .trim();
 
 const combinedText = computed(() => {
-  const title = normalize(props.modelValue?.title);
-  const message = normalize(props.modelValue?.message);
+  const title = normalize(
+    props.modelValue?.title
+  );
+
+  const message = normalize(
+    props.modelValue?.message
+  );
+
   return `${title} ${message}`.trim();
 });
 
+const isErrorNotice = computed(() => {
+  const text = combinedText.value;
+
+  return (
+    text.includes("no se pudo") ||
+    text.includes("error") ||
+    text.includes("fallo") ||
+    text.includes("falló")
+  );
+});
+
 const variant = computed(() => {
+  const explicitVariant = normalize(
+    props.modelValue?.variant ||
+      props.modelValue?.tone
+  );
+
+  if (
+    [
+      "info",
+      "success",
+      "warning",
+      "danger",
+    ].includes(explicitVariant)
+  ) {
+    return explicitVariant;
+  }
+
   const text = combinedText.value;
 
   if (
+    isErrorNotice.value ||
     text.includes("eliminar") ||
     text.includes("borrar") ||
     text.includes("desactivar") ||
     text.includes("revocar") ||
-    text.includes("bloquear")
+    text.includes("bloquear") ||
+    text.includes("rechazar")
   ) {
     return "danger";
+  }
+
+  if (
+    text.includes("guardado") ||
+    text.includes("guardada") ||
+    text.includes("actualizado") ||
+    text.includes("actualizada") ||
+    text.includes("activado") ||
+    text.includes("activada") ||
+    text.includes("completado") ||
+    text.includes("completada") ||
+    text.includes("correctamente") ||
+    text.includes("exito")
+  ) {
+    return "success";
   }
 
   if (
     text.includes("advertencia") ||
     text.includes("pendiente") ||
     text.includes("activar") ||
-    text.includes("atencion")
+    text.includes("atencion") ||
+    text.includes("correccion") ||
+    text.includes("observacion")
   ) {
     return "warning";
   }
@@ -166,40 +239,146 @@ const variant = computed(() => {
   return "info";
 });
 
-const kickerLabel = computed(() => {
-  if (variant.value === "danger") return "Acción sensible";
-  if (variant.value === "warning") return "Confirmación";
-  return "Aviso del sistema";
+const defaultTitle = computed(() => {
+  if (props.modelValue?.confirm) {
+    return "Confirmar acción";
+  }
+
+  if (variant.value === "success") {
+    return "Listo";
+  }
+
+  if (variant.value === "danger") {
+    return isErrorNotice.value
+      ? "No se pudo completar"
+      : "Confirmación requerida";
+  }
+
+  if (variant.value === "warning") {
+    return "Atención";
+  }
+
+  return "Aviso";
 });
 
 const confirmBtnClass = computed(() => {
-  if (variant.value === "danger") return "notice-btn--danger";
-  if (variant.value === "warning") return "notice-btn--warning";
+  if (variant.value === "danger") {
+    return "notice-btn--danger";
+  }
+
+  if (variant.value === "warning") {
+    return "notice-btn--warning";
+  }
+
   return "notice-btn--primary";
 });
 
-const focusDialog = async () => {
-  await nextTick();
-  closeBtnRef.value?.focus?.();
+const getFocusableElements = () => {
+  const dialog = dialogRef.value;
+
+  if (!(dialog instanceof HTMLElement)) {
+    return [];
+  }
+
+  return Array.from(
+    dialog.querySelectorAll(
+      [
+        "button:not([disabled])",
+        "[href]",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(",")
+    )
+  ).filter(
+    (element) =>
+      element instanceof HTMLElement &&
+      element.getAttribute("aria-hidden") !== "true"
+  );
 };
 
-const lockScroll = (locked) => {
-  if (typeof document === "undefined") return;
-  document.body.style.overflow = locked ? "hidden" : "";
+const focusInitialControl = async () => {
+  await nextTick();
+
+  const preferredControl =
+    props.modelValue?.confirm
+      ? cancelButtonRef.value
+      : primaryButtonRef.value;
+
+  if (preferredControl instanceof HTMLElement) {
+    preferredControl.focus();
+    return;
+  }
+
+  dialogRef.value?.focus();
+};
+
+const lockBodyScroll = () => {
+  if (
+    typeof document === "undefined" ||
+    bodyLockedByNotice
+  ) {
+    return;
+  }
+
+  previouslyFocusedElement =
+    document.activeElement;
+
+  previousBodyOverflow =
+    document.body.style.overflow;
+
+  document.body.style.overflow = "hidden";
+  bodyLockedByNotice = true;
+};
+
+const restorePageState = async () => {
+  if (
+    typeof document === "undefined" ||
+    !bodyLockedByNotice
+  ) {
+    return;
+  }
+
+  document.body.style.overflow =
+    previousBodyOverflow;
+
+  bodyLockedByNotice = false;
+
+  await nextTick();
+
+  if (
+    previouslyFocusedElement instanceof HTMLElement &&
+    previouslyFocusedElement.isConnected
+  ) {
+    previouslyFocusedElement.focus();
+  }
+
+  previouslyFocusedElement = null;
 };
 
 const tryClose = () => {
-  if (busy.value) return;
+  if (busy.value) {
+    return;
+  }
+
   emit("close");
 };
 
 const handleCancel = async () => {
-  if (busy.value) return;
+  if (busy.value) {
+    return;
+  }
 
   try {
     busy.value = true;
-    const fn = props.modelValue?.onCancel;
-    if (typeof fn === "function") await fn();
+
+    const fn =
+      props.modelValue?.onCancel;
+
+    if (typeof fn === "function") {
+      await fn();
+    }
   } finally {
     busy.value = false;
     emit("close");
@@ -207,439 +386,1038 @@ const handleCancel = async () => {
 };
 
 const handleConfirm = async () => {
-  if (busy.value) return;
+  if (busy.value) {
+    return;
+  }
 
   try {
     busy.value = true;
-    const fn = props.modelValue?.onConfirm;
-    if (typeof fn === "function") await fn();
+
+    const fn =
+      props.modelValue?.onConfirm;
+
+    if (typeof fn === "function") {
+      await fn();
+    }
   } finally {
     busy.value = false;
     emit("close");
   }
 };
 
-const onKeyDown = (event) => {
-  if (!isOpen.value) return;
-  if (event.key !== "Escape") return;
-  if (busy.value) return;
+const handleBackdropClick = () => {
+  if (props.modelValue?.confirm) {
+    void handleCancel();
+    return;
+  }
+
   tryClose();
 };
 
-watch(
-  () => isOpen.value,
-  async (open) => {
-    lockScroll(open);
-    if (open) {
-      await focusDialog();
+const handleDialogKeydown = (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+
+    if (props.modelValue?.confirm) {
+      void handleCancel();
+      return;
     }
+
+    tryClose();
+    return;
+  }
+
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const focusableElements =
+    getFocusableElements();
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    dialogRef.value?.focus();
+    return;
+  }
+
+  const firstElement =
+    focusableElements[0];
+
+  const lastElement =
+    focusableElements[
+      focusableElements.length - 1
+    ];
+
+  const activeElement =
+    document.activeElement;
+
+  if (
+    event.shiftKey &&
+    activeElement === firstElement
+  ) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (
+    !event.shiftKey &&
+    activeElement === lastElement
+  ) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+};
+
+watch(
+  () => Boolean(
+    props.modelValue?.open
+  ),
+  async (isOpen) => {
+    busy.value = false;
+
+    if (isOpen) {
+      lockBodyScroll();
+      await focusInitialControl();
+      return;
+    }
+
+    await restorePageState();
   },
-  { immediate: true }
+  {
+    immediate: true,
+  }
 );
 
-onMounted(() => {
-  window.addEventListener("keydown", onKeyDown);
-});
-
 onBeforeUnmount(() => {
-  window.removeEventListener("keydown", onKeyDown);
-  lockScroll(false);
+  if (
+    typeof document !== "undefined" &&
+    bodyLockedByNotice
+  ) {
+    document.body.style.overflow =
+      previousBodyOverflow;
+
+    if (
+      previouslyFocusedElement instanceof HTMLElement &&
+      previouslyFocusedElement.isConnected
+    ) {
+      previouslyFocusedElement.focus();
+    }
+  }
 });
 </script>
 
 <style scoped>
-.notice-shell {
-  --no-card: var(--bg-card, #ffffff);
-  --no-surface: var(--bg-elevated, var(--bg-card, #ffffff));
-  --no-soft: color-mix(in srgb, var(--bg-elevated, var(--bg-card, #ffffff)) 86%, transparent);
-  --no-text: var(--text-primary, #111111);
-  --no-muted: var(--text-secondary, #5f5a53);
-  --no-line: color-mix(in srgb, var(--border-color, rgba(17, 17, 17, 0.1)) 92%, transparent);
-  --no-line-strong: color-mix(
-    in srgb,
-    var(--border-strong, rgba(17, 17, 17, 0.14)) 92%,
-    transparent
-  );
+.notice-overlay,
+.notice-overlay * {
+  box-sizing: border-box;
+}
 
-  --no-primary: var(--color-primary, #111111);
-  --no-warning: var(--warning, #8a6d33);
-  --no-danger: var(--danger, #8f4740);
+.notice-overlay {
+  /* ========================================================
+     Variables locales.
+     El modal se teletransporta a body, por eso no depende de
+     variables definidas en el contenedor visual de la página.
+  ======================================================== */
+  --notice-card:
+    var(
+      --bg-card,
+      #ffffff
+    );
 
-  --no-shadow: var(--shadow-strong, 0 18px 42px rgba(17, 17, 17, 0.07));
+  --notice-soft:
+    var(
+      --bg-elevated,
+      #f6f8fb
+    );
+
+  --notice-line:
+    var(
+      --border-color,
+      rgba(17, 24, 39, 0.12)
+    );
+
+  --notice-line-strong:
+    var(
+      --border-strong,
+      rgba(17, 24, 39, 0.2)
+    );
+
+  --notice-text:
+    var(
+      --text-primary,
+      #111827
+    );
+
+  --notice-muted:
+    var(
+      --text-secondary,
+      #667085
+    );
+
+  --notice-primary:
+    var(
+      --color-primary,
+      #2563eb
+    );
+
+  --notice-success:
+    var(
+      --success,
+      #17803d
+    );
+
+  --notice-warning:
+    var(
+      --warning,
+      #9a6700
+    );
+
+  --notice-danger:
+    var(
+      --danger,
+      #b42318
+    );
+
+  --notice-on-primary:
+    var(
+      --text-on-primary,
+      #ffffff
+    );
+
+  --notice-on-success:
+    var(
+      --success-contrast,
+      #ffffff
+    );
+
+  --notice-on-warning:
+    var(
+      --warning-contrast,
+      #ffffff
+    );
+
+  --notice-on-danger:
+    var(
+      --danger-contrast,
+      #ffffff
+    );
 
   position: fixed;
   inset: 0;
-  z-index: 340;
+
+  z-index:
+    var(
+      --z-notice,
+      1200
+    );
+
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+
   display: grid;
   place-items: center;
-  padding: clamp(14px, 2vw, 24px);
+
+  padding:
+    clamp(
+      14px,
+      2.2vw,
+      26px
+    );
+
   overflow: auto;
+
+  overscroll-behavior:
+    contain;
+
+  background:
+    rgba(
+      15,
+      23,
+      42,
+      0.52
+    );
+
+  backdrop-filter:
+    none;
+
+  -webkit-backdrop-filter:
+    none;
 }
 
-.notice-backdrop {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--overlay, rgba(17, 17, 17, 0.34)) 92%, transparent),
-      color-mix(in srgb, var(--overlay, rgba(17, 17, 17, 0.34)) 100%, transparent)
-    );
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
+/* ============================================================
+   MODAL
+============================================================ */
 
 .notice {
   position: relative;
-  z-index: 1;
-  width: min(560px, 100%);
-  max-width: 100%;
-  max-height: min(84vh, 720px);
-  overflow: auto;
-  margin: auto;
-  border-radius: 24px;
-  border: 1px solid var(--no-line);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--no-surface) 96%, transparent),
-      color-mix(in srgb, var(--no-card) 100%, transparent)
+
+  width:
+    min(
+      560px,
+      100%
     );
-  color: var(--no-text);
-  box-shadow: var(--no-shadow);
-  padding: 0;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  filter: none !important;
-  opacity: 1 !important;
+
+  max-height:
+    min(
+      88dvh,
+      720px
+    );
+
+  display: flex;
+  flex-direction: column;
+
+  margin: auto;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--notice-line);
+
+  border-radius:
+    14px;
+
+  outline: none;
+
+  background:
+    var(--notice-card);
+
+  color:
+    var(--notice-text);
+
+  box-shadow:
+    0
+    18px
+    52px
+    rgba(
+      15,
+      23,
+      42,
+      0.18
+    );
 }
 
-.notice-accent {
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--no-primary) 42%, transparent),
-    color-mix(in srgb, var(--no-primary) 8%, transparent)
-  );
-  border-radius: 24px 24px 0 0;
+.notice:focus-visible {
+  outline:
+    2px solid
+    var(--notice-primary);
+
+  outline-offset:
+    3px;
 }
 
-.notice--danger .notice-accent {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--no-danger) 52%, transparent),
-    color-mix(in srgb, var(--no-danger) 10%, transparent)
-  );
-}
-
-.notice--warning .notice-accent {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--no-warning) 52%, transparent),
-    color-mix(in srgb, var(--no-warning) 10%, transparent)
-  );
-}
+/* ============================================================
+   CABECERA
+============================================================ */
 
 .notice-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 18px 20px 14px;
+
+  align-items:
+    flex-start;
+
+  justify-content:
+    space-between;
+
+  gap:
+    16px;
+
+  padding:
+    20px
+    20px
+    15px;
 }
 
 .notice-headcopy {
   min-width: 0;
+
+  flex:
+    1 1 auto;
+
   display: grid;
-  gap: 10px;
+
+  grid-template-columns:
+    40px
+    minmax(0, 1fr);
+
+  align-items:
+    center;
+
+  gap:
+    12px;
 }
 
-.notice-eyebrowrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.notice-heading {
+  min-width: 0;
 }
 
 .notice-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 900;
-  border: 1px solid transparent;
+  width: 40px;
+  height: 40px;
+
+  display: inline-grid;
+  place-items: center;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--notice-primary) 18%,
+      var(--notice-line)
+    );
+
+  border-radius:
+    10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--notice-primary) 7%,
+      var(--notice-card)
+    );
+
+  color:
+    var(--notice-primary);
+
+  font-size:
+    0.9rem;
+
+  font-weight:
+    820;
+
+  line-height:
+    1;
 }
 
-.notice-icon--info {
-  color: color-mix(in srgb, var(--no-text) 88%, var(--no-primary));
-  background: color-mix(in srgb, var(--no-primary) 8%, transparent);
-  border-color: color-mix(in srgb, var(--no-primary) 16%, transparent);
+.notice-icon--success {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--notice-success) 20%,
+      var(--notice-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--notice-success) 7%,
+      var(--notice-card)
+    );
+
+  color:
+    var(--notice-success);
 }
 
 .notice-icon--warning {
-  color: color-mix(in srgb, var(--no-text) 88%, var(--no-warning));
-  background: color-mix(in srgb, var(--no-warning) 10%, transparent);
-  border-color: color-mix(in srgb, var(--no-warning) 18%, transparent);
+  border-color:
+    color-mix(
+      in srgb,
+      var(--notice-warning) 20%,
+      var(--notice-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--notice-warning) 7%,
+      var(--notice-card)
+    );
+
+  color:
+    var(--notice-warning);
 }
 
 .notice-icon--danger {
-  color: color-mix(in srgb, var(--no-text) 88%, var(--no-danger));
-  background: color-mix(in srgb, var(--no-danger) 9%, transparent);
-  border-color: color-mix(in srgb, var(--no-danger) 18%, transparent);
-}
+  border-color:
+    color-mix(
+      in srgb,
+      var(--notice-danger) 20%,
+      var(--notice-line)
+    );
 
-.notice-kicker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 11.4px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid transparent;
-}
+  background:
+    color-mix(
+      in srgb,
+      var(--notice-danger) 7%,
+      var(--notice-card)
+    );
 
-.notice-kicker--info {
-  color: var(--no-muted);
-  background: color-mix(in srgb, var(--no-primary) 6%, transparent);
-  border-color: color-mix(in srgb, var(--no-primary) 14%, transparent);
-}
-
-.notice-kicker--warning {
-  color: color-mix(in srgb, var(--no-text) 86%, var(--no-warning));
-  background: color-mix(in srgb, var(--no-warning) 8%, transparent);
-  border-color: color-mix(in srgb, var(--no-warning) 18%, transparent);
-}
-
-.notice-kicker--danger {
-  color: color-mix(in srgb, var(--no-text) 86%, var(--no-danger));
-  background: color-mix(in srgb, var(--no-danger) 8%, transparent);
-  border-color: color-mix(in srgb, var(--no-danger) 18%, transparent);
+  color:
+    var(--notice-danger);
 }
 
 .notice-title {
   margin: 0;
-  color: var(--no-text);
-  font-family: var(--font-serif, var(--font-sans));
-  font-size: clamp(1.08rem, 0.98rem + 0.3vw, 1.24rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.14;
+
+  color:
+    var(--notice-text);
+
+  font-family:
+    var(
+      --font-heading,
+      inherit
+    );
+
+  font-size:
+    clamp(
+      1.08rem,
+      1rem + 0.35vw,
+      1.3rem
+    );
+
+  font-weight:
+    760;
+
+  line-height:
+    1.24;
+
+  letter-spacing:
+    -0.02em;
+
+  overflow-wrap:
+    anywhere;
 }
 
 .notice-close {
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--no-line) 92%, transparent);
-  background: color-mix(in srgb, var(--no-soft) 94%, var(--no-card));
-  color: var(--no-text);
-  font-size: 13px;
-  font-weight: 900;
+  appearance: none;
+
+  width: 38px;
+  height: 38px;
+
+  flex:
+    0
+    0
+    38px;
+
+  display: inline-grid;
+  place-items: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius:
+    9px;
+
+  background:
+    transparent;
+
+  color:
+    var(--notice-muted);
+
+  font: inherit;
+
+  font-size:
+    1.3rem;
+
+  line-height:
+    1;
+
   cursor: pointer;
+
   transition:
-    transform var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    color var(--t-fast, 0.18s ease);
+    border-color
+    130ms
+    ease,
+    background
+    130ms
+    ease,
+    color
+    130ms
+    ease;
 }
 
 .notice-close:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--no-primary) 16%, var(--no-line));
-  box-shadow: 0 8px 18px rgba(17, 17, 17, 0.08);
-}
+  border-color:
+    var(--notice-line);
 
-.notice-close:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  background:
+    var(--notice-soft);
+
+  color:
+    var(--notice-text);
 }
 
 .notice-close:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px var(--focus-ring, rgba(17, 17, 17, 0.14));
+  outline:
+    2px solid
+    var(--notice-primary);
+
+  outline-offset:
+    2px;
 }
 
+.notice-close:disabled {
+  opacity: 0.55;
+
+  cursor:
+    not-allowed;
+}
+
+/* ============================================================
+   CONTENIDO
+============================================================ */
+
 .notice-content {
-  padding: 0 20px;
+  min-height: 0;
+
+  padding:
+    0
+    20px
+    18px;
+
+  overflow-y: auto;
+
+  overscroll-behavior:
+    contain;
 }
 
 .notice-body {
   margin: 0;
-  padding: 16px 0 0;
-  border-top: 1px solid color-mix(in srgb, var(--no-line) 74%, transparent);
-  color: var(--no-muted);
-  line-height: 1.68;
-  white-space: pre-line;
-  font-size: 0.97rem;
+
+  padding-top:
+    15px;
+
+  border-top:
+    1px solid
+    var(--notice-line);
+
+  color:
+    var(--notice-muted);
+
+  font-size:
+    0.86rem;
+
+  line-height:
+    1.55;
+
+  white-space:
+    pre-line;
+
+  overflow-wrap:
+    anywhere;
 }
+
+.notice-body:empty {
+  display: none;
+}
+
+.notice-details {
+  margin:
+    12px
+    0
+    0;
+
+  padding:
+    10px
+    11px;
+
+  border:
+    1px solid
+    var(--notice-line);
+
+  border-radius:
+    9px;
+
+  background:
+    var(--notice-soft);
+
+  color:
+    var(--notice-muted);
+
+  font-size:
+    0.78rem;
+
+  line-height:
+    1.5;
+
+  white-space:
+    pre-line;
+
+  overflow-wrap:
+    anywhere;
+}
+
+/* ============================================================
+   ACCIONES
+============================================================ */
 
 .notice-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 18px 20px 20px;
-  margin-top: 16px;
-  border-top: 1px solid color-mix(in srgb, var(--no-line) 74%, transparent);
+
+  flex:
+    0
+    0
+    auto;
+
+  align-items:
+    center;
+
+  justify-content:
+    flex-end;
+
+  gap:
+    8px;
+
+  padding:
+    13px
+    20px
+    17px;
+
+  border-top:
+    1px solid
+    var(--notice-line);
+
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--no-card) 88%, transparent),
-      color-mix(in srgb, var(--no-card) 96%, transparent)
+    var(--notice-card);
+}
+
+.notice--confirm
+  .notice-actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
     );
 }
 
 .notice-btn {
-  min-width: 142px;
-  min-height: 42px;
-  padding: 0 14px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 800;
-  transition:
-    transform var(--t-fast, 0.18s ease),
-    box-shadow var(--t-fast, 0.18s ease),
-    border-color var(--t-fast, 0.18s ease),
-    background var(--t-fast, 0.18s ease),
-    filter var(--t-fast, 0.18s ease);
-}
+  min-height:
+    42px;
 
-.notice-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  padding:
+    0
+    14px;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius:
+    9px;
+
+  font: inherit;
+
+  font-size:
+    0.76rem;
+
+  font-weight:
+    730;
+
+  line-height:
+    1.2;
+
+  cursor: pointer;
+
+  transition:
+    border-color
+    130ms
+    ease,
+    background
+    130ms
+    ease,
+    color
+    130ms
+    ease;
 }
 
 .notice-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px var(--focus-ring, rgba(17, 17, 17, 0.14));
+  outline:
+    2px solid
+    currentColor;
+
+  outline-offset:
+    2px;
 }
 
-.notice-btn--ghost {
-  border: 1px solid color-mix(in srgb, var(--no-line) 90%, transparent);
-  background: var(--no-soft);
-  color: var(--no-text);
+.notice-btn:disabled {
+  opacity:
+    0.58;
+
+  cursor:
+    not-allowed;
 }
 
-.notice-btn--ghost:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--no-primary) 16%, var(--no-line));
-  box-shadow: 0 8px 18px rgba(17, 17, 17, 0.08);
+.notice-btn--secondary {
+  border-color:
+    var(--notice-line);
+
+  background:
+    var(--notice-card);
+
+  color:
+    var(--notice-text);
+}
+
+.notice-btn--secondary:hover:not(:disabled) {
+  border-color:
+    var(--notice-line-strong);
+
+  background:
+    var(--notice-soft);
 }
 
 .notice-btn--primary {
-  border: 1px solid color-mix(in srgb, var(--no-primary) 18%, transparent);
-  background: var(--button-bg, #000000);
-  color: var(--button-text, #ffffff);
-  box-shadow: 0 10px 22px rgba(17, 17, 17, 0.12);
-}
+  border-color:
+    var(--notice-primary);
 
-.notice-btn--primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
+  background:
+    var(--notice-primary);
+
+  color:
+    var(--notice-on-primary);
 }
 
 .notice-btn--warning {
-  border: 1px solid color-mix(in srgb, var(--no-warning) 20%, transparent);
-  background: color-mix(in srgb, var(--no-warning) 90%, #000 10%);
-  color: #ffffff;
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--no-warning) 16%, transparent);
-}
+  border-color:
+    var(--notice-warning);
 
-.notice-btn--warning:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
+  background:
+    var(--notice-warning);
+
+  color:
+    var(--notice-on-warning);
 }
 
 .notice-btn--danger {
-  border: 1px solid color-mix(in srgb, var(--no-danger) 20%, transparent);
-  background: color-mix(in srgb, var(--no-danger) 92%, #000 8%);
-  color: #ffffff;
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--no-danger) 16%, transparent);
-}
+  border-color:
+    var(--notice-danger);
 
-.notice-btn--danger:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition:
-    opacity var(--t-fast, 0.18s ease),
-    transform var(--t-fast, 0.18s ease);
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-:global(.dark) .notice,
-:global(html.dark) .notice,
-:global([data-theme="dark"]) .notice {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-:global(.dark) .notice-actions,
-:global(html.dark) .notice-actions,
-:global([data-theme="dark"]) .notice-actions {
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-card, #26221f) 88%, transparent),
-      color-mix(in srgb, var(--bg-card, #26221f) 96%, transparent)
-    );
+    var(--notice-danger);
+
+  color:
+    var(--notice-on-danger);
 }
 
-@media (max-width: 640px) {
-  .notice-shell {
-    padding: 14px;
+.notice-btn--primary:hover:not(:disabled),
+.notice-btn--warning:hover:not(:disabled),
+.notice-btn--danger:hover:not(:disabled) {
+  filter:
+    brightness(0.96);
+}
+
+/* ============================================================
+   TRANSICIÓN
+============================================================ */
+
+.notice-fade-enter-active,
+.notice-fade-leave-active {
+  transition:
+    opacity
+    calc(
+      140ms
+      * var(
+        --animate-speed,
+        1
+      )
+    )
+    ease;
+}
+
+.notice-fade-enter-active
+  .notice,
+.notice-fade-leave-active
+  .notice {
+  transition:
+    transform
+    calc(
+      140ms
+      * var(
+        --animate-speed,
+        1
+      )
+    )
+    ease,
+    opacity
+    calc(
+      140ms
+      * var(
+        --animate-speed,
+        1
+      )
+    )
+    ease;
+}
+
+.notice-fade-enter-from,
+.notice-fade-leave-to {
+  opacity: 0;
+}
+
+.notice-fade-enter-from
+  .notice,
+.notice-fade-leave-to
+  .notice {
+  opacity: 0;
+
+  transform:
+    translateY(4px);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 560px) {
+  .notice-overlay {
+    padding-top:
+      max(
+        10px,
+        env(
+          safe-area-inset-top,
+          0px
+        )
+      );
+
+    padding-right:
+      max(
+        10px,
+        env(
+          safe-area-inset-right,
+          0px
+        )
+      );
+
+    padding-bottom:
+      max(
+        10px,
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+
+    padding-left:
+      max(
+        10px,
+        env(
+          safe-area-inset-left,
+          0px
+        )
+      );
   }
 
   .notice {
     width: 100%;
-    border-radius: 20px;
-  }
 
-  .notice-accent {
-    border-radius: 20px 20px 0 0;
+    max-height:
+      calc(
+        100dvh
+        - 20px
+      );
   }
 
   .notice-header {
-    padding: 16px 16px 12px;
-    gap: 10px;
+    padding:
+      16px
+      16px
+      12px;
+  }
+
+  .notice-headcopy {
+    grid-template-columns:
+      36px
+      minmax(0, 1fr);
+
+    gap:
+      10px;
+  }
+
+  .notice-icon {
+    width: 36px;
+    height: 36px;
+
+    border-radius:
+      9px;
   }
 
   .notice-content {
-    padding: 0 16px;
+    padding:
+      0
+      16px
+      16px;
   }
 
-  .notice-actions {
-    padding: 16px;
-    flex-direction: column-reverse;
+  .notice-actions,
+  .notice--confirm
+    .notice-actions {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    padding:
+      12px
+      16px
+      16px;
+  }
+
+  .notice--confirm
+    .notice-btn--secondary {
+    order: 2;
+  }
+
+  .notice--confirm
+    .notice-btn:not(
+      .notice-btn--secondary
+    ) {
+    order: 1;
   }
 
   .notice-btn {
     width: 100%;
-    min-width: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .notice-close,
+  .notice-btn {
+    min-height:
+      44px;
   }
 
   .notice-close {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+
+    flex-basis:
+      44px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .notice {
+    border-color:
+      var(--notice-line-strong);
+  }
+
+  .notice-close:focus-visible,
+  .notice-btn:focus-visible {
+    outline:
+      3px solid
+      currentColor;
+
+    outline-offset:
+      2px;
+  }
+}
+
+@media (forced-colors: active) {
+  .notice-overlay {
+    background:
+      rgba(
+        0,
+        0,
+        0,
+        0.72
+      );
   }
 }
 
@@ -647,9 +1425,14 @@ onBeforeUnmount(() => {
   .notice,
   .notice-close,
   .notice-btn,
-  .modal-fade-enter-active,
-  .modal-fade-leave-active {
-    transition: none !important;
+  .notice-fade-enter-active,
+  .notice-fade-leave-active,
+  .notice-fade-enter-active
+    .notice,
+  .notice-fade-leave-active
+    .notice {
+    transition:
+      none !important;
   }
 }
 </style>

@@ -1,0 +1,1068 @@
+/* ============================================================
+   SGPC ULEAM
+   SOLICITUD DE MODIFICACIÓN DE PUBLICACIÓN
+============================================================ */
+
+
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.solmod-page {
+  padding-bottom: 72px;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-ui);
+}
+
+
+.solmod-shell {
+  width: min(1100px, 100%);
+
+  margin: 0 auto;
+
+  display: grid;
+
+  gap: 18px;
+}
+
+
+/* ============================================================
+   CABECERA
+============================================================ */
+
+.solmod-hero {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 24px;
+
+  min-height: 92px;
+
+  padding: 20px 4px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: transparent;
+}
+
+
+.solmod-hero__copy {
+  display: grid;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+
+.solmod-hero__copy > span {
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-hero h1 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size:
+    clamp(
+      1.75rem,
+      1.5rem + 0.75vw,
+      2.2rem
+    );
+
+  font-weight: 780;
+
+  line-height: 1.08;
+
+  letter-spacing: -0.035em;
+}
+
+
+.solmod-hero p {
+  max-width: 760px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.76rem;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   FORMULARIO
+============================================================ */
+
+.solmod-form {
+  display: grid;
+
+  gap: 16px;
+}
+
+
+/* ============================================================
+   PANEL
+============================================================ */
+
+.solmod-panel {
+  min-width: 0;
+
+  padding: 20px 22px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  box-shadow: none;
+
+  transition:
+    border-color var(--t-fast);
+}
+
+
+.solmod-panel--selected {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--color-primary) 38%,
+      var(--border-color)
+    );
+}
+
+
+.solmod-panel__head {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  margin-bottom: 14px;
+
+  padding-bottom: 12px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+}
+
+
+.solmod-panel__head > div {
+  display: grid;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+
+.solmod-panel__head > div > span {
+  color: var(--text-secondary);
+
+  font-size: 0.64rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-panel h2 {
+  margin: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-heading);
+
+  font-size: 1.04rem;
+
+  font-weight: 760;
+
+  letter-spacing: -0.018em;
+}
+
+
+.solmod-panel__head p {
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 0.69rem;
+
+  line-height: 1.45;
+}
+
+
+/* ============================================================
+   CONTADOR
+============================================================ */
+
+.solmod-count {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 27px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    var(--info-line);
+
+  border-radius: 7px;
+
+  background: var(--info-soft);
+
+  color: var(--info);
+
+  font-size: 0.63rem;
+
+  font-weight: 760;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   TEXTAREA MOTIVO
+============================================================ */
+
+.solmod-textarea-field {
+  display: grid;
+
+  gap: 6px;
+}
+
+
+.solmod-textarea-field > span {
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-textarea-field > small {
+  justify-self: end;
+
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+}
+
+
+/* ============================================================
+   INPUTS
+============================================================ */
+
+.solmod-textarea-field textarea,
+.solmod-field input,
+.solmod-field select {
+  width: 100%;
+
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-input);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.76rem;
+
+  outline: none;
+
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+
+.solmod-field input,
+.solmod-field select {
+  min-height: 44px;
+
+  padding: 0 11px;
+}
+
+
+.solmod-textarea-field textarea {
+  padding: 10px 11px;
+
+  resize: vertical;
+
+  line-height: 1.5;
+}
+
+
+.solmod-textarea-field textarea:hover,
+.solmod-field input:hover,
+.solmod-field select:hover {
+  border-color: var(--border-strong);
+}
+
+
+.solmod-textarea-field textarea:focus,
+.solmod-field input:focus,
+.solmod-field select:focus {
+  border-color: var(--color-primary);
+
+  box-shadow: var(--ring-primary);
+}
+
+
+/* ============================================================
+   CAMPOS
+============================================================ */
+
+.solmod-fields {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(320px, 1fr)
+    );
+
+  gap: 10px;
+}
+
+
+.solmod-field {
+  min-width: 0;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+
+  background: var(--bg-card);
+
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
+}
+
+
+.solmod-field.is-selected {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--color-primary) 38%,
+      var(--border-color)
+    );
+}
+
+
+.solmod-field__head {
+  padding: 11px 12px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+/* ============================================================
+   CHECK
+============================================================ */
+
+.solmod-check {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  color: var(--text-primary);
+
+  font-size: 0.72rem;
+
+  font-weight: 720;
+
+  cursor: pointer;
+}
+
+
+.solmod-check input {
+  width: 17px;
+  height: 17px;
+
+  flex: 0 0 auto;
+
+  accent-color: var(--color-primary);
+}
+
+
+/* ============================================================
+   VALOR ACTUAL
+============================================================ */
+
+.solmod-current {
+  display: grid;
+
+  gap: 4px;
+
+  padding: 11px 12px;
+}
+
+
+.solmod-current > span {
+  color: var(--text-secondary);
+
+  font-size: 0.61rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-current strong {
+  color: var(--text-primary);
+
+  font-size: 0.7rem;
+
+  font-weight: 700;
+
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   NUEVO VALOR
+============================================================ */
+
+.solmod-new-value {
+  display: grid;
+
+  gap: 8px;
+
+  padding: 12px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--primary-soft) 32%,
+      var(--bg-card)
+    );
+}
+
+
+.solmod-new-value__label {
+  color: var(--text-secondary);
+
+  font-size: 0.62rem;
+
+  font-weight: 750;
+}
+
+
+/* ============================================================
+   COMPARACIÓN
+============================================================ */
+
+.solmod-change-preview,
+.solmod-summary__comparison {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+
+.solmod-change-preview {
+  margin-top: 3px;
+}
+
+
+.solmod-change-preview > div,
+.solmod-summary__comparison > div {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 4px;
+
+  padding: 9px 10px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 8px;
+
+  background: var(--bg-soft);
+}
+
+
+.solmod-change-preview > div.is-new,
+.solmod-summary__comparison > div.is-new {
+  border-color: var(--success-line);
+
+  background: var(--success-soft);
+}
+
+
+.solmod-change-preview span,
+.solmod-summary__comparison span {
+  color: var(--text-secondary);
+
+  font-size: 0.59rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-change-preview strong,
+.solmod-summary__comparison strong {
+  color: var(--text-primary);
+
+  font-size: 0.67rem;
+
+  font-weight: 700;
+
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+.solmod-change-preview__arrow,
+.solmod-summary__arrow {
+  color: var(--text-secondary);
+
+  font-size: 0.9rem;
+
+  font-weight: 800;
+}
+
+
+/* ============================================================
+   SIN CAMBIO
+============================================================ */
+
+.solmod-nochange {
+  margin: 2px 0 0;
+
+  padding: 8px 10px;
+
+  border:
+    1px solid
+    var(--warning-line);
+
+  border-radius: 8px;
+
+  background: var(--warning-soft);
+
+  color: var(--warning);
+
+  font-size: 0.63rem;
+
+  line-height: 1.4;
+}
+
+
+.solmod-nochange--summary {
+  margin: 0;
+}
+
+
+/* ============================================================
+   AUTORES
+============================================================ */
+
+.solmod-authors-current {
+  display: grid;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+
+  padding: 12px 14px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+
+  background: var(--bg-soft);
+}
+
+
+.solmod-authors-current > span {
+  color: var(--text-secondary);
+
+  font-size: 0.63rem;
+
+  font-weight: 750;
+}
+
+
+.solmod-authors-current ol {
+  margin: 0;
+
+  padding-left: 20px;
+
+  color: var(--text-primary);
+
+  font-size: 0.7rem;
+
+  line-height: 1.55;
+}
+
+
+.solmod-authors {
+  padding: 14px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 11px;
+
+  background: var(--bg-soft);
+}
+
+
+/* ============================================================
+   RESUMEN
+============================================================ */
+
+.solmod-summary {
+  border-top:
+    3px solid
+    var(--color-primary);
+}
+
+
+.solmod-summary__changes {
+  display: grid;
+
+  gap: 9px;
+}
+
+
+.solmod-summary__changes article {
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 10px;
+}
+
+
+.solmod-summary__changes article > header {
+  padding: 9px 11px;
+
+  border-bottom:
+    1px solid
+    var(--border-color);
+
+  background: var(--bg-soft);
+}
+
+
+.solmod-summary__changes article > header strong {
+  font-size: 0.68rem;
+
+  font-weight: 760;
+}
+
+
+.solmod-summary__comparison {
+  padding: 10px;
+}
+
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.solmod-button {
+  appearance: none;
+
+  min-height: 40px;
+
+  padding: 0 14px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 9px;
+
+  background: var(--bg-card);
+
+  color: var(--text-primary);
+
+  font: inherit;
+
+  font-size: 0.74rem;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    opacity var(--t-fast);
+}
+
+
+.solmod-button--primary {
+  border-color: var(--color-primary);
+
+  background: var(--color-primary);
+
+  color: var(--text-on-primary);
+}
+
+
+.solmod-button--primary:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-primary) 88%,
+      var(--text-primary)
+    );
+}
+
+
+.solmod-button--secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+
+  background: var(--bg-soft);
+
+  color: var(--color-primary);
+}
+
+
+.solmod-button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   ACCIONES
+============================================================ */
+
+.solmod-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding-top: 16px;
+
+  border-top:
+    1px solid
+    var(--border-color);
+}
+
+
+/* ============================================================
+   ESTADOS
+============================================================ */
+
+.solmod-state {
+  margin: 0;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid
+    var(--info-line);
+
+  border-radius: 11px;
+
+  background: var(--bg-soft);
+
+  color: var(--text-primary);
+
+  font-size: 0.74rem;
+
+  line-height: 1.45;
+}
+
+
+.solmod-state--error {
+  border-color: var(--danger-line);
+
+  background: var(--danger-soft);
+
+  color: var(--danger);
+}
+
+
+.solmod-state--loading {
+  min-height: 82px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+}
+
+
+.solmod-state--loading > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.solmod-state--loading strong {
+  font-size: 0.75rem;
+
+  font-weight: 760;
+}
+
+
+.solmod-state--loading div > span {
+  color: var(--text-secondary);
+
+  font-size: 0.67rem;
+}
+
+
+/* ============================================================
+   SPINNER
+============================================================ */
+
+.solmod-spinner {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 auto;
+
+  border:
+    3px solid
+    color-mix(
+      in srgb,
+      var(--color-primary) 18%,
+      transparent
+    );
+
+  border-top-color: var(--color-primary);
+
+  border-radius: 50%;
+
+  animation:
+    solmod-spin
+    800ms
+    linear
+    infinite;
+}
+
+
+/* ============================================================
+   VACÍO
+============================================================ */
+
+.solmod-empty {
+  min-height: 130px;
+
+  display: grid;
+
+  place-items: center;
+
+  gap: 5px;
+
+  padding: 20px;
+
+  border:
+    1px solid
+    var(--border-color);
+
+  border-radius: 14px;
+
+  background: var(--bg-card);
+
+  text-align: center;
+}
+
+
+.solmod-empty strong {
+  color: var(--text-primary);
+
+  font-size: 0.8rem;
+
+  font-weight: 760;
+}
+
+
+.solmod-empty > span {
+  max-width: 620px;
+
+  color: var(--text-secondary);
+
+  font-size: 0.7rem;
+
+  line-height: 1.45;
+}
+
+
+.solmod-empty button {
+  margin-top: 8px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 920px) {
+
+  .solmod-hero {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .solmod-hero
+  .solmod-button {
+    width: fit-content;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .solmod-shell {
+    gap: 14px;
+  }
+
+  .solmod-hero {
+    padding: 14px 2px;
+  }
+
+  .solmod-hero
+  .solmod-button {
+    width: 100%;
+  }
+
+  .solmod-panel {
+    padding: 16px;
+  }
+
+  .solmod-panel__head {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .solmod-fields {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .solmod-change-preview,
+  .solmod-summary__comparison {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .solmod-change-preview__arrow,
+  .solmod-summary__arrow {
+    justify-self: center;
+
+    transform: rotate(90deg);
+  }
+
+  .solmod-actions {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .solmod-actions button {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   ANIMACIÓN
+============================================================ */
+
+@keyframes solmod-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .solmod-page *,
+  .solmod-page *::before,
+  .solmod-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

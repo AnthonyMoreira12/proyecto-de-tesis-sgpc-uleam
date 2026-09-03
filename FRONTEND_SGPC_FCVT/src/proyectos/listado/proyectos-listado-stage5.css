@@ -1,0 +1,59 @@
+/* ============================================================
+   ETAPA 5 · PROYECTOS
+   Actualización no destructiva y feedback contextual.
+============================================================ */
+
+.pr-refresh-state,
+.pr-refresh-error {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--pr-line);
+  border-radius: 9px;
+  background: var(--pr-card);
+  color: var(--pr-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.pr-refresh-state {
+  border-color: color-mix(in srgb, var(--pr-primary) 22%, var(--pr-line));
+  background: color-mix(in srgb, var(--pr-primary) 4%, var(--pr-card));
+}
+
+.pr-refresh-error {
+  border-color: color-mix(in srgb, var(--pr-warning, #9a6700) 28%, var(--pr-line));
+  background: color-mix(in srgb, var(--pr-warning, #9a6700) 6%, var(--pr-card));
+}
+
+.pr-refresh-state__spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border: 2px solid color-mix(in srgb, var(--pr-primary) 18%, transparent);
+  border-top-color: var(--pr-primary);
+  border-radius: 50%;
+  animation: pr-stage5-spin 0.75s linear infinite;
+}
+
+.pr-card[aria-busy="true"] .pr-results-grid {
+  opacity: 0.78;
+  transition: opacity 140ms ease;
+}
+
+@keyframes pr-stage5-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-refresh-state__spinner {
+    animation: none;
+  }
+
+  .pr-card[aria-busy="true"] .pr-results-grid {
+    transition: none;
+  }
+}

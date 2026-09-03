@@ -21,10 +21,6 @@
     <div class="as-head surface-enter surface-enter--1">
       <div class="as-head-left">
         <div class="as-title-wrap">
-          <p class="as-kicker">
-            Autoría
-          </p>
-
           <h3
             id="as-autores-title"
             class="as-title"
@@ -39,8 +35,8 @@
           </h3>
 
           <p class="as-subtitle">
-            Seleccione los autores de la publicación y defina su orden
-            bibliográfico.
+            Agregue las personas que participaron en la publicación y
+            colóquelas en el orden en que deben aparecer.
           </p>
         </div>
       </div>
@@ -59,11 +55,7 @@
           </span>
 
           <span v-else>
-            {{
-              selected.length
-                ? "Gestionar autores"
-                : "Seleccionar autor(es)"
-            }}
+            Agregar autores
           </span>
         </button>
       </div>
@@ -123,11 +115,11 @@
       >
         <div class="as-empty-card">
           <div class="as-empty-title">
-            Sin autores agregados
+            Agregue al menos un autor
           </div>
 
           <div class="as-empty-text">
-            Seleccione uno o varios autores para incluirlos en la publicación.
+            Busque y agregue las personas que participaron en la publicación.
           </div>
 
           <div class="as-empty-actions">
@@ -149,11 +141,12 @@
         <div class="as-selected-bar">
           <div class="as-selected-bar__left">
             <span class="as-count">
-              {{ selected.length }} autor(es) seleccionado(s)
-            </span>
-
-            <span class="as-helper">
-              El orden indica la posición bibliográfica de cada autor.
+              {{ selected.length }}
+              {{
+                selected.length === 1
+                  ? "autor"
+                  : "autores"
+              }}
             </span>
           </div>
 
@@ -163,170 +156,115 @@
               class="as-btn as-btn-ghost as-btn-sm"
               @click="openPicker()"
             >
-              Añadir más
+              Agregar otro
             </button>
           </div>
         </div>
 
-        <!-- =================================================
-             ORDEN BIBLIOGRÁFICO
-        ================================================== -->
+        <div
+          class="as-list-selected"
+          role="list"
+          aria-label="Autores seleccionados en el orden de la publicación"
+        >
+          <div
+            v-for="(autor, index) in selectedResolved"
+            :key="autorKey(autor, index)"
+            class="as-row as-row--draggable"
+            role="listitem"
+            :class="{
+              'as-row--dragging': draggedAuthorIndex === index,
+              'as-row--dragover':
+                dragOverAuthorIndex === index &&
+                draggedAuthorIndex !== index,
+            }"
+            @dragover.prevent="onAuthorDragOver(index, $event)"
+            @dragenter.prevent="onAuthorDragEnter(index)"
+            @drop.prevent="onAuthorDrop(index, $event)"
+          >
+            <div class="as-row-main">
+              <div class="as-row-identity">
+                <button
+                  type="button"
+                  class="as-drag-handle"
+                  draggable="true"
+                  :aria-label="`Arrastrar ${
+                    autor.nombre_completo || 'autor'
+                  } para cambiar su posición`"
+                  title="Arrastrar para cambiar el orden"
+                  @dragstart="onAuthorDragStart(index, $event)"
+                  @dragend="onAuthorDragEnd()"
+                >
+                  <span aria-hidden="true">⋮⋮</span>
+                </button>
 
-        <div class="as-section">
-          <div class="as-section__head">
-            <div class="as-section__title-wrap">
-              <h4 class="as-section__title">
-                Orden bibliográfico
-              </h4>
+                <div class="as-row-copy">
+                  <div class="as-row-name">
+                    <span class="as-row-order">
+                      {{ index + 1 }}.
+                    </span>
+                    {{ autor.nombre_completo || "Autor" }}
+                  </div>
 
-              <p class="as-section__hint">
-                Puede arrastrar los autores o utilizar los controles para
-                cambiar su posición.
-              </p>
+                  <div
+                    v-if="autor.correo_resuelto || autor.institucion"
+                    class="as-row-sub"
+                  >
+                    <span v-if="autor.correo_resuelto">
+                      {{ autor.correo_resuelto }}
+                    </span>
+
+                    <span v-if="autor.institucion">
+                      {{ autor.institucion }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <span class="as-section__meta">
-              {{ selectedResolved.length }} autor(es)
-            </span>
-          </div>
+            <div class="as-row-actions">
+              <button
+                type="button"
+                class="as-icon"
+                :aria-label="`Subir ${
+                  autor.nombre_completo || 'autor'
+                } una posición`"
+                title="Subir"
+                :disabled="index === 0"
+                @click="moveAuthorUp(index)"
+              >
+                ↑
+              </button>
 
-          <div
-            class="as-list-selected"
-            role="list"
-            aria-label="Autores seleccionados en orden bibliográfico"
-          >
-            <div
-              v-for="(autor, index) in selectedResolved"
-              :key="autorKey(autor, index)"
-              class="as-row as-row--draggable"
-              role="listitem"
-              :class="{
-                'as-row--dragging': draggedAuthorIndex === index,
-                'as-row--dragover':
-                  dragOverAuthorIndex === index &&
-                  draggedAuthorIndex !== index,
-              }"
-              @dragover.prevent="onAuthorDragOver(index, $event)"
-              @dragenter.prevent="onAuthorDragEnter(index)"
-              @drop.prevent="onAuthorDrop(index, $event)"
-            >
-              <div class="as-row-main">
-                <div class="as-row-topline">
-                  <button
-                    type="button"
-                    class="as-drag-handle"
-                    draggable="true"
-                    :aria-label="`Arrastrar autor ${
-                      autor.nombre_completo || 'Autor'
-                    }`"
-                    title="Arrastrar para reordenar"
-                    @dragstart="onAuthorDragStart(index, $event)"
-                    @dragend="onAuthorDragEnd()"
-                  >
-                    <span aria-hidden="true">
-                      ⋮⋮
-                    </span>
-                  </button>
+              <button
+                type="button"
+                class="as-icon"
+                :aria-label="`Bajar ${
+                  autor.nombre_completo || 'autor'
+                } una posición`"
+                title="Bajar"
+                :disabled="index === selectedResolved.length - 1"
+                @click="moveAuthorDown(index)"
+              >
+                ↓
+              </button>
 
-                  <span class="as-row-index">
-                    #{{ autor.orden }}
-                  </span>
-
-                  <span class="as-status as-status--soft">
-                    Orden bibliográfico {{ autor.orden }}
-                  </span>
-                </div>
-
-                <div class="as-row-name">
-                  {{ autor.nombre_completo || "Autor" }}
-                </div>
-
-                <div class="as-row-sub">
-                  <span v-if="autor.identificacion">
-                    Cédula / DNI: {{ autor.identificacion }}
-                  </span>
-
-                  <span v-else>
-                    Sin Cédula / DNI
-                  </span>
-
-                  <span v-if="autor.correo_resuelto">
-                    • {{ autor.correo_resuelto }}
-                  </span>
-
-                  <span v-if="autor.institucion">
-                    • {{ autor.institucion }}
-                  </span>
-                </div>
-
-                <div class="as-row-controls">
-                  <label
-                    class="as-field-inline"
-                    :for="`as-order-${autor.autor_id}-${index}`"
-                  >
-                    <span class="as-field-inline__label">
-                      Posición
-                    </span>
-
-                    <select
-                      :id="`as-order-${autor.autor_id}-${index}`"
-                      class="as-control-select as-control-select--order"
-                      :value="autor.orden"
-                      @change="
-                        setAuthorOrder(
-                          index,
-                          $event.target.value
-                        )
-                      "
-                    >
-                      <option
-                        v-for="n in authorOrderOptions"
-                        :key="`author-order-${autor.autor_id}-${n}`"
-                        :value="n"
-                      >
-                        {{ n }}
-                      </option>
-                    </select>
-                  </label>
-                </div>
-              </div>
-
-              <div class="as-row-actions">
-                <button
-                  type="button"
-                  class="as-icon"
-                  aria-label="Subir autor una posición"
-                  title="Subir"
-                  :disabled="index === 0"
-                  @click="moveAuthorUp(index)"
-                >
-                  ▲
-                </button>
-
-                <button
-                  type="button"
-                  class="as-icon"
-                  aria-label="Bajar autor una posición"
-                  title="Bajar"
-                  :disabled="index === selectedResolved.length - 1"
-                  @click="moveAuthorDown(index)"
-                >
-                  ▼
-                </button>
-
-                <button
-                  type="button"
-                  class="as-icon as-icon-danger"
-                  aria-label="Eliminar autor"
-                  title="Eliminar"
-                  @click="removeAuthor(index)"
-                >
-                  ✖
-                </button>
-              </div>
+              <button
+                type="button"
+                class="as-remove-action"
+                :aria-label="`Quitar ${
+                  autor.nombre_completo || 'autor'
+                }`"
+                @click="removeAuthor(index)"
+              >
+                Quitar
+              </button>
             </div>
           </div>
         </div>
+
+        <p class="as-order-help">
+          Arrastre un autor o use las flechas para cambiar el orden.
+        </p>
       </div>
     </div>
 
@@ -351,32 +289,29 @@
           >
             <div class="as-modal-head">
               <div class="as-modal-head-copy">
-                <p class="as-modal-kicker">
-                  Selección
-                </p>
-
                 <h3
                   id="as-picker-title"
                   class="as-modal-title"
                 >
-                  Seleccionar autor(es)
+                  Agregar autores
                 </h3>
 
                 <p
                   id="as-picker-sub"
                   class="as-modal-sub"
                 >
-                  Busque por nombre, correo, Cédula/DNI, institución, ORCID, SENESCYT, Google Scholar o Scopus.
+                  Busque por nombre, correo o identificación.
                 </p>
               </div>
 
               <button
                 type="button"
                 class="as-icon"
-                aria-label="Cerrar selector de autores"
+                aria-label="Cerrar"
+                title="Cerrar"
                 @click="closePicker()"
               >
-                ✖
+                ✕
               </button>
             </div>
 
@@ -403,7 +338,7 @@
                     v-model.trim="search"
                     class="as-input as-input-search"
                     type="text"
-                    placeholder="Nombre, correo, Cédula/DNI, ORCID, SENESCYT, Scholar o Scopus..."
+                    placeholder="Buscar autor"
                     autocomplete="off"
                     inputmode="search"
                   />
@@ -413,6 +348,7 @@
                     type="button"
                     class="as-search-clear"
                     aria-label="Limpiar búsqueda"
+                    title="Limpiar búsqueda"
                     @click="clearSearch()"
                   >
                     ✕
@@ -421,7 +357,12 @@
 
                 <div class="as-toolbar-actions">
                   <span class="as-mini-count">
-                    {{ selected.length }} seleccionado(s)
+                    {{ selected.length }}
+                    {{
+                      selected.length === 1
+                        ? "seleccionado"
+                        : "seleccionados"
+                    }}
                   </span>
 
                   <button
@@ -439,14 +380,10 @@
                     :disabled="loadingAutores"
                     @click="refreshAutores(true)"
                   >
-                    Actualizar
+                    Actualizar lista
                   </button>
                 </div>
               </div>
-
-              <!-- =============================================
-                   ESTADOS DEL CATÁLOGO
-              ============================================== -->
 
               <div
                 v-if="loadingAutores && !autores.length"
@@ -457,19 +394,16 @@
                 </div>
 
                 <div class="as-state-card__text">
-                  Espere un momento mientras se consulta el catálogo.
+                  Espere un momento.
                 </div>
               </div>
 
               <div
-                v-else-if="
-                  !loadingAutores &&
-                  filteredAutores.length === 0
-                "
+                v-else-if="!loadingAutores && filteredAutores.length === 0"
                 class="as-state-card"
               >
                 <div class="as-state-card__title">
-                  Sin coincidencias
+                  No encontramos autores
                 </div>
 
                 <div class="as-state-card__text">
@@ -478,7 +412,7 @@
                   </template>
 
                   <template v-else>
-                    No hay autores disponibles en el catálogo.
+                    No hay autores disponibles.
                   </template>
                 </div>
               </div>
@@ -487,19 +421,28 @@
                 v-else
                 class="as-picker-results"
               >
-                <!-- ===========================================
-                     FAVORITOS
-                ============================================ -->
+                <div
+                  v-if="
+                    !favoriteAvailableAutores.length &&
+                    !nonFavoriteAvailableAutores.length
+                  "
+                  class="as-state-card"
+                >
+                  <div class="as-state-card__title">
+                    Todos los resultados ya están agregados
+                  </div>
+
+                  <div class="as-state-card__text">
+                    Puede cerrar esta ventana o registrar una persona diferente.
+                  </div>
+                </div>
 
                 <div
                   v-if="favoriteAvailableAutores.length"
                   class="as-picker-group as-picker-group--favorites"
                 >
                   <div class="as-picker-group__head">
-                    <span class="as-picker-group__title">
-                      Favoritos
-                    </span>
-
+                    <span class="as-picker-group__title">Favoritos</span>
                     <span class="as-picker-group__count">
                       {{ favoriteAvailableAutores.length }}
                     </span>
@@ -514,12 +457,10 @@
                       <button
                         type="button"
                         class="as-catalog-select"
-                        :disabled="isAlreadySelected(a.id)"
-                        :aria-label="`Agregar autor ${
+                        :aria-label="`Agregar ${
                           a.nombre_completo ||
                           `${a.nombres} ${a.apellidos}`
                         }`"
-                        title="Agregar autor favorito"
                         @click="selectFromList(a)"
                       >
                         <div class="as-ci-main">
@@ -531,20 +472,20 @@
                           </div>
 
                           <div class="as-ci-sub">
-                            <span v-if="a.identificacion">
-                              Cédula / DNI: {{ a.identificacion }}
-                            </span>
-
-                            <span v-else>
-                              Sin Cédula / DNI
-                            </span>
-
                             <span v-if="a.correo_resuelto">
-                              • {{ a.correo_resuelto }}
+                              {{ a.correo_resuelto }}
                             </span>
-
                             <span v-if="a.institucion">
-                              • {{ a.institucion }}
+                              {{ a.institucion }}
+                            </span>
+                            <span
+                              v-if="
+                                !a.correo_resuelto &&
+                                !a.institucion &&
+                                a.identificacion
+                              "
+                            >
+                              {{ a.identificacion }}
                             </span>
                           </div>
 
@@ -571,33 +512,21 @@
                         <button
                           type="button"
                           class="as-select-action"
-                          :disabled="isAlreadySelected(a.id)"
                           @click="selectFromList(a)"
                         >
-                          Seleccionar
+                          Agregar
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- ===========================================
-                     DISPONIBLES
-                ============================================ -->
-
                 <div
                   v-if="nonFavoriteAvailableAutores.length"
                   class="as-picker-group"
                 >
                   <div class="as-picker-group__head">
-                    <span class="as-picker-group__title">
-                      {{
-                        search
-                          ? "Coincidencias"
-                          : "Autores disponibles"
-                      }}
-                    </span>
-
+                    <span class="as-picker-group__title">Autores</span>
                     <span class="as-picker-group__count">
                       {{ nonFavoriteAvailableAutores.length }}
                     </span>
@@ -612,12 +541,10 @@
                       <button
                         type="button"
                         class="as-catalog-select"
-                        :disabled="isAlreadySelected(a.id)"
-                        :aria-label="`Agregar autor ${
+                        :aria-label="`Agregar ${
                           a.nombre_completo ||
                           `${a.nombres} ${a.apellidos}`
                         }`"
-                        title="Agregar autor"
                         @click="selectFromList(a)"
                       >
                         <div class="as-ci-main">
@@ -629,20 +556,20 @@
                           </div>
 
                           <div class="as-ci-sub">
-                            <span v-if="a.identificacion">
-                              Cédula / DNI: {{ a.identificacion }}
-                            </span>
-
-                            <span v-else>
-                              Sin Cédula / DNI
-                            </span>
-
                             <span v-if="a.correo_resuelto">
-                              • {{ a.correo_resuelto }}
+                              {{ a.correo_resuelto }}
                             </span>
-
                             <span v-if="a.institucion">
-                              • {{ a.institucion }}
+                              {{ a.institucion }}
+                            </span>
+                            <span
+                              v-if="
+                                !a.correo_resuelto &&
+                                !a.institucion &&
+                                a.identificacion
+                              "
+                            >
+                              {{ a.identificacion }}
                             </span>
                           </div>
 
@@ -659,9 +586,7 @@
                         <button
                           type="button"
                           class="as-fav-btn"
-                          :class="{
-                            'is-on': isFavorito(a.id),
-                          }"
+                          :class="{ 'is-on': isFavorito(a.id) }"
                           :title="
                             isFavorito(a.id)
                               ? 'Quitar de favoritos'
@@ -680,101 +605,10 @@
                         <button
                           type="button"
                           class="as-select-action"
-                          :disabled="isAlreadySelected(a.id)"
                           @click="selectFromList(a)"
                         >
-                          Seleccionar
+                          Agregar
                         </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- ===========================================
-                     YA AGREGADOS
-                ============================================ -->
-
-                <div
-                  v-if="alreadyAddedAutores.length"
-                  class="as-picker-group as-picker-group--selected"
-                >
-                  <div class="as-picker-group__head">
-                    <span class="as-picker-group__title">
-                      Ya agregados
-                    </span>
-
-                    <span class="as-picker-group__count">
-                      {{ alreadyAddedAutores.length }}
-                    </span>
-                  </div>
-
-                  <div class="as-catalog as-catalog--compact">
-                    <div
-                      v-for="a in alreadyAddedAutores"
-                      :key="`selected-${a.id}`"
-                      class="as-catalog-item as-catalog-item--disabled"
-                    >
-                      <div class="as-catalog-static">
-                        <div class="as-ci-main">
-                          <div class="as-ci-name">
-                            {{
-                              a.nombre_completo ||
-                              `${a.nombres} ${a.apellidos}`
-                            }}
-                          </div>
-
-                          <div class="as-ci-sub">
-                            <span v-if="a.identificacion">
-                              Cédula / DNI: {{ a.identificacion }}
-                            </span>
-
-                            <span v-else>
-                              Sin Cédula / DNI
-                            </span>
-
-                            <span v-if="a.correo_resuelto">
-                              • {{ a.correo_resuelto }}
-                            </span>
-
-                            <span v-if="a.institucion">
-                              • {{ a.institucion }}
-                            </span>
-                          </div>
-
-                          <div
-                            v-if="matchedAcademicIdentifier(a)"
-                            class="as-ci-match"
-                          >
-                            {{ matchedAcademicIdentifier(a) }}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="as-ci-right">
-                        <button
-                          type="button"
-                          class="as-fav-btn"
-                          :class="{
-                            'is-on': isFavorito(a.id),
-                          }"
-                          :title="
-                            isFavorito(a.id)
-                              ? 'Quitar de favoritos'
-                              : 'Agregar a favoritos'
-                          "
-                          :aria-label="
-                            isFavorito(a.id)
-                              ? 'Quitar de favoritos'
-                              : 'Agregar a favoritos'
-                          "
-                          @click.stop.prevent="toggleFavorito(a)"
-                        >
-                          ★
-                        </button>
-
-                        <span class="as-badge as-badge-ok">
-                          Agregado
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -788,7 +622,7 @@
                 class="as-btn as-btn-secondary"
                 @click="openCreate()"
               >
-                Agregar nuevo autor
+                Registrar autor
               </button>
 
               <button
@@ -825,25 +659,19 @@
           >
             <div class="as-modal-head">
               <div class="as-modal-head-copy">
-                <p class="as-modal-kicker">
-                  Registro
-                </p>
-
                 <h3
                   id="as-create-title"
                   class="as-modal-title"
                 >
-                  Agregar nuevo autor
+                  Registrar autor
                 </h3>
 
                 <p
                   id="as-create-sub"
                   class="as-modal-sub"
                 >
-                  Complete los datos para registrar un autor externo.
-                  Al guardar, se creará y vinculará una cuenta local
-                  <b>pendiente</b>. El autor podrá participar en publicaciones
-                  aunque todavía no tenga acceso al sistema.
+                  Use esta opción solo si la persona no aparece en la
+                  búsqueda. Al guardar, se añadirá a la publicación.
                 </p>
               </div>
 
@@ -910,7 +738,7 @@
                   class="as-help as-help--muted"
                   aria-live="polite"
                 >
-                  Verificando si el autor ya existe en la base de datos...
+                  Comprobando si el autor ya está registrado...
                 </p>
 
                 <!-- ===========================================
@@ -1024,7 +852,7 @@
                       id="nuevo-correo-help"
                       class="as-hint"
                     >
-                      Se usará para identificar y contactar al autor.
+                      Se usará para identificar al autor.
                     </p>
 
                     <p
@@ -1209,7 +1037,7 @@
                   </span>
 
                   <span v-else>
-                    Guardar y agregar
+                    Guardar autor
                   </span>
                 </button>
 

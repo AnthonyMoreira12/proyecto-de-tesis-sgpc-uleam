@@ -1,0 +1,174 @@
+/* ============================================================
+   SGPC ULEAM — ETAPA 7
+   CONTROL DE DOCUMENTOS
+   Capa de ajuste sobre admin-integridad-documental.css
+============================================================ */
+
+.pdfi-page {
+  padding-top: calc(var(--sgpc-nav-offset, 78px) + 14px);
+}
+
+.pdfi-feedback-row {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* El resumen se percibe como una sola unidad, no como cuatro tarjetas. */
+.pdfi-page .pdfi-metrics {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  background: var(--bg-card);
+}
+
+.pdfi-page .pdfi-metrics article {
+  min-height: 116px;
+  padding: 16px 18px;
+  border: 0;
+  border-top: 0;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+}
+
+.pdfi-page .pdfi-metrics article:last-child {
+  border-right: 0;
+}
+
+.pdfi-page .pdfi-metrics article:hover {
+  border-color: var(--border-color);
+  background: var(--bg-soft);
+  transform: none;
+}
+
+.pdfi-page .pdfi-metrics article[data-state="warning"] {
+  box-shadow: inset 0 3px 0 var(--warning);
+}
+
+.pdfi-page .pdfi-metrics article[data-state="success"] {
+  box-shadow: inset 0 3px 0 var(--success);
+}
+
+.pdfi-panel--workflow {
+  display: grid;
+  gap: 16px;
+}
+
+.pdfi-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pdfi-panel__head > div {
+  min-width: 0;
+}
+
+.pdfi-panel__eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.pdfi-readiness {
+  flex: 0 0 auto;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--warning-line, var(--border-color));
+  border-radius: 999px;
+  background: var(--warning-soft, var(--bg-soft));
+  color: var(--warning, var(--text-secondary));
+  font-size: 0.68rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.pdfi-readiness[data-ready="true"] {
+  border-color: var(--success-line, var(--border-color));
+  background: var(--success-soft, var(--bg-soft));
+  color: var(--success, var(--text-primary));
+}
+
+.pdfi-ready-message,
+.pdfi-result__next {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.pdfi-page .pdfi-result__metrics {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+}
+
+.pdfi-page .pdfi-result__metrics article {
+  border: 0;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+}
+
+.pdfi-page .pdfi-result__metrics article:last-child {
+  border-right: 0;
+}
+
+/* La salida JSON dejó de formar parte del flujo de usuario. */
+.pdfi-result__technical {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .pdfi-page .pdfi-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pdfi-page .pdfi-metrics article:nth-child(2) {
+    border-right: 0;
+  }
+
+  .pdfi-page .pdfi-metrics article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .pdfi-panel__head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .pdfi-page {
+    padding-top: calc(var(--sgpc-nav-offset, 64px) + 10px);
+  }
+
+  .pdfi-page .pdfi-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pdfi-page .pdfi-metrics article {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .pdfi-page .pdfi-metrics article:last-child {
+    border-bottom: 0;
+  }
+
+  .pdfi-readiness,
+  .pdfi-actions,
+  .pdfi-actions button {
+    width: 100%;
+  }
+}

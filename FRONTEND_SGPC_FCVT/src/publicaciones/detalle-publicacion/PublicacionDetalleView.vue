@@ -89,7 +89,7 @@
                 ←
               </span>
 
-              <span>Volver a publicaciones</span>
+              <span>Volver</span>
             </button>
 
             <div class="pdet-topbar__actions">
@@ -97,6 +97,7 @@
                 v-if="hasPdf"
                 class="pdet-btn pdet-btn--ghost"
                 type="button"
+                :disabled="transitionBusy"
                 @click="openPdf"
               >
                 Ver PDF
@@ -104,14 +105,55 @@
 
               <button
                 v-if="canEdit"
-                class="pdet-btn pdet-btn--primary"
+                class="pdet-btn pdet-btn--ghost"
                 type="button"
+                :disabled="transitionBusy"
                 @click="openEditMode"
               >
                 Editar publicación
               </button>
+
+              <button
+                v-if="canRequestSensitiveModification"
+                class="pdet-btn pdet-btn--ghost"
+                type="button"
+                :disabled="transitionBusy"
+                @click="requestSensitiveModification"
+              >
+                Solicitar modificación
+              </button>
+
+              <button
+                v-if="canSendReview"
+                class="pdet-btn pdet-btn--primary"
+                type="button"
+                :disabled="transitionBusy"
+                @click="sendToReview"
+              >
+                {{ transitionBusy ? "Procesando..." : "Enviar a revisión" }}
+              </button>
+
+              <button
+                v-if="canResendReview"
+                class="pdet-btn pdet-btn--primary"
+                type="button"
+                :disabled="transitionBusy"
+                @click="resendToReview"
+              >
+                {{ transitionBusy ? "Procesando..." : "Reenviar a revisión" }}
+              </button>
             </div>
           </header>
+
+          <div
+            v-if="transitionMessage"
+            class="pdet-actionFeedback page-stage page-stage-1"
+            :class="`is-${transitionMessageType || 'info'}`"
+            role="status"
+            aria-live="polite"
+          >
+            {{ transitionMessage }}
+          </div>
 
           <!-- Encabezado principal -->
           <section
@@ -131,12 +173,15 @@
                   {{ detalleNormalizado.titulo }}
                 </h1>
 
-                <span
-                  class="pdet-badge"
-                  :class="toneClass"
-                >
-                  {{ detalleNormalizado.tipoLabel }}
-                </span>
+                <div class="pdet-titleBadges">
+                  <span
+                    class="pdet-badge"
+                    :class="toneClass"
+                  >
+                    {{ detalleNormalizado.tipoLabel }}
+                  </span>
+
+                </div>
               </div>
 
               <p class="pdet-subtitle">
@@ -152,6 +197,13 @@
                   class="pdet-chip"
                 >
                   {{ detalleNormalizado.periodoTexto }}
+                </span>
+
+                <span
+                  v-if="detalleNormalizado.sede"
+                  class="pdet-chip"
+                >
+                  {{ detalleNormalizado.sede }}
                 </span>
 
                 <span
@@ -179,20 +231,6 @@
                       : "autores"
                   }}
                 </span>
-
-                <span
-                  v-if="isAdmin"
-                  class="pdet-chip pdet-chip--permission"
-                >
-                  Administrador
-                </span>
-
-                <span
-                  v-else-if="canEdit"
-                  class="pdet-chip pdet-chip--permission"
-                >
-                  Puede editar
-                </span>
               </div>
 
               <p
@@ -205,38 +243,42 @@
             </div>
 
             <aside
-              v-if="heroResumen.length"
-              class="pdet-hero__panel"
-              aria-label="Resumen rápido"
+              class="pdet-heroSummary"
+              aria-label="Resumen de la publicación"
             >
-              <header class="pdet-panelHead">
-                <span class="pdet-panelEyebrow">
+              <div class="pdet-heroSummary__head">
+                <span class="pdet-heroSummary__eyebrow">
                   Resumen
                 </span>
 
-                <h2 class="pdet-panelTitle">
-                  Datos principales
-                </h2>
-
-                <p class="pdet-panelText">
-                  Lectura rápida de la información esencial del registro.
-                </p>
-              </header>
-
-              <div class="pdet-summaryGrid">
-                <article
-                  v-for="item in heroResumen"
-                  :key="item.label"
-                  class="pdet-summaryItem"
+                <span
+                  class="pdet-stateBadge pdet-stateBadge--large"
+                  :data-state="estadoGestion.value || 'sin_estado'"
                 >
-                  <span class="k">
-                    {{ item.label }}
-                  </span>
+                  {{ estadoGestion.label }}
+                </span>
+              </div>
 
-                  <span class="v">
-                    {{ item.value }}
-                  </span>
-                </article>
+              <div class="pdet-heroSummary__grid">
+                <div class="pdet-heroSummary__item">
+                  <span>Período</span>
+                  <strong>{{ detalleNormalizado.periodoTexto || "No especificado" }}</strong>
+                </div>
+
+                <div class="pdet-heroSummary__item">
+                  <span>Autores</span>
+                  <strong>{{ detalleNormalizado.autores.length }}</strong>
+                </div>
+
+                <div class="pdet-heroSummary__item">
+                  <span>Documento</span>
+                  <strong>{{ hasPdf ? "PDF disponible" : "Sin PDF" }}</strong>
+                </div>
+
+                <div class="pdet-heroSummary__item">
+                  <span>Tipo</span>
+                  <strong>{{ detalleNormalizado.tipoLabel }}</strong>
+                </div>
               </div>
             </aside>
           </section>
@@ -251,14 +293,10 @@
                 bloquePrincipal.length ||
                 clasificacionInstitucional.length
               "
-              class="pdet-section"
+              class="pdet-section pdet-section--primary"
             >
               <header class="pdet-sectionHead">
                 <div>
-                  <span class="pdet-sectionEyebrow">
-                    Información académica
-                  </span>
-
                   <h2 class="pdet-h2">
                     {{ bloquePrincipalTitle }}
                   </h2>
@@ -309,11 +347,11 @@
                 >
                   <header class="pdet-subHead">
                     <h3 class="pdet-h3">
-                      Clasificación institucional
+                      Unidad académica
                     </h3>
 
                     <p class="pdet-subText">
-                      Adscripción y contexto académico de la publicación.
+                      Sede, facultad, carrera y área asociadas.
                     </p>
                   </header>
 
@@ -338,13 +376,9 @@
             </section>
 
             <!-- Autores -->
-            <section class="pdet-section">
+            <section class="pdet-section pdet-section--authors">
               <header class="pdet-sectionHead">
                 <div>
-                  <span class="pdet-sectionEyebrow">
-                    Participación
-                  </span>
-
                   <h2 class="pdet-h2">
                     Autores
 
@@ -358,7 +392,7 @@
                 </div>
 
                 <p class="pdet-sectionText">
-                  Autores vinculados a la publicación en su orden bibliográfico.
+                  Autores registrados en la publicación.
                 </p>
               </header>
 
@@ -384,7 +418,7 @@
                     </h3>
 
                     <p class="pdet-authorMeta">
-                      Orden bibliográfico {{ autor.orden }}
+                      Posición {{ autor.orden }}
                     </p>
                   </div>
                 </article>
@@ -398,24 +432,113 @@
               </p>
             </section>
 
-            <!-- Descripción -->
+            <!-- Flujo de gestión -->
             <section
-              v-if="descripcionTexto"
-              class="pdet-section"
+              class="pdet-section pdet-section--workflow pdet-workflow"
+              :data-state="estadoGestion.value || 'sin_estado'"
+              aria-labelledby="pdet-workflow-title"
             >
               <header class="pdet-sectionHead">
                 <div>
-                  <span class="pdet-sectionEyebrow">
-                    Contenido
-                  </span>
+                  <h2
+                    id="pdet-workflow-title"
+                    class="pdet-h2"
+                  >
+                    Revisión
+                  </h2>
+                </div>
+              </header>
 
+              <div class="pdet-workflow__body">
+                <div class="pdet-workflow__status">
+                  <strong>{{ workflowTitle }}</strong>
+
+                  <p>
+                    {{ workflowDescription }}
+                  </p>
+                </div>
+
+                <article
+                  v-if="ultimaRevision"
+                  class="pdet-reviewCard"
+                >
+                  <div class="pdet-reviewCard__head">
+                    <div>
+                      <span class="pdet-reviewCard__eyebrow">
+                        Última revisión
+                      </span>
+
+                      <h3 class="pdet-reviewCard__title">
+                        {{ ultimaRevisionLabel }}
+                      </h3>
+                    </div>
+
+                    <time
+                      v-if="ultimaRevisionFecha"
+                      class="pdet-reviewCard__date"
+                      :datetime="ultimaRevision.created_at || undefined"
+                    >
+                      {{ ultimaRevisionFecha }}
+                    </time>
+                  </div>
+
+                  <p
+                    v-if="ultimaRevision.comentario"
+                    class="pdet-reviewCard__comment"
+                  >
+                    {{ ultimaRevision.comentario }}
+                  </p>
+
+                  <p
+                    v-if="ultimaRevision.revisor"
+                    class="pdet-reviewCard__reviewer"
+                  >
+                    Revisado por
+                    <strong>{{ ultimaRevision.revisor }}</strong>
+                  </p>
+                </article>
+
+                <div
+                  v-if="canSendReview || canResendReview"
+                  class="pdet-workflow__actions"
+                >
+                  <button
+                    v-if="canSendReview"
+                    class="pdet-btn pdet-btn--primary"
+                    type="button"
+                    :disabled="transitionBusy"
+                    @click="sendToReview"
+                  >
+                    {{ transitionBusy ? "Procesando..." : "Enviar a revisión" }}
+                  </button>
+
+                  <button
+                    v-if="canResendReview"
+                    class="pdet-btn pdet-btn--primary"
+                    type="button"
+                    :disabled="transitionBusy"
+                    @click="resendToReview"
+                  >
+                    {{ transitionBusy ? "Procesando..." : "Reenviar corrección" }}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Descripción -->
+            <section
+              v-if="descripcionTexto"
+              class="pdet-section pdet-section--description"
+            >
+              <header class="pdet-sectionHead">
+                <div>
                   <h2 class="pdet-h2">
                     Descripción
                   </h2>
                 </div>
 
                 <p class="pdet-sectionText">
-                  Información complementaria registrada para esta publicación.
+                  
                 </p>
               </header>
 
@@ -429,21 +552,17 @@
             <!-- PDF -->
             <section
               v-if="hasPdf"
-              class="pdet-section"
+              class="pdet-section pdet-section--pdf"
             >
               <header class="pdet-sectionHead">
                 <div>
-                  <span class="pdet-sectionEyebrow">
-                    Evidencia documental
-                  </span>
-
                   <h2 class="pdet-h2">
-                    Archivo PDF
+                    Documento PDF
                   </h2>
                 </div>
 
                 <p class="pdet-sectionText">
-                  Documento asociado al registro de la publicación.
+                  
                 </p>
               </header>
 
@@ -453,16 +572,12 @@
                 </div>
 
                 <div class="pdet-fileMeta">
-                  <span class="pdet-fileEyebrow">
-                    Documento disponible
-                  </span>
-
                   <h3 class="pdet-fileName">
                     {{ displayPdfName }}
                   </h3>
 
                   <p class="pdet-fileText">
-                    Puede visualizar o descargar el archivo asociado.
+                    
                   </p>
                 </div>
 
@@ -486,24 +601,20 @@
               </div>
             </section>
 
-            <!-- Identificadores -->
+            <!-- Datos bibliográficos -->
             <section
               v-if="identificadoresAcademicos.length"
-              class="pdet-section"
+              class="pdet-section pdet-section--bibliographic"
             >
               <header class="pdet-sectionHead">
                 <div>
-                  <span class="pdet-sectionEyebrow">
-                    Referencias académicas
-                  </span>
-
                   <h2 class="pdet-h2">
-                    Identificadores
+                    Datos bibliográficos
                   </h2>
                 </div>
 
                 <p class="pdet-sectionText">
-                  Códigos e indicadores técnicos de la publicación.
+                  DOI, ISBN e indicadores registrados.
                 </p>
               </header>
 
@@ -550,16 +661,12 @@
         >
           <header class="pdet-editHeader">
             <div>
-              <span class="pdet-editHeader__eyebrow">
-                Gestión del registro
-              </span>
-
               <h1 class="pdet-editHeader__title">
                 Editar publicación
               </h1>
 
               <p class="pdet-editHeader__text">
-                Actualice la información académica y documental del registro.
+                Modifique los datos y el documento de la publicación.
               </p>
             </div>
 
@@ -585,6 +692,11 @@
         </section>
       </article>
     </div>
+
+    <NoticeDialog
+      :modelValue="notice"
+      @close="closeNotice"
+    />
   </div>
 </template>
 
@@ -593,7 +705,20 @@ import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import api from "../../scripts/api/axios";
+import { useNotice } from "../../scripts/composables/useNotice";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
+import {
+  enviarPublicacionRevision,
+  obtenerPublicacionDetalle,
+  reenviarPublicacionRevision,
+} from "../../scripts/api/publicacionesApi";
 import { useUserStore } from "../../scripts/stores/userStore";
+import {
+  obtenerEstadoPublicacion,
+  puedeEditarPublicacion,
+  puedeEnviarRevision,
+  puedeReenviarRevision,
+} from "../../scripts/utils/publicacion-estados";
 import PublicacionEditForm from "./EditarPublicacionView.vue";
 
 /* ============================================================
@@ -604,6 +729,12 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
+const {
+  notice,
+  openNotice,
+  closeNotice,
+} = useNotice();
+
 /* ============================================================
   ESTADO PRINCIPAL
 ============================================================ */
@@ -613,6 +744,10 @@ const loading = ref(true);
 const error = ref("");
 const editMode = ref(false);
 const saving = ref(false);
+
+const transitionBusy = ref(false);
+const transitionMessage = ref("");
+const transitionMessageType = ref("");
 
 let requestSeq = 0;
 
@@ -1171,6 +1306,31 @@ const detalleNormalizado = computed(() => {
     )
   );
 
+  const archivos = Array.isArray(
+    data.archivos
+  )
+    ? data.archivos
+    : [];
+
+  const archivoPrincipal =
+    archivos.find((item) => {
+      return (
+        item?.es_principal === true ||
+        item?.tipo === "principal"
+      );
+    }) ||
+    archivos[0] ||
+    null;
+
+  const archivoPdfNombreOriginal = firstFilled(
+    data.archivo_pdf_nombre_original,
+    data.archivoPdfNombreOriginal,
+    data.nombre_archivo_original,
+    archivoPrincipal?.nombre_original,
+    archivoPrincipal?.nombreOriginal,
+    archivoPrincipal?.nombre
+  );
+
   return {
     raw: data,
     titulo,
@@ -1183,6 +1343,11 @@ const detalleNormalizado = computed(() => {
         : "",
 
     periodoTexto,
+
+    sede: firstFilled(
+      data.sede,
+      data.sede_nombre
+    ),
 
     facultad: firstFilled(
       data.facultad,
@@ -1215,6 +1380,7 @@ const detalleNormalizado = computed(() => {
       .join(", "),
 
     archivoPdfUrl,
+    archivoPdfNombreOriginal,
     autores: normalizeAuthors(data.autores),
   };
 });
@@ -1241,6 +1407,15 @@ const hasPdf = computed(() => {
 });
 
 const displayPdfName = computed(() => {
+  const originalName = firstFilled(
+    detalleNormalizado.value
+      .archivoPdfNombreOriginal
+  );
+
+  if (originalName) {
+    return originalName;
+  }
+
   return (
     fileNameFromUrl(
       detalleNormalizado.value.archivoPdfUrl
@@ -1312,21 +1487,148 @@ const currentUserIsCreator = computed(() => {
   return currentUserIds.value.includes(creatorId);
 });
 
-const canEdit = computed(() => {
-  const backendPermission =
-    detalle.value?.puede_editar;
+const estadoGestion = computed(() => {
+  return obtenerEstadoPublicacion(
+    detalle.value?.estado
+  );
+});
 
-  // El backend es la autoridad principal.
-  if (typeof backendPermission === "boolean") {
-    return backendPermission;
+const canEdit = computed(() => {
+  return puedeEditarPublicacion(
+    detalle.value
+  );
+});
+
+const canRequestSensitiveModification = computed(() => {
+  return Boolean(
+    currentUserIsCreator.value &&
+    estadoGestion.value?.value === "aprobada"
+  );
+});
+
+const requestSensitiveModification = () => {
+  const publicationId =
+    route.params?.id ??
+    detalle.value?.id ??
+    detalle.value?.publicacion_id;
+
+  if (!publicationId) {
+    return;
   }
 
-  // Respaldo para respuestas antiguas del API:
-  // administrador o usuario que creó la publicación.
-  return (
-    isAdmin.value ||
-    currentUserIsCreator.value
+  router.push({
+    name: "SolicitudModificacionPublicacion",
+    params: { id: publicationId },
+  });
+};
+
+const canSendReview = computed(() => {
+  return puedeEnviarRevision(
+    detalle.value
   );
+});
+
+const canResendReview = computed(() => {
+  return puedeReenviarRevision(
+    detalle.value
+  );
+});
+
+const ultimaRevision = computed(() => {
+  const revision =
+    detalle.value?.ultima_revision;
+
+  return (
+    revision &&
+    typeof revision === "object" &&
+    !Array.isArray(revision)
+  )
+    ? revision
+    : null;
+});
+
+const ultimaRevisionLabel = computed(() => {
+  return firstFilled(
+    ultimaRevision.value?.decision_label,
+    ultimaRevision.value?.decision,
+    "Revisión"
+  );
+});
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return toStr(value);
+  }
+
+  return new Intl.DateTimeFormat(
+    "es-EC",
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }
+  ).format(date);
+};
+
+const ultimaRevisionFecha = computed(() => {
+  return formatDateTime(
+    ultimaRevision.value?.created_at
+  );
+});
+
+const workflowTitle = computed(() => {
+  switch (estadoGestion.value.value) {
+    case "borrador":
+      return "Pendiente de envío";
+
+    case "en_revision":
+      return "En revisión";
+
+    case "observada":
+      return "Requiere correcciones";
+
+    case "aprobada":
+      return "Aprobada";
+
+    case "rechazada":
+      return "Rechazada";
+
+    default:
+      return "Estado de la publicación";
+  }
+});
+
+const workflowDescription = computed(() => {
+  switch (estadoGestion.value.value) {
+    case "borrador":
+      return "Revise la información y envíela a revisión cuando esté lista.";
+
+    case "en_revision":
+      return isAdmin.value
+        ? "La publicación está siendo revisada. Como administrador, puede editar su contenido sin cambiar automáticamente el estado de revisión."
+        : "La publicación está siendo revisada y no puede editarse por el momento.";
+
+    case "observada":
+      return "Revise las correcciones solicitadas, guarde los cambios y vuelva a enviarla.";
+
+    case "aprobada":
+      return isAdmin.value
+        ? "La publicación fue aprobada. Como administrador, conserva la opción de editar su contenido cuando sea necesario."
+        : "La publicación fue aprobada.";
+
+    case "rechazada":
+      return isAdmin.value
+        ? "La publicación fue rechazada. Como administrador, conserva la opción de editar su contenido sin alterar automáticamente la decisión registrada."
+        : "Consulte el motivo del rechazo.";
+
+    default:
+      return "Consulte el estado actual de la publicación.";
+  }
 });
 
 /* ============================================================
@@ -1334,24 +1636,11 @@ const canEdit = computed(() => {
 ============================================================ */
 
 const heroIntroText = computed(() => {
-  if (isAdmin.value) {
-    return (
-      "Consulte y administre la información académica, " +
-      "documental y autoral de esta publicación."
-    );
-  }
-
   if (canEdit.value) {
-    return (
-      "Consulte y actualice la información académica, " +
-      "documental y autoral de esta publicación."
-    );
+    return "Consulte o modifique la información de esta publicación.";
   }
 
-  return (
-    "Consulte la clasificación, los metadatos, los autores " +
-    "y las evidencias disponibles."
-  );
+  return "Consulte la información de esta publicación.";
 });
 
 const toneClass = computed(() => {
@@ -1426,7 +1715,7 @@ const bloquePrincipalText = computed(() => {
 
     default:
       return (
-        "Información principal asociada al registro."
+        "Información principal de la publicación."
       );
   }
 });
@@ -1455,6 +1744,11 @@ const heroResumen = computed(() => {
     buildField(
       "Tipo",
       normalized.tipoLabel
+    ),
+
+    buildField(
+      "Estado",
+      estadoGestion.value.label
     ),
 
     buildField(
@@ -1494,6 +1788,12 @@ const clasificacionInstitucional = computed(() => {
     detalle.value || {};
 
   return visibleFields([
+    buildField(
+      "Sede",
+      normalized.sede,
+      { span: 4 }
+    ),
+
     buildField(
       "Facultad",
       normalized.facultad,
@@ -1926,6 +2226,162 @@ const identificadoresAcademicos = computed(() => {
 });
 
 /* ============================================================
+  FLUJO DE REVISIÓN
+============================================================ */
+
+const extractRequestError = (
+  requestError,
+  fallback
+) => {
+  const data =
+    requestError?.response?.data;
+
+  const flatten = (value) => {
+    if (value == null) {
+      return [];
+    }
+
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      const text = toStr(value);
+      return text ? [text] : [];
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap(flatten);
+    }
+
+    if (typeof value === "object") {
+      return Object.values(value)
+        .flatMap(flatten);
+    }
+
+    return [];
+  };
+
+  const messages = flatten(data);
+
+  return (
+    [...new Set(messages)].join(" ") ||
+    requestError?.message ||
+    fallback
+  );
+};
+
+const runReviewTransition = async ({
+  action,
+  fallbackError,
+}) => {
+  const id = toPositiveInt(
+    route.params.id
+  );
+
+  if (
+    !id ||
+    transitionBusy.value
+  ) {
+    return;
+  }
+
+  transitionBusy.value = true;
+  transitionMessage.value = "";
+  transitionMessageType.value = "";
+
+  try {
+    const result = await action(id);
+
+    transitionMessage.value = firstFilled(
+      result?.message,
+      "El estado de la publicación fue actualizado correctamente."
+    );
+    transitionMessageType.value = "success";
+
+    editMode.value = false;
+
+    await cargarDetalle(
+      id,
+      {
+        silent: true,
+      }
+    );
+  } catch (requestError) {
+    console.error(requestError);
+
+    transitionMessage.value = extractRequestError(
+      requestError,
+      fallbackError
+    );
+    transitionMessageType.value = "error";
+  } finally {
+    transitionBusy.value = false;
+  }
+};
+
+const publicationNoticeTitle = () => {
+  return (
+    toStr(
+      detalleNormalizado.value?.titulo
+    ) ||
+    "esta publicación"
+  );
+};
+
+const sendToReview = () => {
+  if (!canSendReview.value) {
+    return;
+  }
+
+  const title =
+    publicationNoticeTitle();
+
+  openNotice({
+    title: "Enviar a revisión",
+    message:
+      `¿Desea enviar “${title}” a revisión? ` +
+      "Mientras permanezca en revisión no podrá editarla.",
+    confirm: true,
+    confirmText: "Enviar a revisión",
+    cancelText: "Cancelar",
+    onConfirm: async () => {
+      await runReviewTransition({
+        action: enviarPublicacionRevision,
+        fallbackError:
+          "No se pudo enviar la publicación a revisión.",
+      });
+    },
+  });
+};
+
+const resendToReview = () => {
+  if (!canResendReview.value) {
+    return;
+  }
+
+  const title =
+    publicationNoticeTitle();
+
+  openNotice({
+    title: "Reenviar a revisión",
+    message:
+      `Confirme que realizó las correcciones solicitadas en “${title}”. ` +
+      "La publicación volverá a revisión y no podrá editarla mientras permanezca en ese estado.",
+    confirm: true,
+    confirmText: "Reenviar a revisión",
+    cancelText: "Cancelar",
+    onConfirm: async () => {
+      await runReviewTransition({
+        action: reenviarPublicacionRevision,
+        fallbackError:
+          "No se pudo reenviar la publicación a revisión.",
+      });
+    },
+  });
+};
+
+/* ============================================================
   NAVEGACIÓN
 ============================================================ */
 
@@ -1945,6 +2401,11 @@ const goBack = () => {
     from === "mis_publicaciones"
   ) {
     router.push("/mis-publicaciones");
+    return;
+  }
+
+  if (!userStore.isAuthenticated) {
+    router.push("/busqueda");
     return;
   }
 
@@ -2117,10 +2578,12 @@ const openPdf = async () => {
   );
 
   if (!previewWindow) {
-    window.alert(
-      "El navegador bloqueó la ventana emergente. " +
-      "Permita las ventanas emergentes para visualizar el PDF."
-    );
+    openNotice({
+      title: "No se pudo abrir el documento",
+      message:
+        "El navegador bloqueó la nueva pestaña. " +
+        "Permita ventanas emergentes para este sitio e inténtelo nuevamente.",
+    });
 
     return;
   }
@@ -2182,9 +2645,11 @@ const downloadPdf = async () => {
   } catch (pdfError) {
     console.error(pdfError);
 
-    window.alert(
-      "No se pudo descargar el PDF."
-    );
+    openNotice({
+      title: "No se pudo descargar el documento",
+      message:
+        "Intente nuevamente. Si el problema continúa, verifique que el PDF siga disponible.",
+    });
   }
 };
 
@@ -2210,7 +2675,7 @@ const cargarDetalle = async (
     detalle.value = null;
 
     error.value =
-      "El identificador de la publicación no es válido.";
+      "No encontramos la publicación solicitada.";
 
     loading.value = false;
 
@@ -2223,20 +2688,25 @@ const cargarDetalle = async (
 
   error.value = "";
 
+  if (!silent) {
+    transitionMessage.value = "";
+    transitionMessageType.value = "";
+  }
+
   if (!keepEditMode) {
     editMode.value = false;
   }
 
   try {
-    const response = await api.get(
-      `/publicaciones/${id}/`
+    const data = await obtenerPublicacionDetalle(
+      id
     );
 
     if (requestId !== requestSeq) {
       return;
     }
 
-    detalle.value = response.data;
+    detalle.value = data;
   } catch (requestError) {
     if (requestId !== requestSeq) {
       return;
@@ -2246,10 +2716,23 @@ const cargarDetalle = async (
 
     detalle.value = null;
 
-    error.value =
-      requestError?.response?.data?.detail ||
-      requestError?.response?.data?.message ||
-      "Ocurrió un problema al obtener el detalle de la publicación.";
+    const status = Number(
+      requestError?.response?.status || 0
+    );
+
+    if (status === 401) {
+      error.value =
+        "Su sesión ha vencido. Inicie sesión nuevamente.";
+    } else if (status === 403) {
+      error.value =
+        "No tiene permisos para consultar esta publicación.";
+    } else if (status === 404) {
+      error.value =
+        "No encontramos la publicación solicitada.";
+    } else {
+      error.value =
+        "No pudimos cargar la publicación. Intente nuevamente.";
+    }
   } finally {
     if (
       requestId === requestSeq &&
@@ -2277,9 +2760,26 @@ const onUpdated = async () => {
 ============================================================ */
 
 watch(
-  () => canEdit.value,
-  (allowed) => {
-    if (!allowed) {
+  [
+    () => route.meta?.publicationEdit === true,
+    () => canEdit.value,
+  ],
+  (
+    [requestedEditMode, allowed],
+    previousValues = []
+  ) => {
+    const [previouslyRequestedEditMode] =
+      previousValues;
+
+    if (requestedEditMode) {
+      editMode.value = Boolean(allowed);
+      return;
+    }
+
+    if (
+      previouslyRequestedEditMode ||
+      !allowed
+    ) {
       editMode.value = false;
     }
   },

@@ -7,33 +7,45 @@ import api from "./axios";
    - /publicaciones/mias/
    - /publicaciones/<id>/
    - /publicaciones/articulos/crear/
+   - /publicaciones/prevalidar/
+   - /publicaciones/validar-duplicados/
+   - /publicaciones/<id>/enviar-revision/
+   - /publicaciones/<id>/reenviar-revision/
    - /archivos-publicacion/
    - /archivos-publicacion/bulk-upload/
    - /reportes/publicaciones/excel/
 ========================================================= */
 
-const ENDPOINTS = {
+export const PUBLICACION_ENDPOINTS = Object.freeze({
   publicaciones: "/publicaciones/",
   publicacionesMias: "/publicaciones/mias/",
   articuloCrear: "/publicaciones/articulos/crear/",
+  prevalidar: "/publicaciones/prevalidar/",
+  validarDuplicados: "/publicaciones/validar-duplicados/",
   archivos: "/archivos-publicacion/",
   archivosBulk: "/archivos-publicacion/bulk-upload/",
   excel: "/reportes/publicaciones/excel/",
-};
+});
+
+const ENDPOINTS = PUBLICACION_ENDPOINTS;
 
 const ARTICULO_REGIONAL = "articulo_regional";
 const ARTICULO_ALTO_IMPACTO = "articulo_alto_impacto";
 
 const CAMPOS_ARTICULO_BASE = [
   "tipo_codigo",
+  "sede",
   "facultad",
   "carrera",
   "proyecto",
   "area",
   "subarea",
+  "pais",
+  "ciudad",
   "origen_tipo",
   "origen_grado",
-  "fecha_publicacion",
+  "anio_publicacion",
+  "mes_publicacion",
   "archivo_pdf",
   "nombre_articulo",
   "codigo_doi",
@@ -202,33 +214,35 @@ function normalizeAutores(autores) {
         item?.id ??
         item?.value;
 
+      const parsedId = Number(autorId);
+      const parsedOrder = Number(
+        item?.orden || index + 1
+      );
+
+      if (
+        !Number.isFinite(parsedId) ||
+        parsedId <= 0
+      ) {
+        return null;
+      }
+
       return {
-        autor_id: Number(autorId),
-        orden: Number(
-          item?.orden || index + 1
-        ),
-        rol_autoria:
-          index === 0
-            ? "principal"
-            : "coautor",
+        autor_id: parsedId,
+        orden:
+          Number.isFinite(parsedOrder) &&
+          parsedOrder > 0
+            ? parsedOrder
+            : index + 1,
       };
     })
-    .filter(
-      (item) =>
-        Number.isFinite(item.autor_id) &&
-        item.autor_id > 0
-    )
+    .filter(Boolean)
     .sort(
       (a, b) =>
         a.orden - b.orden
     )
     .map((item, index) => ({
-      ...item,
+      autor_id: item.autor_id,
       orden: index + 1,
-      rol_autoria:
-        index === 0
-          ? "principal"
-          : "coautor",
     }));
 }
 
@@ -264,17 +278,87 @@ function appendValue(
   formData.append(key, value);
 }
 
-function limpiarPayloadArticulo(
+function normalizePublicationPeriod(
   rawPayload = {}
 ) {
   const payload = {
-    ...rawPayload,
+    ...(rawPayload || {}),
   };
+
+  let year =
+    payload.anio_publicacion ??
+    payload.anio ??
+    null;
+
+  let month =
+    payload.mes_publicacion ??
+    payload.mes ??
+    null;
+
+  const legacyDate = normalizeText(
+    payload.fecha_publicacion
+  );
+
+  if (legacyDate) {
+    const match = legacyDate.match(
+      /^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/
+    );
+
+    if (match) {
+      if (isNil(year) || year === "") {
+        year = Number(match[1]);
+      }
+
+      if (isNil(month) || month === "") {
+        month = Number(match[2]);
+      }
+    }
+  }
+
+  if (!isNil(year) && year !== "") {
+    const parsedYear = Number(year);
+    payload.anio_publicacion =
+      Number.isInteger(parsedYear)
+        ? parsedYear
+        : year;
+  }
+
+  if (!isNil(month) && month !== "") {
+    const parsedMonth = Number(month);
+    payload.mes_publicacion =
+      Number.isInteger(parsedMonth)
+        ? parsedMonth
+        : month;
+  }
+
+  /*
+   * fecha_publicacion, anio y mes pertenecen al contrato anterior.
+   * Se aceptan como entrada de compatibilidad, pero el backend actual
+   * recibe anio_publicacion y mes_publicacion.
+   */
+  delete payload.fecha_publicacion;
+  delete payload.anio;
+  delete payload.mes;
+
+  return payload;
+}
+
+function limpiarPayloadArticulo(
+  rawPayload = {}
+) {
+  const payload =
+    normalizePublicationPeriod(
+      rawPayload
+    );
 
   const tipoCodigo =
     normalizeTipoCodigo(payload);
 
   payload.tipo_codigo = tipoCodigo;
+
+  payload.sede = normalizeId(
+    payload.sede
+  );
 
   payload.facultad = normalizeId(
     payload.facultad
@@ -294,6 +378,14 @@ function limpiarPayloadArticulo(
 
   payload.subarea = normalizeId(
     payload.subarea
+  );
+
+  payload.pais = normalizeId(
+    payload.pais
+  );
+
+  payload.ciudad = normalizeId(
+    payload.ciudad
   );
 
   payload.archivo_pdf =
@@ -477,9 +569,10 @@ function buildArticuloFormData(
 function buildUpdateFormData(
   rawPayload = {}
 ) {
-  const payload = {
-    ...rawPayload,
-  };
+  const payload =
+    normalizePublicationPeriod(
+      rawPayload
+    );
 
   const formData = new FormData();
 
@@ -503,6 +596,7 @@ function buildUpdateFormData(
       }
 
       if (
+        key === "sede" ||
         key === "facultad" ||
         key === "carrera" ||
         key === "proyecto" ||
@@ -670,6 +764,110 @@ export async function reemplazarPublicacion(
   const response = await api.put(
     `${ENDPOINTS.publicaciones}${id}/`,
     formData
+  );
+
+  return response.data;
+}
+
+/* =========================================================
+   Prevalidación, duplicados y flujo de revisión
+========================================================= */
+
+function buildCandidateValidationPayload(
+  rawPayload = {}
+) {
+  const payload =
+    normalizePublicationPeriod(
+      rawPayload
+    );
+
+  if (Array.isArray(payload.autores)) {
+    payload.autores = normalizeAutores(
+      payload.autores
+    );
+  }
+
+  return buildUpdateFormData(payload);
+}
+
+export async function prevalidarPublicacion(
+  payload = {}
+) {
+  const body =
+    buildCandidateValidationPayload(
+      payload
+    );
+
+  const response = await api.post(
+    ENDPOINTS.prevalidar,
+    body
+  );
+
+  return response.data;
+}
+
+export async function validarDuplicadosPublicacion(
+  payload = {}
+) {
+  const body =
+    buildCandidateValidationPayload(
+      payload
+    );
+
+  const response = await api.post(
+    ENDPOINTS.validarDuplicados,
+    body
+  );
+
+  return response.data;
+}
+
+export function normalizarPublicacionId(value) {
+  const id = Number(
+    value?.publicacion_id ??
+    value?.id ??
+    value
+  );
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    throw new Error(
+      "El identificador de la publicación no es válido."
+    );
+  }
+
+  return id;
+}
+
+export async function enviarPublicacionRevision(
+  publicacionId
+) {
+  const id =
+    normalizarPublicacionId(
+      publicacionId
+    );
+
+  const response = await api.post(
+    `/publicaciones/${id}/enviar-revision/`,
+    {}
+  );
+
+  return response.data;
+}
+
+export async function reenviarPublicacionRevision(
+  publicacionId
+) {
+  const id =
+    normalizarPublicacionId(
+      publicacionId
+    );
+
+  const response = await api.post(
+    `/publicaciones/${id}/reenviar-revision/`,
+    {}
   );
 
   return response.data;
@@ -861,6 +1059,18 @@ export const crearArticuloPublicacion =
 export const updatePublicacion =
   actualizarPublicacion;
 
+export const prevalidar =
+  prevalidarPublicacion;
+
+export const validarDuplicados =
+  validarDuplicadosPublicacion;
+
+export const enviarARevision =
+  enviarPublicacionRevision;
+
+export const reenviarARevision =
+  reenviarPublicacionRevision;
+
 export default {
   obtenerPublicaciones,
   obtenerMisPublicaciones,
@@ -868,6 +1078,11 @@ export default {
   crearArticulo,
   actualizarPublicacion,
   reemplazarPublicacion,
+  prevalidarPublicacion,
+  validarDuplicadosPublicacion,
+  enviarPublicacionRevision,
+  reenviarPublicacionRevision,
+  normalizarPublicacionId,
   obtenerArchivosPublicacion,
   subirArchivoPublicacion,
   subirArchivosPublicacion,
@@ -882,4 +1097,8 @@ export default {
   registrarArticulo,
   crearArticuloPublicacion,
   updatePublicacion,
+  prevalidar,
+  validarDuplicados,
+  enviarARevision,
+  reenviarARevision,
 };

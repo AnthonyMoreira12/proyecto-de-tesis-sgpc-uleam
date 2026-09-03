@@ -1054,7 +1054,7 @@
   place-items: center;
   border-radius: var(--pf-radius-md);
   background: var(--pf-primary);
-  color: #ffffff;
+  color: var(--text-on-primary, var(--accent-contrast, #ffffff));
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.06em;
@@ -2131,3 +2131,1583 @@ body.dark .pf-hero,
     padding-right: 0;
   }
 }
+
+/* ============================================================
+   NORMALIZACIÓN UX — FORMULARIO DE PROYECTO
+   Cabecera operativa y secciones con menor redundancia.
+============================================================ */
+
+.pf-context {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 2px 6px;
+}
+
+.pf-context__back {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--pf-radius-sm);
+  background: transparent;
+  color: var(--pf-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 760;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pf-context__back:hover:not(:disabled) {
+  background: var(--pf-elevated);
+  color: var(--pf-text);
+}
+
+.pf-context__back:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pf-context__copy {
+  min-width: 0;
+  margin: 0;
+  color: var(--pf-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.pf-context__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.pf-context__meta > span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--pf-line);
+  border-radius: var(--pf-radius-pill);
+  background: var(--pf-card);
+  color: var(--pf-muted);
+  font-size: 0.64rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.pf-context__meta strong {
+  color: var(--pf-text);
+  font-weight: 780;
+}
+
+/* Las secciones ya tienen título; no necesitan un segundo kicker. */
+.pf-card__head .pf-section-kicker {
+  display: none;
+}
+
+.pf-card {
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--pf-radius-lg);
+}
+
+.pf-card__head {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.36fr);
+  gap: 12px;
+  padding-bottom: 10px;
+}
+
+.pf-card__title {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.pf-card__desc {
+  font-size: 0.75rem;
+  line-height: 1.43;
+}
+
+.pf-summary,
+.pf-aside-card {
+  border-radius: var(--pf-radius-lg);
+}
+
+.pf-summary {
+  box-shadow: none;
+}
+
+.pf-aside-card {
+  box-shadow: none;
+}
+
+@media (max-width: 980px) {
+  .pf-context {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pf-context__meta {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .pf-context {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .pf-context__back {
+    width: fit-content;
+  }
+
+  .pf-context__meta {
+    grid-column: auto;
+  }
+
+  .pf-card__head {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-context * {
+    transition: none !important;
+  }
+}
+
+
+/* ============================================================
+   CIERRE VISUAL POST-HISTORIAL
+   Ajustes de consistencia y accesibilidad.
+============================================================ */
+
+.pf-page :where(button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px
+    var(--pf-focus-ring);
+}
+
+.pf-page :where(button):disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .pf-page {
+    padding-inline: 12px;
+  }
+}
+
+
+/* ============================================================
+   D6 — DEPURACIÓN VISUAL PARA USUARIO FINAL
+   Formulario más directo, sin progreso artificial ni tarjetas anidadas.
+============================================================ */
+
+.pf-context {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  padding: 2px 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-context::before,
+.pf-hero::before,
+.pf-summary::before,
+.pf-card::before,
+.pf-aside-card::before {
+  content: none !important;
+}
+
+.pf-context__back {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-context__back:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+  transform: none;
+}
+
+.pf-context__main {
+  min-width: 0;
+}
+
+.pf-context__title {
+  margin: 0;
+  color: var(--pf-text);
+  font-size: clamp(1.55rem, 2vw, 2rem);
+  font-weight: 760;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.pf-context__copy {
+  max-width: 72ch;
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.pf-card,
+.pf-aside-card {
+  border: 1px solid var(--pf-line);
+  border-radius: 12px;
+  background: var(--pf-card);
+  box-shadow: none;
+}
+
+.pf-card {
+  gap: 14px;
+  padding: 16px;
+}
+
+.pf-card__head {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding-bottom: 10px;
+}
+
+.pf-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.pf-card__desc {
+  max-width: 76ch;
+  font-size: 0.79rem;
+  line-height: 1.45;
+}
+
+.pf-section-kicker {
+  display: none;
+}
+
+.pf-field input,
+.pf-field textarea,
+.pf-select,
+.pf-author-search__bar input,
+.pf-file-chip__form input,
+.pf-combo {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pf-field input:focus,
+.pf-field textarea:focus,
+.pf-select:focus,
+.pf-author-search__bar input:focus,
+.pf-file-chip__form input:focus,
+.pf-combo.is-open {
+  box-shadow: 0 0 0 3px var(--pf-focus-ring);
+}
+
+.pf-period-preview {
+  padding: 8px 0 8px 12px;
+  border: 0;
+  border-left: 3px solid var(--pf-primary-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-selected-box {
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--pf-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-mini-pill {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pf-muted);
+  font-weight: 600;
+}
+
+.pf-authors-selected {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-author-list {
+  gap: 0;
+  border-top: 1px solid var(--pf-line);
+}
+
+.pf-author-card,
+.pf-author-card:first-child {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--pf-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-author-card:first-child::before {
+  content: none !important;
+}
+
+.pf-empty-box {
+  border-radius: 8px;
+  background: transparent;
+}
+
+.pf-upload {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-upload__trigger {
+  min-height: 84px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.pf-upload__trigger:hover,
+.pf-upload.is-dragover,
+.pf-upload:focus-within {
+  transform: none;
+  box-shadow: none;
+}
+
+.pf-file-chip {
+  margin-top: 10px;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--pf-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pf-aside {
+  gap: 0;
+}
+
+.pf-aside-card {
+  padding: 16px;
+}
+
+.pf-aside-card p {
+  margin-top: 6px;
+}
+
+.pf-btn,
+.pf-btn-inline,
+.pf-icon-btn,
+.pf-combo__button,
+.pf-file-chip__remove {
+  box-shadow: none;
+  transform: none !important;
+}
+
+.pf-btn {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.pf-btn-inline,
+.pf-icon-btn,
+.pf-combo__button,
+.pf-file-chip__remove {
+  border-radius: 7px;
+}
+
+.pf-save-error,
+.pf-save-ok {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pf-dropdown {
+  border-radius: 9px;
+}
+
+@media (max-width: 980px) {
+  .pf-context {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-form--with-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-aside {
+    position: static;
+  }
+}
+
+
+/* ============================================================
+   D10 · PROYECTO — USUARIO FINAL / ESPACIO EQUILIBRADO
+   ------------------------------------------------------------
+   Menos texto, pero sin compactar la interfaz.
+   Las reglas quedan aisladas bajo .pf-page.
+============================================================ */
+
+.pf-page {
+  padding:
+    calc(var(--sgpc-nav-offset, 78px) + 16px)
+    clamp(16px, 1.8vw, 26px)
+    38px !important;
+}
+
+.pf-page
+  .pf-shell {
+  width:
+    min(
+      1440px,
+      100%
+    ) !important;
+
+  gap:
+    16px !important;
+
+  container-name:
+    proyecto-formulario;
+
+  container-type:
+    inline-size;
+}
+
+/* Cabecera */
+.pf-page
+  .pf-context {
+  min-height:
+    66px;
+
+  grid-template-columns:
+    auto
+    minmax(0, 1fr) !important;
+
+  align-items:
+    center !important;
+
+  gap:
+    16px !important;
+
+  padding:
+    4px
+    2px
+    14px !important;
+
+  border-bottom:
+    1px solid
+    var(--pf-line) !important;
+}
+
+.pf-page
+  .pf-context__back {
+  min-height:
+    42px !important;
+
+  padding:
+    0
+    10px !important;
+
+  border:
+    1px solid
+    var(--pf-line) !important;
+
+  border-radius:
+    9px !important;
+
+  text-decoration:
+    none !important;
+}
+
+.pf-page
+  .pf-context__back:hover:not(:disabled) {
+  border-color:
+    var(--pf-line-strong) !important;
+
+  background:
+    var(--pf-elevated) !important;
+
+  text-decoration:
+    none !important;
+}
+
+.pf-page
+  .pf-context__title {
+  font-size:
+    clamp(
+      1.65rem,
+      1.45rem + 0.7vw,
+      2.1rem
+    ) !important;
+}
+
+/* Layout */
+.pf-page
+  .pf-form--with-aside {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(310px, 340px) !important;
+
+  gap:
+    16px !important;
+}
+
+.pf-page
+  .pf-main {
+  gap:
+    16px !important;
+}
+
+.pf-page
+  .pf-aside {
+  top:
+    calc(
+      var(--sgpc-nav-offset, 78px)
+      + 16px
+    ) !important;
+}
+
+/* Tarjetas: presencia normal, sin sombra artificial. */
+.pf-page
+  .pf-card,
+.pf-page
+  .pf-aside-card {
+  border-radius:
+    14px !important;
+
+  box-shadow:
+    none !important;
+}
+
+.pf-page
+  .pf-card {
+  gap:
+    18px !important;
+
+  padding:
+    20px
+    22px !important;
+}
+
+.pf-page
+  .pf-card__head {
+  min-height:
+    34px;
+
+  display:
+    flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px !important;
+
+  padding-bottom:
+    12px !important;
+}
+
+.pf-page
+  .pf-card__title {
+  font-size:
+    1.08rem !important;
+}
+
+.pf-page
+  .pf-card__desc {
+  display:
+    none !important;
+}
+
+/* Rejilla y controles: no achicar. */
+.pf-page
+  .pf-grid {
+  gap:
+    16px !important;
+}
+
+.pf-page
+  .pf-col-6 {
+  grid-column:
+    span 6;
+}
+
+.pf-page
+  .pf-field
+  label,
+.pf-page
+  .pf-author-search
+  > label,
+.pf-page
+  .pf-file-chip__form
+  label {
+  margin-bottom:
+    7px !important;
+
+  font-size:
+    0.79rem !important;
+}
+
+.pf-page
+  .pf-field
+  input,
+.pf-page
+  .pf-select,
+.pf-page
+  .pf-author-search__bar
+  input,
+.pf-page
+  .pf-file-chip__form
+  input {
+  min-height:
+    44px !important;
+
+  font-size:
+    0.82rem !important;
+}
+
+.pf-page
+  .pf-field
+  textarea {
+  min-height:
+    112px !important;
+
+  font-size:
+    0.82rem !important;
+}
+
+.pf-page
+  .pf-help,
+.pf-page
+  .pf-error,
+.pf-page
+  .pf-field-meta {
+  font-size:
+    0.68rem !important;
+}
+
+/* Equipo */
+.pf-page
+  .pf-authors-layout {
+  grid-template-columns:
+    minmax(300px, 0.78fr)
+    minmax(0, 1.22fr) !important;
+
+  gap:
+    18px !important;
+}
+
+.pf-page
+  .pf-author-search__bar {
+  min-height:
+    46px;
+}
+
+.pf-page
+  .pf-authors-selected__head {
+  min-height:
+    36px;
+}
+
+.pf-page
+  .pf-author-card {
+  min-height:
+    76px;
+
+  padding:
+    12px
+    0 !important;
+}
+
+.pf-page
+  .pf-author-card__identity {
+  min-width:
+    0;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    30px
+    minmax(0, 1fr);
+
+  align-items:
+    center;
+
+  gap:
+    9px;
+
+  padding-right:
+    0 !important;
+}
+
+.pf-page
+  .pf-author-card__identity
+  > div {
+  min-width:
+    0;
+
+  display:
+    grid;
+
+  gap:
+    2px;
+}
+
+.pf-page
+  .pf-author-card__order {
+  width:
+    28px;
+
+  height:
+    28px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border:
+    1px solid
+    var(--pf-line);
+
+  border-radius:
+    8px;
+
+  background:
+    var(--pf-elevated);
+
+  color:
+    var(--pf-muted);
+
+  font-size:
+    0.67rem;
+
+  font-weight:
+    780;
+}
+
+.pf-page
+  .pf-author-card__footer {
+  justify-content:
+    flex-end !important;
+}
+
+.pf-page
+  .pf-author-card__actions {
+  margin-left:
+    auto;
+}
+
+/* Documento */
+.pf-page
+  .pf-upload__trigger {
+  min-height:
+    96px !important;
+
+  padding:
+    16px !important;
+
+  border-radius:
+    11px !important;
+}
+
+.pf-page
+  .pf-upload__copy
+  strong {
+  font-size:
+    0.82rem;
+}
+
+.pf-page
+  .pf-upload__copy
+  small {
+  font-size:
+    0.68rem;
+}
+
+.pf-page
+  .pf-file-chip {
+  padding-top:
+    14px !important;
+}
+
+/* ============================================================
+   RESUMEN LATERAL
+============================================================ */
+
+.pf-page
+  .pf-aside-card--summary {
+  min-height:
+    390px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    16px;
+
+  padding:
+    20px !important;
+}
+
+.pf-page
+  .pf-aside-card--summary
+  > h3 {
+  margin:
+    0;
+
+  font-size:
+    1rem;
+
+  font-weight:
+    760;
+}
+
+.pf-page
+  .pf-project-summary {
+  display:
+    grid;
+
+  gap:
+    0;
+
+  margin:
+    0;
+
+  border-top:
+    1px solid
+    var(--pf-line);
+}
+
+.pf-page
+  .pf-project-summary
+  > div {
+  min-height:
+    54px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(88px, 0.42fr)
+    minmax(0, 1fr);
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  padding:
+    9px
+    0;
+
+  border-bottom:
+    1px solid
+    var(--pf-line);
+}
+
+.pf-page
+  .pf-project-summary
+  dt {
+  color:
+    var(--pf-muted);
+
+  font-size:
+    0.64rem;
+
+  font-weight:
+    700;
+}
+
+.pf-page
+  .pf-project-summary
+  dd {
+  min-width:
+    0;
+
+  margin:
+    0;
+
+  overflow:
+    hidden;
+
+  color:
+    var(--pf-text);
+
+  font-size:
+    0.72rem;
+
+  font-weight:
+    710;
+
+  line-height:
+    1.35;
+
+  text-align:
+    right;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+.pf-page
+  .pf-aside-actions {
+  margin-top:
+    auto;
+
+  padding-top:
+    2px;
+}
+
+.pf-page
+  .pf-aside-actions
+  .pf-btn {
+  min-height:
+    44px !important;
+}
+
+/* Responsive */
+@container proyecto-formulario (max-width: 1040px) {
+  .pf-page
+    .pf-form--with-aside {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .pf-page
+    .pf-aside {
+    position:
+      static !important;
+  }
+
+  .pf-page
+    .pf-aside-card--summary {
+    min-height:
+      0;
+
+    display:
+      grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+
+    align-items:
+      end;
+  }
+
+  .pf-page
+    .pf-aside-card--summary
+    > h3,
+  .pf-page
+    .pf-project-summary,
+  .pf-page
+    .pf-save-error,
+  .pf-page
+    .pf-save-ok {
+    grid-column:
+      1;
+  }
+
+  .pf-page
+    .pf-aside-actions {
+    grid-column:
+      2;
+
+    grid-row:
+      1 / span 4;
+
+    align-self:
+      end;
+
+    min-width:
+      260px;
+  }
+
+  .pf-page
+    .pf-project-summary {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .pf-page
+    .pf-project-summary
+    > div:nth-child(odd) {
+    padding-right:
+      14px;
+  }
+
+  .pf-page
+    .pf-project-summary
+    > div:nth-child(even) {
+    padding-left:
+      14px;
+
+    border-left:
+      1px solid
+      var(--pf-line);
+  }
+}
+
+@container proyecto-formulario (max-width: 780px) {
+  .pf-page
+    .pf-authors-layout {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .pf-page
+    .pf-aside-card--summary {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pf-page
+    .pf-aside-actions {
+    grid-column:
+      1;
+
+    grid-row:
+      auto;
+
+    min-width:
+      0;
+  }
+
+  .pf-page
+    .pf-project-summary {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .pf-page
+    .pf-project-summary
+    > div:nth-child(odd),
+  .pf-page
+    .pf-project-summary
+    > div:nth-child(even) {
+    padding-inline:
+      0;
+
+    border-left:
+      0;
+  }
+}
+
+@container proyecto-formulario (max-width: 620px) {
+  .pf-page {
+    padding:
+      calc(var(--sgpc-nav-offset, 78px) + 10px)
+      10px
+      26px !important;
+  }
+
+  .pf-page
+    .pf-context {
+    min-height:
+      0;
+
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+
+    align-items:
+      start !important;
+  }
+
+  .pf-page
+    .pf-context__back {
+    width:
+      fit-content;
+  }
+
+  .pf-page
+    .pf-card {
+    padding:
+      16px !important;
+  }
+
+  .pf-page
+    .pf-col-3,
+  .pf-page
+    .pf-col-4,
+  .pf-page
+    .pf-col-6,
+  .pf-page
+    .pf-col-8,
+  .pf-page
+    .pf-col-12 {
+    grid-column:
+      1 / -1 !important;
+  }
+
+  .pf-page
+    .pf-aside-actions {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+}
+
+/* ============================================================
+   D11 · PROYECTO — ALINEACIÓN VISUAL CON LISTADO
+   ------------------------------------------------------------
+   Capa final no destructiva:
+   - reduce espacio superior;
+   - baja densidad de bordes;
+   - compacta tarjetas sin achicar controles;
+   - mejora lectura del resumen lateral;
+   - elimina sensación de "tarjetas dentro de tarjetas";
+   - mantiene lógica, accesibilidad y responsive existentes.
+============================================================ */
+
+.pf-page {
+  padding:
+    calc(var(--sgpc-nav-offset, 64px) + 8px)
+    clamp(16px, 1.8vw, 28px)
+    34px !important;
+}
+
+.pf-page .pf-shell {
+  width: min(1480px, 100%) !important;
+  gap: 12px !important;
+}
+
+/* Cabecera operativa */
+.pf-page .pf-context {
+  min-height: 52px !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 2px 10px !important;
+  border-bottom: 1px solid var(--pf-line) !important;
+}
+
+.pf-page .pf-context__back {
+  min-height: 38px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--pf-muted) !important;
+  box-shadow: none !important;
+}
+
+.pf-page .pf-context__back:hover:not(:disabled) {
+  border: 0 !important;
+  background: var(--pf-primary-soft) !important;
+  color: var(--pf-primary) !important;
+  text-decoration: none !important;
+}
+
+.pf-page .pf-context__title {
+  font-size: clamp(1.55rem, 1.35rem + 0.65vw, 1.95rem) !important;
+  line-height: 1.08 !important;
+}
+
+/* Layout principal */
+.pf-page .pf-form--with-aside {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(290px, 318px) !important;
+  gap: 14px !important;
+}
+
+.pf-page .pf-main {
+  gap: 12px !important;
+}
+
+.pf-page .pf-aside {
+  top: calc(var(--sgpc-nav-offset, 64px) + 12px) !important;
+}
+
+/* Secciones */
+.pf-page .pf-card,
+.pf-page .pf-aside-card {
+  border: 1px solid var(--pf-line) !important;
+  border-radius: 12px !important;
+  background: var(--pf-card) !important;
+  box-shadow: none !important;
+}
+
+.pf-page .pf-card {
+  gap: 15px !important;
+  padding: 18px 20px !important;
+}
+
+.pf-page .pf-card__head {
+  min-height: 0 !important;
+  display: block !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.pf-page .pf-card__title {
+  margin: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1.2 !important;
+}
+
+.pf-page .pf-grid {
+  column-gap: 16px !important;
+  row-gap: 14px !important;
+}
+
+/* Controles */
+.pf-page .pf-field label,
+.pf-page .pf-author-search > label,
+.pf-page .pf-file-chip__form label {
+  margin-bottom: 6px !important;
+  font-size: 0.78rem !important;
+}
+
+.pf-page .pf-field input,
+.pf-page .pf-select,
+.pf-page .pf-author-search__bar input,
+.pf-page .pf-file-chip__form input {
+  min-height: 42px !important;
+  font-size: 0.83rem !important;
+  border-radius: 9px !important;
+}
+
+.pf-page .pf-field textarea {
+  min-height: 100px !important;
+  padding: 10px 12px !important;
+  font-size: 0.83rem !important;
+  border-radius: 9px !important;
+}
+
+.pf-page .pf-help,
+.pf-page .pf-error,
+.pf-page .pf-field-meta {
+  margin-top: 5px !important;
+  font-size: 0.71rem !important;
+  line-height: 1.38 !important;
+}
+
+.pf-page .pf-field input:disabled,
+.pf-page .pf-field textarea:disabled,
+.pf-page .pf-select:disabled {
+  opacity: 1 !important;
+  background:
+    color-mix(in srgb, var(--pf-elevated) 88%, var(--pf-card)) !important;
+  color: var(--pf-muted) !important;
+}
+
+/* Selector de carrera: un control, no una tarjeta dentro de otra */
+.pf-page .pf-combo {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.pf-page .pf-combo__control {
+  min-height: 42px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--pf-line);
+  border-radius: 9px;
+  background: var(--pf-input);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.pf-page .pf-combo.is-open .pf-combo__control {
+  border-color: var(--pf-primary-line);
+  background:
+    color-mix(in srgb, var(--pf-input) 97%, var(--pf-primary) 3%);
+  box-shadow: 0 0 0 3px var(--pf-focus-ring);
+}
+
+.pf-page .pf-combo.is-invalid .pf-combo__control {
+  border-color: var(--pf-danger-line);
+  box-shadow: 0 0 0 3px var(--pf-danger-soft);
+}
+
+.pf-page .pf-combo__control input {
+  min-height: 40px !important;
+}
+
+.pf-page .pf-combo__button {
+  width: 34px !important;
+  height: 34px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.pf-page .pf-selected-box {
+  margin-top: 8px !important;
+  padding: 8px 0 8px 10px !important;
+  border: 0 !important;
+  border-left: 2px solid var(--pf-primary-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.pf-page .pf-combo__meta {
+  margin-top: 6px !important;
+}
+
+/* Equipo */
+.pf-page .pf-authors-layout {
+  grid-template-columns:
+    minmax(290px, 0.82fr)
+    minmax(0, 1.18fr) !important;
+  gap: 16px !important;
+}
+
+.pf-page .pf-authors-selected__head {
+  min-height: 32px !important;
+}
+
+.pf-page .pf-empty-box {
+  min-height: 86px !important;
+  padding: 14px !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+}
+
+.pf-page .pf-author-list {
+  gap: 0 !important;
+}
+
+.pf-page .pf-author-card,
+.pf-page .pf-author-card:first-child {
+  min-height: 0 !important;
+  padding: 10px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--pf-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.pf-page .pf-author-card__identity strong {
+  font-size: 0.82rem !important;
+}
+
+.pf-page .pf-author-card__identity span {
+  font-size: 0.72rem !important;
+}
+
+.pf-page .pf-icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Documento */
+.pf-page .pf-upload {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.pf-page .pf-upload__trigger {
+  min-height: 84px !important;
+  padding: 14px !important;
+  border-radius: 10px !important;
+  background:
+    color-mix(in srgb, var(--pf-card) 94%, var(--pf-primary) 6%) !important;
+}
+
+.pf-page .pf-upload__icon {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+.pf-page .pf-file-chip {
+  margin-top: 8px !important;
+  padding-top: 12px !important;
+}
+
+/* Resumen lateral */
+.pf-page .pf-aside-card--summary {
+  min-height: 0 !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+.pf-page .pf-aside-card--summary > h3 {
+  font-size: 0.96rem !important;
+}
+
+.pf-page .pf-project-summary {
+  border-top: 1px solid var(--pf-line) !important;
+}
+
+.pf-page .pf-project-summary > div {
+  min-height: 48px !important;
+  grid-template-columns:
+    minmax(76px, 0.38fr)
+    minmax(0, 1fr) !important;
+  gap: 8px !important;
+  padding: 8px 0 !important;
+}
+
+.pf-page .pf-project-summary dt {
+  font-size: 0.66rem !important;
+  font-weight: 700 !important;
+}
+
+.pf-page .pf-project-summary dd {
+  overflow: visible !important;
+  font-size: 0.73rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  text-align: right !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.pf-page .pf-aside-actions {
+  grid-template-columns:
+    minmax(0, 0.82fr)
+    minmax(0, 1.18fr) !important;
+  gap: 8px !important;
+  margin-top: 2px !important;
+}
+
+.pf-page .pf-aside-actions .pf-btn {
+  min-height: 42px !important;
+  border-radius: 9px !important;
+  font-size: 0.78rem !important;
+}
+
+/* Escritorio medio */
+@container proyecto-formulario (max-width: 1180px) {
+  .pf-page .pf-form--with-aside {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(270px, 292px) !important;
+  }
+
+  .pf-page .pf-col-3 {
+    grid-column: span 6 !important;
+  }
+}
+
+/* Al pasar a una sola columna, el resumen deja de sentirse como sidebar. */
+@container proyecto-formulario (max-width: 1040px) {
+  .pf-page .pf-form--with-aside {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .pf-page .pf-aside {
+    position: static !important;
+  }
+
+  .pf-page .pf-aside-card--summary {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 12px 18px !important;
+  }
+
+  .pf-page .pf-project-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pf-page .pf-aside-actions {
+    min-width: 250px !important;
+  }
+}
+
+@container proyecto-formulario (max-width: 780px) {
+  .pf-page .pf-authors-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .pf-page .pf-aside-card--summary {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .pf-page .pf-project-summary {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .pf-page .pf-aside-actions {
+    min-width: 0 !important;
+  }
+}
+
+@container proyecto-formulario (max-width: 620px) {
+  .pf-page {
+    padding:
+      calc(var(--sgpc-nav-offset, 64px) + 6px)
+      10px
+      26px !important;
+  }
+
+  .pf-page .pf-context {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .pf-page .pf-context__back {
+    width: fit-content;
+    padding-left: 0 !important;
+  }
+
+  .pf-page .pf-card {
+    padding: 15px !important;
+  }
+
+  .pf-page .pf-col-3,
+  .pf-page .pf-col-4,
+  .pf-page .pf-col-6,
+  .pf-page .pf-col-8,
+  .pf-page .pf-col-12 {
+    grid-column: 1 / -1 !important;
+  }
+
+  .pf-page .pf-aside-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+

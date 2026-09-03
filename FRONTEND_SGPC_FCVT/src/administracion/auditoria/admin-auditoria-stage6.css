@@ -1,0 +1,112 @@
+/* ============================================================
+   SGPC ULEAM · ETAPA 6
+   Auditoría — jerarquía, feedback y reducción de ruido técnico
+============================================================ */
+
+.audit-page .admin-loading-state,
+.audit-page .admin-error-state,
+.audit-page .admin-action-feedback,
+.audit-page .admin-inline-loader {
+  margin: 0;
+}
+
+.audit-page .admin-inline-loader,
+.audit-page .admin-action-feedback {
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* El resumen funciona como una sola banda, no como cuatro tarjetas
+   independientes compitiendo con la tabla. */
+.audit-page .audit-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  border-radius: 13px;
+  background: var(--bg-card, #fff);
+  box-shadow: none;
+}
+
+.audit-page .audit-metrics > article {
+  min-height: 78px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.audit-page .audit-metrics > article + article {
+  border-left: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+}
+
+.audit-page .audit-filters {
+  gap: 9px;
+  padding: 12px;
+  border-radius: 13px;
+  box-shadow: none;
+}
+
+.audit-page .audit-field input,
+.audit-page .audit-field select,
+.audit-page .audit-clear,
+.audit-page .audit-export {
+  min-height: 42px;
+}
+
+.audit-page .audit-table-wrap {
+  box-shadow: none;
+}
+
+.audit-page .audit-table-action button {
+  min-width: 64px;
+}
+
+/* Información avanzada conserva datos útiles de trazabilidad sin
+   exponer JSON ni identificadores internos en la interfaz normal. */
+.audit-page .audit-technical {
+  margin-top: 2px;
+  border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+}
+
+.audit-page .audit-technical__toggle {
+  min-height: 42px;
+  font-size: 0.76rem;
+}
+
+.audit-page .audit-technical-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .audit-page .audit-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .audit-page .audit-metrics > article:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  }
+
+  .audit-page .audit-metrics > article:nth-child(4) {
+    border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  }
+
+  .audit-page .audit-technical-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .audit-page .audit-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .audit-page .audit-metrics > article + article,
+  .audit-page .audit-metrics > article:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  }
+}

@@ -1,21 +1,16 @@
 <template>
   <div
-    class="crud-catalog"
+    class="crud-catalog sgpc-catalog-scope"
     :class="{ 'crud-catalog--embedded': embedded }"
     :aria-busy="loading ? 'true' : 'false'"
   >
-    <!-- =====================================================
-         BARRA PRINCIPAL
-    ====================================================== -->
     <section
-      class="crud-catalog__toolbar adm-surface"
+      class="crud-catalog__toolbar"
       role="region"
       :aria-labelledby="catalogTitleId"
     >
       <div class="crud-catalog__toolbar-main">
         <div class="crud-catalog__toolbar-copy">
-          <span class="adm-kicker">Catálogo académico</span>
-
           <h2
             :id="catalogTitleId"
             class="crud-catalog__title"
@@ -35,17 +30,14 @@
             :disabled="loading"
             @click="load"
           >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.3L13 11h8V3l-3.3 3.3Z"
               />
             </svg>
 
-            {{ loading ? "Actualizando..." : "Actualizar" }}
+            {{ isRefreshing ? "Actualizando…" : "Actualizar" }}
           </button>
 
           <button
@@ -56,30 +48,20 @@
             :disabled="loading"
             @click="toggleCreatePanel"
           >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"
               />
             </svg>
 
-            {{
-              showCreatePanel
-                ? "Cerrar formulario"
-                : "Nuevo registro"
-            }}
+            {{ showCreatePanel ? "Cerrar" : createActionLabel }}
           </button>
         </div>
       </div>
 
       <div class="crud-catalog__toolbar-row">
-        <div
-          class="crud-catalog__search"
-          role="search"
-        >
+        <div class="crud-catalog__search" role="search">
           <label
             class="crud-catalog__sr-only"
             :for="searchInputId"
@@ -87,10 +69,7 @@
             Buscar en {{ title }}
           </label>
 
-          <span
-            class="crud-catalog__search-icon"
-            aria-hidden="true"
-          >
+          <span class="crud-catalog__search-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -121,60 +100,28 @@
             <span aria-hidden="true">×</span>
           </button>
         </div>
-
-        <div
-          class="crud-catalog__toolbar-meta"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span class="crud-catalog__toolbar-count">
-            <strong>{{ filteredRows }}</strong>
-            de
-            <strong>{{ totalRows }}</strong>
-            visibles
-          </span>
-
-          <span class="crud-catalog__toolbar-status">
-            {{ visibleStatusText }}
-          </span>
-        </div>
       </div>
     </section>
 
-    <!-- =====================================================
-         ERROR DE CARGA
-    ====================================================== -->
     <div
       v-if="loadError"
       class="crud-catalog__alert crud-catalog__alert--error"
       role="alert"
       aria-live="assertive"
     >
-      <span
-        class="crud-catalog__alert-icon"
-        aria-hidden="true"
-      >
-        !
-      </span>
-
+      <span class="crud-catalog__alert-icon" aria-hidden="true">!</span>
       <div>
-        <strong>No se pudo cargar el catálogo</strong>
+        <strong>{{ rows.length ? "No pudimos actualizar la información" : "No pudimos cargar la información" }}</strong>
         <p>{{ loadError }}</p>
       </div>
     </div>
 
-    <!-- =====================================================
-         CONTENIDO
-    ====================================================== -->
     <section
       class="crud-catalog__layout"
       :class="{
         'crud-catalog__layout--table-only': !showCreatePanel,
       }"
     >
-      <!-- ===================================================
-           FORMULARIO DE CREACIÓN
-      ==================================================== -->
       <Transition name="catalog-panel">
         <aside
           v-if="showCreatePanel"
@@ -182,31 +129,22 @@
           class="crud-catalog__aside"
           aria-labelledby="createFormTitleId"
         >
-          <section class="crud-catalog__card crud-catalog__card--form adm-surface">
+          <section class="crud-catalog__card crud-catalog__card--form crud-catalog__local-surface">
             <div class="crud-catalog__form-head">
               <div>
-                <span class="crud-catalog__section-kicker">
-                  Nuevo elemento
-                </span>
-
                 <h3
                   :id="createFormTitleId"
                   class="crud-catalog__form-title"
                 >
-                  Registrar en {{ title }}
+                  {{ createPanelTitle }}
                 </h3>
-
                 <p class="crud-catalog__form-subtitle">
-                  Complete los campos obligatorios para agregar el
-                  registro al catálogo.
+                  Complete la información requerida.
                 </p>
               </div>
             </div>
 
-            <form
-              class="crud-catalog__form"
-              @submit.prevent="create"
-            >
+            <form class="crud-catalog__form" @submit.prevent="create">
               <div
                 v-for="field in fields"
                 :key="field.key"
@@ -218,32 +156,18 @@
                     :for="fieldControlId('create', field)"
                   >
                     {{ field.label }}
-
                     <span
                       v-if="field.required"
                       class="crud-catalog__required"
                       aria-hidden="true"
-                    >
-                      *
-                    </span>
+                    >*</span>
                   </label>
-
-                  <InfoTip
-                    v-if="field.help"
-                    :title="field.helpTitle || 'Información'"
-                  >
-                    {{ field.help }}
-                  </InfoTip>
                 </div>
 
                 <input
                   v-if="field.type !== 'select'"
                   :id="fieldControlId('create', field)"
-                  :ref="
-                    field.key === firstFieldKey
-                      ? setCreateFirstEl
-                      : undefined
-                  "
+                  :ref="field.key === firstFieldKey ? setCreateFirstEl : undefined"
                   v-model="createForm[field.key]"
                   class="crud-catalog__control"
                   :name="field.key"
@@ -253,42 +177,23 @@
                   :required="Boolean(field.required)"
                   :disabled="loading"
                   :autocomplete="field.autocomplete || 'off'"
-                  :aria-describedby="
-                    field.help
-                      ? fieldHelpId('create', field)
-                      : undefined
-                  "
+                  :aria-describedby="field.help ? fieldHelpId('create', field) : undefined"
                 />
 
                 <select
                   v-else
                   :id="fieldControlId('create', field)"
-                  :ref="
-                    field.key === firstFieldKey
-                      ? setCreateFirstEl
-                      : undefined
-                  "
+                  :ref="field.key === firstFieldKey ? setCreateFirstEl : undefined"
                   v-model="createForm[field.key]"
                   class="crud-catalog__control"
                   :name="field.key"
                   :required="Boolean(field.required)"
-                  :disabled="
-                    loading ||
-                    !(field.options || []).length
-                  "
-                  :aria-describedby="
-                    field.help
-                      ? fieldHelpId('create', field)
-                      : undefined
-                  "
+                  :disabled="loading || !(field.options || []).length"
+                  :aria-describedby="field.help ? fieldHelpId('create', field) : undefined"
                 >
                   <option value="">
-                    {{
-                      field.placeholder ||
-                      "Seleccione una opción"
-                    }}
+                    {{ field.placeholder || "Seleccione una opción" }}
                   </option>
-
                   <option
                     v-for="option in field.options || []"
                     :key="option.value"
@@ -325,23 +230,17 @@
                 >
                   Cancelar
                 </button>
-
                 <button
                   class="crud-catalog__btn crud-catalog__btn--primary"
                   type="submit"
                   :disabled="loading"
                 >
                   <span
-                    v-if="loading"
+                    v-if="operation === 'create'"
                     class="crud-catalog__spinner"
                     aria-hidden="true"
                   ></span>
-
-                  {{
-                    loading
-                      ? "Guardando..."
-                      : "Crear registro"
-                  }}
+                  {{ operation === "create" ? "Guardando…" : "Guardar" }}
                 </button>
               </div>
             </form>
@@ -349,50 +248,23 @@
         </aside>
       </Transition>
 
-      <!-- ===================================================
-           TABLA
-      ==================================================== -->
-      <section class="crud-catalog__card crud-catalog__card--table adm-surface">
+      <section class="crud-catalog__card crud-catalog__card--table crud-catalog__local-surface">
         <div class="crud-catalog__table-head">
-          <div>
-            <span class="crud-catalog__section-kicker">
-              Información registrada
-            </span>
-
-            <h3 class="crud-catalog__table-title">
-              Registros
-            </h3>
-
-            <p class="crud-catalog__table-subtitle">
-              Consulte, edite o elimine los elementos existentes.
-            </p>
-          </div>
-
-          <span
-            class="crud-catalog__badge"
-            aria-live="polite"
-          >
+          <h3 class="crud-catalog__table-title">
+            Información registrada
+          </h3>
+          <span class="crud-catalog__badge" aria-live="polite">
             {{ visibleRecordsLabel }}
           </span>
         </div>
 
-        <div
-          v-if="loading"
-          class="crud-catalog__loading"
-          role="status"
-          aria-live="polite"
-        >
-          <span
-            class="crud-catalog__spinner crud-catalog__spinner--primary"
-            aria-hidden="true"
-          ></span>
+        <AdminInlineLoader
+          v-if="isRefreshing"
+          message="Actualizando información…"
+        />
 
-          Actualizando registros...
-        </div>
-
-        <!-- Carga inicial -->
         <div
-          v-if="loading && !rows.length"
+          v-if="isInitialLoading"
           class="crud-catalog__skeleton-list"
           aria-hidden="true"
         >
@@ -407,15 +279,11 @@
           </div>
         </div>
 
-        <!-- Estado vacío -->
         <div
           v-else-if="!rowsFiltrados.length"
           class="crud-catalog__empty-state"
         >
-          <div
-            class="crud-catalog__empty-icon"
-            aria-hidden="true"
-          >
+          <div class="crud-catalog__empty-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -425,18 +293,13 @@
           </div>
 
           <h4 class="crud-catalog__empty-title">
-            {{
-              searchTrim
-                ? "Sin coincidencias"
-                : "Sin registros"
-            }}
+            {{ searchTrim ? "No hay resultados" : "Aún no hay información" }}
           </h4>
-
           <p class="crud-catalog__empty-text">
             {{
               searchTrim
-                ? `No se encontraron resultados para “${searchTrim}”.`
-                : "Todavía no existen elementos registrados en este catálogo."
+                ? `No encontramos resultados para “${searchTrim}”.`
+                : "Todavía no hay información registrada en esta sección."
             }}
           </p>
 
@@ -449,28 +312,20 @@
             >
               Limpiar búsqueda
             </button>
-
             <button
               v-if="!showCreatePanel"
               class="crud-catalog__btn crud-catalog__btn--primary"
               type="button"
               @click="openCreatePanel"
             >
-              Nuevo registro
+              {{ createActionLabel }}
             </button>
           </div>
         </div>
 
-        <!-- Tabla de resultados -->
-        <div
-          v-else
-          class="crud-catalog__table-wrap"
-        >
+        <div v-else class="crud-catalog__table-wrap">
           <table class="crud-catalog__table">
-            <caption class="crud-catalog__sr-only">
-              Registros del catálogo {{ title }}
-            </caption>
-
+            <caption class="crud-catalog__sr-only">{{ title }}</caption>
             <thead>
               <tr>
                 <th
@@ -480,31 +335,26 @@
                 >
                   {{ column.label }}
                 </th>
-
-                <th
-                  class="crud-catalog__th-actions"
-                  scope="col"
-                >
+                <th class="crud-catalog__th-actions" scope="col">
                   Acciones
                 </th>
               </tr>
             </thead>
-
             <tbody>
-              <tr
-                v-for="row in rowsFiltrados"
-                :key="row.id"
-              >
+              <tr v-for="row in rowsFiltrados" :key="row.id">
                 <td
                   v-for="column in columns"
                   :key="column.key"
+                  :data-label="column.label"
                 >
                   <span class="crud-catalog__cell-value">
                     {{ rowValue(row, column) }}
                   </span>
                 </td>
-
-                <td class="crud-catalog__td-actions">
+                <td
+                  class="crud-catalog__td-actions"
+                  data-label="Acciones"
+                >
                   <div class="crud-catalog__actions">
                     <button
                       class="crud-catalog__btn crud-catalog__btn--secondary crud-catalog__btn--sm"
@@ -515,7 +365,6 @@
                     >
                       Editar
                     </button>
-
                     <button
                       class="crud-catalog__btn crud-catalog__btn--danger crud-catalog__btn--sm"
                       type="button"
@@ -534,13 +383,11 @@
       </section>
     </section>
 
-    <!-- =====================================================
-         MODAL DE EDICIÓN
-    ====================================================== -->
-    <Transition name="catalog-modal">
-      <div
-        v-if="modal.open"
-        class="crud-catalog__modal-shell"
+    <Teleport to="body">
+      <Transition name="catalog-modal">
+        <div
+          v-if="modal.open"
+        class="sgpc-catalog-portal crud-catalog__modal-shell"
         @click.self="closeModal"
       >
         <div
@@ -554,26 +401,20 @@
           tabindex="-1"
           @keydown="handleModalKeydown"
         >
-          <form
-            class="crud-catalog__modal-form"
-            @submit.prevent="saveEdit"
-          >
+          <form class="crud-catalog__modal-form" @submit.prevent="saveEdit">
             <header class="crud-catalog__modal-header">
               <div class="crud-catalog__modal-heading">
-                <span class="adm-kicker">Edición</span>
-
                 <h2
                   :id="modalTitleId"
                   class="crud-catalog__modal-title"
                 >
                   {{ modal.title }}
                 </h2>
-
                 <p
                   :id="modalDescriptionId"
                   class="crud-catalog__modal-subtitle"
                 >
-                  Actualice la información del registro seleccionado.
+                  Modifique la información y guarde los cambios.
                 </p>
               </div>
 
@@ -581,7 +422,7 @@
                 class="crud-catalog__modal-close"
                 type="button"
                 :disabled="loading"
-                aria-label="Cerrar ventana de edición"
+                aria-label="Cerrar"
                 title="Cerrar"
                 @click="closeModal"
               >
@@ -592,7 +433,7 @@
             <div class="crud-catalog__modal-scroll">
               <section
                 class="crud-catalog__modal-section"
-                aria-label="Campos editables"
+                aria-label="Información editable"
               >
                 <div class="crud-catalog__modal-grid">
                   <div
@@ -606,32 +447,18 @@
                         :for="fieldControlId('edit', field)"
                       >
                         {{ field.label }}
-
                         <span
                           v-if="field.required"
                           class="crud-catalog__required"
                           aria-hidden="true"
-                        >
-                          *
-                        </span>
+                        >*</span>
                       </label>
-
-                      <InfoTip
-                        v-if="field.help"
-                        :title="field.helpTitle || 'Información'"
-                      >
-                        {{ field.help }}
-                      </InfoTip>
                     </div>
 
                     <input
                       v-if="field.type !== 'select'"
                       :id="fieldControlId('edit', field)"
-                      :ref="
-                        field.key === firstFieldKey
-                          ? setEditFirstEl
-                          : undefined
-                      "
+                      :ref="field.key === firstFieldKey ? setEditFirstEl : undefined"
                       v-model="editForm[field.key]"
                       class="crud-catalog__modal-input"
                       :name="`edit_${field.key}`"
@@ -641,42 +468,23 @@
                       :required="Boolean(field.required)"
                       :disabled="loading"
                       :autocomplete="field.autocomplete || 'off'"
-                      :aria-describedby="
-                        field.help
-                          ? fieldHelpId('edit', field)
-                          : undefined
-                      "
+                      :aria-describedby="field.help ? fieldHelpId('edit', field) : undefined"
                     />
 
                     <select
                       v-else
                       :id="fieldControlId('edit', field)"
-                      :ref="
-                        field.key === firstFieldKey
-                          ? setEditFirstEl
-                          : undefined
-                      "
+                      :ref="field.key === firstFieldKey ? setEditFirstEl : undefined"
                       v-model="editForm[field.key]"
                       class="crud-catalog__modal-input"
                       :name="`edit_${field.key}`"
                       :required="Boolean(field.required)"
-                      :disabled="
-                        loading ||
-                        !(field.options || []).length
-                      "
-                      :aria-describedby="
-                        field.help
-                          ? fieldHelpId('edit', field)
-                          : undefined
-                      "
+                      :disabled="loading || !(field.options || []).length"
+                      :aria-describedby="field.help ? fieldHelpId('edit', field) : undefined"
                     >
                       <option value="">
-                        {{
-                          field.placeholder ||
-                          "Seleccione una opción"
-                        }}
+                        {{ field.placeholder || "Seleccione una opción" }}
                       </option>
-
                       <option
                         v-for="option in field.options || []"
                         :key="option.value"
@@ -716,29 +524,24 @@
               >
                 Cancelar
               </button>
-
               <button
                 class="crud-catalog__btn crud-catalog__btn--primary"
                 type="submit"
                 :disabled="loading || !editForm.id"
               >
                 <span
-                  v-if="loading"
+                  v-if="operation === 'edit'"
                   class="crud-catalog__spinner"
                   aria-hidden="true"
                 ></span>
-
-                {{
-                  loading
-                    ? "Guardando..."
-                    : "Guardar cambios"
-                }}
+                {{ operation === "edit" ? "Guardando cambios…" : "Guardar cambios" }}
               </button>
             </footer>
           </form>
         </div>
-      </div>
-    </Transition>
+        </div>
+      </Transition>
+    </Teleport>
 
     <NoticeDialog
       :model-value="notice"
@@ -760,8 +563,9 @@ import {
 
 import { useNotice } from "../../scripts/composables/useNotice";
 
-import InfoTip from "../../inicio/ui/InfoTip.vue";
 import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
+import AdminInlineLoader from "../_shared/components/feedback/AdminInlineLoader.vue";
+import { invalidateAdminCatalogCache } from "../_shared/utils/adminCatalogCache";
 
 const props = defineProps({
   title: {
@@ -769,6 +573,14 @@ const props = defineProps({
     required: true,
   },
   description: {
+    type: String,
+    default: "",
+  },
+  createLabel: {
+    type: String,
+    default: "Agregar",
+  },
+  createTitle: {
     type: String,
     default: "",
   },
@@ -810,6 +622,8 @@ const {
 
 const rows = ref([]);
 const loading = ref(false);
+const operation = ref("");
+const visibleListLoading = ref(false);
 const loadError = ref("");
 const createError = ref("");
 const editError = ref("");
@@ -828,11 +642,12 @@ const editForm = reactive({
 
 const modal = reactive({
   open: false,
-  title: "Editar registro",
+  title: "Editar",
 });
 
 let modalTriggerElement = null;
 let previousBodyOverflow = "";
+let loadFeedbackTimer = null;
 
 const normalize = (value) =>
   String(value ?? "")
@@ -875,7 +690,16 @@ const modalDescriptionId = computed(
 
 const defaultDescription = computed(
   () =>
-    "Cree, edite y elimine registros del catálogo."
+    "Administre la información disponible en esta sección."
+);
+
+const createActionLabel = computed(() =>
+  String(props.createLabel || "Agregar").trim() || "Agregar"
+);
+
+const createPanelTitle = computed(() =>
+  String(props.createTitle || props.createLabel || "Agregar").trim() ||
+  "Agregar"
 );
 
 const searchTrim = computed(() =>
@@ -890,6 +714,18 @@ const searchPlaceholder = computed(
   () =>
     `Buscar ${String(props.title || "").toLowerCase()}...`
 );
+
+const isInitialLoading = computed(() => (
+  operation.value === "load" &&
+  visibleListLoading.value &&
+  !rows.value.length
+));
+
+const isRefreshing = computed(() => (
+  operation.value === "load" &&
+  visibleListLoading.value &&
+  Boolean(rows.value.length)
+));
 
 const firstFieldKey = computed(
   () => props.fields?.[0]?.key || null
@@ -930,27 +766,13 @@ const filteredRows = computed(
 );
 
 const visibleRecordsLabel = computed(() => {
-  const total = filteredRows.value;
-
-  return total === 1
-    ? "1 registro visible"
-    : `${total} registros visibles`;
-});
-
-const visibleStatusText = computed(() => {
-  if (loading.value) {
-    return "Actualizando catálogo";
-  }
-
-  if (!totalRows.value) {
-    return "Sin registros";
-  }
-
   if (searchTrim.value) {
-    return "Búsqueda aplicada";
+    return `${filteredRows.value} de ${totalRows.value} resultados`;
   }
 
-  return "Vista completa";
+  return totalRows.value === 1
+    ? "1 resultado"
+    : `${totalRows.value} resultados`;
 });
 
 const fieldControlId = (scope, field) =>
@@ -1072,58 +894,51 @@ const validateRequiredFields = (formObject) => {
   return missing;
 };
 
+const TECHNICAL_ERROR_PATTERN =
+  /(?:backend|endpoint|serializer|queryset|traceback|exception|sql|database|constraint|jwt|token|http\s*\d{3}|\bapi\b|django|postgres|psycopg|stack\s*trace|attributeerror|keyerror|typeerror)/i;
+
+const isUserMessage = (value) => {
+  const text = String(value || "").trim();
+
+  return Boolean(text) &&
+    text.length <= 320 &&
+    !TECHNICAL_ERROR_PATTERN.test(text);
+};
+
 const getErrorMessage = (
   error,
   fallback
 ) => {
   const data = error?.response?.data;
+  const candidates = [];
 
   if (typeof data === "string") {
-    return data;
+    candidates.push(data);
   }
 
-  if (
-    typeof data?.detail === "string" &&
-    data.detail
-  ) {
-    return data.detail;
+  if (typeof data?.detail === "string") {
+    candidates.push(data.detail);
   }
 
-  if (
-    typeof data?.error === "string" &&
-    data.error
-  ) {
-    return data.error;
+  if (typeof data?.error === "string") {
+    candidates.push(data.error);
   }
 
-  if (
-    data &&
-    typeof data === "object"
-  ) {
-    const firstKey =
-      Object.keys(data)[0];
-
-    const firstValue =
-      firstKey
-        ? data[firstKey]
-        : null;
-
-    if (
-      Array.isArray(firstValue) &&
-      firstValue.length
-    ) {
-      return firstValue.join(" ");
-    }
-
-    if (
-      typeof firstValue === "string" &&
-      firstValue
-    ) {
-      return firstValue;
-    }
+  if (data && typeof data === "object") {
+    Object.values(data).forEach((value) => {
+      if (Array.isArray(value)) {
+        candidates.push(value.join(" "));
+      } else if (typeof value === "string") {
+        candidates.push(value);
+      }
+    });
   }
 
-  return error?.message || fallback;
+  if (typeof error?.message === "string") {
+    candidates.push(error.message);
+  }
+
+  return candidates.find(isUserMessage) || fallback;
 };
 
 const resolveRowLabel = (row) => {
@@ -1172,8 +987,21 @@ const deferNotice = (payload) => {
 };
 
 const load = async () => {
+  if (loading.value) {
+    return;
+  }
+
   loading.value = true;
+  operation.value = "load";
   loadError.value = "";
+  visibleListLoading.value = false;
+
+  window.clearTimeout(loadFeedbackTimer);
+  loadFeedbackTimer = window.setTimeout(() => {
+    if (loading.value && operation.value === "load") {
+      visibleListLoading.value = true;
+    }
+  }, 220);
 
   try {
     const data =
@@ -1185,23 +1013,23 @@ const load = async () => {
         : [];
   } catch (error) {
     console.error(
-      "Error cargando catálogo:",
+      "Error cargando información:",
       error
     );
 
     loadError.value =
       getErrorMessage(
         error,
-        "No se pudo cargar el catálogo. Intente nuevamente."
+        rows.value.length
+          ? "No pudimos actualizar la información. Se mantienen los últimos datos cargados."
+          : "No pudimos cargar la información. Intente nuevamente."
       );
 
-    openNotice({
-      title: "No se pudo cargar",
-      message: loadError.value,
-      details:
-        error?.response?.data || null,
-    });
   } finally {
+    window.clearTimeout(loadFeedbackTimer);
+    loadFeedbackTimer = null;
+    visibleListLoading.value = false;
+    operation.value = "";
     loading.value = false;
   }
 };
@@ -1226,43 +1054,51 @@ const create = async () => {
   }
 
   loading.value = true;
+  operation.value = "create";
 
   try {
     await props.createRow(
       buildPayload(createForm)
     );
 
-    const data =
-      await props.fetchRows();
+    invalidateAdminCatalogCache();
 
-    rows.value =
-      Array.isArray(data)
-        ? data
-        : [];
+    try {
+      const data =
+        await props.fetchRows();
+
+      rows.value =
+        Array.isArray(data)
+          ? data
+          : [];
+    } catch (refreshError) {
+      console.warn(
+        "La información se guardó, pero no se pudo actualizar el listado:",
+        refreshError
+      );
+
+      loadError.value =
+        "La información se guardó, pero no pudimos actualizar el listado. Use Actualizar para sincronizarlo.";
+    }
 
     closeCreatePanel();
 
     openNotice({
-      title: "Registro creado",
+      title: "Información guardada",
       message:
-        "El elemento se agregó correctamente al catálogo.",
+        "La información se agregó correctamente.",
     });
   } catch (error) {
     const message =
       getErrorMessage(
         error,
-        "No se pudo crear el registro. Verifique la información."
+        "No pudimos guardar la información. Revise los datos e intente nuevamente."
       );
 
     createError.value = message;
 
-    openNotice({
-      title: "No se pudo crear",
-      message,
-      details:
-        error?.response?.data || null,
-    });
   } finally {
+    operation.value = "";
     loading.value = false;
   }
 };
@@ -1368,6 +1204,7 @@ const saveEdit = async () => {
   }
 
   loading.value = true;
+  operation.value = "edit";
 
   try {
     await props.updateRow(
@@ -1375,37 +1212,44 @@ const saveEdit = async () => {
       buildPayload(editForm)
     );
 
-    const data =
-      await props.fetchRows();
+    invalidateAdminCatalogCache();
 
-    rows.value =
-      Array.isArray(data)
-        ? data
-        : [];
+    try {
+      const data =
+        await props.fetchRows();
+
+      rows.value =
+        Array.isArray(data)
+          ? data
+          : [];
+    } catch (refreshError) {
+      console.warn(
+        "Los cambios se guardaron, pero no se pudo actualizar el listado:",
+        refreshError
+      );
+
+      loadError.value =
+        "Los cambios se guardaron, pero el listado no pudo sincronizarse. Use Actualizar para volver a cargarlo.";
+    }
 
     await closeModal(true);
 
     openNotice({
-      title: "Registro actualizado",
+      title: "Cambios guardados",
       message:
-        "Los cambios se guardaron correctamente.",
+        "La información se actualizó correctamente.",
     });
   } catch (error) {
     const message =
       getErrorMessage(
         error,
-        "No se pudo guardar el registro. Verifique la información."
+        "No pudimos guardar los cambios. Revise los datos e intente nuevamente."
       );
 
     editError.value = message;
 
-    openNotice({
-      title: "No se pudo guardar",
-      message,
-      details:
-        error?.response?.data || null,
-    });
   } finally {
+    operation.value = "";
     loading.value = false;
   }
 };
@@ -1422,7 +1266,7 @@ const remove = (row) => {
     resolveRowLabel(row);
 
   openNotice({
-    title: "Eliminar registro",
+    title: "Eliminar",
     message:
       `¿Desea eliminar ${label}? Esta acción no se puede deshacer.`,
     confirm: true,
@@ -1431,37 +1275,49 @@ const remove = (row) => {
 
     onConfirm: async () => {
       loading.value = true;
+      operation.value = "delete";
 
       try {
         await props.deleteRow(row.id);
 
-        const data =
-          await props.fetchRows();
+        invalidateAdminCatalogCache();
 
-        rows.value =
-          Array.isArray(data)
-            ? data
-            : [];
+        try {
+          const data =
+            await props.fetchRows();
+
+          rows.value =
+            Array.isArray(data)
+              ? data
+              : [];
+        } catch (refreshError) {
+          console.warn(
+            "La información se eliminó, pero no se pudo actualizar el listado:",
+            refreshError
+          );
+
+          loadError.value =
+            "La información se eliminó, pero el listado no pudo sincronizarse. Use Actualizar para volver a cargarlo.";
+        }
 
         deferNotice({
-          title: "Registro eliminado",
+          title: "Eliminado",
           message:
-            "El elemento se eliminó correctamente del catálogo.",
+            "La información se eliminó correctamente.",
         });
       } catch (error) {
         const message =
           getErrorMessage(
             error,
-            "No se pudo eliminar. Verifique si el registro está relacionado con otros datos."
+            "No se pudo eliminar porque esta información puede estar siendo utilizada en otra parte del sistema."
           );
 
         deferNotice({
           title: "No se pudo eliminar",
           message,
-          details:
-            error?.response?.data || null,
         });
       } finally {
+        operation.value = "";
         loading.value = false;
       }
     },
@@ -1561,6 +1417,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  window.clearTimeout(loadFeedbackTimer);
+
   if (modal.open) {
     unlockBodyScroll();
   }
@@ -1568,3 +1426,4 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped src="./facultades-carreras-crud.css"></style>
+<style scoped src="./facultades-carreras-crud-stage6.css"></style>

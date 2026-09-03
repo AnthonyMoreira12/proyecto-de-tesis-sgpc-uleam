@@ -1,0 +1,250 @@
+<template>
+  <main class="prep-page">
+    <section class="prep-shell">
+      <header class="prep-hero">
+        <div>
+          <span>AdministraciÃ³n</span>
+          <h1>PreparaciÃ³n de actualizaciÃ³n</h1>
+          <p>
+            Diagnostique y normalice datos histÃ³ricos antes de abrir la nueva versiÃ³n en producciÃ³n.
+            El proceso no elimina usuarios, publicaciones, proyectos ni autores.
+          </p>
+        </div>
+        <button :disabled="busy" @click="loadDiagnostic">Actualizar diagnÃ³stico</button>
+      </header>
+
+      <p v-if="error" class="prep-message is-error">{{ error }}</p>
+      <p v-if="message" class="prep-message is-ok">{{ message }}</p>
+
+      <section v-if="diagnostic" class="prep-status" :class="{ 'is-blocked': !diagnostic.listo_para_abrir }">
+        <strong>{{ diagnostic.listo_para_abrir ? "Sin bloqueos estructurales" : "Hay bloqueos que deben resolverse" }}</strong>
+        <span>
+          {{ diagnostic.listo_para_abrir
+            ? "Puede continuar con la simulaciÃ³n y revisar los pendientes antes de aplicar cambios."
+            : "No abra la versiÃ³n nueva a los usuarios hasta corregir los bloqueos indicados." }}
+        </span>
+      </section>
+
+      <section v-if="diagnostic" class="prep-metrics">
+        <article><span>Usuarios institucionales</span><strong>{{ diagnostic.usuarios?.institucionales || 0 }}</strong><small>{{ diagnostic.usuarios?.sin_sede || 0 }} sin sede</small></article>
+        <article><span>Publicaciones</span><strong>{{ diagnostic.publicaciones?.total || 0 }}</strong><small>{{ diagnostic.publicaciones?.sin_sede || 0 }} sin sede</small></article>
+        <article><span>Proyectos</span><strong>{{ diagnostic.proyectos?.total || 0 }}</strong><small>{{ diagnostic.proyectos?.sin_sede || 0 }} sin sede</small></article>
+        <article><span>Relaciones Carreraâ€“Sede</span><strong>{{ diagnostic.catalogos?.carreras_sedes_activas || 0 }}</strong><small>activas</small></article>
+      </section>
+
+      <section v-if="diagnostic?.bloqueos?.length || diagnostic?.advertencias?.length" class="prep-grid">
+        <article v-if="diagnostic?.bloqueos?.length" class="prep-panel">
+          <h2>Bloqueos</h2>
+          <ul><li v-for="item in diagnostic.bloqueos" :key="item">{{ item }}</li></ul>
+          <RouterLink to="/admin/estructura/facultades">Revisar estructura acadÃ©mica</RouterLink>
+        </article>
+        <article v-if="diagnostic?.advertencias?.length" class="prep-panel">
+          <h2>Advertencias</h2>
+          <ul><li v-for="item in diagnostic.advertencias" :key="item">{{ item }}</li></ul>
+          <RouterLink to="/admin/actualizaciones">Gestionar campaÃ±as de actualizaciÃ³n</RouterLink>
+        </article>
+      </section>
+
+      <section class="prep-panel prep-normalize">
+        <div class="prep-panel-head">
+          <div>
+            <h2>NormalizaciÃ³n segura</h2>
+            <p>
+              Primero simule. La sede predeterminada solo se asigna cuando existe una relaciÃ³n Carreraâ€“Sede activa para el registro.
+              Si no hay evidencia suficiente, el dato permanece pendiente.
+            </p>
+          </div>
+        </div>
+
+        <div class="prep-form-row">
+          <label>
+            <span>Sede predeterminada</span>
+            <select v-model="defaultSedeId">
+              <option value="">Sin sede predeterminada</option>
+              <option v-for="sede in sedes" :key="sede.id" :value="String(sede.id)">
+                {{ sede.nombre || sede.label || sede.descripcion || `Sede ${sede.id}` }}
+              </option>
+            </select>
+          </label>
+          <label class="prep-check">
+            <input v-model="useDefaultSede" type="checkbox" :disabled="!defaultSedeId" />
+            <span>Usar esta sede como respaldo para registros histÃ³ricos compatibles</span>
+          </label>
+        </div>
+
+        <div class="prep-actions">
+          <button :disabled="busy" @click="simulate">Simular normalizaciÃ³n</button>
+          <button class="primary" :disabled="busy || !simulation" @click="applyNormalization">
+            {{ busy ? "Procesandoâ€¦" : "Aplicar normalizaciÃ³n" }}
+          </button>
+        </div>
+      </section>
+
+      <section v-if="simulation" class="prep-panel">
+        <h2>Resultado de la simulaciÃ³n</h2>
+        <div class="prep-summary">
+          <span>Usuarios con sede: <strong>{{ simulation.resumen?.usuarios_sede || 0 }}</strong></span>
+          <span>Publicaciones con sede: <strong>{{ simulation.resumen?.publicaciones_sede || 0 }}</strong></span>
+          <span>Proyectos con sede: <strong>{{ simulation.resumen?.proyectos_sede || 0 }}</strong></span>
+          <span>Perfiles recalculados: <strong>{{ simulation.resumen?.perfiles_recalculados || 0 }}</strong></span>
+        </div>
+        <div class="prep-pending">
+          <h3>SeguirÃ¡n pendientes</h3>
+          <span>Usuarios: {{ simulation.pendientes?.usuarios_sin_sede?.length || 0 }}</span>
+          <span>Publicaciones: {{ simulation.pendientes?.publicaciones_sin_sede?.length || 0 }}</span>
+          <span>Proyectos: {{ simulation.pendientes?.proyectos_sin_sede?.length || 0 }}</span>
+          <span>Relaciones inconsistentes: {{ simulation.pendientes?.relaciones_invalidas?.length || 0 }}</span>
+        </div>
+      </section>
+
+      <section v-if="verification" class="prep-panel">
+        <h2>VerificaciÃ³n de conservaciÃ³n</h2>
+        <p :class="verification.perdida_detectada ? 'danger-text' : 'ok-text'">
+          {{ verification.perdida_detectada
+            ? "Se detectÃ³ una reducciÃ³n en conteos crÃ­ticos. No continÃºe con el despliegue."
+            : "Los conteos crÃ­ticos se conservaron correctamente." }}
+        </p>
+        <table>
+          <thead><tr><th>Entidad</th><th>Antes</th><th>DespuÃ©s</th><th>Diferencia</th></tr></thead>
+          <tbody>
+            <tr v-for="(row, key) in verification.diferencias" :key="key">
+              <td>{{ labelEntity(key) }}</td><td>{{ row.antes }}</td><td>{{ row.despues }}</td><td>{{ row.delta }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section v-if="diagnostic" class="prep-panel">
+        <h2>Estado de los datos nuevos</h2>
+        <table>
+          <thead><tr><th>Control</th><th>Cantidad</th><th>AcciÃ³n</th></tr></thead>
+          <tbody>
+            <tr><td>Usuarios sin sede</td><td>{{ diagnostic.usuarios?.sin_sede || 0 }}</td><td>Normalizar o campaÃ±a de perfil</td></tr>
+            <tr><td>Usuarios sin carrera</td><td>{{ diagnostic.usuarios?.sin_carrera || 0 }}</td><td>CampaÃ±a de perfil</td></tr>
+            <tr><td>Perfil desincronizado</td><td>{{ diagnostic.usuarios?.perfil_completo_desincronizado || 0 }}</td><td>Se recalcula automÃ¡ticamente</td></tr>
+            <tr><td>Publicaciones sin sede</td><td>{{ diagnostic.publicaciones?.sin_sede || 0 }}</td><td>Inferencia o campaÃ±a</td></tr>
+            <tr><td>Proyectos sin sede</td><td>{{ diagnostic.proyectos?.sin_sede || 0 }}</td><td>Inferencia o campaÃ±a</td></tr>
+            <tr><td>PDF de publicaciÃ³n con metadatos incompletos</td><td>{{ diagnostic.integridad_documental?.publicaciones_metadata_incompleta || 0 }}</td><td><RouterLink to="/admin/integridad-documental">Integridad documental</RouterLink></td></tr>
+            <tr><td>Usuarios con Carreraâ€“Sede invÃ¡lida</td><td>{{ diagnostic.usuarios?.relacion_sede_carrera_invalida || 0 }}</td><td>Corregir estructura/usuario</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </section>
+
+    <SgpcConfirmDialog
+      v-model="confirmNormalizationOpen"
+      eyebrow="PreparaciÃ³n de actualizaciÃ³n"
+      title="Aplicar normalizaciÃ³n"
+      message="Se aplicarÃ¡n Ãºnicamente las asignaciones seguras mostradas en la simulaciÃ³n y se recalcularÃ¡ el estado del perfil. No se eliminarÃ¡n registros."
+      confirm-label="Aplicar"
+      :busy="busy"
+      @confirm="executeNormalization"
+    />
+  </main>
+</template>
+
+<script setup>
+import { onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
+import SgpcConfirmDialog from "../../inicio/ui/SgpcConfirmDialog.vue";
+import adminApi from "../../scripts/api/adminApi";
+import {
+  diagnosticarPreparacionProduccion,
+  normalizarPreparacionProduccion,
+  verificarPreparacionProduccion,
+} from "../../scripts/api/preparacionProduccionApi";
+
+const diagnostic = ref(null);
+const simulation = ref(null);
+const verification = ref(null);
+const baseline = ref(null);
+const sedes = ref([]);
+const defaultSedeId = ref("");
+const useDefaultSede = ref(false);
+const busy = ref(false);
+const error = ref("");
+const message = ref("");
+const confirmNormalizationOpen = ref(false);
+
+const listOf = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+function labelEntity(key) {
+  return ({ usuarios: "Usuarios", autores: "Autores", publicaciones: "Publicaciones", proyectos: "Proyectos" })[key] || key;
+}
+
+async function loadDiagnostic() {
+  busy.value = true;
+  error.value = "";
+  try {
+    diagnostic.value = await diagnosticarPreparacionProduccion();
+    if (!baseline.value) baseline.value = diagnostic.value?.snapshot || null;
+  } catch (e) {
+    error.value = e?.response?.data?.detail || "No fue posible obtener el diagnÃ³stico de producciÃ³n.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function loadSedes() {
+  try {
+    sedes.value = listOf(await adminApi.selectsSedes());
+  } catch {
+    sedes.value = [];
+  }
+}
+
+function normalizationPayload(dryRun) {
+  return {
+    dry_run: dryRun,
+    sede_predeterminada_id: defaultSedeId.value || null,
+    usar_sede_predeterminada: Boolean(useDefaultSede.value && defaultSedeId.value),
+    ...(dryRun ? {} : { confirmacion: "NORMALIZAR_PRODUCCION" }),
+  };
+}
+
+async function simulate() {
+  busy.value = true;
+  error.value = "";
+  message.value = "";
+  try {
+    simulation.value = await normalizarPreparacionProduccion(normalizationPayload(true));
+    message.value = "SimulaciÃ³n completada. Revise los cambios propuestos y los registros que seguirÃ¡n pendientes.";
+  } catch (e) {
+    error.value = e?.response?.data?.detail || "No fue posible simular la normalizaciÃ³n.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+function applyNormalization() {
+  confirmNormalizationOpen.value = true;
+}
+
+async function executeNormalization() {
+  busy.value = true;
+  error.value = "";
+  message.value = "";
+  try {
+    const result = await normalizarPreparacionProduccion(normalizationPayload(false));
+    simulation.value = result;
+    if (baseline.value) verification.value = await verificarPreparacionProduccion(baseline.value);
+    diagnostic.value = result?.diagnostico_despues || await diagnosticarPreparacionProduccion();
+    message.value = "NormalizaciÃ³n aplicada. Revise la verificaciÃ³n de conservaciÃ³n y los pendientes restantes.";
+  } catch (e) {
+    error.value = e?.response?.data?.detail || "No fue posible aplicar la normalizaciÃ³n.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadDiagnostic(), loadSedes()]);
+});
+</script>
+
+<style src="./admin-preparacion-produccion.css"></style>

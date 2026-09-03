@@ -1,0 +1,76 @@
+/* ============================================================
+   ETAPA 5 · PUBLICACIONES DE UN USUARIO
+   Actualización no destructiva + acciones secundarias compactas.
+============================================================ */
+
+.adm-delegated-user__inline-loader {
+  margin: 0;
+}
+
+.adm-delegated-user__refresh-error {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--adm-warning, #9a6700) 28%, var(--border-color));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--adm-warning, #9a6700) 6%, var(--bg-card));
+  color: var(--text-secondary);
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.adm-delegated-user__publication strong {
+  display: block;
+}
+
+.adm-delegated-user__row-actions {
+  position: relative;
+  align-items: center;
+}
+
+.adm-delegated-user__more {
+  position: relative;
+}
+
+.adm-delegated-user__more > summary {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid var(--adm-line, var(--border-color));
+  border-radius: 8px;
+  background: var(--adm-card, var(--bg-card));
+  color: var(--adm-text, var(--text-primary));
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.adm-delegated-user__more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-delegated-user__more[open] > summary {
+  border-color: var(--adm-primary, var(--color-primary));
+}
+
+.adm-delegated-user__more-menu {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.adm-delegated-user__more-menu button {
+  min-height: 30px;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.adm-delegated-user__more-menu button:hover:not(:disabled) {
+  background: var(--adm-soft, var(--bg-elevated));
+}
+

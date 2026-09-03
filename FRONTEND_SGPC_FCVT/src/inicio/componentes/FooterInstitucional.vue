@@ -1,15 +1,27 @@
 <template>
-  <footer class="sgpc-footer" aria-label="Pie institucional SGPC ULEAM">
+  <footer
+    class="sgpc-footer"
+    aria-label="Pie institucional SGPC ULEAM"
+  >
     <div class="sgpc-footer__shell">
       <div class="sgpc-footer__main">
-        <section class="sgpc-footer__brand" aria-label="Identidad institucional">
+        <!-- =================================================
+          IDENTIDAD
+        ================================================== -->
+        <section
+          class="sgpc-footer__brand"
+          aria-label="Identidad institucional"
+        >
           <button
             class="sgpc-footer__brandbox"
             type="button"
             title="Ir al inicio"
             @click="go('/home')"
           >
-            <span class="sgpc-footer__logo-wrap" aria-hidden="true">
+            <span
+              class="sgpc-footer__logo-wrap"
+              aria-hidden="true"
+            >
               <img
                 src="../../assets/LOGO-ULEAM-VERTICAL.png"
                 alt=""
@@ -18,7 +30,9 @@
             </span>
 
             <span class="sgpc-footer__brand-copy">
-              <span class="sgpc-footer__brand-kicker">SGPC ULEAM</span>
+              <span class="sgpc-footer__brand-kicker">
+                SGPC ULEAM
+              </span>
 
               <span class="sgpc-footer__brand-title">
                 Sistema de Gestión de Producción Científica
@@ -31,9 +45,18 @@
           </button>
         </section>
 
-        <section class="sgpc-footer__support" aria-label="Soporte institucional">
+        <!-- =================================================
+          SOPORTE
+        ================================================== -->
+        <section
+          class="sgpc-footer__support"
+          aria-label="Soporte institucional"
+        >
           <div class="sgpc-footer__block-head">
-            <span class="sgpc-footer__block-icon" aria-hidden="true">
+            <span
+              class="sgpc-footer__block-icon"
+              aria-hidden="true"
+            >
               <svg viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -43,37 +66,33 @@
             </span>
 
             <div class="sgpc-footer__block-copy">
-              <h2 class="sgpc-footer__title">Soporte institucional</h2>
-              <p class="sgpc-footer__text">
-                Atención para incidencias técnicas de la plataforma.
-              </p>
+              <h2 class="sgpc-footer__title">
+                Soporte
+              </h2>
+
+              <a
+                class="sgpc-footer__inline-link"
+                href="mailto:incidencias.diit@uleam.edu.ec"
+                aria-label="Enviar correo a incidencias.diit@uleam.edu.ec"
+              >
+                incidencias.diit@uleam.edu.ec
+              </a>
             </div>
           </div>
-
-          <a
-            class="sgpc-footer__link-card"
-            href="mailto:incidencias.diit@uleam.edu.ec"
-            aria-label="Enviar correo a incidencias.diit@uleam.edu.ec"
-          >
-            <span class="sgpc-footer__link-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 3.25 8 5.25 8-5.25V7l-8 5.25L4 7v1.25Z"
-                />
-              </svg>
-            </span>
-
-            <span class="sgpc-footer__link-copy">
-              <strong>incidencias.diit@uleam.edu.ec</strong>
-              <small>Correo de soporte técnico</small>
-            </span>
-          </a>
         </section>
 
-        <section class="sgpc-footer__location" aria-label="Ubicación institucional">
+        <!-- =================================================
+          UBICACIÓN
+        ================================================== -->
+        <section
+          class="sgpc-footer__location"
+          aria-label="Ubicación institucional"
+        >
           <div class="sgpc-footer__block-head">
-            <span class="sgpc-footer__block-icon" aria-hidden="true">
+            <span
+              class="sgpc-footer__block-icon"
+              aria-hidden="true"
+            >
               <svg viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -83,28 +102,33 @@
             </span>
 
             <div class="sgpc-footer__block-copy">
-              <h2 class="sgpc-footer__title">Ubicación</h2>
+              <h2 class="sgpc-footer__title">
+                Ubicación
+              </h2>
+
               <p class="sgpc-footer__text">
-                Av. Circunvalación Vía a San Mateo.
+                Av. Circunvalación Vía a San Mateo, Manta.
               </p>
             </div>
-          </div>
-
-          <div class="sgpc-footer__badge-row">
-            <span class="sgpc-footer__badge">ULEAM</span>
-            <span class="sgpc-footer__badge">SGPC</span>
-            <span class="sgpc-footer__badge">Producción científica</span>
           </div>
         </section>
       </div>
 
       <div class="sgpc-footer__bottom">
         <p class="sgpc-footer__bottom-text">
-          <span>© {{ currentYear }} ULEAM.</span>
-          <span>Todos los derechos reservados.</span>
           <span>
-            Plataforma implementada por la
-            <strong>Dirección de Informática e Innovación Tecnológica</strong>.
+            © {{ currentYear }} Universidad Laica Eloy Alfaro de Manabí
+          </span>
+
+          <span
+            class="sgpc-footer__bottom-separator"
+            aria-hidden="true"
+          >
+            ·
+          </span>
+
+          <span>
+            Dirección de Informática e Innovación Tecnológica
           </span>
         </p>
       </div>

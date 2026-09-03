@@ -8,7 +8,9 @@ import api from "./axios";
 const PROJECTS_BASE_URL = "proyectos";
 const AUTHORS_SELECT_URL = "selects/autores";
 const FACULTIES_SELECT_URL = "selects/facultades";
+const SITES_SELECT_URL = "selects/sedes";
 const CAREERS_SELECT_URL = "selects/carreras";
+const CAREERS_BY_SITE_SELECT_URL = "selects/carreras/sede";
 
 
 /* ==========================================================
@@ -22,7 +24,6 @@ const toStr = (
     ? ""
     : String(value).trim()
 );
-
 
 const ensurePositiveInteger = (
   value,
@@ -55,7 +56,6 @@ const ensurePositiveInteger = (
 
   return parsedValue;
 };
-
 
 const cleanParams = (
   params = {}
@@ -102,7 +102,6 @@ const cleanParams = (
   return cleaned;
 };
 
-
 const unwrap = (
   response
 ) => (
@@ -110,7 +109,6 @@ const unwrap = (
   ?? response
   ?? null
 );
-
 
 const requestConfig = ({
   params,
@@ -149,85 +147,128 @@ const requestConfig = ({
 
 export function getProyectoApiErrorMessage(
   error,
-  fallback = "No fue posible completar la operación."
+  fallback = "No pudimos completar la acción. Intente nuevamente."
 ) {
+  const status =
+    Number(
+      error?.response?.status
+      ?? error?.status
+      ?? 0
+    ) || 0;
+
+  if (status === 401) {
+    return "Su sesión ha vencido. Inicie sesión nuevamente.";
+  }
+
+  if (status === 403) {
+    return "No tiene permisos para realizar esta acción.";
+  }
+
+  if (status === 404) {
+    return "No encontramos la información solicitada.";
+  }
+
+  if (status === 429) {
+    return "Se realizaron demasiadas solicitudes. Intente nuevamente en unos minutos.";
+  }
+
+  if (status >= 500) {
+    return fallback;
+  }
+
   const payload =
     error?.response?.data
     ?? error?.data
-    ?? error;
+    ?? null;
 
-  const visit = (
-    value,
-    prefix = ""
+  const FIELD_LABELS = {
+    nombre: "Nombre",
+    descripcion: "Descripción",
+    sede: "Sede",
+    facultad: "Facultad",
+    carrera: "Carrera",
+    estado: "Estado",
+    anio_inicio: "Año de inicio",
+    anio_fin: "Año de finalización",
+    fecha_inicio: "Fecha de inicio",
+    fecha_fin_planificada: "Fecha de finalización prevista",
+    fecha_fin_prorrogada: "Nueva fecha de finalización",
+    fecha_cierre: "Fecha de cierre",
+    archivo_pdf: "Documento PDF",
+    autores: "Profesores",
+    profesores: "Profesores",
+  };
+
+  const TECHNICAL_PATTERN =
+    /\b(?:api|backend|endpoint|serializer|queryset|jwt|token|sql|postgres(?:ql)?|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|stack\s*trace|http\s*\d{3}|request|response)\b/i;
+
+  const normalizeMessage = (
+    value
   ) => {
+    const message =
+      toStr(value)
+        .replace(/\s+/g, " ")
+        .trim();
+
     if (
-      value == null
+      !message
+      || TECHNICAL_PATTERN.test(message)
     ) {
+      return "";
+    }
+
+    return message;
+  };
+
+  const collect = (
+    value,
+    field = ""
+  ) => {
+    if (value == null) {
       return [];
     }
 
     if (
-      typeof value
-      === "string"
-      || typeof value
-      === "number"
-      || typeof value
-      === "boolean"
+      typeof value === "string"
+      || typeof value === "number"
+      || typeof value === "boolean"
     ) {
       const message =
-        toStr(
-          value
-        );
+        normalizeMessage(value);
 
-      return message
-        ? [
-            prefix
-              ? `${prefix}: ${message}`
-              : message,
-          ]
-        : [];
+      if (!message) {
+        return [];
+      }
+
+      const label =
+        FIELD_LABELS[field] || "";
+
+      return [
+        label
+          ? `${label}: ${message}`
+          : message,
+      ];
     }
 
-    if (
-      Array.isArray(
-        value
-      )
-    ) {
+    if (Array.isArray(value)) {
       return value.flatMap(
-        (item) => visit(
-          item,
-          prefix
-        )
+        (item) => collect(item, field)
       );
     }
 
-    if (
-      typeof value
-      === "object"
-    ) {
-      return Object.entries(
-        value
-      ).flatMap(
-        ([
-          key,
-          childValue,
-        ]) => {
-          const childPrefix = (
+    if (typeof value === "object") {
+      return Object.entries(value).flatMap(
+        ([key, child]) => {
+          if (
             key === "detail"
             || key === "message"
             || key === "non_field_errors"
-              ? prefix
-              : (
-                prefix
-                  ? `${prefix}.${key}`
-                  : key
-              )
-          );
+            || key === "error"
+          ) {
+            return collect(child, field);
+          }
 
-          return visit(
-            childValue,
-            childPrefix
-          );
+          return collect(child, key);
         }
       );
     }
@@ -235,30 +276,17 @@ export function getProyectoApiErrorMessage(
     return [];
   };
 
-  const messages =
-    visit(
-      payload
-    );
+  const messages = [
+    ...new Set(
+      collect(payload)
+    ),
+  ];
 
-  if (
-    messages.length
-  ) {
-    return [
-      ...new Set(
-        messages
-      ),
-    ].join(" | ");
+  if (messages.length) {
+    return messages.join(" · ");
   }
 
-  const nativeMessage =
-    toStr(
-      error?.message
-    );
-
-  return (
-    nativeMessage
-    || fallback
-  );
+  return fallback;
 }
 
 
@@ -395,6 +423,60 @@ export async function eliminarProyecto(
     response
   );
 }
+
+
+/* ==========================================================
+   PRODUCCIÓN CIENTÍFICA
+========================================================== */
+
+export async function obtenerProduccionProyecto(
+  proyectoId,
+  params = {},
+  {
+    signal,
+  } = {}
+) {
+  const id =
+    ensurePositiveInteger(
+      proyectoId,
+      "proyectoId"
+    );
+
+  const response =
+    await api.get(
+      `${PROJECTS_BASE_URL}/${id}/produccion/`,
+      requestConfig({
+        params,
+        signal,
+      })
+    );
+
+  return unwrap(
+    response
+  );
+}
+
+
+export async function compararProduccionProyectos(
+  params = {},
+  {
+    signal,
+  } = {}
+) {
+  const response =
+    await api.get(
+      `${PROJECTS_BASE_URL}/comparativa-produccion/`,
+      requestConfig({
+        params,
+        signal,
+      })
+    );
+
+  return unwrap(
+    response
+  );
+}
+
 
 
 /* ==========================================================
@@ -601,6 +683,52 @@ export async function buscarAutoresProyecto(
 }
 
 
+export async function consultarSedesProyecto(
+  {
+    signal,
+  } = {}
+) {
+  const response =
+    await api.get(
+      `${SITES_SELECT_URL}/`,
+      requestConfig({
+        signal,
+      })
+    );
+
+  return unwrap(
+    response
+  );
+}
+
+
+export async function consultarCarrerasPorSedeProyecto(
+  sedeId,
+  {
+    signal,
+  } = {}
+) {
+  const id =
+    ensurePositiveInteger(
+      sedeId,
+      "sedeId"
+    );
+
+  const response =
+    await api.get(
+      `${CAREERS_BY_SITE_SELECT_URL}/${id}/`,
+      requestConfig({
+        signal,
+      })
+    );
+
+  return unwrap(
+    response
+  );
+}
+
+
+
 export async function consultarFacultadesProyecto(
   {
     signal,
@@ -669,6 +797,12 @@ export const proyectosApi = {
   anios:
     consultarAniosProyectos,
 
+  produccion:
+    obtenerProduccionProyecto,
+
+  comparativaProduccion:
+    compararProduccionProyectos,
+
   cambiarEstado:
     cambiarEstadoProyecto,
 
@@ -684,11 +818,17 @@ export const proyectosApi = {
   buscarAutores:
     buscarAutoresProyecto,
 
+  sedes:
+    consultarSedesProyecto,
+
   facultades:
     consultarFacultadesProyecto,
 
   carreras:
     consultarCarrerasProyecto,
+
+  carrerasPorSede:
+    consultarCarrerasPorSedeProyecto,
 
   errorMessage:
     getProyectoApiErrorMessage,

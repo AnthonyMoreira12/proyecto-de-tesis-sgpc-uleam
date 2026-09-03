@@ -1,0 +1,233 @@
+/* ============================================================
+   SGPC ULEAM · ETAPA 6
+   Actualización de datos — acciones, feedback y jerarquía
+============================================================ */
+
+.admin-updates .admin-loading-state,
+.admin-updates .admin-error-state,
+.admin-updates .admin-action-feedback,
+.admin-updates .admin-inline-loader {
+  margin: 0;
+}
+
+.admin-updates .admin-inline-loader,
+.admin-updates .admin-action-feedback {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.admin-updates .admin-updates__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  border-radius: 11px;
+  background: transparent;
+}
+
+.admin-updates .admin-updates__metrics > article {
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-updates .admin-updates__metrics > article + article {
+  border-left: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+}
+
+/* Dos acciones visibles como máximo. El resto queda disponible en
+   un menú contextual ligero para no sobrecargar cada campaña. */
+.admin-updates .admin-updates__card-actions {
+  position: relative;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-updates .admin-updates__more {
+  position: relative;
+  margin-left: auto;
+}
+
+.admin-updates .admin-updates__more > summary {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.14));
+  border-radius: 9px;
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.admin-updates .admin-updates__more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-updates .admin-updates__more[open] > summary,
+.admin-updates .admin-updates__more > summary:hover {
+  background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
+}
+
+.admin-updates .admin-updates__more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 7px);
+  z-index: 30;
+  width: max-content;
+  min-width: 190px;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.14));
+  border-radius: 11px;
+  background: var(--bg-card, #fff);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+}
+
+.admin-updates .admin-updates__more-menu button {
+  width: 100%;
+  min-height: 36px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.admin-updates .admin-updates__communication-action small {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .admin-updates .admin-updates__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-updates .admin-updates__metrics > article:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  }
+
+  .admin-updates .admin-updates__metrics > article:nth-child(4) {
+    border-top: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-updates .admin-updates__card-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .admin-updates .admin-updates__card-actions > button {
+    width: 100%;
+  }
+
+  .admin-updates .admin-updates__more {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .admin-updates .admin-updates__more > summary {
+    width: 100%;
+  }
+
+  .admin-updates .admin-updates__more-menu {
+    right: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   AJUSTE DE ESPACIADO · PIE DE CAMPAÑAS
+   Evita que las acciones se compriman o se apilen de forma irregular.
+============================================================ */
+
+.admin-updates .admin-updates__card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 14px;
+  min-height: 66px;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.admin-updates .admin-updates__primary-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-updates .admin-updates__primary-actions > button {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.admin-updates .admin-updates__more {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: auto;
+}
+
+.admin-updates .admin-updates__more > summary {
+  min-width: 62px;
+  min-height: 40px;
+}
+
+@media (max-width: 700px) {
+  .admin-updates .admin-updates__card-actions {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .admin-updates .admin-updates__primary-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .admin-updates .admin-updates__primary-actions > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-updates .admin-updates__more {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .admin-updates .admin-updates__more > summary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-updates .admin-updates__primary-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.admin-updates__business-rule {
+  margin: -0.25rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--sgpc-border, rgba(148, 163, 184, 0.24));
+  border-radius: 0.75rem;
+  background: rgba(59, 130, 246, 0.06);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--sgpc-text-secondary, #94a3b8);
+}

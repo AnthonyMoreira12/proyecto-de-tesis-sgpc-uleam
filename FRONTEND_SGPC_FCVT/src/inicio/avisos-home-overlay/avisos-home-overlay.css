@@ -1,5 +1,6 @@
 /* ============================================================
-   SGPC ULEAM — Overlay global de avisos
+   SGPC ULEAM — Overlay de avisos
+   Modal centrado realmente respecto al viewport.
 ============================================================ */
 
 .avn-overlay,
@@ -7,52 +8,56 @@
   box-sizing: border-box;
 }
 
+/* ============================================================
+   OVERLAY PRINCIPAL
+============================================================ */
+
 .avn-overlay {
-  --avn-overlay-bg:
-    rgba(15, 23, 42, 0.54);
-
-  --avn-overlay-line:
-    color-mix(
-      in srgb,
-      #ffffff 18%,
-      transparent
-    );
-
   position: fixed;
-
   inset: 0;
-
   z-index: 1700;
 
+  /*
+   * El grid permite centrar el contenido tanto
+   * horizontal como verticalmente.
+   */
   display: grid;
-  align-items: start;
-  justify-items: center;
+  place-items: safe center;
 
+  width: 100%;
   min-width: 0;
+
+  min-height: 100vh;
   min-height: 100dvh;
+  height: 100dvh;
 
+  /*
+   * Espacio de seguridad para evitar que el modal
+   * llegue directamente a los bordes del viewport.
+   */
   padding:
-    clamp(
-      16px,
-      2.8vh,
-      28px
-    )
-    24px
-    32px;
+    clamp(18px, 3vh, 30px)
+    24px;
 
+  /*
+   * Si el contenido fuera más alto que la pantalla,
+   * permitimos desplazamiento vertical.
+   */
   overflow-x: hidden;
   overflow-y: auto;
 
   color:
     var(
       --text-primary,
-      #172033
+      #111827
     );
 
-  /*
-   * Responde al selector global de tamaño
-   * de fuente sin alterar la geometría del overlay.
-   */
+  background:
+    var(
+      --overlay,
+      rgba(15, 23, 42, 0.56)
+    );
+
   font-size:
     var(
       --font-base,
@@ -62,79 +67,25 @@
   font-family:
     var(
       --font-body,
-      var(
-        --font-ui,
-        Inter,
-        "Segoe UI",
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif
-      )
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif
     );
-
-  background:
-    var(--avn-overlay-bg);
 
   isolation: isolate;
-
-  overscroll-behavior:
-    contain;
-
-  scrollbar-gutter:
-    stable;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
-
 /* ============================================================
-   FONDO
-============================================================ */
-
-.avn-overlay::before {
-  content: "";
-
-  position: fixed;
-
-  inset: 0;
-
-  z-index: -2;
-
-  background:
-    radial-gradient(
-      circle at 18% 10%,
-      color-mix(
-        in srgb,
-        var(
-          --color-primary,
-          #315fcb
-        ) 16%,
-        transparent
-      ),
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 86% 90%,
-      color-mix(
-        in srgb,
-        #7c8db5 12%,
-        transparent
-      ),
-      transparent 32%
-    );
-
-  pointer-events: none;
-}
-
-
-/* ============================================================
-   BACKDROP
+   FONDO CLICABLE
 ============================================================ */
 
 .avn-overlay__backdrop {
   position: fixed;
-
   inset: 0;
-
   z-index: -1;
 
   width: 100%;
@@ -145,30 +96,23 @@
 
   border: 0;
 
-  background:
-    transparent;
+  background: transparent;
 
   cursor: default;
-
-  backdrop-filter:
-    blur(8px)
-    saturate(108%);
-
-  -webkit-backdrop-filter:
-    blur(8px)
-    saturate(108%);
 }
 
-
 /* ============================================================
-   CONTENEDOR
+   CONTENEDOR DEL AVISO
 ============================================================ */
 
 .avn-shell {
   position: relative;
-
   z-index: 1;
 
+  /*
+   * Ancho máximo suficientemente amplio para
+   * los banners institucionales.
+   */
   width:
     min(
       1500px,
@@ -178,34 +122,29 @@
   max-width: 100%;
   min-width: 0;
 
-  margin: 0 auto;
+  /*
+   * Esta propiedad sirve como respaldo del centrado
+   * cuando el contenedor tiene que desplazarse.
+   */
+  margin: auto;
 
   outline: none;
 }
-
 
 /* ============================================================
    ACCESIBILIDAD
 ============================================================ */
 
 .avn-sr-only {
-  position:
-    absolute !important;
+  position: absolute !important;
 
-  width:
-    1px !important;
+  width: 1px !important;
+  height: 1px !important;
 
-  height:
-    1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
 
-  padding:
-    0 !important;
-
-  margin:
-    -1px !important;
-
-  overflow:
-    hidden !important;
+  overflow: hidden !important;
 
   clip:
     rect(
@@ -215,13 +154,10 @@
       0
     ) !important;
 
-  white-space:
-    nowrap !important;
+  white-space: nowrap !important;
 
-  border:
-    0 !important;
+  border: 0 !important;
 }
-
 
 /* ============================================================
    TRANSICIÓN
@@ -230,100 +166,87 @@
 .avh-overlay-enter-active,
 .avh-overlay-leave-active {
   transition:
-    opacity 180ms ease;
+    opacity
+    calc(
+      160ms *
+      var(--animate-speed, 1)
+    )
+    ease;
 }
 
 .avh-overlay-enter-active
-  .avn-shell,
+.avn-shell,
 .avh-overlay-leave-active
-  .avn-shell {
+.avn-shell {
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity
+    calc(
+      160ms *
+      var(--animate-speed, 1)
+    )
+    ease,
+    transform
+    calc(
+      160ms *
+      var(--animate-speed, 1)
+    )
+    ease;
 }
 
 .avh-overlay-enter-from,
 .avh-overlay-leave-to,
 .avh-overlay-enter-from
-  .avn-shell,
+.avn-shell,
 .avh-overlay-leave-to
-  .avn-shell {
+.avn-shell {
   opacity: 0;
 }
 
 .avh-overlay-enter-from
-  .avn-shell,
+.avn-shell,
 .avh-overlay-leave-to
-  .avn-shell {
+.avn-shell {
   transform:
-    translateY(10px)
-    scale(0.985);
+    translateY(6px);
 }
-
-
-/* ============================================================
-   MODO OSCURO
-============================================================ */
-
-html.dark
-  .avn-overlay,
-body.dark
-  .avn-overlay,
-.dark
-  .avn-overlay,
-[data-theme="dark"]
-  .avn-overlay {
-  --avn-overlay-bg:
-    rgba(2, 6, 23, 0.7);
-
-  --avn-overlay-line:
-    color-mix(
-      in srgb,
-      #ffffff 12%,
-      transparent
-    );
-}
-
 
 /* ============================================================
    TABLET
 ============================================================ */
 
-@media (max-width: 980px) {
+@media (
+  max-width: 980px
+) {
   .avn-overlay {
-    padding:
-      14px
-      14px
-      24px;
+    padding: 14px;
   }
 
   .avn-shell {
     width:
       min(
         100%,
-        calc(100vw - 28px)
+        calc(
+          100vw - 28px
+        )
       );
   }
 }
-
 
 /* ============================================================
    MÓVIL
 ============================================================ */
 
-@media (max-width: 640px) {
+@media (
+  max-width: 640px
+) {
   .avn-overlay {
-    padding:
-      8px
-      8px
-      18px;
+    padding: 8px;
   }
 
   .avn-shell {
     width: 100%;
   }
 }
-
 
 /* ============================================================
    MOVIMIENTO REDUCIDO

@@ -1,933 +1,867 @@
-/* ============================================================
-   SGPC ULEAM — USUARIO MODAL
-   Edición y registro de cuentas administrativas
-============================================================ */
+/* =========================================================
+   SGPC ULEAM — Modal de usuario
+   Alineado con el nuevo diseño institucional
+========================================================= */
 
 .modal--user {
-  --um-card: var(
-    --adm-card,
-    var(--bg-card, #ffffff)
-  );
+  --um-card: var(--adm-card, var(--bg-card, #ffffff));
+  --um-soft: var(--adm-soft, var(--bg-elevated, #f8fafc));
+  --um-input: var(--adm-input, var(--bg-input, #ffffff));
+  --um-page: var(--adm-bg, var(--bg-main, #f3f6fb));
 
-  --um-soft: var(
-    --adm-soft,
-    var(--bg-elevated, #f5f7fb)
-  );
-
-  --um-input: var(
-    --adm-input,
-    var(--bg-input, #ffffff)
-  );
-
-  --um-line: var(
-    --adm-line,
-    var(
-      --border-color,
-      rgba(23, 32, 51, 0.1)
-    )
-  );
-
+  --um-line: var(--adm-line, var(--border-color, rgba(23, 32, 51, 0.1)));
   --um-line-strong: var(
     --adm-line-strong,
-    var(
-      --border-strong,
-      rgba(23, 32, 51, 0.16)
-    )
+    var(--border-strong, rgba(23, 32, 51, 0.16))
   );
 
-  --um-text: var(
-    --adm-text,
-    var(--text-primary, #172033)
-  );
+  --um-text: var(--adm-text, var(--text-primary, #172033));
+  --um-muted: var(--adm-muted, var(--text-secondary, #667085));
+  --um-disabled: var(--text-disabled, rgba(23, 32, 51, 0.46));
 
-  --um-muted: var(
-    --adm-muted,
-    var(--text-secondary, #667085)
-  );
+  --um-primary: var(--adm-primary, var(--color-primary, #315fcb));
+  --um-success: var(--adm-success, var(--success, #2f7d57));
+  --um-warning: var(--adm-warning, var(--warning, #a66a18));
+  --um-danger: var(--adm-danger, var(--danger, #b54747));
+  --um-info: var(--adm-info, var(--info, #3f6f8f));
 
-  --um-primary: var(
-    --adm-primary,
-    var(--color-primary, #315fcb)
-  );
-
-  --um-success: var(
-    --adm-success,
-    var(--success, #17803d)
-  );
-
-  --um-warning: var(
-    --adm-warning,
-    var(--warning, #9a6700)
-  );
-
-  --um-danger: var(
-    --adm-danger,
-    var(--danger, #b42318)
-  );
-
-  --um-info: var(
-    --adm-info,
-    var(--info, var(--um-primary))
-  );
-
-  width: min(
-    980px,
-    calc(100vw - 28px)
-  );
-
-  max-height: min(
-    92dvh,
-    900px
-  );
-
-  display: grid;
-  grid-template-rows:
-    auto
-    minmax(0, 1fr);
-
-  overflow: hidden;
-  font-family: var(--adm-font-body);
-}
-
-.modal--user:focus {
-  outline: none;
-}
-
-.modal--user,
-.modal--user *,
-.modal--user *::before,
-.modal--user *::after {
-  box-sizing: border-box;
-}
-
-/* ============================================================
-   ENCABEZADO
-============================================================ */
-
-.usermodal-header {
-  position: relative;
-  z-index: 4;
-  flex: 0 0 auto;
-  margin-bottom: 0;
-  padding-bottom: 15px;
-  background: var(--um-card);
-}
-
-.usermodal-titlewrap {
-  min-width: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.usermodal-titleline {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-}
-
-.usermodal-title {
-  max-width: 34ch;
-  margin: 0;
-  color: var(--um-text);
-  font-family: var(--adm-font-heading);
-  font-size: clamp(
-    1.45rem,
-    1.2rem + 0.8vw,
-    1.85rem
-  );
-  font-weight: 740;
-  line-height: 1.12;
-  letter-spacing: -0.028em;
-  text-wrap: balance;
-}
-
-.usermodal-subtitle {
-  max-width: 76ch;
-  margin: 0;
-  color: var(--um-muted);
-  font-family: var(--adm-font-body);
-  font-size: 0.9rem;
-  line-height: 1.55;
-  text-wrap: pretty;
-}
-
-.usermodal-badges {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.usermodal-badge {
-  min-height: 29px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--um-line);
-  border-radius: 999px;
-  font-family: var(--adm-font-ui);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.usermodal-badge--neutral {
-  border-color: color-mix(
-    in srgb,
-    var(--um-primary) 28%,
-    var(--um-line)
-  );
-
-  background: color-mix(
+  --um-primary-soft: color-mix(
     in srgb,
     var(--um-primary) 8%,
     var(--um-card)
   );
 
-  color: color-mix(
+  --um-primary-line: color-mix(
     in srgb,
-    var(--um-primary) 84%,
-    var(--um-text)
+    var(--um-primary) 24%,
+    var(--um-line)
   );
+
+  --um-focus: var(
+    --adm-ring,
+    var(
+      --ring-primary,
+      0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--um-primary) 20%,
+          transparent
+        )
+    )
+  );
+
+  --um-font: var(
+    --adm-font-ui,
+    var(
+      --font-ui,
+      Inter,
+      "Segoe UI",
+      system-ui,
+      sans-serif
+    )
+  );
+
+  width: min(920px, calc(100vw - 28px));
+  max-height: min(90vh, 860px);
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+
+  padding: 0 !important;
+  overflow: hidden !important;
+
+  border-radius: 18px !important;
+
+  color: var(--um-text);
+  font-family: var(--um-font);
+}
+
+.modal--user,
+.modal--user * {
+  box-sizing: border-box;
+  font-family: var(--um-font);
+}
+
+.modal--user button,
+.modal--user input,
+.modal--user select {
+  font: inherit;
+}
+
+/* =========================================================
+   ENCABEZADO
+========================================================= */
+
+.usermodal-header {
+  position: relative;
+  z-index: 4;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+  margin: 0 !important;
+  padding: 19px 21px 17px !important;
+
+  border-bottom: 1px solid var(--um-line) !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--um-card),
+      color-mix(
+        in srgb,
+        var(--um-primary) 3%,
+        var(--um-card)
+      )
+    );
+}
+
+.usermodal-header::before {
+  content: "";
+
+  position: absolute;
+  inset: 0 auto 0 0;
+
+  width: 4px;
+
+  background: var(--um-primary);
+}
+
+.usermodal-titlewrap {
+  display: grid;
+
+  min-width: 0;
+
+  gap: 6px;
+}
+
+.usermodal-titleline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 9px 12px;
+}
+
+.usermodal-title {
+  max-width: none;
+  margin: 0;
+
+  color: var(--um-text);
+
+  font-size: clamp(1.32rem, 1.8vw, 1.62rem);
+  font-weight: 750;
+  line-height: 1.18;
+  letter-spacing: -0.028em;
+
+  text-wrap: balance;
+}
+
+.usermodal-subtitle {
+  max-width: 720px;
+  margin: 0;
+
+  color: var(--um-muted);
+
+  font-size: 0.8rem;
+  font-weight: 450;
+  line-height: 1.5;
+}
+
+.usermodal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 6px;
+}
+
+.usermodal-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 25px;
+  padding: 0 8px;
+
+  border: 1px solid var(--um-line);
+  border-radius: 999px;
+
+  background: var(--um-soft);
+  color: var(--um-muted);
+
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+.usermodal-badge--neutral {
+  border-color: var(--um-primary-line);
+  background: var(--um-primary-soft);
+  color: var(--um-primary);
 }
 
 .usermodal-badge--ok {
-  border-color: color-mix(
-    in srgb,
-    var(--um-success) 28%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-success) 24%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-success) 8%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-success) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-success) 86%,
-    var(--um-text)
-  );
+  color: var(--um-success);
 }
 
 .usermodal-badge--warn {
-  border-color: color-mix(
-    in srgb,
-    var(--um-warning) 30%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-warning) 24%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-warning) 8%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-warning) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-warning) 88%,
-    var(--um-text)
-  );
+  color: var(--um-warning);
 }
 
 .usermodal-badge--off {
-  border-color: color-mix(
-    in srgb,
-    var(--um-danger) 28%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-danger) 24%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-danger) 8%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-danger) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-danger) 88%,
-    var(--um-text)
-  );
+  color: var(--um-danger);
 }
 
 .usermodal-close {
   flex: 0 0 auto;
+
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+
+  border-radius: 10px !important;
 }
 
-/* ============================================================
+/* =========================================================
    FORMULARIO Y DESPLAZAMIENTO
-============================================================ */
+========================================================= */
 
 .usermodal-form {
-  min-height: 0;
   display: grid;
-  grid-template-rows:
-    minmax(0, 1fr)
-    auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+
+  min-height: 0;
 }
 
 .usermodal-scroll {
-  min-height: 0;
-  padding: 16px 4px 16px 0;
   display: grid;
   align-content: start;
-  gap: 13px;
+
+  min-height: 0;
+
+  gap: 0;
+  padding: 18px 21px;
+
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
 
+  scrollbar-width: thin;
   scrollbar-color:
     color-mix(
       in srgb,
-      var(--um-muted) 30%,
+      var(--um-muted) 26%,
       transparent
     )
     transparent;
 }
 
 .usermodal-scroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.usermodal-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  width: 7px;
 }
 
 .usermodal-scroll::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
   border-radius: 999px;
 
-  background: color-mix(
-    in srgb,
-    var(--um-muted) 30%,
-    transparent
-  );
-
-  background-clip: padding-box;
+  background:
+    color-mix(
+      in srgb,
+      var(--um-muted) 28%,
+      transparent
+    );
 }
 
-/* ============================================================
+/* =========================================================
    SECCIONES
-============================================================ */
+========================================================= */
 
 .usermodal-section {
   position: relative;
+
   display: grid;
+
   gap: 13px;
-  padding: 15px;
+  padding: 0 0 18px;
 
-  border: 1px solid color-mix(
-    in srgb,
-    var(--um-line) 90%,
-    transparent
-  );
+  border: 0;
+  border-radius: 0;
 
-  border-radius: 18px;
+  background: transparent;
+}
 
-  background: color-mix(
-    in srgb,
-    var(--um-card) 95%,
-    var(--um-soft)
-  );
+.usermodal-section + .usermodal-section {
+  padding-top: 18px;
+
+  border-top: 1px solid var(--um-line);
 }
 
 .usermodal-sectionhead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+
+  gap: 13px;
+}
+
+.usermodal-sectionhead > div {
+  min-width: 0;
 }
 
 .usermodal-sectiontitle {
   margin: 0;
+
   color: var(--um-text);
-  font-family: var(--adm-font-heading);
-  font-size: 1.03rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.018em;
+
+  font-size: 0.93rem;
+  font-weight: 710;
+  line-height: 1.35;
+  letter-spacing: -0.014em;
 }
 
 .usermodal-sectionsub {
-  max-width: 72ch;
-  margin: 4px 0 0;
+  max-width: 680px;
+  margin: 3px 0 0;
+
   color: var(--um-muted);
-  font-family: var(--adm-font-body);
-  font-size: 0.84rem;
-  line-height: 1.5;
+
+  font-size: 0.74rem;
+  line-height: 1.47;
 }
 
-.usermodal-grid,
-.usermodal-control-grid {
+/* =========================================================
+   CAMPOS
+========================================================= */
+
+.usermodal-grid {
   display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 13px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
 }
 
 .usermodal-field {
-  min-width: 0;
   display: grid;
   align-content: start;
-  gap: 7px;
+
+  min-width: 0;
+
+  gap: 6px;
 }
 
 .usermodal-label {
-  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 8px;
+  margin: 0;
+
   color: var(--um-text);
-  font-family: var(--adm-font-ui);
-  font-size: 0.8rem;
-  font-weight: 650;
-  line-height: 1.35;
+
+  font-size: 0.77rem;
+  font-weight: 680;
+  line-height: 1.4;
 }
 
 .usermodal-label--with-help {
   align-items: center;
 }
 
-.usermodal-label__text {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.usermodal-required {
-  color: var(--um-danger);
-  font-weight: 700;
-}
-
-/* ============================================================
-   CONTROLES
-============================================================ */
-
 .usermodal-input {
   width: 100%;
-  min-height: 46px;
-  padding: 0 13px;
-  border-radius: 13px;
-  color: var(--um-text);
-  font-family: var(--adm-font-body);
-  font-size: 0.9rem;
-  font-weight: 500;
+  min-height: 46px !important;
+
+  padding: 10px 12px !important;
+
+  border: 1px solid var(--um-line-strong) !important;
+  border-radius: 11px !important;
+
+  background-color: var(--um-input) !important;
+  color: var(--um-text) !important;
+
+  font-size: 0.87rem !important;
+  font-weight: 450 !important;
+  line-height: 1.45;
+
+  box-shadow: none;
+
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .usermodal-input::placeholder {
-  color: color-mix(
-    in srgb,
-    var(--um-muted) 76%,
-    transparent
-  );
+  color:
+    color-mix(
+      in srgb,
+      var(--um-muted) 68%,
+      transparent
+    );
 
-  font-weight: 400;
+  font-weight: 450;
   opacity: 1;
 }
 
-.usermodal-input:disabled {
+.usermodal-input:hover:not(:disabled) {
+  border-color: var(--um-primary-line) !important;
+}
+
+.usermodal-input:focus,
+.usermodal-input:focus-visible {
+  outline: none;
+
+  border-color: var(--um-primary) !important;
+  background-color: var(--um-card) !important;
+
+  box-shadow: var(--um-focus) !important;
+}
+
+.usermodal-input:disabled,
+.usermodal-input.input-readonly {
+  opacity: 1;
+
   cursor: not-allowed;
-  opacity: 0.7;
+
+  border-color: var(--um-line) !important;
+
+  background-color:
+    color-mix(
+      in srgb,
+      var(--um-page) 72%,
+      var(--um-card)
+    ) !important;
+
+  color: var(--um-disabled) !important;
 }
 
 select.usermodal-input {
   appearance: none;
-  padding-right: 40px;
-  background-color: var(--um-input);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding-right: 40px !important;
 
   background-image:
     linear-gradient(
       45deg,
       transparent 50%,
-      currentColor 50%
+      var(--um-muted) 50%
     ),
     linear-gradient(
       135deg,
-      currentColor 50%,
+      var(--um-muted) 50%,
       transparent 50%
-    );
+    ) !important;
 
   background-position:
-    calc(100% - 18px)
-      calc(50% - 3px),
-    calc(100% - 13px)
-      calc(50% - 3px);
+    calc(100% - 17px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px) !important;
 
-  background-repeat: no-repeat;
-  background-size:
-    5px 5px,
-    5px 5px;
-}
-
-.input-readonly {
-  background: color-mix(
-    in srgb,
-    var(--um-soft) 78%,
-    var(--um-card)
-  );
-
-  color: color-mix(
-    in srgb,
-    var(--um-text) 78%,
-    var(--um-muted)
-  );
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
 }
 
 .usermodal-help {
   margin: 0;
+
   color: var(--um-muted);
-  font-family: var(--adm-font-body);
-  font-size: 0.76rem;
+
+  font-size: 0.71rem;
   line-height: 1.45;
 }
 
-/* ============================================================
-   NOTAS
-============================================================ */
-
-.usermodal-note {
-  margin: 0;
-  padding: 11px 12px;
-  border: 1px solid var(--um-line);
-  border-radius: 13px;
-  color: var(--um-text);
-  font-family: var(--adm-font-body);
-  font-size: 0.82rem;
-  line-height: 1.52;
+.usermodal-help--danger {
+  color: var(--um-danger);
+  font-weight: 650;
 }
 
-.usermodal-note strong {
-  font-weight: 700;
+.usermodal-input.usermodal-input--invalid {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-danger) 58%,
+      var(--um-line)
+    );
+
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--um-danger) 10%,
+      transparent
+    );
+}
+
+/* =========================================================
+   NOTAS Y ALERTAS
+========================================================= */
+
+.usermodal-note,
+.usermodal-alert {
+  margin: 0;
+  padding: 10px 12px;
+
+  border: 1px solid var(--um-line);
+  border-radius: 11px;
+
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 .usermodal-note--info {
-  border-color: color-mix(
-    in srgb,
-    var(--um-info) 26%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-info) 24%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-info) 7%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-info) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-info) 84%,
-    var(--um-text)
-  );
+  color: var(--um-info);
 }
 
 .usermodal-note--warn {
-  border-color: color-mix(
-    in srgb,
-    var(--um-warning) 28%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-warning) 24%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-warning) 7%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-warning) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-warning) 88%,
-    var(--um-text)
-  );
+  color: var(--um-warning);
 }
 
-/* ============================================================
+.usermodal-alert {
+  margin-top: 18px;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-danger) 24%,
+      var(--um-line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--um-danger) 7%,
+      var(--um-card)
+    );
+
+  color: var(--um-danger);
+
+  font-weight: 650;
+}
+
+/* =========================================================
    CONTROL DE EDICIÓN
-============================================================ */
+========================================================= */
 
 .usermodal-status-grid {
   display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
   gap: 9px;
 }
 
 .usermodal-status {
-  min-width: 0;
-  min-height: 78px;
-  padding: 11px 12px;
   display: grid;
-  align-content: center;
-  gap: 5px;
 
-  border: 1px solid color-mix(
-    in srgb,
-    var(--um-line) 92%,
-    transparent
-  );
+  min-width: 0;
 
-  border-radius: 14px;
+  gap: 4px;
+  padding: 11px;
 
-  background: color-mix(
-    in srgb,
-    var(--um-card) 90%,
-    var(--um-soft)
-  );
+  border: 1px solid var(--um-line);
+  border-radius: 11px;
+
+  background: var(--um-soft);
 }
 
 .usermodal-status span {
   color: var(--um-muted);
-  font-family: var(--adm-font-ui);
-  font-size: 0.68rem;
-  font-weight: 700;
+
+  font-size: 0.65rem;
+  font-weight: 680;
   line-height: 1.3;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
 }
 
 .usermodal-status strong {
   min-width: 0;
+
+  overflow: hidden;
+
   color: var(--um-text);
-  font-family: var(--adm-font-body);
-  font-size: 0.86rem;
-  font-weight: 650;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usermodal-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
 }
 
 .extend-row {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
+
+  gap: 8px;
 }
 
 .perfil-actions {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
 }
 
 .usermodal-action-btn {
   appearance: none;
-  min-height: 42px;
-  padding: 0 14px;
-  border: 1px solid var(--um-line);
-  border-radius: 12px;
-  font-family: var(--adm-font-ui);
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 40px;
+  padding: 9px 13px;
+
+  border: 1px solid var(--um-line-strong);
+  border-radius: 11px;
+
+  background: var(--um-card);
+  color: var(--um-text);
+
+  font-size: 0.77rem;
+  font-weight: 680;
+  line-height: 1.2;
+
   cursor: pointer;
 
   transition:
-    transform
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    border-color
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    background
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    color
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    box-shadow
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    filter
-      calc(140ms * var(--animate-speed, 1))
-      ease;
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
 .usermodal-action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.usermodal-action-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--adm-ring);
-}
-
-.usermodal-action-btn:disabled {
-  opacity: 0.58;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.usermodal-action-btn--soft {
-  border-color: color-mix(
-    in srgb,
-    var(--um-line) 92%,
-    transparent
-  );
-
-  background: color-mix(
-    in srgb,
-    var(--um-card) 92%,
-    var(--um-soft)
-  );
-
-  color: var(--um-text);
-}
-
 .usermodal-action-btn--soft:hover:not(:disabled) {
-  border-color: color-mix(
-    in srgb,
-    var(--um-primary) 18%,
-    var(--um-line)
-  );
-
-  background: color-mix(
-    in srgb,
-    var(--um-primary) 5%,
-    var(--um-card)
-  );
-
-  box-shadow: var(--adm-shadow-soft);
+  border-color: var(--um-primary-line);
+  background: var(--um-primary-soft);
+  color: var(--um-primary);
 }
 
 .usermodal-action-btn--primary {
-  border-color: var(
-    --button-border,
-    color-mix(
-      in srgb,
-      var(--um-primary) 76%,
-      #000000
-    )
-  );
-
-  background: var(
-    --button-bg,
-    var(--um-primary)
-  );
-
-  color: var(
-    --button-text,
-    #ffffff
-  );
-
-  box-shadow:
-    0 5px 12px
-    color-mix(
-      in srgb,
-      var(--um-primary) 16%,
-      transparent
-    );
-}
-
-.usermodal-action-btn--primary:hover:not(:disabled) {
-  filter: brightness(1.025);
+  border-color: var(--button-border, var(--um-primary));
+  background: var(--button-bg, var(--um-primary));
+  color: var(--button-text, #ffffff);
 }
 
 .usermodal-action-btn--danger {
-  border-color: color-mix(
-    in srgb,
-    var(--um-danger) 30%,
-    var(--um-line)
-  );
+  border-color:
+    color-mix(
+      in srgb,
+      var(--um-danger) 26%,
+      var(--um-line)
+    );
 
-  background: color-mix(
-    in srgb,
-    var(--um-danger) 8%,
-    var(--um-card)
-  );
+  background:
+    color-mix(
+      in srgb,
+      var(--um-danger) 7%,
+      var(--um-card)
+    );
 
-  color: color-mix(
-    in srgb,
-    var(--um-danger) 88%,
-    var(--um-text)
-  );
+  color: var(--um-danger);
 }
 
 .usermodal-action-btn--danger:hover:not(:disabled) {
-  background: color-mix(
-    in srgb,
-    var(--um-danger) 12%,
-    var(--um-card)
-  );
-
-  box-shadow: var(--adm-shadow-soft);
+  background:
+    color-mix(
+      in srgb,
+      var(--um-danger) 11%,
+      var(--um-card)
+    );
 }
 
-/* ============================================================
-   PERMISOS
-============================================================ */
+.usermodal-action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--um-focus);
+}
+
+.usermodal-action-btn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================================
+   PERMISOS ADMINISTRATIVOS
+========================================================= */
 
 .usermodal-checkline {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
-  padding: 12px;
 
-  border: 1px solid color-mix(
-    in srgb,
-    var(--um-line) 92%,
-    transparent
-  );
+  gap: 10px;
+  padding: 11px 12px;
 
-  border-radius: 14px;
+  border: 1px solid var(--um-line);
+  border-radius: 11px;
 
-  background: color-mix(
-    in srgb,
-    var(--um-card) 92%,
-    var(--um-soft)
-  );
-
+  background: var(--um-soft);
   color: var(--um-text);
+
   cursor: pointer;
-
-  transition:
-    border-color
-      calc(140ms * var(--animate-speed, 1))
-      ease,
-    background
-      calc(140ms * var(--animate-speed, 1))
-      ease;
-}
-
-.usermodal-checkline:hover {
-  border-color: color-mix(
-    in srgb,
-    var(--um-primary) 18%,
-    var(--um-line)
-  );
-
-  background: color-mix(
-    in srgb,
-    var(--um-primary) 4%,
-    var(--um-card)
-  );
 }
 
 .usermodal-checkline input {
+  flex: 0 0 auto;
+
   width: 17px;
   height: 17px;
-  margin: 3px 0 0;
-  flex: 0 0 auto;
+  margin: 2px 0 0;
+
   accent-color: var(--um-primary);
 }
 
-.usermodal-checkline input:focus-visible {
-  outline: none;
-  box-shadow: var(--adm-ring);
-}
-
 .usermodal-checkline span {
-  min-width: 0;
   display: grid;
-  gap: 4px;
+
+  min-width: 0;
+
+  gap: 3px;
 }
 
 .usermodal-checkline strong {
-  color: var(--um-text);
-  font-family: var(--adm-font-ui);
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .usermodal-checkline small {
   color: var(--um-muted);
-  font-family: var(--adm-font-body);
-  font-size: 0.78rem;
-  line-height: 1.45;
+
+  font-size: 0.7rem;
+  line-height: 1.43;
 }
 
-/* ============================================================
-   ERROR Y PIE
-============================================================ */
-
-.usermodal-alert {
-  padding: 11px 13px;
-
-  border: 1px solid color-mix(
-    in srgb,
-    var(--um-danger) 30%,
-    var(--um-line)
-  );
-
-  border-radius: 13px;
-
-  background: color-mix(
-    in srgb,
-    var(--um-danger) 8%,
-    var(--um-card)
-  );
-
-  color: color-mix(
-    in srgb,
-    var(--um-danger) 90%,
-    var(--um-text)
-  );
-
-  font-family: var(--adm-font-body);
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
+/* =========================================================
+   PIE DEL MODAL
+========================================================= */
 
 .usermodal-footer {
   position: relative;
   z-index: 4;
-  margin-top: 0;
-  padding-top: 14px;
-  display: flex;
+
+  display: flex !important;
+  align-items: center;
   justify-content: flex-end;
-  gap: 9px;
-  background: var(--um-card);
+
+  gap: 8px;
+  margin: 0 !important;
+  padding: 13px 21px !important;
+
+  border-top: 1px solid var(--um-line) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--um-soft) 70%,
+      var(--um-card)
+    );
 }
 
 .usermodal-footer .btn-cerrar,
 .usermodal-footer .btn-guardar {
-  min-width: 142px;
+  min-width: 130px;
+  min-height: 40px;
+
+  border-radius: 11px;
 }
 
-/* ============================================================
-   MODO OSCURO
-============================================================ */
-
-html.dark .modal--user,
-body.dark .modal--user,
-.dark .modal--user,
-[data-theme="dark"] .modal--user {
-  color-scheme: dark;
-}
-
-/* ============================================================
+/* =========================================================
    RESPONSIVE
-============================================================ */
+========================================================= */
 
 @media (max-width: 860px) {
   .modal--user {
-    width: min(
-      100%,
-      calc(100vw - 18px)
-    );
-
-    max-height:
-      calc(100dvh - 18px);
-  }
-
-  .usermodal-titleline,
-  .usermodal-sectionhead {
-    align-items: stretch;
-  }
-
-  .usermodal-badges {
-    width: 100%;
-    justify-content: flex-start;
+    width: min(100%, calc(100vw - 18px));
+    max-height: 92vh;
   }
 
   .usermodal-grid,
@@ -936,19 +870,39 @@ body.dark .modal--user,
   }
 
   .usermodal-status-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 680px) {
-  .usermodal-scroll {
-    padding-right: 0;
+@media (max-width: 700px) {
+  .usermodal-header {
+    gap: 12px;
+    padding: 17px 16px 15px 19px !important;
   }
 
-  .usermodal-status-grid,
-  .perfil-actions,
+  .usermodal-titleline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .usermodal-badges {
+    width: 100%;
+  }
+
+  .usermodal-scroll {
+    padding: 15px 16px;
+  }
+
+  .usermodal-status-grid {
+    grid-template-columns: 1fr;
+  }
+
   .extend-row {
+    grid-template-columns: 1fr;
+  }
+
+  .perfil-actions {
+    display: grid;
     grid-template-columns: 1fr;
   }
 
@@ -957,7 +911,10 @@ body.dark .modal--user,
   }
 
   .usermodal-footer {
-    flex-direction: column-reverse;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    padding: 12px 16px !important;
   }
 
   .usermodal-footer .btn-cerrar,
@@ -967,49 +924,995 @@ body.dark .modal--user,
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
+  .sgpc-admin-modal {
+    padding: 0;
+  }
+
   .modal--user {
     width: 100%;
-    max-height:
-      calc(100dvh - 12px);
+    height: 100%;
+    max-height: none;
+
+    border: 0 !important;
+    border-radius: 0 !important;
   }
 
   .usermodal-header {
-    gap: 10px;
-    padding-bottom: 13px;
+    padding-top: 15px !important;
   }
 
   .usermodal-title {
-    font-size: 1.35rem;
-  }
-
-  .usermodal-subtitle {
-    font-size: 0.84rem;
+    font-size: 1.25rem;
   }
 
   .usermodal-section {
-    padding: 13px;
-    border-radius: 16px;
+    padding-bottom: 15px;
   }
 
-  .usermodal-badge {
-    min-height: 27px;
-    padding: 0 9px;
-    font-size: 0.72rem;
+  .usermodal-section + .usermodal-section {
+    padding-top: 15px;
+  }
+
+  .usermodal-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   MOVIMIENTO REDUCIDO
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .modal--user *,
+  .modal--user *::before,
+  .modal--user *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .usermodal-action-btn:hover {
+    transform: none !important;
   }
 }
 
 /* ============================================================
-   MOVIMIENTO REDUCIDO
+   SOLICITUD DE EXTENSIÓN ABIERTA DESDE NOTIFICACIONES
 ============================================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  .usermodal-action-btn,
-  .usermodal-checkline {
-    transition: none;
+.usermodal-section.is-request-focus {
+  scroll-margin-block: 18px;
+  border-color: color-mix(
+    in srgb,
+    var(--um-primary) 24%,
+    var(--um-line)
+  );
+}
+
+.usermodal-request-context {
+  display: grid;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--um-warning) 28%,
+    var(--um-line)
+  );
+  border-radius: 14px;
+  background: color-mix(
+    in srgb,
+    var(--um-warning) 6%,
+    var(--um-card)
+  );
+}
+
+.usermodal-request-context[data-state="aprobada"] {
+  border-color: color-mix(
+    in srgb,
+    var(--um-success) 30%,
+    var(--um-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--um-success) 6%,
+    var(--um-card)
+  );
+}
+
+.usermodal-request-context[data-state="rechazada"] {
+  border-color: color-mix(
+    in srgb,
+    var(--um-danger) 28%,
+    var(--um-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--um-danger) 5%,
+    var(--um-card)
+  );
+}
+
+.usermodal-request-context__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.usermodal-request-context__head > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.usermodal-request-context__head > div > span,
+.usermodal-request-context__reason > span {
+  color: var(--um-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.usermodal-request-context__head strong {
+  color: var(--um-text);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.usermodal-request-context__status {
+  flex: 0 0 auto;
+  min-height: 27px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--um-warning) 32%,
+    var(--um-line)
+  );
+  border-radius: 999px;
+  color: color-mix(
+    in srgb,
+    var(--um-warning) 88%,
+    var(--um-text)
+  );
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.usermodal-request-context__facts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: var(--um-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.usermodal-request-context__facts strong {
+  color: var(--um-text);
+  font-weight: 700;
+}
+
+.usermodal-request-context__reason {
+  display: grid;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--um-line) 88%,
+    transparent
+  );
+}
+
+.usermodal-request-context__reason p {
+  margin: 0;
+  color: var(--um-text);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.usermodal-request-resolution {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.usermodal-textarea {
+  min-height: 78px !important;
+  resize: vertical;
+}
+
+@media (max-width: 680px) {
+  .usermodal-request-context__head,
+  .usermodal-request-resolution {
+    grid-template-columns: 1fr;
   }
 
+  .usermodal-request-context__head {
+    display: grid;
+  }
+
+  .usermodal-request-context__status {
+    justify-self: start;
+  }
+}
+
+
+/* =========================================================
+   F12 · USUARIO MODAL / FORMULARIO EMBEBIDO
+   ---------------------------------------------------------
+   create -> modal
+   edit + embedded -> página dedicada
+========================================================= */
+
+.usermodal-embedded {
+  --um-card: var(--adm-card, var(--bg-card, #ffffff));
+  --um-soft: var(--adm-soft, var(--bg-elevated, #f8fafc));
+  --um-input: var(--adm-input, var(--bg-input, #ffffff));
+  --um-line: var(--adm-line, var(--border-color, rgba(23, 32, 51, 0.1)));
+  --um-line-strong:
+    var(
+      --adm-line-strong,
+      var(--border-strong, rgba(23, 32, 51, 0.16))
+    );
+  --um-text: var(--adm-text, var(--text-primary, #172033));
+  --um-muted: var(--adm-muted, var(--text-secondary, #667085));
+  --um-primary: var(--adm-primary, var(--color-primary, #315fcb));
+  --um-success: var(--adm-success, var(--success, #2f7d57));
+  --um-warning: var(--adm-warning, var(--warning, #a66a18));
+  --um-danger: var(--adm-danger, var(--danger, #b54747));
+
+  width: 100%;
+  min-width: 0;
+
+  color: var(--um-text);
+
+  container-name: user-form-embedded;
+  container-type: inline-size;
+}
+
+.usermodal-embedded
+  .modal--user-embedded {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+
+  display: block !important;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.usermodal-embedded
+  .usermodal-form {
+  min-height: 0;
+
+  display: grid;
+
+  grid-template-rows:
+    minmax(0, 1fr)
+    auto;
+}
+
+.usermodal-embedded
+  .usermodal-scroll {
+  min-height: 0;
+
+  gap: 0;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+
+  overscroll-behavior: auto;
+}
+
+.usermodal-embedded
+  .usermodal-account-summary {
+  min-height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 2px;
+
+  padding:
+    0
+    0
+    14px;
+
+  border-bottom:
+    1px solid
+    var(--um-line);
+
+  color:
+    var(--um-muted);
+
+  font-size: 0.7rem;
+
+  font-weight: 680;
+}
+
+.usermodal-embedded
+  .usermodal-account-summary__separator {
+  color:
+    var(--um-line-strong);
+}
+
+.usermodal-embedded
+  .usermodal-account-summary__state {
+  font-weight: 740;
+}
+
+.usermodal-embedded
+  .usermodal-section {
+  padding:
+    18px
+    0 !important;
+}
+
+.usermodal-embedded
+  .usermodal-section:first-of-type {
+  padding-top:
+    18px !important;
+}
+
+.usermodal-embedded
+  .usermodal-sectiontitle {
+  font-size:
+    0.98rem !important;
+
+  font-weight:
+    740 !important;
+}
+
+.usermodal-embedded
+  .usermodal-sectionsub {
+  display:
+    none !important;
+}
+
+.usermodal-embedded
+  .usermodal-grid,
+.usermodal-embedded
+  .usermodal-control-grid {
+  gap:
+    14px
+    16px !important;
+}
+
+.usermodal-embedded
+  .usermodal-input {
+  min-height:
+    44px !important;
+
+  border-radius:
+    9px !important;
+}
+
+.usermodal-embedded
+  .usermodal-status-grid {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap:
+    10px !important;
+}
+
+.usermodal-embedded
+  .usermodal-status {
+  min-height:
+    68px;
+
+  align-content:
+    center;
+
+  padding:
+    11px
+    12px !important;
+
+  border-radius:
+    9px !important;
+
+  box-shadow:
+    none !important;
+}
+
+.usermodal-embedded
+  .usermodal-status
+  strong {
+  white-space:
+    normal !important;
+
+  text-overflow:
+    clip !important;
+}
+
+.usermodal-embedded
+  .usermodal-action-btn {
+  min-height:
+    42px !important;
+
+  border-radius:
+    9px !important;
+
+  transform:
+    none !important;
+}
+
+.usermodal-embedded
   .usermodal-action-btn:hover:not(:disabled) {
-    transform: none;
+  transform:
+    none !important;
+}
+
+.usermodal-embedded
+  .usermodal-checkline {
+  min-height:
+    58px;
+
+  align-items:
+    center !important;
+
+  padding:
+    10px
+    12px !important;
+
+  border-radius:
+    9px !important;
+}
+
+.usermodal-embedded
+  .usermodal-checkline
+  small {
+  display:
+    none !important;
+}
+
+.usermodal-embedded
+  .usermodal-note {
+  border-radius:
+    9px !important;
+}
+
+.usermodal-embedded
+  .usermodal-footer {
+  position:
+    static !important;
+
+  margin:
+    0
+    -20px
+    -20px !important;
+
+  padding:
+    13px
+    20px !important;
+
+  border-top:
+    1px solid
+    var(--um-line) !important;
+
+  background:
+    var(--um-card) !important;
+}
+
+.usermodal-embedded
+  .usermodal-footer
+  .btn-cerrar,
+.usermodal-embedded
+  .usermodal-footer
+  .btn-guardar {
+  min-width:
+    138px;
+
+  min-height:
+    44px;
+
+  border-radius:
+    9px;
+}
+
+/* El modo modal de creación conserva ancho cómodo. */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded) {
+  width:
+    min(
+      920px,
+      calc(100vw - 28px)
+    );
+
+  border-radius:
+    14px !important;
+
+  box-shadow:
+    0
+    18px
+    52px
+    rgba(
+      15,
+      23,
+      42,
+      0.17
+    ) !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-sectionsub {
+  display:
+    none !important;
+}
+
+/* Responsive del formulario embebido. */
+@container user-form-embedded (max-width: 760px) {
+  .usermodal-embedded
+    .usermodal-grid,
+  .usermodal-embedded
+    .usermodal-control-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+}
+
+@container user-form-embedded (max-width: 520px) {
+  .usermodal-embedded
+    .usermodal-status-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .usermodal-embedded
+    .extend-row {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .usermodal-embedded
+    .perfil-actions {
+    display:
+      grid;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .usermodal-embedded
+    .perfil-actions
+    .usermodal-action-btn {
+    width:
+      100%;
+  }
+
+  .usermodal-embedded
+    .usermodal-footer {
+    display:
+      grid !important;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    margin:
+      0
+      -16px
+      -17px !important;
+
+    padding:
+      12px
+      16px
+      15px !important;
+  }
+
+  .usermodal-embedded
+    .usermodal-footer
+    .btn-cerrar,
+  .usermodal-embedded
+    .usermodal-footer
+    .btn-guardar {
+    width:
+      100%;
+  }
+}
+
+
+/* ============================================================
+   F13 · EDICIÓN MODAL FINAL
+   ------------------------------------------------------------
+   Alineado con el resto del SGPC:
+   - sin gradiente;
+   - sin barra decorativa;
+   - ventana amplia;
+   - sin tarjetas innecesarias;
+   - botones 44 px;
+============================================================ */
+
+.sgpc-admin-modal.modal-overlay {
+  background:
+    rgba(
+      15,
+      23,
+      42,
+      0.54
+    ) !important;
+
+  backdrop-filter:
+    none !important;
+
+  -webkit-backdrop-filter:
+    none !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded) {
+  width:
+    min(
+      980px,
+      calc(100vw - 32px)
+    ) !important;
+
+  max-height:
+    min(
+      90dvh,
+      900px
+    ) !important;
+
+  border:
+    1px solid
+    var(--um-line) !important;
+
+  border-radius:
+    14px !important;
+
+  background:
+    var(--um-card) !important;
+
+  box-shadow:
+    0
+    18px
+    52px
+    rgba(
+      15,
+      23,
+      42,
+      0.17
+    ) !important;
+}
+
+/* Cabecera plana */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-header {
+  min-height:
+    70px !important;
+
+  align-items:
+    center !important;
+
+  padding:
+    15px
+    20px !important;
+
+  border-bottom:
+    1px solid
+    var(--um-line) !important;
+
+  background:
+    var(--um-card) !important;
+
+  box-shadow:
+    none !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-header::before {
+  display:
+    none !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-titlewrap {
+  gap:
+    4px !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-title {
+  font-size:
+    clamp(
+      1.25rem,
+      1.12rem + 0.45vw,
+      1.52rem
+    ) !important;
+
+  font-weight:
+    760 !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-badge {
+  min-height:
+    26px !important;
+
+  padding:
+    0
+    8px !important;
+
+  border-radius:
+    7px !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-close {
+  width:
+    40px !important;
+
+  height:
+    40px !important;
+
+  min-height:
+    40px !important;
+
+  border:
+    1px solid
+    transparent !important;
+
+  border-radius:
+    9px !important;
+
+  background:
+    transparent !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-close:hover:not(:disabled) {
+  border-color:
+    var(--um-line) !important;
+
+  background:
+    var(--um-soft) !important;
+}
+
+/* Cuerpo */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-scroll {
+  padding:
+    0
+    20px !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-section {
+  padding:
+    18px
+    0 !important;
+
+  border-bottom:
+    1px solid
+    var(--um-line) !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-section:last-of-type {
+  border-bottom:
+    0 !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-sectionsub {
+  display:
+    none !important;
+}
+
+/* Estados del permiso de edición */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-status-grid {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important;
+
+  gap:
+    10px !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-status {
+  min-height:
+    68px !important;
+
+  align-content:
+    center;
+
+  padding:
+    11px
+    12px !important;
+
+  border:
+    1px solid
+    var(--um-line) !important;
+
+  border-radius:
+    9px !important;
+
+  background:
+    var(--um-soft) !important;
+
+  box-shadow:
+    none !important;
+}
+
+/* Acceso administrativo */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-checkline {
+  min-height:
+    58px !important;
+
+  padding:
+    10px
+    12px !important;
+
+  border-radius:
+    9px !important;
+
+  box-shadow:
+    none !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-checkline
+  small {
+  display:
+    none !important;
+}
+
+/* Pie fijo dentro de la ventana */
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-footer {
+  position:
+    sticky !important;
+
+  bottom:
+    0;
+
+  z-index:
+    5;
+
+  min-height:
+    68px;
+
+  margin:
+    0 !important;
+
+  padding:
+    12px
+    20px !important;
+
+  border-top:
+    1px solid
+    var(--um-line) !important;
+
+  background:
+    var(--um-card) !important;
+
+  box-shadow:
+    none !important;
+}
+
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-footer
+  .btn-cerrar,
+.sgpc-admin-modal
+  .modal--user:not(.modal--user-embedded)
+  .usermodal-footer
+  .btn-guardar {
+  min-height:
+    44px !important;
+
+  border-radius:
+    9px !important;
+
+  box-shadow:
+    none !important;
+
+  transform:
+    none !important;
+}
+
+@media (max-width: 720px) {
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded) {
+    width:
+      calc(
+        100vw
+        - 20px
+      ) !important;
+
+    max-height:
+      calc(
+        100dvh
+        - 20px
+      ) !important;
+  }
+
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-grid,
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-control-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-status-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-footer {
+    display:
+      grid !important;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-footer
+    .btn-cerrar,
+  .sgpc-admin-modal
+    .modal--user:not(.modal--user-embedded)
+    .usermodal-footer
+    .btn-guardar {
+    width:
+      100%;
   }
 }

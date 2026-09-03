@@ -1,0 +1,31 @@
+/* ============================================================
+   ETAPA 5 · PUBLICACIONES DELEGADAS
+   Feedback de actualización + búsqueda sin acción redundante.
+============================================================ */
+
+.adm-delegated__search {
+  grid-template-columns: 18px minmax(0, 1fr) 32px !important;
+}
+
+.adm-delegated__inline-loader {
+  margin: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--del-line-soft, var(--border-color));
+  background: color-mix(in srgb, var(--del-primary, var(--color-primary)) 3%, transparent);
+}
+
+.adm-delegated__refresh-error {
+  margin: 0;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--del-line-soft, var(--border-color));
+  background: color-mix(in srgb, var(--adm-warning, #9a6700) 6%, transparent);
+  color: var(--del-muted, var(--text-secondary));
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+@container delegated-select (max-width: 650px) {
+  .adm-delegated__search {
+    grid-template-columns: 18px minmax(0, 1fr) 32px !important;
+  }
+}

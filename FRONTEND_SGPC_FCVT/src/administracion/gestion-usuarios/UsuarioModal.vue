@@ -1,535 +1,434 @@
 <template>
-  <div
-    class="sgpc-admin-modal modal-overlay"
-    @click.self="requestClose"
+  <Teleport
+    to="body"
+    :disabled="embedded"
   >
     <div
-      ref="dialogRef"
-      class="modal modal--user"
-      role="dialog"
-      aria-modal="true"
-      :aria-labelledby="dialogTitleId"
-      :aria-describedby="dialogDescriptionId"
-      :aria-busy="formBusy"
-      tabindex="-1"
-      @keydown="handleDialogKeydown"
+      :class="
+        embedded
+          ? 'usermodal-embedded'
+          : 'sgpc-admin-modal modal-overlay'
+      "
+      @click.self="handleBackdropClick"
     >
-      <!-- =====================================================
-           ENCABEZADO
-      ====================================================== -->
-      <header class="modal__header usermodal-header">
+      <div
+        :class="[
+          'modal',
+          'modal--user',
+          {
+            'modal--user-embedded': embedded,
+          },
+        ]"
+        :role="embedded ? 'region' : 'dialog'"
+        :aria-modal="embedded ? undefined : 'true'"
+        :aria-label="
+          embedded
+            ? 'Editar usuario'
+            : mode === 'create'
+              ? 'Registrar usuario externo'
+              : 'Editar usuario'
+        "
+      >
+      <header
+        v-if="!embedded"
+        class="modal__header usermodal-header"
+      >
         <div class="usermodal-titlewrap">
           <div class="usermodal-titleline">
-            <h2
-              :id="dialogTitleId"
-              class="modal__title usermodal-title"
-            >
-              {{
-                mode === "create"
-                  ? "Registrar usuario externo"
-                  : "Editar usuario"
-              }}
+            <h2 class="modal__title usermodal-title">
+              {{ mode === "create" ? "Registrar usuario externo" : "Editar usuario" }}
             </h2>
 
-            <div
-              class="usermodal-badges"
-              aria-label="Tipo y estado de la cuenta"
-            >
-              <span
-                class="usermodal-badge usermodal-badge--neutral"
-              >
+            <div class="usermodal-badges" aria-label="Tipo y estado">
+              <span class="usermodal-badge usermodal-badge--neutral">
                 {{ tipoUsuarioLabel }}
               </span>
 
-              <span
-                class="usermodal-badge"
-                :class="estadoBadgeClass"
-              >
+              <span class="usermodal-badge" :class="estadoBadgeClass">
                 {{ estadoLabel }}
               </span>
             </div>
           </div>
 
           <p
-            :id="dialogDescriptionId"
+            v-if="mode === 'create'"
             class="modal__subtitle usermodal-subtitle"
           >
-            {{
-              mode === "create"
-                ? "Complete los datos básicos. La cuenta quedará pendiente hasta que sea activada."
-                : descripcionEdicion
-            }}
+            Complete los datos necesarios para registrar la cuenta.
           </p>
         </div>
 
         <button
           type="button"
           class="btn-cerrar modal__close usermodal-close"
-          :disabled="formBusy"
-          aria-label="Cerrar ventana"
+          :disabled="saving || actionBusy"
+          @click="emit('close')"
+          aria-label="Cerrar"
           title="Cerrar"
-          @click="requestClose"
         >
-          <span aria-hidden="true">✕</span>
+          ✕
         </button>
       </header>
 
-      <!-- =====================================================
-           FORMULARIO
-      ====================================================== -->
-      <form
-        class="usermodal-form"
-        novalidate
-        @submit.prevent="submit"
-      >
+      <form class="usermodal-form" @submit.prevent="submit">
         <div class="usermodal-scroll">
-          <!-- =================================================
-               DATOS PERSONALES
-          ================================================== -->
-          <section
-            class="usermodal-section"
-            aria-labelledby="usermodal-personal-title"
+          <div
+            v-if="embedded && mode === 'edit'"
+            class="usermodal-account-summary"
+            aria-label="Tipo y estado de la cuenta"
           >
+            <span>{{ tipoUsuarioLabel }}</span>
+
+            <span
+              class="usermodal-account-summary__separator"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+
+            <strong
+              :class="[
+                'usermodal-account-summary__state',
+                estadoBadgeClass,
+              ]"
+            >
+              {{ estadoLabel }}
+            </strong>
+          </div>
+
+          <section class="usermodal-section" aria-label="Datos personales">
             <div class="usermodal-sectionhead">
               <div>
-                <h3
-                  id="usermodal-personal-title"
-                  class="usermodal-sectiontitle"
-                >
-                  Datos personales
-                </h3>
-
-                <p class="usermodal-sectionsub">
-                  Información principal para identificar la cuenta.
-                </p>
+                <h3 class="usermodal-sectiontitle">Datos personales</h3>
               </div>
             </div>
 
             <div class="usermodal-grid">
-              <!-- NOMBRES -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-nombres"
-                >
-                  <span>Nombres</span>
-
-                  <span
-                    class="usermodal-required"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </label>
+                <label class="usermodal-label">Nombres</label>
 
                 <input
-                  id="usermodal-nombres"
                   v-model="form.nombres"
                   class="field-control usermodal-input"
-                  name="nombres"
-                  type="text"
                   required
-                  maxlength="100"
                   placeholder="Ej.: Andrea Sofía"
                   autocomplete="given-name"
-                  :disabled="formBusy"
                 />
               </div>
 
-              <!-- APELLIDOS -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-apellidos"
-                >
-                  <span>Apellidos</span>
-
-                  <span
-                    class="usermodal-required"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </label>
+                <label class="usermodal-label">Apellidos</label>
 
                 <input
-                  id="usermodal-apellidos"
                   v-model="form.apellidos"
                   class="field-control usermodal-input"
-                  name="apellidos"
-                  type="text"
                   required
-                  maxlength="100"
                   placeholder="Ej.: García López"
                   autocomplete="family-name"
-                  :disabled="formBusy"
                 />
               </div>
 
-              <!-- CORREO -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-email"
-                >
-                  <span>Correo electrónico</span>
-
-                  <span
-                    class="usermodal-required"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </label>
+                <label class="usermodal-label">Correo electrónico</label>
 
                 <input
-                  id="usermodal-email"
                   v-model="form.email"
                   class="field-control usermodal-input"
+                  required
+                  type="email"
+                  placeholder="Ej.: usuario@correo.com"
+                  :disabled="emailLocked"
                   :class="{
                     'input-readonly': emailLocked,
+                    'usermodal-input--invalid': institutionalEmailOnCreate
                   }"
-                  name="email"
-                  type="email"
-                  required
-                  maxlength="150"
-                  placeholder="Ej.: usuario@correo.com"
+                  :aria-invalid="institutionalEmailOnCreate ? 'true' : undefined"
                   autocomplete="email"
                   inputmode="email"
-                  :disabled="formBusy || emailLocked"
-                  :aria-describedby="
-                    emailLocked
-                      ? 'usermodal-email-help'
-                      : undefined
-                  "
                 />
 
                 <p
-                  v-if="emailLocked"
-                  id="usermodal-email-help"
-                  class="usermodal-help"
+                  v-if="institutionalEmailOnCreate"
+                  class="usermodal-help usermodal-help--danger"
+                  role="alert"
+                  aria-live="polite"
                 >
-                  El correo de esta cuenta institucional se
-                  administra mediante Microsoft 365.
+                  Este correo pertenece a una cuenta institucional ULEAM.
+                  Debe ingresar mediante Microsoft 365 y no debe registrarse
+                  como usuario externo.
+                </p>
+
+                <p v-else-if="emailLocked" class="usermodal-help">
+                  Cuenta institucional: el correo no se modifica desde este panel.
                 </p>
               </div>
 
-              <!-- CÉDULA -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label usermodal-label--with-help"
-                  for="usermodal-identificacion"
-                >
-                  <span class="usermodal-label__text">
-                    Número de cédula
+                <label class="usermodal-label usermodal-label--with-help">
+                  <span>Identificación</span>
 
-                    <span
-                      v-if="mode === 'create'"
-                      class="usermodal-required"
-                      aria-hidden="true"
-                    >
-                      *
-                    </span>
-                  </span>
-
-                  <InfoTip title="Número de cédula">
-                    Ingrese exactamente 10 dígitos numéricos,
-                    sin espacios, letras ni guiones.
+                  <InfoTip title="Identificación">
+                    Dato único para evitar duplicados. Debe tener 10 dígitos numéricos.
                   </InfoTip>
                 </label>
 
                 <input
-                  id="usermodal-identificacion"
                   v-model="form.identificacion"
                   class="field-control usermodal-input"
-                  name="identificacion"
-                  type="text"
                   :required="mode === 'create'"
-                  minlength="10"
-                  maxlength="10"
-                  pattern="[0-9]{10}"
                   placeholder="Ej.: 1312345678"
                   autocomplete="off"
                   inputmode="numeric"
-                  aria-describedby="usermodal-identificacion-help"
-                  :aria-invalid="cedulaTieneError"
-                  :disabled="formBusy"
-                  @input="sanitizeCedula"
                 />
 
-                <p
-                  id="usermodal-identificacion-help"
-                  class="usermodal-help"
-                >
-                  Debe contener exactamente 10 números.
+                <p class="usermodal-help">
+                  Solo números, sin espacios ni guiones.
                 </p>
               </div>
             </div>
           </section>
 
-          <!-- =================================================
-               ASIGNACIÓN ACADÉMICA
-          ================================================== -->
           <section
             v-if="showAcademicoSection"
             class="usermodal-section"
-            aria-labelledby="usermodal-academico-title"
+            aria-label="Asignación académica"
           >
             <div class="usermodal-sectionhead">
               <div>
-                <h3
-                  id="usermodal-academico-title"
-                  class="usermodal-sectiontitle"
-                >
-                  Asignación académica
-                </h3>
-
-                <p class="usermodal-sectionsub">
-                  Complete o corrija la Facultad y Carrera
-                  asignadas al usuario institucional.
-                </p>
+                <h3 class="usermodal-sectiontitle">Información académica</h3>
               </div>
             </div>
 
             <div class="usermodal-grid">
-              <!-- FACULTAD -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-facultad"
-                >
-                  <span>Facultad</span>
-
-                  <span
-                    class="usermodal-required"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </label>
+                <label class="usermodal-label">Facultad</label>
 
                 <select
-                  id="usermodal-facultad"
                   v-model="form.facultad"
                   class="field-control usermodal-input"
-                  name="facultad"
+                  :disabled="saving || loadingCatalogos"
                   required
-                  :disabled="
-                    formBusy ||
-                    loadingCatalogos
-                  "
-                  :aria-busy="loadingCatalogos"
-                  :aria-describedby="
-                    loadingCatalogos
-                      ? 'usermodal-facultad-status'
-                      : undefined
-                  "
                   @change="onFacultadChange"
                 >
-                  <option value="">
-                    Seleccione una Facultad
-                  </option>
+                  <option value="">Seleccione una facultad</option>
 
                   <option
-                    v-for="facultad in facultades"
-                    :key="facultad.value"
-                    :value="facultad.value"
+                    v-for="f in facultades"
+                    :key="f.value"
+                    :value="f.value"
                   >
-                    {{ facultad.label }}
+                    {{ f.label }}
                   </option>
                 </select>
 
-                <p
-                  v-if="loadingCatalogos"
-                  id="usermodal-facultad-status"
-                  class="usermodal-help"
-                  role="status"
-                  aria-live="polite"
-                >
+                <p v-if="loadingCatalogos" class="usermodal-help">
                   Cargando facultades...
                 </p>
               </div>
 
-              <!-- CARRERA -->
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-carrera"
-                >
-                  <span>Carrera</span>
-
-                  <span
-                    class="usermodal-required"
-                    aria-hidden="true"
-                  >
-                    *
-                  </span>
-                </label>
+                <label class="usermodal-label">Carrera</label>
 
                 <select
-                  id="usermodal-carrera"
                   v-model="form.carrera"
                   class="field-control usermodal-input"
-                  name="carrera"
+                  :disabled="saving || loadingCatalogos || !form.facultad"
                   required
-                  :disabled="
-                    formBusy ||
-                    loadingCatalogos ||
-                    loadingCarreras ||
-                    !form.facultad
-                  "
-                  :aria-busy="loadingCarreras"
-                  :aria-describedby="
-                    loadingCarreras
-                      ? 'usermodal-carrera-status'
-                      : undefined
-                  "
                 >
-                  <option value="">
-                    Seleccione una Carrera
-                  </option>
+                  <option value="">Seleccione una carrera</option>
 
                   <option
-                    v-for="carrera in carreras"
-                    :key="carrera.value"
-                    :value="carrera.value"
+                    v-for="c in carreras"
+                    :key="c.value"
+                    :value="c.value"
                   >
-                    {{ carrera.label }}
+                    {{ c.label }}
                   </option>
                 </select>
 
-                <p
-                  v-if="
-                    form.facultad &&
-                    loadingCarreras
-                  "
-                  id="usermodal-carrera-status"
-                  class="usermodal-help"
-                  role="status"
-                  aria-live="polite"
-                >
+                <p v-if="form.facultad && loadingCarreras" class="usermodal-help">
                   Cargando carreras...
                 </p>
               </div>
             </div>
 
-            <p
-              class="usermodal-note usermodal-note--info"
-            >
-              La autenticación continúa administrada por
-              Microsoft 365. Esta sección únicamente corrige
-              la relación académica interna.
+            <p v-if="isInstitucional" class="usermodal-note usermodal-note--info">
+              El acceso institucional continúa gestionado por Microsoft 365.
             </p>
           </section>
 
-          <!-- =================================================
-               INFORMACIÓN PARA CUENTAS NO INSTITUCIONALES
-          ================================================== -->
-          <section
-            v-else-if="mode === 'edit'"
-            class="usermodal-section"
-            aria-labelledby="usermodal-account-info-title"
-          >
-            <div class="usermodal-sectionhead">
-              <div>
-                <h3
-                  id="usermodal-account-info-title"
-                  class="usermodal-sectiontitle"
-                >
-                  Clasificación de la cuenta
-                </h3>
-
-                <p class="usermodal-sectionsub">
-                  Esta cuenta no utiliza una asignación académica
-                  institucional.
-                </p>
-              </div>
-            </div>
-
-            <p
-              v-if="isExterno"
-              class="usermodal-note usermodal-note--info"
-            >
-              Los usuarios externos no registran Facultad ni
-              Carrera dentro del sistema.
-            </p>
-
-            <p
-              v-else
-              class="usermodal-note usermodal-note--warn"
-            >
-              La combinación actual de rol y origen de
-              autenticación no corresponde a una cuenta
-              institucional ni externa.
-            </p>
-          </section>
-
-          <!-- =================================================
-               CONTROL DE EDICIÓN
-          ================================================== -->
           <section
             v-if="mode === 'edit'"
+            ref="profileControlSectionRef"
             class="usermodal-section"
-            aria-labelledby="usermodal-edit-control-title"
+            :class="{ 'is-request-focus': focusProfileEdit }"
+            aria-label="Control de edición del perfil"
           >
             <div class="usermodal-sectionhead">
               <div>
-                <h3
-                  id="usermodal-edit-control-title"
-                  class="usermodal-sectiontitle"
-                >
-                  Control de edición
-                </h3>
-
-                <p class="usermodal-sectionsub">
-                  Habilite, extienda o bloquee la edición del
-                  perfil del usuario.
-                </p>
+                <h3 class="usermodal-sectiontitle">Permiso para editar el perfil</h3>
               </div>
 
               <InfoTip title="Control de edición">
-                Habilitar desbloquea el perfil y reinicia los
-                intentos. Extender agrega horas al plazo actual.
-                Bloquear impide nuevas modificaciones.
+                Habilitar desbloquea y reinicia intentos. Extender suma horas al plazo. Bloquear impide editar el perfil.
               </InfoTip>
             </div>
 
             <div
-              class="usermodal-status-grid"
-              aria-label="Estado de edición del perfil"
+              v-if="
+                !isExtensionRequestContext &&
+                extensionRequestLoadErrorState
+              "
+              class="usermodal-note usermodal-note--warn"
+              role="alert"
             >
+              <strong>No se pudo verificar el estado de solicitudes.</strong>
+              <span>
+                Los controles manuales del permiso permanecen bloqueados hasta
+                que el sistema pueda confirmar que no existe una solicitud pendiente.
+              </span>
+            </div>
+
+            <div
+              v-if="extensionRequestUnavailable"
+              class="usermodal-note usermodal-note--warn"
+              role="alert"
+            >
+              <strong>No se pudo cargar la solicitud pendiente.</strong>
+              <span>
+                {{
+                  extensionRequestLoadErrorState ||
+                  "No fue posible recuperar el detalle de la solicitud. Las acciones manuales de edición están bloqueadas para evitar resolverla por una vía incorrecta."
+                }}
+              </span>
+
+              <button
+                v-if="extensionRequestId"
+                type="button"
+                class="usermodal-action-btn usermodal-action-btn--soft"
+                :disabled="saving || actionBusy || extensionRequestLoading"
+                @click="retryExtensionRequestLoad"
+              >
+                {{ extensionRequestLoading ? "Reintentando..." : "Reintentar carga" }}
+              </button>
+            </div>
+
+            <div
+              v-if="
+                !isExtensionRequestContext &&
+                hasPendingExtensionRequest
+              "
+              class="usermodal-note usermodal-note--warn"
+              role="status"
+            >
+              <strong>Solicitud de edición pendiente.</strong>
+              <span>
+                Este usuario tiene una solicitud por revisar. Los controles
+                manuales del permiso están deshabilitados para evitar que la
+                solicitud quede abierta por error.
+              </span>
+
+              <button
+                type="button"
+                class="usermodal-action-btn usermodal-action-btn--soft"
+                :disabled="saving || actionBusy"
+                @click="emit('open-extension-request', extensionRequestState)"
+              >
+                Ir a la solicitud
+              </button>
+            </div>
+
+            <div
+              v-if="isExtensionRequestContext && extensionRequestState"
+              class="usermodal-request-context"
+              :data-state="extensionRequestState.estado || 'pendiente'"
+            >
+              <div class="usermodal-request-context__head">
+                <div>
+                  <span>Solicitud de extensión</span>
+                  <strong>Petición enviada por el usuario</strong>
+                </div>
+
+                <span class="usermodal-request-context__status">
+                  {{ extensionRequestState.estado_label || extensionRequestState.estado || "Pendiente" }}
+                </span>
+              </div>
+
+              <div class="usermodal-request-context__facts">
+                <span>
+                  Solicitado:
+                  <strong>{{ extensionRequestState.horas_solicitadas || "—" }} horas</strong>
+                </span>
+
+                <span v-if="extensionRequestState.solicitada_at">
+                  Fecha:
+                  <strong>{{ formatRequestDate(extensionRequestState.solicitada_at) }}</strong>
+                </span>
+              </div>
+
+              <div class="usermodal-request-context__reason">
+                <span>Comentario del usuario</span>
+                <p>
+                  {{ extensionRequestState.motivo || "Sin comentario registrado." }}
+                </p>
+              </div>
+
+              <p
+                v-if="extensionRequestResolved"
+                class="usermodal-note usermodal-note--info"
+              >
+                Esta solicitud ya fue resuelta. Para realizar una extensión manual, cierre esta ventana y abra nuevamente el usuario desde el listado general.
+              </p>
+
+              <div
+                v-if="hasPendingExtensionRequest"
+                class="usermodal-request-resolution"
+              >
+                <label class="usermodal-field">
+                  <span class="usermodal-label">Motivo del rechazo</span>
+                  <textarea
+                    v-model="extensionResolutionReason"
+                    class="field-control usermodal-input usermodal-textarea"
+                    rows="3"
+                    maxlength="1000"
+                    :disabled="saving || actionBusy"
+                    placeholder="Solo es necesario si decide rechazar la solicitud."
+                  ></textarea>
+                </label>
+
+                <button
+                  type="button"
+                  class="usermodal-action-btn usermodal-action-btn--danger"
+                  :disabled="saving || actionBusy"
+                  @click="handleRejectExtensionRequest"
+                >
+                  {{ actionBusy ? "Procesando..." : "Rechazar solicitud" }}
+                </button>
+              </div>
+            </div>
+
+            <div class="usermodal-status-grid">
               <div class="usermodal-status">
-                <span>Bloqueado</span>
+                <span>Estado</span>
                 <strong>{{ uiProfileLockedLabel }}</strong>
               </div>
 
               <div class="usermodal-status">
-                <span>Intentos disponibles</span>
-                <strong>{{ uiAttemptsLeftLabel }}</strong>
-              </div>
-
-              <div class="usermodal-status">
-                <span>Límite de edición</span>
+                <span>Puede editar hasta</span>
                 <strong>{{ uiProfileUntilLabel }}</strong>
               </div>
             </div>
 
             <div class="usermodal-control-grid">
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-extend-hours"
-                >
-                  Extender edición
-                </label>
+                <label class="usermodal-label">Tiempo adicional</label>
 
                 <div class="extend-row">
                   <select
-                    id="usermodal-extend-hours"
+                    ref="extendHoursSelectRef"
                     v-model="extendHours"
                     class="field-control usermodal-input"
-                    name="extend_hours"
-                    :disabled="formBusy"
+                    :disabled="saving || actionBusy || extensionDecisionDisabled"
                   >
                     <option :value="6">6 horas</option>
                     <option :value="12">12 horas</option>
@@ -541,212 +440,115 @@
                   <button
                     type="button"
                     class="usermodal-action-btn usermodal-action-btn--soft"
-                    :disabled="formBusy"
+                    :disabled="saving || actionBusy || extensionDecisionDisabled"
                     @click="handleExtenderEdicion"
                   >
                     {{
-                      actionType === "extend"
+                      actionBusy
                         ? "Procesando..."
-                        : "Extender"
+                        : hasPendingExtensionRequest
+                          ? "Aprobar y ampliar"
+                          : "Ampliar plazo"
                     }}
                   </button>
                 </div>
               </div>
 
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-block-reason"
-                >
-                  Razón de bloqueo
-                </label>
+                <label class="usermodal-label">Motivo del bloqueo</label>
 
                 <input
-                  id="usermodal-block-reason"
                   v-model="blockReason"
                   class="field-control usermodal-input"
-                  name="block_reason"
-                  type="text"
+                  :disabled="saving || actionBusy || manualProfileActionsDisabled"
                   maxlength="255"
                   placeholder="Ej.: Validación pendiente"
-                  aria-describedby="usermodal-block-reason-help"
-                  :disabled="formBusy"
                 />
-
-                <p
-                  id="usermodal-block-reason-help"
-                  class="usermodal-help"
-                >
-                  El motivo quedará registrado como parte del
-                  bloqueo administrativo.
-                </p>
               </div>
             </div>
 
-            <div
-              class="perfil-actions"
-              aria-label="Acciones de control de edición"
-            >
+            <div class="perfil-actions">
               <button
                 type="button"
                 class="usermodal-action-btn usermodal-action-btn--primary"
-                :disabled="formBusy"
+                :disabled="saving || actionBusy || manualProfileActionsDisabled"
+                :title="manualProfileActionsDisabled ? 'Las acciones manuales están deshabilitadas mientras se revisa una solicitud de extensión.' : undefined"
                 @click="handleHabilitarEdicion"
               >
-                {{
-                  actionType === "enable"
-                    ? "Procesando..."
-                    : "Habilitar edición"
-                }}
+                {{ actionBusy ? "Procesando..." : "Permitir edición" }}
               </button>
 
               <button
                 type="button"
                 class="usermodal-action-btn usermodal-action-btn--danger"
-                :disabled="formBusy"
+                :disabled="saving || actionBusy || manualProfileActionsDisabled"
+                :title="manualProfileActionsDisabled ? 'Las acciones manuales están deshabilitadas mientras se revisa una solicitud de extensión.' : undefined"
                 @click="handleBloquearEdicion"
               >
-                {{
-                  actionType === "block"
-                    ? "Procesando..."
-                    : "Bloquear edición"
-                }}
+                {{ actionBusy ? "Procesando..." : "Quitar permiso" }}
               </button>
             </div>
 
-            <p class="usermodal-help">
-              Este control no modifica las credenciales ni el
-              estado activo de la cuenta.
-            </p>
           </section>
 
-          <!-- =================================================
-               PERFIL Y PERMISOS
-          ================================================== -->
-          <section
-            class="usermodal-section"
-            aria-labelledby="usermodal-permissions-title"
-          >
+          <section class="usermodal-section" aria-label="Acceso administrativo">
             <div class="usermodal-sectionhead">
               <div>
-                <h3
-                  id="usermodal-permissions-title"
-                  class="usermodal-sectiontitle"
-                >
-                  Perfil y permisos
-                </h3>
-
-                <p class="usermodal-sectionsub">
-                  Verifique el tipo de cuenta, su estado y los
-                  privilegios administrativos.
-                </p>
+                <h3 class="usermodal-sectiontitle">Acceso administrativo</h3>
               </div>
             </div>
 
-            <div class="usermodal-grid">
+            <div
+              v-if="mode === 'create'"
+              class="usermodal-grid"
+            >
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-account-type"
-                >
-                  Tipo de cuenta
-                </label>
-
+                <label class="usermodal-label">Tipo de cuenta</label>
                 <input
-                  id="usermodal-account-type"
                   :value="tipoUsuarioLabel"
-                  class="field-control usermodal-input input-readonly"
-                  type="text"
                   disabled
+                  class="field-control usermodal-input input-readonly"
                 />
               </div>
 
               <div class="usermodal-field">
-                <label
-                  class="usermodal-label"
-                  for="usermodal-account-status"
-                >
-                  Estado de la cuenta
-                </label>
-
+                <label class="usermodal-label">Estado de la cuenta</label>
                 <input
-                  id="usermodal-account-status"
                   :value="estadoLabel"
-                  class="field-control usermodal-input input-readonly"
-                  type="text"
                   disabled
+                  class="field-control usermodal-input input-readonly"
                 />
               </div>
             </div>
 
             <template v-if="mode === 'edit'">
-              <label
-                class="usermodal-checkline"
-                for="usermodal-is-staff"
-              >
-                <input
-                  id="usermodal-is-staff"
-                  v-model="form.is_staff"
-                  type="checkbox"
-                  :disabled="
-                    formBusy ||
-                    Boolean(usuario?.is_superuser)
-                  "
-                />
+              <label class="usermodal-checkline">
+                <input type="checkbox" v-model="form.is_staff" />
 
                 <span>
-                  <strong>Permisos de administración</strong>
-
-                  <small>
-                    Actívelo únicamente si esta persona gestionará
-                    usuarios, catálogos o publicaciones globales.
-                  </small>
-
-                  <small v-if="usuario?.is_superuser">
-                    Los permisos de un superusuario no pueden
-                    revocarse desde esta opción.
-                  </small>
+                  <strong>Puede administrar el sistema</strong>
                 </span>
               </label>
             </template>
 
             <template v-else>
               <p class="usermodal-note usermodal-note--info">
-                Los usuarios externos nuevos se crean sin
-                privilegios administrativos.
-              </p>
-
-              <p class="usermodal-note usermodal-note--warn">
-                Al guardar, la cuenta se registrará como
-                <strong>Pendiente</strong>. Para habilitar el acceso,
-                utilice
-                <strong>Pendientes → Activar cuenta</strong>.
+                La cuenta se registrará como <b>Pendiente</b> hasta que sea activada.
               </p>
             </template>
           </section>
 
-          <!-- =================================================
-               ERROR
-          ================================================== -->
-          <div
-            v-if="error"
-            class="usermodal-alert"
-            role="alert"
-            aria-live="assertive"
-          >
+          <div v-if="error" class="usermodal-alert" role="alert" aria-live="polite">
             {{ error }}
           </div>
         </div>
 
-        <!-- ===================================================
-             PIE DEL MODAL
-        ==================================================== -->
         <footer class="modal__footer usermodal-footer">
           <button
             type="button"
             class="btn-cerrar"
-            :disabled="formBusy"
-            @click="requestClose"
+            :disabled="saving || actionBusy"
+            @click="emit('close')"
           >
             Cancelar
           </button>
@@ -755,73 +557,65 @@
             type="submit"
             class="btn-guardar"
             :disabled="
-              formBusy ||
-              loadingCatalogos ||
-              loadingCarreras
+              saving ||
+              actionBusy ||
+              institutionalEmailOnCreate
             "
           >
-            {{
-              saving
-                ? "Guardando..."
-                : mode === "create"
-                  ? "Registrar usuario"
-                  : "Guardar cambios"
-            }}
+            {{ saving ? "Guardando..." : mode === "create" ? "Registrar" : "Guardar cambios" }}
           </button>
         </footer>
       </form>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 
 import { adminApi } from "../../scripts/api/adminApi";
+import {
+  obtenerSolicitudExtensionPerfil,
+  resolverSolicitudExtensionPerfil,
+} from "../../scripts/api/profileExtensionApi";
 import { useNotice } from "../../scripts/composables/useNotice";
 
 import InfoTip from "../../inicio/ui/InfoTip.vue";
 
-
 const props = defineProps({
-  mode: {
-    type: String,
-    required: true,
-    validator: (value) =>
-      ["create", "edit"].includes(value),
-  },
-
-  usuario: {
-    type: Object,
-    default: null,
-  },
+  mode: { type: String, required: true },
+  usuario: { type: Object, default: null },
+  embedded: { type: Boolean, default: false },
+  extensionRequest: { type: Object, default: null },
+  extensionRequestRequired: { type: Boolean, default: false },
+  extensionRequestId: { type: Number, default: null },
+  extensionRequestLoadError: { type: String, default: "" },
+  focusProfileEdit: { type: Boolean, default: false },
+  initialExtendHours: { type: Number, default: 24 },
 });
-
 
 const emit = defineEmits([
   "close",
   "done",
+  "extension-resolved",
+  "open-extension-request",
 ]);
 
+const embedded = computed(() =>
+  Boolean(props.embedded)
+);
 
+const handleBackdropClick = () => {
+  if (!embedded.value) {
+    emit("close");
+  }
+};
 const { openNotice } = useNotice();
-
-
-const dialogRef = ref(null);
 
 const saving = ref(false);
 const error = ref("");
-
 const actionBusy = ref(false);
-const actionType = ref("");
 
 const loadingCatalogos = ref(false);
 const loadingCarreras = ref(false);
@@ -831,7 +625,12 @@ const carreras = ref([]);
 
 const extendHours = ref(24);
 const blockReason = ref("");
-
+const extensionRequestState = ref(null);
+const extensionRequestLoading = ref(false);
+const extensionRequestLoadErrorState = ref("");
+const extensionResolutionReason = ref("");
+const profileControlSectionRef = ref(null);
+const extendHoursSelectRef = ref(null);
 
 const form = reactive({
   id: null,
@@ -844,387 +643,234 @@ const form = reactive({
   carrera: "",
 });
 
-
 const profileLocked = ref(null);
 const attemptsLeft = ref(null);
 const profileUntil = ref(null);
 
+const hasPendingExtensionRequest = computed(() => {
+  return (
+    props.mode === "edit" &&
+    Number(extensionRequestState.value?.id) > 0 &&
+    String(
+      extensionRequestState.value?.estado ||
+      "pendiente"
+    ).toLowerCase() === "pendiente"
+  );
+});
 
-let previouslyFocusedElement = null;
-let previousBodyOverflow = "";
+const isExtensionRequestContext = computed(() => {
+  return (
+    props.mode === "edit" &&
+    Boolean(props.extensionRequestRequired)
+  );
+});
 
+const extensionRequestUnavailable = computed(() => {
+  return (
+    isExtensionRequestContext.value &&
+    !extensionRequestState.value
+  );
+});
 
-const dialogTitleId =
-  "usermodal-dialog-title";
+const extensionRequestResolved = computed(() => {
+  return (
+    isExtensionRequestContext.value &&
+    Boolean(extensionRequestState.value) &&
+    !hasPendingExtensionRequest.value
+  );
+});
 
-const dialogDescriptionId =
-  "usermodal-dialog-description";
+const manualProfileActionsDisabled = computed(() => {
+  return (
+    isExtensionRequestContext.value ||
+    hasPendingExtensionRequest.value ||
+    Boolean(extensionRequestLoadErrorState.value)
+  );
+});
 
-
-const ROLE_INSTITUTIONAL = "autor";
-const ROLE_EXTERNAL = "autor_externo";
-
-const AUTH_SOURCE_LOCAL = "local";
-const AUTH_SOURCE_MICROSOFT = "microsoft";
-
-
-/* ============================================================
-   NORMALIZACIÓN
-============================================================ */
-
-const normalizeText = (value) => {
-  return String(value ?? "").trim();
-};
-
-
-const normalizeAccountValue = (value) => {
-  return normalizeText(value).toLowerCase();
-};
-
-
-const cleanEmail = (value) => {
-  return normalizeText(value).toLowerCase();
-};
-
-
-const sanitizeCedulaValue = (value) => {
-  return String(value ?? "")
-    .replace(/\D/g, "")
-    .slice(0, 10);
-};
-
-
-const toPositiveId = (value) => {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
+const extensionDecisionDisabled = computed(() => {
+  if (!isExtensionRequestContext.value) {
+    return (
+      hasPendingExtensionRequest.value ||
+      Boolean(extensionRequestLoadErrorState.value)
+    );
   }
 
-  const parsed = Number(value);
+  return !hasPendingExtensionRequest.value;
+});
 
-  if (
-    !Number.isInteger(parsed) ||
-    parsed <= 0
-  ) {
-    return null;
-  }
-
-  return parsed;
+const normalizeExtensionHours = (value) => {
+  const hours = Number(value);
+  return [6, 12, 24, 48, 72].includes(hours)
+    ? hours
+    : 24;
 };
 
+const formatRequestDate = (value) => {
+  if (!value) return "No disponible";
 
-/* ============================================================
-   ESTADO DERIVADO
-============================================================ */
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "No disponible";
+  }
 
-const formBusy = computed(() => {
-  return Boolean(
-    saving.value ||
-    actionBusy.value
-  );
-});
+  return new Intl.DateTimeFormat(
+    "es-EC",
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }
+  ).format(date);
+};
 
+const focusProfileControl = async () => {
+  if (!props.focusProfileEdit) {
+    return;
+  }
 
-const normalizedAuthSource = computed(() => {
-  return normalizeAccountValue(
-    props.usuario?.auth_source
-  );
-});
+  await nextTick();
 
+  window.setTimeout(() => {
+    profileControlSectionRef.value
+      ?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
 
-const normalizedRole = computed(() => {
-  return normalizeAccountValue(
-    props.usuario?.rol ??
-    props.usuario?.role
-  );
-});
-
+    extendHoursSelectRef.value
+      ?.focus?.({
+        preventScroll: true,
+      });
+  }, 120);
+};
 
 const isInstitucional = computed(() => {
-  return Boolean(
-    props.mode === "edit" &&
-    normalizedRole.value ===
-      ROLE_INSTITUTIONAL &&
-    normalizedAuthSource.value ===
-      AUTH_SOURCE_MICROSOFT
-  );
+  return props.mode === "edit" && props.usuario?.auth_source === "microsoft";
 });
-
 
 const isExterno = computed(() => {
-  if (props.mode === "create") {
-    return true;
-  }
-
-  return Boolean(
-    normalizedRole.value ===
-      ROLE_EXTERNAL &&
-    normalizedAuthSource.value ===
-      AUTH_SOURCE_LOCAL
-  );
-});
-
-
-const isPendiente = computed(() => {
-  if (props.mode === "create") {
-    return true;
-  }
-
-  return props.usuario?.es_pendiente === true;
-});
-
-
-const emailLocked = computed(() => {
-  return Boolean(
-    props.mode === "edit" &&
-    isInstitucional.value
-  );
-});
-
-
-const showAcademicoSection = computed(() => {
-  return Boolean(
-    props.mode === "edit" &&
-    isInstitucional.value
-  );
-});
-
-
-const tipoUsuarioLabel = computed(() => {
-  if (props.mode === "create") {
-    return "Cuenta externa";
-  }
-
-  if (isInstitucional.value) {
-    return "Cuenta institucional";
-  }
-
-  if (isExterno.value) {
-    return "Cuenta externa";
-  }
-
-  return "Cuenta sin clasificación válida";
-});
-
-
-const descripcionEdicion = computed(() => {
-  if (isInstitucional.value) {
-    return (
-      "Actualice los datos personales, la asignación " +
-      "académica y los permisos del usuario institucional."
-    );
-  }
-
-  if (isExterno.value) {
-    return (
-      "Actualice los datos personales y los permisos " +
-      "del usuario externo."
-    );
-  }
+  if (props.mode === "create") return true;
 
   return (
-    "Actualice los datos permitidos y revise la " +
-    "clasificación actual de la cuenta."
+    props.usuario?.auth_source === "local" &&
+    props.usuario?.rol === "autor_externo"
   );
 });
 
+const isPendiente = computed(() => {
+  if (props.mode === "create") return true;
+  return isExterno.value && !props.usuario?.is_active;
+});
+
+const emailLocked = computed(() => props.mode === "edit" && isInstitucional.value);
+
+const INSTITUTIONAL_EMAIL_DOMAINS = Object.freeze([
+  "uleam.edu.ec",
+]);
+
+const INSTITUTIONAL_EMAIL_EXCEPTIONS = Object.freeze([
+  "e1316718111@live.uleam.edu.ec",
+]);
+
+const isInstitutionalEmail = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (!normalized || !normalized.includes("@")) {
+    return false;
+  }
+
+  if (INSTITUTIONAL_EMAIL_EXCEPTIONS.includes(normalized)) {
+    return true;
+  }
+
+  const parts = normalized.split("@");
+
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    return false;
+  }
+
+  return INSTITUTIONAL_EMAIL_DOMAINS.includes(parts[1]);
+};
+
+const institutionalEmailOnCreate = computed(() =>
+  props.mode === "create" &&
+  isInstitutionalEmail(form.email)
+);
+
+const tipoUsuarioLabel = computed(() => {
+  if (props.mode === "create") return "Externo";
+  if (isInstitucional.value) return "Institucional";
+  if (isExterno.value) return "Externo";
+  return "Usuario";
+});
 
 const estadoLabel = computed(() => {
-  if (props.mode === "create") {
-    return "Pendiente";
-  }
-
-  if (isPendiente.value) {
-    return "Pendiente";
-  }
-
-  return props.usuario?.is_active
-    ? "Activo"
-    : "Inactivo";
+  if (props.mode === "create") return "Pendiente";
+  if (isPendiente.value) return "Pendiente";
+  return props.usuario?.is_active ? "Activo" : "Inactivo";
 });
 
-
 const estadoBadgeClass = computed(() => {
-  const value = normalizeAccountValue(
-    estadoLabel.value
-  );
+  const value = String(estadoLabel.value || "").toLowerCase().trim();
 
-  if (value.includes("pend")) {
-    return "usermodal-badge--warn";
-  }
-
-  if (value === "inactivo") {
-    return "usermodal-badge--off";
-  }
-
-  if (value === "activo") {
-    return "usermodal-badge--ok";
-  }
+  if (value.includes("pend")) return "usermodal-badge--warn";
+  if (value.includes("inactivo")) return "usermodal-badge--off";
+  if (value.includes("activo")) return "usermodal-badge--ok";
 
   return "usermodal-badge--neutral";
 });
 
-
-const cedulaActual = computed(() => {
-  return normalizeText(
-    form.identificacion
-  );
+const showAcademicoSection = computed(() => {
+  if (props.mode !== "edit") return false;
+  if (isExterno.value) return false;
+  return true;
 });
-
-
-const cedulaTieneError = computed(() => {
-  if (!cedulaActual.value) {
-    return false;
-  }
-
-  return !/^\d{10}$/.test(
-    cedulaActual.value
-  );
-});
-
 
 const uiProfileLockedLabel = computed(() => {
   if (
     profileLocked.value === null ||
     profileLocked.value === undefined
   ) {
-    return "—";
+    return "Estado no disponible";
   }
 
   return profileLocked.value
-    ? "Sí"
-    : "No";
+    ? "No puede editar"
+    : "Puede editar";
 });
-
-
-const uiAttemptsLeftLabel = computed(() => {
-  if (
-    attemptsLeft.value === null ||
-    attemptsLeft.value === undefined
-  ) {
-    return "—";
-  }
-
-  return String(
-    attemptsLeft.value
-  );
-});
-
 
 const uiProfileUntilLabel = computed(() => {
-  if (!profileUntil.value) {
-    return "—";
-  }
+  if (!profileUntil.value) return "—";
 
   try {
-    const date = new Date(
-      profileUntil.value
-    );
-
-    if (Number.isNaN(date.getTime())) {
-      return String(
-        profileUntil.value
-      );
-    }
-
-    return new Intl.DateTimeFormat(
-      "es-EC",
-      {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }
-    ).format(date);
+    const date = new Date(profileUntil.value);
+    if (Number.isNaN(date.getTime())) return String(profileUntil.value);
+    return date.toLocaleString();
   } catch {
-    return String(
-      profileUntil.value
-    );
+    return String(profileUntil.value);
   }
 });
 
+const toSelectOptions = (arr) => {
+  if (!Array.isArray(arr)) return [];
 
-/* ============================================================
-   UTILIDADES DE FORMULARIO
-============================================================ */
-
-const sanitizeCedula = () => {
-  form.identificacion =
-    sanitizeCedulaValue(
-      form.identificacion
-    );
+  return arr.map((item) => ({
+    value: item.id ?? item.value,
+    label: item.nombre ?? item.label ?? String(item),
+  }));
 };
-
-
-const toSelectOptions = (items) => {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  return items
-    .map((item) => {
-      const value =
-        item?.id ??
-        item?.value ??
-        null;
-
-      const label =
-        item?.nombre ??
-        item?.label ??
-        "";
-
-      return {
-        value,
-        label: normalizeText(label),
-      };
-    })
-    .filter((item) => {
-      return (
-        item.value !== null &&
-        item.value !== undefined &&
-        item.value !== "" &&
-        item.label
-      );
-    });
-};
-
 
 const resolveApiError = (data) => {
-  if (!data) {
-    return "";
-  }
+  if (!data) return "";
 
-  if (typeof data === "string") {
-    return data;
-  }
-
-  if (
-    typeof data?.detail === "string" &&
-    data.detail
-  ) {
-    return data.detail;
-  }
-
-  if (
-    Array.isArray(data?.detail) &&
-    data.detail[0]
-  ) {
-    return String(data.detail[0]);
-  }
-
-  if (
-    typeof data?.error === "string" &&
-    data.error
-  ) {
-    return data.error;
-  }
+  if (typeof data?.detail === "string" && data.detail) return data.detail;
+  if (typeof data?.error === "string" && data.error) return data.error;
 
   const priorityKeys = [
     "email",
     "identificacion",
-    "nombres",
-    "apellidos",
     "facultad",
     "carrera",
     "rol",
@@ -1237,777 +883,603 @@ const resolveApiError = (data) => {
   for (const key of priorityKeys) {
     const value = data?.[key];
 
-    if (
-      Array.isArray(value) &&
-      value[0]
-    ) {
-      return String(value[0]);
-    }
-
-    if (
-      typeof value === "string" &&
-      value
-    ) {
-      return value;
-    }
-
-    if (
-      value &&
-      typeof value === "object"
-    ) {
-      const nestedMessage =
-        resolveApiError(value);
-
-      if (nestedMessage) {
-        return nestedMessage;
-      }
-    }
+    if (Array.isArray(value) && value[0]) return String(value[0]);
+    if (typeof value === "string" && value) return value;
   }
 
-  for (const value of Object.values(data)) {
-    if (
-      Array.isArray(value) &&
-      value[0]
-    ) {
-      return String(value[0]);
-    }
+  const firstKey = Object.keys(data || {})[0];
+  const firstValue = firstKey ? data[firstKey] : null;
 
-    if (
-      typeof value === "string" &&
-      value
-    ) {
-      return value;
-    }
-
-    if (
-      value &&
-      typeof value === "object"
-    ) {
-      const nestedMessage =
-        resolveApiError(value);
-
-      if (nestedMessage) {
-        return nestedMessage;
-      }
-    }
-  }
+  if (Array.isArray(firstValue) && firstValue[0]) return String(firstValue[0]);
+  if (typeof firstValue === "string" && firstValue) return firstValue;
 
   return "";
 };
-
-
-/* ============================================================
-   ACCESIBILIDAD DEL MODAL
-============================================================ */
-
-const requestClose = () => {
-  if (formBusy.value) {
-    return;
-  }
-
-  emit("close");
-};
-
-
-const getFocusableElements = () => {
-  const dialog = dialogRef.value;
-
-  if (!dialog) {
-    return [];
-  }
-
-  const selector = [
-    "a[href]",
-    "button:not([disabled])",
-    "input:not([disabled]):not([type='hidden'])",
-    "select:not([disabled])",
-    "textarea:not([disabled])",
-    "[tabindex]:not([tabindex='-1'])",
-  ].join(",");
-
-  return Array.from(
-    dialog.querySelectorAll(selector)
-  ).filter((element) => {
-    return (
-      !element.hasAttribute("hidden") &&
-      element.getAttribute("aria-hidden") !== "true" &&
-      element.getClientRects().length > 0
-    );
-  });
-};
-
-
-const focusInitialControl = async () => {
-  await nextTick();
-
-  const preferredControl =
-    dialogRef.value?.querySelector(
-      "#usermodal-nombres:not([disabled])"
-    );
-
-  if (
-    preferredControl instanceof HTMLElement
-  ) {
-    preferredControl.focus();
-    return;
-  }
-
-  dialogRef.value?.focus();
-};
-
-
-const handleDialogKeydown = (event) => {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    requestClose();
-    return;
-  }
-
-  if (event.key !== "Tab") {
-    return;
-  }
-
-  const focusableElements =
-    getFocusableElements();
-
-  if (!focusableElements.length) {
-    event.preventDefault();
-    dialogRef.value?.focus();
-    return;
-  }
-
-  const firstElement =
-    focusableElements[0];
-
-  const lastElement =
-    focusableElements[
-      focusableElements.length - 1
-    ];
-
-  const activeElement =
-    document.activeElement;
-
-  if (
-    event.shiftKey &&
-    activeElement === firstElement
-  ) {
-    event.preventDefault();
-    lastElement.focus();
-    return;
-  }
-
-  if (
-    !event.shiftKey &&
-    activeElement === lastElement
-  ) {
-    event.preventDefault();
-    firstElement.focus();
-  }
-};
-
-
-/* ============================================================
-   CATÁLOGOS ACADÉMICOS
-============================================================ */
 
 const loadFacultades = async () => {
   loadingCatalogos.value = true;
 
   try {
-    const data =
-      await adminApi.selectsFacultades();
-
-    facultades.value =
-      toSelectOptions(data);
-  } catch (exception) {
+    const data = await adminApi.selectsFacultades();
+    facultades.value = toSelectOptions(data);
+  } catch {
     facultades.value = [];
-
-    error.value =
-      resolveApiError(
-        exception?.response?.data
-      ) ||
-      "No se pudieron cargar las facultades.";
+    error.value = "No se pudieron cargar las facultades.";
   } finally {
     loadingCatalogos.value = false;
   }
 };
 
-
 const loadCarreras = async (facultadId) => {
   carreras.value = [];
 
-  const normalizedFacultyId =
-    toPositiveId(facultadId);
-
-  if (!normalizedFacultyId) {
-    return;
-  }
+  if (!facultadId) return;
 
   loadingCarreras.value = true;
 
   try {
-    const data =
-      await adminApi.selectsCarrerasByFacultad(
-        normalizedFacultyId
-      );
-
-    carreras.value =
-      toSelectOptions(data);
-  } catch (exception) {
+    const data = await adminApi.selectsCarrerasByFacultad(facultadId);
+    carreras.value = toSelectOptions(data);
+  } catch {
     carreras.value = [];
-
-    error.value =
-      resolveApiError(
-        exception?.response?.data
-      ) ||
-      "No se pudieron cargar las carreras.";
+    error.value = "No se pudieron cargar las carreras.";
   } finally {
     loadingCarreras.value = false;
   }
 };
 
-
 const onFacultadChange = async () => {
   form.carrera = "";
-
-  await loadCarreras(
-    form.facultad
-  );
+  await loadCarreras(form.facultad);
 };
-
-
-/* ============================================================
-   CARGA DEL USUARIO
-============================================================ */
-
-const resetForm = () => {
-  form.id = null;
-  form.nombres = "";
-  form.apellidos = "";
-  form.email = "";
-  form.identificacion = "";
-  form.is_staff = false;
-  form.facultad = "";
-  form.carrera = "";
-
-  facultades.value = [];
-  carreras.value = [];
-
-  profileLocked.value = null;
-  attemptsLeft.value = null;
-  profileUntil.value = null;
-
-  extendHours.value = 24;
-  blockReason.value = "";
-
-  actionType.value = "";
-  error.value = "";
-};
-
 
 watch(
-  () => [
-    props.mode,
-    props.usuario,
-  ],
+  () => [props.mode, props.usuario],
   async ([mode, usuario]) => {
-    resetForm();
+    error.value = "";
 
     if (mode === "create") {
+      form.id = null;
+      form.nombres = "";
+      form.apellidos = "";
+      form.email = "";
+      form.identificacion = "";
+      form.is_staff = false;
+      form.facultad = "";
+      form.carrera = "";
+
+      facultades.value = [];
+      carreras.value = [];
+
+      profileLocked.value = null;
+      attemptsLeft.value = null;
+      profileUntil.value = null;
+
+      extendHours.value = 24;
+      blockReason.value = "";
+      extensionRequestState.value = null;
+      extensionRequestLoading.value = false;
+      extensionRequestLoadErrorState.value = "";
+      extensionResolutionReason.value = "";
       return;
     }
 
-    if (!usuario) {
-      return;
-    }
+    if (!usuario) return;
 
-    form.id =
-      usuario.id ?? null;
+    form.id = usuario.id;
+    form.nombres = usuario.nombres || "";
+    form.apellidos = usuario.apellidos || "";
+    form.email = usuario.email || "";
+    form.identificacion = usuario.identificacion || "";
+    form.is_staff = !!usuario.is_staff;
+    form.facultad = usuario.facultad ?? "";
+    form.carrera = usuario.carrera ?? "";
 
-    form.nombres =
-      usuario.nombres || "";
+    profileLocked.value = usuario.profile_edit_locked ?? null;
+    attemptsLeft.value = usuario.profile_edit_attempts_left ?? null;
+    profileUntil.value = usuario.profile_edit_until ?? null;
 
-    form.apellidos =
-      usuario.apellidos || "";
+    extensionRequestState.value =
+      props.extensionRequest
+        ? { ...props.extensionRequest }
+        : null;
+    extensionRequestLoadErrorState.value = String(
+      props.extensionRequestLoadError || ""
+    ).trim();
 
-    form.email =
-      usuario.email || "";
+    extendHours.value = normalizeExtensionHours(
+      extensionRequestState.value?.horas_solicitadas ??
+      props.initialExtendHours
+    );
+    blockReason.value = "";
+    extensionResolutionReason.value = "";
 
-    form.identificacion =
-      sanitizeCedulaValue(
-        usuario.identificacion || ""
-      );
+    await focusProfileControl();
 
-    form.is_staff =
-      Boolean(usuario.is_staff);
-
-    profileLocked.value =
-      usuario.profile_edit_locked ??
-      null;
-
-    attemptsLeft.value =
-      usuario.profile_edit_attempts_left ??
-      null;
-
-    profileUntil.value =
-      usuario.profile_edit_until ??
-      null;
-
-    /*
-      El serializer administrativo devuelve expresamente:
-
-      facultad_id
-      carrera
-    */
     if (showAcademicoSection.value) {
-      form.facultad =
-        usuario.facultad_id ??
-        "";
-
-      form.carrera =
-        usuario.carrera ??
-        usuario.carrera_id ??
-        "";
-
       await loadFacultades();
 
       if (form.facultad) {
-        await loadCarreras(
-          form.facultad
-        );
+        await loadCarreras(form.facultad);
       }
     } else {
-      form.facultad = "";
-      form.carrera = "";
       facultades.value = [];
       carreras.value = [];
     }
   },
-  {
-    immediate: true,
-  }
+  { immediate: true }
 );
 
+watch(
+  () => [
+    props.extensionRequest,
+    props.extensionRequestLoadError,
+    props.extensionRequestId,
+  ],
+  async ([request, loadError]) => {
+    extensionRequestState.value =
+      request
+        ? { ...request }
+        : null;
 
-/* ============================================================
-   CONTROL DE EDICIÓN
-============================================================ */
+    extensionRequestLoadErrorState.value =
+      String(loadError || "").trim();
 
-const handleHabilitarEdicion = async () => {
+    if (request) {
+      extendHours.value =
+        normalizeExtensionHours(
+          request.horas_solicitadas ??
+          props.initialExtendHours
+        );
+    }
+
+    extensionResolutionReason.value = "";
+    await focusProfileControl();
+  },
+  { deep: true }
+);
+
+const retryExtensionRequestLoad = async () => {
+  const requestId = Number(
+    props.extensionRequestId
+  );
+
   if (
-    !form.id ||
-    formBusy.value
+    !isExtensionRequestContext.value ||
+    !Number.isInteger(requestId) ||
+    requestId < 1 ||
+    extensionRequestLoading.value
   ) {
     return;
   }
 
-  actionBusy.value = true;
-  actionType.value = "enable";
+  extensionRequestLoading.value = true;
+  extensionRequestLoadErrorState.value = "";
 
   try {
-    const response =
-      await adminApi.habilitarEdicionPerfil(
-        form.id
+    const request =
+      await obtenerSolicitudExtensionPerfil(
+        requestId
       );
 
-    profileLocked.value =
-      response?.profile_edit_locked ??
-      false;
+    const requestUserId = Number(
+      request?.usuario_id
+    );
 
-    attemptsLeft.value =
-      response?.profile_edit_attempts_left ??
-      3;
+    if (
+      !Number.isInteger(requestUserId) ||
+      requestUserId < 1
+    ) {
+      throw new Error(
+        "La solicitud recuperada no contiene un usuario válido."
+      );
+    }
 
-    profileUntil.value =
-      response?.profile_edit_until ??
-      null;
+    if (Number(form.id) !== requestUserId) {
+      throw new Error(
+        "La solicitud recuperada no corresponde a este usuario."
+      );
+    }
+
+    extensionRequestState.value = {
+      ...request,
+    };
+
+    extendHours.value =
+      normalizeExtensionHours(
+        request?.horas_solicitadas ??
+        props.initialExtendHours
+      );
+
+    extensionRequestLoadErrorState.value = "";
+  } catch (exception) {
+    extensionRequestState.value = null;
+    extensionRequestLoadErrorState.value = String(
+      exception?.response?.data?.detail ||
+      exception?.response?.data?.message ||
+      exception?.message ||
+      "No se pudo cargar el detalle de la solicitud."
+    ).trim();
+  } finally {
+    extensionRequestLoading.value = false;
+    await focusProfileControl();
+  }
+};
+
+
+const handleHabilitarEdicion = async () => {
+  if (!form.id) return;
+
+  if (manualProfileActionsDisabled.value) {
+    openNotice({
+      title: "Solicitud en revisión",
+      message:
+        "Resuelva la solicitud de extensión antes de utilizar acciones manuales sobre el plazo de edición.",
+    });
+    return;
+  }
+
+  actionBusy.value = true;
+
+  try {
+    const res = await adminApi.habilitarEdicionPerfil(form.id);
+
+    profileLocked.value = res?.profile_edit_locked ?? false;
+    attemptsLeft.value = res?.profile_edit_attempts_left ?? 3;
+    profileUntil.value = res?.profile_edit_until ?? null;
 
     openNotice({
       title: "Edición habilitada",
-      message:
-        "El usuario ya puede editar su perfil nuevamente.",
+      message: "Listo. El usuario ya puede editar su perfil nuevamente.",
     });
-  } catch (exception) {
-    const data =
-      exception?.response?.data;
+  } catch (e) {
+    const data = e?.response?.data;
 
     openNotice({
       title: "No se pudo habilitar",
       message:
         resolveApiError(data) ||
-        "No se pudo habilitar la edición del perfil.",
+        "No se pudo habilitar la edición del perfil. Intente nuevamente.",
     });
   } finally {
     actionBusy.value = false;
-    actionType.value = "";
   }
 };
 
-
 const handleExtenderEdicion = async () => {
-  if (
-    !form.id ||
-    formBusy.value
-  ) {
-    return;
-  }
-
-  const horas =
-    Number(extendHours.value);
+  if (!form.id) return;
 
   if (
-    !Number.isInteger(horas) ||
-    horas <= 0
+    isExtensionRequestContext.value &&
+    !hasPendingExtensionRequest.value
   ) {
     openNotice({
-      title: "Horas inválidas",
-      message:
-        "Seleccione un número válido de horas.",
+      title: extensionRequestUnavailable.value
+        ? "Solicitud no disponible"
+        : "Solicitud ya resuelta",
+      message: extensionRequestUnavailable.value
+        ? "No se aplicará una extensión manual mientras no pueda verificarse la solicitud pendiente."
+        : "Esta solicitud ya fue resuelta. Abra el usuario desde el listado general si necesita realizar una acción manual adicional.",
     });
-
     return;
   }
 
   actionBusy.value = true;
-  actionType.value = "extend";
 
   try {
-    const response =
+    const horas = normalizeExtensionHours(
+      extendHours.value
+    );
+
+    if (hasPendingExtensionRequest.value) {
+      const result =
+        await resolverSolicitudExtensionPerfil(
+          extensionRequestState.value.id,
+          {
+            decision: "aprobar",
+            horas_aprobadas: horas,
+            motivo_resolucion: "",
+          }
+        );
+
+      const solicitud =
+        result?.solicitud ||
+        extensionRequestState.value;
+
+      extensionRequestState.value = {
+        ...solicitud,
+      };
+
+      profileLocked.value = false;
+      attemptsLeft.value = Math.max(
+        Number(attemptsLeft.value || 0),
+        3
+      );
+      profileUntil.value =
+        solicitud?.nuevo_plazo ||
+        profileUntil.value;
+
+      emit("extension-resolved", {
+        solicitud,
+        decision: "aprobar",
+      });
+
+      openNotice({
+        title: "Solicitud aprobada",
+        message:
+          `Se aprobaron ${horas} horas adicionales. El usuario ya puede editar su perfil dentro del nuevo plazo.`,
+      });
+
+      return;
+    }
+
+    const res =
       await adminApi.extenderEdicionPerfil(
         form.id,
         horas
       );
 
-    profileUntil.value =
-      response?.profile_edit_until ??
-      profileUntil.value;
-
-    profileLocked.value =
-      response?.profile_edit_locked ??
-      false;
-
-    attemptsLeft.value =
-      response?.profile_edit_attempts_left ??
-      attemptsLeft.value;
+    if (res && typeof res === "object") {
+      if ("profile_edit_until" in res) {
+        profileUntil.value =
+          res.profile_edit_until;
+      }
+      if ("profile_edit_locked" in res) {
+        profileLocked.value =
+          !!res.profile_edit_locked;
+      }
+      if ("profile_edit_attempts_left" in res) {
+        attemptsLeft.value =
+          res.profile_edit_attempts_left;
+      }
+    }
 
     openNotice({
       title: "Edición extendida",
       message:
-        `Se extendió el plazo de edición en ${horas} horas.`,
+        `Listo. Se extendió el plazo de edición en ${horas} horas.`,
     });
-  } catch (exception) {
-    const data =
-      exception?.response?.data;
+  } catch (e) {
+    const data = e?.response?.data;
 
     openNotice({
-      title: "No se pudo extender",
+      title:
+        hasPendingExtensionRequest.value
+          ? "No se pudo aprobar la solicitud"
+          : "No se pudo extender",
       message:
         resolveApiError(data) ||
-        "No se pudo extender la edición del perfil.",
+        "No se pudo extender la edición del perfil. Intente nuevamente.",
     });
   } finally {
     actionBusy.value = false;
-    actionType.value = "";
   }
 };
 
+const handleRejectExtensionRequest = async () => {
+  if (
+    !hasPendingExtensionRequest.value ||
+    actionBusy.value
+  ) {
+    return;
+  }
+
+  const reason = String(
+    extensionResolutionReason.value || ""
+  ).trim();
+
+  if (reason.length < 10) {
+    openNotice({
+      title: "Falta el motivo",
+      message:
+        "Para rechazar la solicitud indique un motivo de al menos 10 caracteres.",
+    });
+    return;
+  }
+
+  actionBusy.value = true;
+
+  try {
+    const result =
+      await resolverSolicitudExtensionPerfil(
+        extensionRequestState.value.id,
+        {
+          decision: "rechazar",
+          motivo_resolucion: reason,
+        }
+      );
+
+    const solicitud =
+      result?.solicitud ||
+      extensionRequestState.value;
+
+    extensionRequestState.value = {
+      ...solicitud,
+    };
+    extensionResolutionReason.value = "";
+
+    emit("extension-resolved", {
+      solicitud,
+      decision: "rechazar",
+    });
+
+    openNotice({
+      title: "Solicitud rechazada",
+      message:
+        "La solicitud fue rechazada y el usuario recibirá la decisión en sus notificaciones.",
+    });
+  } catch (e) {
+    const data = e?.response?.data;
+
+    openNotice({
+      title: "No se pudo rechazar",
+      message:
+        resolveApiError(data) ||
+        "No se pudo resolver la solicitud. Intente nuevamente.",
+    });
+  } finally {
+    actionBusy.value = false;
+  }
+};
 
 const handleBloquearEdicion = async () => {
-  if (
-    !form.id ||
-    formBusy.value
-  ) {
+  if (!form.id) return;
+
+  if (manualProfileActionsDisabled.value) {
+    openNotice({
+      title: "Solicitud en revisión",
+      message:
+        "Resuelva la solicitud de extensión antes de utilizar acciones manuales sobre el plazo de edición.",
+    });
     return;
   }
 
   openNotice({
     title: "Confirmar bloqueo",
     message:
-      "¿Desea bloquear la edición del perfil para este usuario?",
+      "¿Desea bloquear la edición del perfil para este usuario? Podrá habilitarla nuevamente cuando lo necesite.",
     confirm: true,
     cancelText: "Cancelar",
     confirmText: "Sí, bloquear",
-
     onConfirm: async () => {
       actionBusy.value = true;
-      actionType.value = "block";
 
       try {
-        const response =
-          await adminApi.bloquearEdicionPerfil(
-            form.id,
-            blockReason.value
-          );
+        const res = await adminApi.bloquearEdicionPerfil(form.id, blockReason.value);
 
-        profileLocked.value =
-          response?.profile_edit_locked ??
-          true;
-
-        attemptsLeft.value =
-          response?.profile_edit_attempts_left ??
-          0;
-
-        profileUntil.value =
-          response?.profile_edit_until ??
-          null;
+        profileLocked.value = res?.profile_edit_locked ?? true;
+        attemptsLeft.value = res?.profile_edit_attempts_left ?? 0;
+        profileUntil.value = res?.profile_edit_until ?? null;
 
         openNotice({
           title: "Edición bloqueada",
-          message:
-            "El usuario no podrá editar su perfil hasta una nueva habilitación.",
+          message: "Listo. El usuario no podrá editar su perfil hasta nueva habilitación.",
         });
-      } catch (exception) {
-        const data =
-          exception?.response?.data;
+      } catch (e) {
+        const data = e?.response?.data;
 
         openNotice({
           title: "No se pudo bloquear",
           message:
             resolveApiError(data) ||
-            "No se pudo bloquear la edición del perfil.",
+            "No se pudo bloquear la edición del perfil. Intente nuevamente.",
         });
       } finally {
         actionBusy.value = false;
-        actionType.value = "";
       }
     },
   });
 };
 
-
-/* ============================================================
-   VALIDACIÓN Y GUARDADO
-============================================================ */
-
-const validateForm = () => {
-  const nombres =
-    normalizeText(form.nombres);
-
-  const apellidos =
-    normalizeText(form.apellidos);
-
-  const email =
-    cleanEmail(form.email);
-
-  const identificacion =
-    normalizeText(form.identificacion);
-
-  if (
-    !nombres ||
-    !apellidos ||
-    !email
-  ) {
-    return {
-      valid: false,
-      message:
-        "Complete los campos obligatorios antes de guardar.",
-    };
-  }
-
-  if (
-    props.mode === "create" &&
-    !identificacion
-  ) {
-    return {
-      valid: false,
-      message:
-        "Ingrese el número de cédula del usuario externo.",
-    };
-  }
-
-  if (
-    identificacion &&
-    !/^\d{10}$/.test(identificacion)
-  ) {
-    return {
-      valid: false,
-      message:
-        "La cédula debe contener exactamente 10 dígitos numéricos.",
-    };
-  }
-
-  if (
-    showAcademicoSection.value &&
-    (
-      !toPositiveId(form.facultad) ||
-      !toPositiveId(form.carrera)
-    )
-  ) {
-    return {
-      valid: false,
-      message:
-        "Seleccione la Facultad y la Carrera del usuario institucional.",
-    };
-  }
-
-  return {
-    valid: true,
-    nombres,
-    apellidos,
-    email,
-    identificacion:
-      identificacion || null,
-  };
-};
-
-
 const submit = async () => {
-  if (formBusy.value) {
-    return;
-  }
-
   error.value = "";
-
-  const validation =
-    validateForm();
-
-  if (!validation.valid) {
-    error.value =
-      validation.message;
-
-    return;
-  }
-
   saving.value = true;
 
   try {
+    const nombres = String(form.nombres || "").trim();
+    const apellidos = String(form.apellidos || "").trim();
+    const email = String(form.email || "").trim().toLowerCase();
+    const identificacionRaw = String(form.identificacion || "").trim();
+    const identificacion = identificacionRaw || null;
+
+    if (!nombres || !apellidos || !email) {
+      error.value = "Complete los campos obligatorios antes de guardar.";
+      return;
+    }
+
+    if (
+      props.mode === "create" &&
+      isInstitutionalEmail(email)
+    ) {
+      error.value =
+        "Este correo corresponde a una cuenta institucional ULEAM. " +
+        "Los usuarios institucionales deben ingresar mediante Microsoft 365 " +
+        "y no pueden registrarse como usuarios externos.";
+
+      openNotice({
+        title: "Cuenta institucional",
+        message: error.value,
+      });
+
+      return;
+    }
+
+    if (props.mode === "create" && !identificacion) {
+      error.value = "Ingrese la identificación del usuario externo.";
+      return;
+    }
+
+    if (identificacion && !/^\d+$/.test(identificacion)) {
+      error.value = "La identificación debe contener solo números.";
+      return;
+    }
+
+    if (identificacion && identificacion.length !== 10) {
+      error.value = "La identificación debe tener 10 dígitos numéricos.";
+      return;
+    }
+
     if (props.mode === "create") {
       await adminApi.crearUsuario({
-        nombres:
-          validation.nombres,
-
-        apellidos:
-          validation.apellidos,
-
-        email:
-          validation.email,
-
-        identificacion:
-          validation.identificacion,
+        nombres,
+        apellidos,
+        email,
+        identificacion,
       });
 
       emit("done", {
         title: "Usuario registrado",
-        message:
-          "La cuenta externa se registró como pendiente. Para permitir el acceso, utilice Pendientes → Activar cuenta.",
+        message: "Se registró correctamente. Para permitir acceso: Pendientes → Activar cuenta.",
       });
 
       return;
     }
 
     if (!form.id) {
-      throw new Error(
-        "No se pudo determinar el usuario que se editará."
-      );
+      throw new Error("ID faltante en edición.");
     }
 
     const payload = {
-      nombres:
-        validation.nombres,
-
-      apellidos:
-        validation.apellidos,
-
-      identificacion:
-        validation.identificacion,
-
-      /*
-        El backend espera is_staff.
-
-        No debe utilizarse el nombre anterior is_staff_set.
-      */
-      is_staff:
-        Boolean(form.is_staff),
+      nombres,
+      apellidos,
+      email,
+      identificacion,
+      is_staff_set: !!form.is_staff,
     };
 
-    /*
-      El correo institucional no puede editarse desde este
-      panel porque se administra mediante Microsoft.
-    */
-    if (!emailLocked.value) {
-      payload.email =
-        validation.email;
-    }
-
-    /*
-      Facultad y Carrera solo se envían para una cuenta
-      institucional Microsoft.
-    */
     if (showAcademicoSection.value) {
-      payload.facultad =
-        toPositiveId(
-          form.facultad
-        );
+      const facultad = form.facultad ? Number(form.facultad) : null;
+      const carrera = form.carrera ? Number(form.carrera) : null;
 
-      payload.carrera =
-        toPositiveId(
-          form.carrera
-        );
+      if (!facultad || !carrera) {
+        error.value = "Seleccione facultad y carrera para completar la asignación académica.";
+        return;
+      }
+
+      payload.facultad = facultad;
+      payload.carrera = carrera;
     }
 
-    await adminApi.editarUsuario(
-      form.id,
-      payload
-    );
+    await adminApi.editarUsuario(form.id, payload);
 
     emit("done", {
       title: "Cambios guardados",
-      message:
-        "Los datos y permisos del usuario se actualizaron correctamente.",
+      message: "Listo. Los datos del usuario se actualizaron correctamente.",
     });
-  } catch (exception) {
-    const data =
-      exception?.response?.data;
+  } catch (e) {
+    const data = e?.response?.data;
 
-    error.value =
-      resolveApiError(data) ||
-      exception?.message ||
-      "No se pudo guardar la información.";
+    error.value = resolveApiError(data) || "No se pudo guardar la información.";
 
     openNotice({
       title: "No se pudo guardar",
-      message: error.value,
-      details: data || null,
+      message: error.value || "Revise los campos e intente nuevamente.",
     });
   } finally {
     saving.value = false;
   }
 };
-
-
-/* ============================================================
-   CICLO DE VIDA
-============================================================ */
-
-onMounted(() => {
-  previouslyFocusedElement =
-    document.activeElement;
-
-  previousBodyOverflow =
-    document.body.style.overflow;
-
-  document.body.style.overflow =
-    "hidden";
-
-  focusInitialControl();
-});
-
-
-onBeforeUnmount(() => {
-  document.body.style.overflow =
-    previousBodyOverflow;
-
-  if (
-    previouslyFocusedElement instanceof
-    HTMLElement
-  ) {
-    previouslyFocusedElement.focus();
-  }
-});
 </script>
 
 <style src="../styles/admin-shared.css"></style>
-<style
-  scoped
-  src="./usuario-modal.css"
-></style>
+<style scoped src="./usuario-modal.css"></style>

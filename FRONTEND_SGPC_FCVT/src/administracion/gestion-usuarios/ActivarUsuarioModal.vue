@@ -1,425 +1,395 @@
 <template>
-  <div
-    class="sgpc-admin-modal modal-overlay"
-    @click.self="requestClose"
-  >
+  <Teleport to="body">
     <div
-      ref="dialogRef"
-      class="modal modal--activate"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="activate-dialog-title"
-      aria-describedby="activate-dialog-description"
-      :aria-busy="saving"
-      tabindex="-1"
-      @keydown="handleDialogKeydown"
+      class="sgpc-admin-modal modal-overlay"
+      @click.self="requestClose"
     >
-      <!-- =====================================================
-           ENCABEZADO
-      ====================================================== -->
-      <header class="modal__header activate-header">
-        <div class="activate-heading">
-          <span class="activate-kicker">
-            Gestión de usuarios
-          </span>
-
-          <h2
-            id="activate-dialog-title"
-            class="modal__title activate-title"
-          >
-            Activar cuenta externa
-          </h2>
-
-          <p
-            id="activate-dialog-description"
-            class="modal__subtitle activate-subtitle"
-          >
-            Defina las credenciales de acceso para habilitar la
-            cuenta externa seleccionada.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          class="btn-cerrar modal__close activate-close"
-          :disabled="saving"
-          aria-label="Cerrar ventana"
-          title="Cerrar"
-          @click="requestClose"
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-      </header>
-
-      <!-- =====================================================
-           FORMULARIO
-      ====================================================== -->
-      <form
-        class="activate-form"
-        novalidate
-        @submit.prevent="activar"
+      <div
+        ref="dialogRef"
+        class="modal modal--activate"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="activate-dialog-title"
+                :aria-busy="saving"
+        tabindex="-1"
+        @keydown="handleDialogKeydown"
       >
-        <div class="activate-body">
-          <!-- =================================================
-               RESUMEN DEL USUARIO
-          ================================================== -->
-          <section
-            class="activate-user-card"
-            aria-labelledby="activate-user-title"
-          >
-            <div
-              class="activate-user-card__avatar"
-              aria-hidden="true"
+        <!-- =====================================================
+             ENCABEZADO
+        ====================================================== -->
+        <header class="modal__header activate-header">
+          <div class="activate-heading">
+            <h2
+              id="activate-dialog-title"
+              class="modal__title activate-title"
             >
-              {{ userInitials }}
-            </div>
+              Activar cuenta
+            </h2>
 
-            <div class="activate-user-card__content">
-              <div class="activate-user-card__heading">
-                <div>
-                  <span class="activate-user-card__eyebrow">
-                    Cuenta seleccionada
-                  </span>
-
-                  <h3
-                    id="activate-user-title"
-                    class="activate-user-card__name"
-                  >
-                    {{ nombreCompleto }}
-                  </h3>
-                </div>
-
-                <span
-                  class="activate-status"
-                  :class="{
-                    'activate-status--invalid':
-                      Boolean(targetValidationMessage),
-                  }"
-                >
-                  {{ estadoCuentaLabel }}
-                </span>
-              </div>
-
-              <dl class="activate-meta">
-                <div class="activate-meta__item">
-                  <dt>Número de cédula</dt>
-
-                  <dd>
-                    {{
-                      usuario?.identificacion ||
-                      "No registrada"
-                    }}
-                  </dd>
-                </div>
-
-                <div class="activate-meta__item">
-                  <dt>Tipo de cuenta</dt>
-
-                  <dd>{{ tipoCuentaLabel }}</dd>
-                </div>
-
-                <div class="activate-meta__item">
-                  <dt>Correo actual</dt>
-
-                  <dd>
-                    {{
-                      usuario?.email ||
-                      "No registrado"
-                    }}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </section>
-
-          <!-- =================================================
-               INCONSISTENCIA DE LA CUENTA
-          ================================================== -->
-          <div
-            v-if="targetValidationMessage"
-            class="activate-error"
-            role="alert"
-            aria-live="assertive"
-          >
-            <span
-              class="activate-error__icon"
-              aria-hidden="true"
-            >
-              !
-            </span>
-
-            <div>
-              <strong>
-                La cuenta no puede activarse
-              </strong>
-
-              <p>
-                {{ targetValidationMessage }}
-              </p>
-            </div>
           </div>
 
-          <!-- =================================================
-               CREDENCIALES
-          ================================================== -->
-          <section
-            class="activate-section"
-            aria-labelledby="activate-access-title"
+          <button
+            type="button"
+            class="btn-cerrar modal__close activate-close"
+            :disabled="saving"
+            aria-label="Cerrar ventana"
+            title="Cerrar"
+            @click="requestClose"
           >
-            <div class="activate-section__head">
-              <div>
-                <h3
-                  id="activate-access-title"
-                  class="activate-section__title"
-                >
-                  Datos de acceso
-                </h3>
+            <span aria-hidden="true">✕</span>
+          </button>
+        </header>
 
-                <p class="activate-section__subtitle">
-                  El correo y la contraseña permitirán que el
-                  usuario inicie sesión mediante la cuenta local
-                  del SGPC ULEAM.
+        <!-- =====================================================
+             FORMULARIO
+        ====================================================== -->
+        <form
+          class="activate-form"
+          novalidate
+          @submit.prevent="activar"
+        >
+          <div class="activate-body">
+            <!-- =================================================
+                 RESUMEN DEL USUARIO
+            ================================================== -->
+            <section
+              class="activate-user-card"
+              aria-labelledby="activate-user-title"
+            >
+              <div
+                class="activate-user-card__avatar"
+                aria-hidden="true"
+              >
+                {{ userInitials }}
+              </div>
+
+              <div class="activate-user-card__content">
+                <div class="activate-user-card__heading">
+                  <div>
+                    <h3
+                      id="activate-user-title"
+                      class="activate-user-card__name"
+                    >
+                      {{ nombreCompleto }}
+                    </h3>
+                  </div>
+
+                  <span
+                    class="activate-status"
+                    :class="{
+                      'activate-status--invalid':
+                        Boolean(targetValidationMessage),
+                    }"
+                  >
+                    {{ estadoCuentaLabel }}
+                  </span>
+                </div>
+
+                <dl class="activate-meta">
+                  <div class="activate-meta__item">
+                    <dt>Cédula</dt>
+
+                    <dd>
+                      {{
+                        usuario?.identificacion ||
+                        "No registrada"
+                      }}
+                    </dd>
+                  </div>
+
+                  <div class="activate-meta__item">
+                    <dt>Tipo</dt>
+
+                    <dd>{{ tipoCuentaLabel }}</dd>
+                  </div>
+
+                  <div class="activate-meta__item">
+                    <dt>Correo actual</dt>
+
+                    <dd>
+                      {{
+                        usuario?.email ||
+                        "No registrado"
+                      }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </section>
+
+            <!-- =================================================
+                 INCONSISTENCIA DE LA CUENTA
+            ================================================== -->
+            <div
+              v-if="targetValidationMessage"
+              class="activate-error"
+              role="alert"
+              aria-live="assertive"
+            >
+              <span
+                class="activate-error__icon"
+                aria-hidden="true"
+              >
+                !
+              </span>
+
+              <div>
+                <strong>
+                  La cuenta no puede activarse
+                </strong>
+
+                <p>
+                  {{ targetValidationMessage }}
                 </p>
               </div>
             </div>
 
-            <div class="activate-grid">
-              <!-- CORREO -->
-              <div class="activate-field">
-                <label
-                  for="activate-email"
-                  class="activate-label"
-                >
-                  <span>Correo electrónico</span>
-
-                  <span
-                    class="activate-required"
-                    aria-hidden="true"
+            <!-- =================================================
+                 CREDENCIALES
+            ================================================== -->
+            <section
+              class="activate-section"
+              aria-labelledby="activate-access-title"
+            >
+              <div class="activate-section__head">
+                <div>
+                  <h3
+                    id="activate-access-title"
+                    class="activate-section__title"
                   >
-                    *
-                  </span>
-                </label>
+                    Datos de acceso
+                  </h3>
 
-                <input
-                  id="activate-email"
-                  ref="emailInputRef"
-                  v-model="email"
-                  class="field-control activate-input"
-                  name="email"
-                  type="email"
-                  required
-                  maxlength="150"
-                  placeholder="usuario@correo.com"
-                  autocomplete="email"
-                  inputmode="email"
-                  :disabled="
-                    saving ||
-                    Boolean(targetValidationMessage)
-                  "
-                  :aria-invalid="
-                    Boolean(email) &&
-                    !emailValid
-                  "
-                  aria-describedby="activate-email-help"
-                />
-
-                <p
-                  id="activate-email-help"
-                  class="activate-help"
-                >
-                  Este correo se utilizará como identificador
-                  para iniciar sesión.
-                </p>
+                </div>
               </div>
 
-              <!-- CONTRASEÑA -->
-              <div class="activate-field">
-                <label
-                  for="activate-password"
-                  class="activate-label"
-                >
-                  <span>Contraseña temporal</span>
-
-                  <span
-                    class="activate-required"
-                    aria-hidden="true"
+              <div class="activate-grid">
+                <!-- CORREO -->
+                <div class="activate-field">
+                  <label
+                    for="activate-email"
+                    class="activate-label"
                   >
-                    *
-                  </span>
-                </label>
+                    <span>Correo electrónico</span>
 
-                <div class="activate-password">
+                    <span
+                      class="activate-required"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
+                  </label>
+
                   <input
-                    id="activate-password"
-                    v-model="password"
-                    class="field-control activate-input activate-password__input"
-                    name="password"
-                    :type="
-                      showPassword
-                        ? 'text'
-                        : 'password'
-                    "
+                    id="activate-email"
+                    ref="emailInputRef"
+                    v-model="email"
+                    class="field-control activate-input"
+                    name="email"
+                    type="email"
                     required
-                    minlength="8"
-                    maxlength="128"
-                    placeholder="Mínimo 8 caracteres"
-                    autocomplete="new-password"
+                    maxlength="150"
+                    placeholder="usuario@correo.com"
+                    autocomplete="email"
+                    inputmode="email"
                     :disabled="
                       saving ||
                       Boolean(targetValidationMessage)
                     "
                     :aria-invalid="
-                      Boolean(password) &&
-                      !passwordValid
+                      Boolean(email) &&
+                      !emailValid
                     "
-                    aria-describedby="activate-password-help"
                   />
 
-                  <button
-                    type="button"
-                    class="activate-password__toggle"
-                    :disabled="
-                      saving ||
-                      Boolean(targetValidationMessage)
-                    "
-                    :aria-label="
-                      showPassword
-                        ? 'Ocultar contraseña'
-                        : 'Mostrar contraseña'
-                    "
-                    :title="
-                      showPassword
-                        ? 'Ocultar contraseña'
-                        : 'Mostrar contraseña'
-                    "
-                    @click="
-                      showPassword = !showPassword
-                    "
-                  >
-                    <svg
-                      v-if="!showPassword"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M12 5c5.5 0 9.5 5.2 9.7 5.4a1 1 0 0 1 0 1.2C21.5 11.8 17.5 17 12 17S2.5 11.8 2.3 11.6a1 1 0 0 1 0-1.2C2.5 10.2 6.5 5 12 5Zm0 2c-3.6 0-6.6 3-7.6 4 1 1 4 4 7.6 4s6.6-3 7.6-4c-1-1-4-4-7.6-4Zm0 1.5A2.5 2.5 0 1 1 9.5 11 2.5 2.5 0 0 1 12 8.5Z"
-                      />
-                    </svg>
-
-                    <svg
-                      v-else
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="m3.7 2.3 18 18-1.4 1.4-3.1-3.1A11.7 11.7 0 0 1 12 20c-5.5 0-9.5-5.2-9.7-5.4a1 1 0 0 1 0-1.2 19 19 0 0 1 4-3.8L2.3 3.7 3.7 2.3Zm4 8.7a14.8 14.8 0 0 0-3.3 3c1 1 4 4 7.6 4a9.8 9.8 0 0 0 3.7-.8l-1.6-1.6a4 4 0 0 1-5.7-5.7L7.7 11Zm4.1-5c5.5 0 9.5 5.2 9.7 5.4a1 1 0 0 1 0 1.2 18.3 18.3 0 0 1-2.6 2.8l-1.4-1.4a15.7 15.7 0 0 0 1.9-2c-1-1-4-4-7.6-4a9.4 9.4 0 0 0-1.9.2L8.3 6.6A11.8 11.8 0 0 1 11.8 6Zm.2 4a2 2 0 0 1 2 2v.3l-2.3-2.3h.3Z"
-                      />
-                    </svg>
-                  </button>
                 </div>
 
-                <div
-                  id="activate-password-help"
-                  class="activate-password-help"
-                >
-                  <p class="activate-help">
-                    Debe contener entre 8 y 128 caracteres y
-                    cumplir las reglas de seguridad del sistema.
-                  </p>
-
-                  <span
-                    v-if="password"
-                    class="activate-password-status"
-                    :class="passwordStatusClass"
-                    aria-live="polite"
+                <!-- CONTRASEÑA -->
+                <div class="activate-field">
+                  <label
+                    for="activate-password"
+                    class="activate-label"
                   >
-                    {{ passwordStatusLabel }}
-                  </span>
+                    <span>Contraseña temporal</span>
+
+                    <span
+                      class="activate-required"
+                      aria-hidden="true"
+                    >
+                      *
+                    </span>
+                  </label>
+
+                  <div class="activate-password">
+                    <input
+                      id="activate-password"
+                      v-model="password"
+                      class="field-control activate-input activate-password__input"
+                      name="password"
+                      :type="
+                        showPassword
+                          ? 'text'
+                          : 'password'
+                      "
+                      required
+                      minlength="8"
+                      maxlength="128"
+                      placeholder="Mínimo 8 caracteres"
+                      autocomplete="new-password"
+                      :disabled="
+                        saving ||
+                        Boolean(targetValidationMessage)
+                      "
+                      :aria-invalid="
+                        Boolean(password) &&
+                        !passwordValid
+                      "
+                      aria-describedby="activate-password-help"
+                    />
+
+                    <button
+                      type="button"
+                      class="activate-password__toggle"
+                      :disabled="
+                        saving ||
+                        Boolean(targetValidationMessage)
+                      "
+                      :aria-label="
+                        showPassword
+                          ? 'Ocultar contraseña'
+                          : 'Mostrar contraseña'
+                      "
+                      :title="
+                        showPassword
+                          ? 'Ocultar contraseña'
+                          : 'Mostrar contraseña'
+                      "
+                      @click="
+                        showPassword = !showPassword
+                      "
+                    >
+                      <svg
+                        v-if="!showPassword"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M12 5c5.5 0 9.5 5.2 9.7 5.4a1 1 0 0 1 0 1.2C21.5 11.8 17.5 17 12 17S2.5 11.8 2.3 11.6a1 1 0 0 1 0-1.2C2.5 10.2 6.5 5 12 5Zm0 2c-3.6 0-6.6 3-7.6 4 1 1 4 4 7.6 4s6.6-3 7.6-4c-1-1-4-4-7.6-4Zm0 1.5A2.5 2.5 0 1 1 9.5 11 2.5 2.5 0 0 1 12 8.5Z"
+                        />
+                      </svg>
+
+                      <svg
+                        v-else
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="m3.7 2.3 18 18-1.4 1.4-3.1-3.1A11.7 11.7 0 0 1 12 20c-5.5 0-9.5-5.2-9.7-5.4a1 1 0 0 1 0-1.2 19 19 0 0 1 4-3.8L2.3 3.7 3.7 2.3Zm4 8.7a14.8 14.8 0 0 0-3.3 3c1 1 4 4 7.6 4a9.8 9.8 0 0 0 3.7-.8l-1.6-1.6a4 4 0 0 1-5.7-5.7L7.7 11Zm4.1-5c5.5 0 9.5 5.2 9.7 5.4a1 1 0 0 1 0 1.2 18.3 18.3 0 0 1-2.6 2.8l-1.4-1.4a15.7 15.7 0 0 0 1.9-2c-1-1-4-4-7.6-4a9.4 9.4 0 0 0-1.9.2L8.3 6.6A11.8 11.8 0 0 1 11.8 6Zm.2 4a2 2 0 0 1 2 2v.3l-2.3-2.3h.3Z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div
+                    id="activate-password-help"
+                    class="activate-password-help"
+                  >
+                    <p class="activate-help">
+                      8–128 caracteres.
+                    </p>
+
+                    <span
+                      v-if="password"
+                      class="activate-password-status"
+                      :class="passwordStatusClass"
+                      aria-live="polite"
+                    >
+                      {{ passwordStatusLabel }}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="activate-note">
+              <div class="activate-note">
+                <span
+                  class="activate-note__icon"
+                  aria-hidden="true"
+                >
+                  i
+                </span>
+
+                <p>
+                  Comparta las credenciales únicamente con este usuario.
+                </p>
+              </div>
+            </section>
+
+            <!-- =================================================
+                 ERROR DEL SERVIDOR
+            ================================================== -->
+            <div
+              v-if="error"
+              class="activate-error"
+              role="alert"
+              aria-live="assertive"
+            >
               <span
-                class="activate-note__icon"
+                class="activate-error__icon"
                 aria-hidden="true"
               >
-                i
+                !
               </span>
 
-              <p>
-                La cuenta quedará activa inmediatamente después
-                de guardar. Comparta las credenciales únicamente
-                con el usuario correspondiente.
-              </p>
-            </div>
-          </section>
+              <div>
+                <strong>
+                  No se pudo activar la cuenta
+                </strong>
 
-          <!-- =================================================
-               ERROR DEL SERVIDOR
-          ================================================== -->
-          <div
-            v-if="error"
-            class="activate-error"
-            role="alert"
-            aria-live="assertive"
-          >
-            <span
-              class="activate-error__icon"
-              aria-hidden="true"
-            >
-              !
-            </span>
-
-            <div>
-              <strong>
-                No se pudo activar la cuenta
-              </strong>
-
-              <p>{{ error }}</p>
+                <p>{{ error }}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- ===================================================
-             PIE
-        ==================================================== -->
-        <footer class="modal__footer activate-footer">
-          <button
-            type="button"
-            class="btn-cerrar activate-cancel"
-            :disabled="saving"
-            @click="requestClose"
-          >
-            Cancelar
-          </button>
+          <!-- ===================================================
+               PIE
+          ==================================================== -->
+          <footer class="modal__footer activate-footer">
+            <button
+              type="button"
+              class="btn-cerrar activate-cancel"
+              :disabled="saving"
+              @click="requestClose"
+            >
+              Cancelar
+            </button>
 
-          <button
-            type="submit"
-            class="btn-primary activate-submit"
-            :disabled="
-              saving ||
-              !canSubmit
-            "
-          >
-            <span
-              v-if="saving"
-              class="activate-spinner"
-              aria-hidden="true"
-            ></span>
+            <button
+              type="submit"
+              class="btn-primary activate-submit"
+              :disabled="
+                saving ||
+                !canSubmit
+              "
+            >
+              <span
+                v-if="saving"
+                class="activate-spinner"
+                aria-hidden="true"
+              ></span>
 
-            {{
-              saving
-                ? "Activando..."
-                : "Activar cuenta"
-            }}
-          </button>
-        </footer>
-      </form>
+              {{
+                saving
+                  ? "Activando..."
+                  : "Activar cuenta"
+              }}
+            </button>
+          </footer>
+        </form>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -433,7 +403,6 @@ import {
 } from "vue";
 
 import { adminApi } from "../../scripts/api/adminApi";
-import { useNotice } from "../../scripts/composables/useNotice";
 
 
 const props = defineProps({
@@ -450,7 +419,6 @@ const emit = defineEmits([
 ]);
 
 
-const { openNotice } = useNotice();
 
 
 const dialogRef = ref(null);
@@ -589,8 +557,7 @@ const targetValidationMessage = computed(() => {
 
   if (!isExternalAccount.value) {
     return (
-      "Esta operación solo está disponible para cuentas " +
-      "externas con autenticación local."
+      "Solo las cuentas externas pendientes pueden activarse desde aquí."
     );
   }
 
@@ -703,6 +670,22 @@ const canSubmit = computed(() => {
    ERRORES DEL BACKEND
 ============================================================ */
 
+
+const sanitizeApiMessage = (value) => {
+  const message = String(value ?? "").trim();
+
+  if (!message) {
+    return "";
+  }
+
+  const technicalPattern =
+    /(backend|endpoint|serializer|queryset|traceback|exception|jwt|token|sql|database|constraint|http\s*\d{3}|api\/)/i;
+
+  return technicalPattern.test(message)
+    ? ""
+    : message;
+};
+
 const resolveApiError = (
   data,
   visited = new Set()
@@ -712,7 +695,7 @@ const resolveApiError = (
   }
 
   if (typeof data === "string") {
-    return data;
+    return sanitizeApiMessage(data);
   }
 
   if (
@@ -740,7 +723,7 @@ const resolveApiError = (
       typeof value === "string" &&
       value
     ) {
-      return value;
+      return sanitizeApiMessage(value);
     }
 
     if (
@@ -998,17 +981,11 @@ const activar = async () => {
 
     error.value =
       resolveApiError(data) ||
-      exception?.message ||
       (
-        "No se pudo activar la cuenta. " +
+        "No pudimos activar la cuenta. " +
         "Revise la información e intente nuevamente."
       );
 
-    openNotice({
-      title: "No se pudo activar",
-      message: error.value,
-      details: data || null,
-    });
   } finally {
     saving.value = false;
   }

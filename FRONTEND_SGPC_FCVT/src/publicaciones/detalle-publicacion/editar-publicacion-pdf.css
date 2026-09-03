@@ -1,0 +1,832 @@
+/* ============================================================
+   SGPC ULEAM — EDITAR PUBLICACIÓN · DOCUMENTO PDF
+   Sección visual aislada.
+
+   Este archivo evita que el cargador de PDF dependa de las
+   variables definidas únicamente para .sgpc-form-page y deja
+   el flujo de documento actual / reemplazo encapsulado dentro
+   de .pedit-pdf.
+============================================================ */
+
+.pedit-pdf {
+  min-width: 0;
+}
+
+.pedit-pdf__body {
+  min-width: 0;
+
+  display: grid;
+  gap: 12px;
+}
+
+/* ============================================================
+   DOCUMENTO ACTUAL
+============================================================ */
+
+.pedit-pdf__current {
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+
+  padding: 13px 14px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 12px;
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 94%,
+    var(--pe-bg)
+  );
+}
+
+.pedit-pdf__icon {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 46px;
+  height: 46px;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--pe-danger) 22%,
+    var(--pe-line)
+  );
+  border-radius: 11px;
+
+  background: color-mix(
+    in srgb,
+    var(--pe-danger) 8%,
+    var(--pe-card)
+  );
+
+  color: var(--pe-danger);
+
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+}
+
+.pedit-pdf__meta {
+  min-width: 0;
+
+  display: grid;
+  gap: 3px;
+}
+
+.pedit-pdf__eyebrow {
+  color: var(--pe-muted);
+
+  font-size: 0.67rem;
+  line-height: 1.25;
+  font-weight: 760;
+  letter-spacing: 0.02em;
+}
+
+.pedit-pdf__name {
+  min-width: 0;
+  max-width: 100%;
+
+  margin: 0;
+
+  color: var(--pe-text);
+
+  font-family: var(
+    --font-heading,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+
+  font-size: 0.88rem;
+  line-height: 1.32;
+  font-weight: 780;
+  letter-spacing: -0.012em;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pedit-pdf__description {
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.7rem;
+  line-height: 1.42;
+}
+
+.pedit-pdf__actions {
+  min-width: max-content;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.pedit-pdf__actions .pedit-btn {
+  min-height: 38px;
+  padding-inline: 12px;
+}
+
+.pedit-pdf__replaceButton,
+.pedit-pdf__removeButton {
+  border: 1px solid var(--pe-line);
+
+  background: var(--pe-card);
+  color: var(--pe-text);
+}
+
+.pedit-pdf__replaceButton {
+  border-color: var(--pe-primary-line);
+
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+}
+
+.pedit-pdf__replaceButton:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-primary) 38%,
+    var(--pe-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--pe-primary) 12%,
+    var(--pe-card)
+  );
+}
+
+.pedit-pdf__removeButton {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 24%,
+    var(--pe-line)
+  );
+
+  color: var(--pe-danger);
+}
+
+.pedit-pdf__removeButton:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 38%,
+    var(--pe-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--pe-danger) 7%,
+    var(--pe-card)
+  );
+}
+
+/* ============================================================
+   REEMPLAZO / CARGA
+============================================================ */
+
+.pedit-pdf__replacement {
+  min-width: 0;
+
+  display: grid;
+  gap: 11px;
+
+  padding: 13px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 12px;
+
+  background: color-mix(
+    in srgb,
+    var(--pe-elev) 74%,
+    var(--pe-card)
+  );
+}
+
+.pedit-pdf__replacement.is-replacement {
+  border-color: var(--pe-primary-line);
+}
+
+.pedit-pdf__replacementHead {
+  min-width: 0;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pedit-pdf__replacementCopy {
+  min-width: 0;
+
+  display: grid;
+  gap: 3px;
+}
+
+.pedit-pdf__replacementCopy strong {
+  color: var(--pe-text);
+
+  font-size: 0.8rem;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.pedit-pdf__replacementCopy span {
+  color: var(--pe-muted);
+
+  font-size: 0.71rem;
+  line-height: 1.45;
+}
+
+.pedit-pdf__cancelReplacement {
+  flex: 0 0 auto;
+
+  min-height: 34px;
+
+  padding: 0 10px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 9px;
+
+  background: var(--pe-card);
+  color: var(--pe-muted);
+
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 760;
+
+  cursor: pointer;
+}
+
+.pedit-pdf__cancelReplacement:hover:not(:disabled) {
+  border-color: var(--pe-line-strong);
+  color: var(--pe-text);
+}
+
+.pedit-pdf__cancelReplacement:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.pedit-pdf__replacementNote {
+  margin: 0;
+
+  color: var(--pe-muted);
+
+  font-size: 0.68rem;
+  line-height: 1.42;
+}
+
+.pedit-pdf__empty {
+  padding: 14px;
+
+  border: 1px dashed var(--pe-line-strong);
+  border-radius: 12px;
+
+  background: color-mix(
+    in srgb,
+    var(--pe-card) 94%,
+    var(--pe-bg)
+  );
+
+  color: var(--pe-muted);
+
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* ============================================================
+   SCOPE DEL COMPONENTE AdjuntosPdfUploader
+
+   Se definen también las variables --sgpc-* porque el uploader
+   compartido fue diseñado originalmente para .sgpc-form-page.
+   Aquí queda autocontenido dentro de la sección de edición.
+============================================================ */
+
+.pedit-pdf__uploaderScope {
+  min-width: 0;
+
+  --sgpc-bg: var(--pe-bg);
+  --sgpc-surface: var(--pe-card);
+  --sgpc-surface-2: var(--pe-elev);
+  --sgpc-input-bg: var(--pe-input);
+
+  --sgpc-text: var(--pe-text);
+  --sgpc-text-soft: var(--pe-muted);
+  --sgpc-text-muted: color-mix(
+    in srgb,
+    var(--pe-muted) 78%,
+    transparent
+  );
+  --sgpc-text-disabled: var(--pe-disabled);
+
+  --sgpc-line: var(--pe-line);
+  --sgpc-line-strong: var(--pe-line-strong);
+
+  --sgpc-primary: var(--pe-primary);
+  --sgpc-primary-contrast: var(
+    --button-text,
+    #ffffff
+  );
+  --sgpc-primary-soft: var(--pe-primary-soft);
+  --sgpc-primary-soft-strong: color-mix(
+    in srgb,
+    var(--pe-primary) 13%,
+    var(--pe-card)
+  );
+  --sgpc-primary-line: var(--pe-primary-line);
+
+  --sgpc-success: var(--pe-success);
+  --sgpc-warning: var(--pe-warning);
+  --sgpc-danger: var(--pe-danger);
+  --sgpc-info: var(--pe-info);
+
+  --sgpc-focus: var(
+    --ring-primary,
+    0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--pe-primary) 16%,
+        transparent
+      )
+  );
+
+  --sgpc-shadow-xs: none;
+  --sgpc-shadow-sm: var(--pe-shadow-soft);
+  --sgpc-shadow-md: var(--pe-shadow-strong);
+
+  --sgpc-radius-xl: 14px;
+  --sgpc-radius-lg: 12px;
+  --sgpc-radius-md: 10px;
+  --sgpc-radius-sm: 9px;
+  --sgpc-radius-pill: 999px;
+
+  --sgpc-font-title: var(
+    --font-heading,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  --sgpc-font-body: var(
+    --font-body,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  --sgpc-font-label: var(
+    --font-control,
+    "Geist",
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  --sgpc-font-control: var(--sgpc-font-label);
+}
+
+.pedit-pdf__uploaderScope,
+.pedit-pdf__uploaderScope *,
+.pedit-pdf__uploaderScope *::before,
+.pedit-pdf__uploaderScope *::after {
+  box-sizing: border-box;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload {
+  min-width: 0;
+
+  display: grid;
+  gap: 10px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+  color: var(--pe-text);
+}
+
+/* El encabezado ya existe en la envoltura de reemplazo. */
+.pedit-pdf__uploaderScope .sgpc-upload__head {
+  display: none;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__chip {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 24px;
+  padding: 0 8px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 999px;
+
+  background: var(--pe-card);
+  color: var(--pe-muted);
+
+  font-size: 0.65rem;
+  line-height: 1;
+  font-weight: 720;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__chip:first-child {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 22%,
+    var(--pe-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--pe-danger) 7%,
+    var(--pe-card)
+  );
+
+  color: var(--pe-danger);
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__native {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger {
+  min-width: 0;
+  width: 100%;
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  border: 1.5px dashed var(--pe-primary-line);
+  border-radius: 11px;
+
+  background: var(--pe-card);
+  color: var(--pe-text);
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger:hover,
+.pedit-pdf__uploaderScope .sgpc-upload__trigger.is-dragover {
+  border-color: var(--pe-primary);
+
+  background: color-mix(
+    in srgb,
+    var(--pe-primary) 5%,
+    var(--pe-card)
+  );
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger:focus-within {
+  outline: none;
+
+  border-color: var(--pe-primary);
+  box-shadow: var(
+    --ring-primary,
+    0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--pe-primary) 16%,
+        transparent
+      )
+  );
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger-icon {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid var(--pe-primary-line);
+  border-radius: 10px;
+
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger-copy {
+  min-width: 0;
+
+  display: grid;
+  gap: 2px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger-title {
+  color: var(--pe-text);
+
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 790;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__trigger-meta {
+  color: var(--pe-muted);
+
+  font-size: 0.69rem;
+  line-height: 1.42;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__foot {
+  display: grid;
+  gap: 4px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__hint,
+.pedit-pdf__uploaderScope .sgpc-upload__warning,
+.pedit-pdf__uploaderScope .sgpc-upload__error {
+  margin: 0;
+
+  font-size: 0.68rem;
+  line-height: 1.42;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__hint {
+  color: var(--pe-muted);
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__warning {
+  color: var(--pe-warning);
+  font-weight: 700;
+}
+
+.pedit-pdf__uploaderScope .sgpc-upload__error {
+  color: var(--pe-danger);
+  font-weight: 700;
+}
+
+/* ============================================================
+   ARCHIVO NUEVO SELECCIONADO
+============================================================ */
+
+.pedit-pdf__uploaderScope .sgpc-file-list {
+  min-width: 0;
+
+  display: grid;
+  gap: 8px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip {
+  min-width: 0;
+
+  display: grid;
+  gap: 8px;
+
+  padding: 11px 12px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 10px;
+
+  background: var(--pe-card);
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__top {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__main {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* En esta pantalla solo se admite un PDF: no hay reordenamiento. */
+.pedit-pdf__uploaderScope .sgpc-file-chip__move,
+.pedit-pdf__uploaderScope .sgpc-file-chip__actions .sgpc-btn,
+.pedit-pdf__uploaderScope .sgpc-file-chip__form {
+  display: none;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__icon {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 36px;
+  height: 36px;
+
+  border: 1px solid var(--pe-primary-line);
+  border-radius: 9px;
+
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__body {
+  min-width: 0;
+
+  display: grid;
+  gap: 2px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__name {
+  min-width: 0;
+
+  color: var(--pe-text);
+
+  font-size: 0.76rem;
+  line-height: 1.35;
+  font-weight: 760;
+
+  overflow-wrap: anywhere;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__meta {
+  color: var(--pe-muted);
+
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  margin-top: 2px;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__badge {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 21px;
+  padding: 0 7px;
+
+  border: 1px solid var(--pe-line);
+  border-radius: 999px;
+
+  background: var(--pe-elev);
+  color: var(--pe-muted);
+
+  font-size: 0.62rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__remove {
+  flex: 0 0 auto;
+
+  min-height: 34px;
+  padding: 0 10px;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--pe-danger) 24%,
+    var(--pe-line)
+  );
+  border-radius: 9px;
+
+  background: var(--pe-card);
+  color: var(--pe-danger);
+
+  font: inherit;
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 760;
+
+  cursor: pointer;
+}
+
+.pedit-pdf__uploaderScope .sgpc-file-chip__remove:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--pe-danger) 38%,
+    var(--pe-line)
+  );
+
+  background: color-mix(
+    in srgb,
+    var(--pe-danger) 7%,
+    var(--pe-card)
+  );
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 980px) {
+  .pedit-pdf__current {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pedit-pdf__actions {
+    grid-column: 1 / -1;
+
+    min-width: 0;
+
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .pedit-pdf__current {
+    grid-template-columns: auto minmax(0, 1fr);
+
+    padding: 12px;
+  }
+
+  .pedit-pdf__description {
+    display: none;
+  }
+
+  .pedit-pdf__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+
+    width: 100%;
+  }
+
+  .pedit-pdf__actions .pedit-btn {
+    width: 100%;
+  }
+
+  .pedit-pdf__replacementHead {
+    display: grid;
+  }
+
+  .pedit-pdf__cancelReplacement {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .pedit-pdf__current {
+    grid-template-columns: 1fr;
+  }
+
+  .pedit-pdf__icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .pedit-pdf__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pedit-pdf__replacement {
+    padding: 11px;
+  }
+
+  .pedit-pdf__uploaderScope .sgpc-upload__trigger {
+    align-items: flex-start;
+
+    min-height: 0;
+  }
+
+  .pedit-pdf__uploaderScope .sgpc-file-chip__top {
+    align-items: flex-start;
+  }
+}

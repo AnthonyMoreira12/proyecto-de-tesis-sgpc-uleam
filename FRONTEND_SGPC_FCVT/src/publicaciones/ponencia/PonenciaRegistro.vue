@@ -9,27 +9,6 @@
         class="sgpc-form-header sgpc-publication-header page-stage page-header"
       >
         <div class="sgpc-form-heading">
-          <div class="sgpc-publication-header__topline">
-            <p class="sgpc-form-kicker">
-              {{ pageKicker }}
-            </p>
-
-            <div
-              class="sgpc-publication-header__chips"
-              aria-label="Clasificación del formulario"
-            >
-              <span class="sgpc-publication-chip">
-                Producción científica
-              </span>
-
-              <span
-                class="sgpc-publication-chip sgpc-publication-chip--accent"
-              >
-                Ponencia
-              </span>
-            </div>
-          </div>
-
           <h1 class="sgpc-form-title">
             {{ pageTitle }}
           </h1>
@@ -46,27 +25,6 @@
           >
             {{ draftInfo }}
           </p>
-        </div>
-
-        <div
-          class="sgpc-publication-header__mark"
-          aria-hidden="true"
-        >
-          <div class="sgpc-publication-header__mark-icon">
-            <svg
-              viewBox="0 0 24 24"
-              width="30"
-              height="30"
-            >
-              <path
-                fill="currentColor"
-                d="M4 4h16v12H13v2h3v2H8v-2h3v-2H4V4Zm2 2v8h12V6H6Zm3 2h6v2H9V8Zm-2 3h10v2H7v-2Z"
-              />
-            </svg>
-          </div>
-
-          <span>PON</span>
-          <small>Ponencia científica</small>
         </div>
       </header>
 
@@ -91,19 +49,6 @@
             class="sgpc-card sgpc-card--admin-context"
             data-section="ADMIN"
           >
-            <div class="sgpc-card-head">
-              <div>
-                <h2 class="sgpc-card-title">
-                  Contexto del registro
-                </h2>
-
-                <p class="sgpc-card-desc">
-                  Esta ponencia se registrará para el usuario seleccionado
-                  desde el módulo administrativo.
-                </p>
-              </div>
-            </div>
-
             <div class="sgpc-card-body">
               <div
                 id="pn-admin-context-anchor"
@@ -111,44 +56,14 @@
               ></div>
 
               <div class="sgpc-admin-context">
-                <article class="sgpc-admin-context__item">
-                  <span class="sgpc-admin-context__label">
-                    Usuario objetivo
-                  </span>
+                <span class="sgpc-admin-context__label">
+                  Registrando para
+                </span>
 
-                  <strong class="sgpc-admin-context__value">
-                    {{ adminDisplayUsuario }}
-                  </strong>
-                </article>
-
-                <article
-                  v-if="showAutorObjetivo"
-                  class="sgpc-admin-context__item"
-                >
-                  <span class="sgpc-admin-context__label">
-                    Autor objetivo
-                  </span>
-
-                  <strong class="sgpc-admin-context__value">
-                    {{ adminDisplayAutor }}
-                  </strong>
-                </article>
-
-                <article class="sgpc-admin-context__item">
-                  <span class="sgpc-admin-context__label">
-                    Modalidad
-                  </span>
-
-                  <strong class="sgpc-admin-context__value">
-                    Registro administrativo delegado
-                  </strong>
-                </article>
+                <strong class="sgpc-admin-context__value">
+                  {{ adminDisplayUsuario }}
+                </strong>
               </div>
-
-              <p class="sgpc-hint">
-                El autor objetivo será incorporado por el backend dentro de la
-                autoría de la publicación.
-              </p>
 
               <p
                 v-if="fieldErrors.admin_context"
@@ -173,12 +88,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Datos generales
+                  Información académica y ubicación
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Información institucional, área del conocimiento y ubicación
-                  geográfica del evento.
+                  Indique la información académica y el lugar donde se realizó el evento.
                 </p>
               </div>
 
@@ -198,6 +112,11 @@
                 proyecto-label="Proyecto de investigación"
                 area-label="Área del conocimiento (UNESCO)"
                 subarea-label="Subárea del conocimiento (UNESCO)"
+                ubicacion-kicker="Lugar del evento"
+                ubicacion-titulo="Ubicación del evento"
+                ubicacion-descripcion="Seleccione el país y la ciudad donde se realizó el evento."
+                pais-label="País del evento"
+                ciudad-label="Ciudad del evento"
               />
             </div>
           </section>
@@ -214,12 +133,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Origen de la publicación
+                  Origen académico
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Indique si la ponencia proviene de un trabajo académico o si
-                  no posee un origen de este tipo.
+                  Indique si la ponencia se originó a partir de otro trabajo académico.
                 </p>
               </div>
 
@@ -233,13 +151,12 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
-                <div class="sgpc-field sgpc-col-span-6">
+                <div class="sgpc-field sgpc-col-span-12">
                   <label
                     class="sgpc-label"
                     for="pn-origen_tipo"
                   >
-                    Origen de la publicación
-
+                    ¿Esta ponencia se originó a partir de otro trabajo académico?
                     <span
                       class="req"
                       aria-hidden="true"
@@ -268,7 +185,7 @@
                     </option>
 
                     <option value="ninguno">
-                      Ninguno
+                      No
                     </option>
 
                     <option value="tic">
@@ -298,7 +215,10 @@
                   </p>
                 </div>
 
-                <div class="sgpc-field sgpc-col-span-6">
+                <div
+                  v-if="['tic', 'otro'].includes(form.origen_tipo)"
+                  class="sgpc-field sgpc-col-span-12 sgpc-origin-extra"
+                >
                   <label
                     class="sgpc-label"
                     for="pn-origen_grado"
@@ -306,11 +226,10 @@
                     {{
                       form.origen_tipo === "otro"
                         ? "Especifique el origen"
-                        : "Grado / programa"
+                        : "Carrera o programa relacionado"
                     }}
 
                     <span
-                      v-if="['tic', 'otro'].includes(form.origen_tipo)"
                       class="req"
                       aria-hidden="true"
                     >
@@ -324,8 +243,7 @@
                     class="sgpc-input"
                     type="text"
                     maxlength="120"
-                    :disabled="!['tic', 'otro'].includes(form.origen_tipo)"
-                    :required="['tic', 'otro'].includes(form.origen_tipo)"
+                    required
                     :aria-invalid="Boolean(fieldErrors.origen_grado)"
                     :aria-describedby="
                       fieldErrors.origen_grado
@@ -335,17 +253,15 @@
                     :placeholder="
                       form.origen_tipo === 'otro'
                         ? 'Ej. Proyecto de investigación institucional'
-                        : 'Ej. Ingeniería en TI / Ingeniería de Software / ...'
+                        : 'Ej. Ingeniería en Tecnologías de la Información'
                     "
                   />
 
                   <p class="sgpc-hint">
                     {{
                       form.origen_tipo === "otro"
-                        ? "Escriba el origen específico de la publicación."
-                        : form.origen_tipo === "tic"
-                          ? "Indique el grado o programa relacionado con el trabajo de integración curricular."
-                          : "Seleccione Trabajo de integración curricular u Otro para habilitar este campo."
+                        ? "Indique de qué trabajo, proyecto o proceso se originó."
+                        : "Indique la carrera o programa relacionado con el trabajo."
                     }}
                   </p>
 
@@ -378,8 +294,7 @@
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Información del evento académico, trabajo presentado,
-                  modalidad de exposición y enlaces de respaldo.
+                  Complete los datos del evento, la presentación y los enlaces disponibles.
                 </p>
               </div>
 
@@ -393,6 +308,11 @@
 
             <div class="sgpc-card-body">
               <div class="sgpc-grid">
+                <div class="sgpc-form-subsection sgpc-col-span-12">
+                  <strong>Evento</strong>
+                  <span>Identifique el evento y la ponencia presentada.</span>
+                </div>
+
                 <!-- Nombre evento -->
                 <div class="sgpc-field sgpc-col-span-12">
                   <label
@@ -441,7 +361,7 @@
                     class="sgpc-label"
                     for="pn-nombre_ponencia"
                   >
-                    Nombre de la ponencia
+                    Título de la ponencia
 
                     <span
                       class="req"
@@ -556,7 +476,7 @@
                     class="sgpc-label"
                     for="pn-codigo_issn_isbn"
                   >
-                    Código ISSN / ISBN
+                    ISSN o ISBN de memorias o actas
                   </label>
 
                   <input
@@ -589,13 +509,18 @@
                   </p>
                 </div>
 
+                <div class="sgpc-form-subsection sgpc-col-span-12">
+                  <strong>Presentación</strong>
+                  <span>Indique cómo se presentó el trabajo.</span>
+                </div>
+
                 <!-- Tipo presentación -->
                 <div class="sgpc-field sgpc-col-span-6">
                   <label
                     class="sgpc-label"
                     for="pn-tipo_presentacion"
                   >
-                    Tipo de presentación
+                    Modalidad de presentación
                   </label>
 
                   <select
@@ -649,7 +574,7 @@
                     class="sgpc-label"
                     for="pn-tipo_presentacion_otro"
                   >
-                    Especifique el tipo de presentación
+                    Especifique la modalidad
 
                     <span
                       class="req"
@@ -687,6 +612,11 @@
                   </p>
                 </div>
 
+                <div class="sgpc-form-subsection sgpc-col-span-12">
+                  <strong>Acceso</strong>
+                  <span>Agregue un enlace del evento o de sus memorias, si está disponible.</span>
+                </div>
+
                 <!-- Link -->
                 <div
                   class="sgpc-field"
@@ -700,7 +630,7 @@
                     class="sgpc-label"
                     for="pn-link_evento"
                   >
-                    Link del evento
+                    Enlace del evento
                   </label>
 
                   <input
@@ -753,8 +683,8 @@
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Seleccione los autores y establezca el orden de firma de la
-                  ponencia.
+                  Agregue las personas que participaron y colóquelas en el
+                  orden en que deben aparecer.
                 </p>
               </div>
 
@@ -791,12 +721,11 @@
             <div class="sgpc-card-head">
               <div>
                 <h2 class="sgpc-card-title">
-                  Archivos PDF
+                  Documentos
                 </h2>
 
                 <p class="sgpc-card-desc">
-                  Adjunte el documento principal de la ponencia y los soportes
-                  complementarios disponibles.
+                  Adjunte el documento de la ponencia y, si corresponde, archivos adicionales.
                 </p>
               </div>
 
@@ -813,9 +742,9 @@
                 v-model="form.archivos"
                 :error="fieldErrors.archivos"
                 input-id="pn-archivo-input"
-                title="Agregar archivos PDF"
-                description="El primer archivo será el PDF principal de la ponencia. Puede agregar hasta 2 adjuntos adicionales."
-                helper-text="PDF principal hasta 5 MB. Adjuntos hasta 3 MB. Máximo 3 archivos."
+                title=""
+                description=""
+                helper-text=""
                 :multiple="true"
                 :max-files="3"
                 :uses-primary-slot="true"
@@ -824,6 +753,46 @@
               />
             </div>
           </section>
+
+          <!-- =================================================
+               PREVALIDACIÓN
+          ================================================== -->
+
+          <div
+            v-if="prevalidacionBloqueantes.length"
+            class="sgpc-alert is-error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <strong>Corrija antes de continuar</strong>
+            <span>Corrija los siguientes puntos antes de registrar:</span>
+            <ul>
+              <li
+                v-for="(item, index) in prevalidacionBloqueantes"
+                :key="`pn-pre-block-${item.codigo || index}`"
+              >
+                {{ item.mensaje }}
+              </li>
+            </ul>
+          </div>
+
+          <div
+            v-if="prevalidacionAdvertencias.length"
+            class="sgpc-alert is-info"
+            role="status"
+            aria-live="polite"
+          >
+            <strong>Revise antes de registrar</strong>
+            <span>Estas observaciones no impiden el registro, pero conviene verificarlas antes de continuar:</span>
+            <ul>
+              <li
+                v-for="(item, index) in prevalidacionAdvertencias"
+                :key="`pn-pre-warning-${item.codigo || index}`"
+              >
+                {{ item.mensaje }}
+              </li>
+            </ul>
+          </div>
 
           <!-- =================================================
                MENSAJE GLOBAL
@@ -847,36 +816,16 @@
         </main>
 
         <!-- ===================================================
-             RESUMEN
+             ESTADO DEL REGISTRO
         ==================================================== -->
 
         <aside class="sgpc-form-aside page-stage page-aside">
           <div class="sgpc-summary-card">
             <div class="sgpc-summary-head">
-              <div
-                class="sgpc-summary-icon"
-                aria-hidden="true"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M4 4h16v12H13v2h3v2H8v-2h3v-2H4V4Zm2 2v8h12V6H6Zm3 2h6v2H9V8Z"
-                  />
-                </svg>
-              </div>
-
               <div>
-                <p class="sgpc-summary-kicker">
-                  Seguimiento
-                </p>
-
-                <h3>
-                  Resumen del registro
-                </h3>
+                <h2>
+                  Estado del registro
+                </h2>
               </div>
             </div>
 
@@ -886,7 +835,7 @@
             >
               <div class="sgpc-progress-row">
                 <span>
-                  Completitud
+                  Progreso
                 </span>
 
                 <strong>
@@ -897,7 +846,7 @@
               <div
                 class="sgpc-progress-bar"
                 role="progressbar"
-                aria-label="Completitud del formulario"
+                aria-label="Progreso del formulario"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 :aria-valuenow="progressPercent"
@@ -912,245 +861,68 @@
               <p class="sgpc-progress-caption">
                 {{ completedRequiredCount }} de
                 {{ totalRequiredCount }}
-                secciones obligatorias completas
+                secciones obligatorias listas
               </p>
-            </div>
-
-            <div class="sgpc-optional-summary">
-              <div class="sgpc-optional-summary__head">
-                <span>Información complementaria</span>
-                <strong>{{ optionalCompletedCount }}/{{ totalOptionalCount }}</strong>
-              </div>
-
-              <p v-if="optionalMissingCount > 0">
-                <strong>{{ optionalMissingCount }}</strong>
-                {{ optionalMissingCount === 1 ? "dato opcional sin completar" : "datos opcionales sin completar" }}.
-                Puede registrar igualmente, pero conviene revisarlos si dispone de esa información.
-              </p>
-
-              <p v-else class="is-complete">
-                Toda la información complementaria aplicable está completa.
-              </p>
-
-              <button
-                v-if="optionalMissingCount > 0"
-                type="button"
-                class="sgpc-summary-link"
-                @click="reviewOptionalFields"
-              >
-                Revisar opcionales
-              </button>
             </div>
 
             <div
-              v-if="canSubmit"
+              v-if="pendingRequiredSections.length"
+              class="sgpc-pending-summary"
+            >
+              <strong>
+                Falta completar
+              </strong>
+
+              <div class="sgpc-pending-summary__list">
+                <button
+                  v-for="item in pendingRequiredSections"
+                  :key="item.key"
+                  type="button"
+                  class="sgpc-pending-summary__item"
+                  @click="goTo(item.target)"
+                >
+                  <span>{{ item.label }}</span>
+                  <small>{{ item.detail }}</small>
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-else
               class="sgpc-ready-notice"
-              :class="{ 'has-optional-gap': optionalMissingCount > 0 }"
               role="status"
               aria-live="polite"
             >
               <strong>
-                {{ optionalMissingCount > 0 ? "Listo para registrar" : "Registro completo" }}
+                Listo para registrar
               </strong>
 
-              <span v-if="optionalMissingCount > 0">
-                Los datos obligatorios están completos. Quedan opcionales que puede revisar antes de guardar.
-              </span>
-
-              <span v-else>
-                Los datos obligatorios y complementarios están completos.
+              <span>
+                Todos los datos obligatorios están completos.
               </span>
             </div>
 
-            <div class="sgpc-status-list">
-              <button
-                v-if="isAdminDelegado"
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': adminReady,
-                }"
-                @click="goTo('sec-contexto-admin')"
-              >
-                <div>
-                  <strong>
-                    Contexto administrativo
-                  </strong>
-
-                  <span>
-                    {{
-                      adminReady
-                        ? "Usuario objetivo válido"
-                        : "Falta usuario objetivo"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    adminReady
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
+            <div
+              v-if="optionalMissingCount > 0"
+              class="sgpc-optional-summary sgpc-optional-summary--compact"
+            >
+              <p>
+                Hay
+                <strong>{{ optionalMissingCount }}</strong>
+                {{
+                  optionalMissingCount === 1
+                    ? "dato opcional sin completar"
+                    : "datos opcionales sin completar"
+                }}.
+                Puede registrar sin completarlos.
+              </p>
 
               <button
                 type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': hasRequiredContext,
-                  'has-optional-gap': hasRequiredContext && optionalContextMissingCount > 0,
-                }"
-                @click="goTo('sec-datos-generales')"
+                class="sgpc-summary-link"
+                @click="reviewOptionalFields"
               >
-                <div>
-                  <strong>
-                    Datos generales
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredContext
-                        ? sectionStatusText(optionalContextMissingCount)
-                        : "Campos obligatorios pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredContext
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': hasRequiredOrigin,
-                }"
-                @click="goTo('sec-origen')"
-              >
-                <div>
-                  <strong>
-                    Origen
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredOrigin
-                        ? "Completo"
-                        : "Campos pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredOrigin
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': hasRequiredEvent,
-                  'has-optional-gap': hasRequiredEvent && optionalEventMissingCount > 0,
-                }"
-                @click="goTo('sec-evento')"
-              >
-                <div>
-                  <strong>
-                    Evento y ponencia
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredEvent
-                        ? sectionStatusText(optionalEventMissingCount)
-                        : "Campos obligatorios pendientes"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredEvent
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': hasRequiredAuthors,
-                }"
-                @click="goTo('sec-autores')"
-              >
-                <div>
-                  <strong>
-                    Autores
-                  </strong>
-
-                  <span>
-                    {{
-                      hasRequiredAuthors
-                        ? `${form.autores.length} autor(es)`
-                        : "Sin autores"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasRequiredAuthors
-                      ? "Completo"
-                      : "Pendiente"
-                  }}
-                </em>
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-status-item"
-                :class="{
-                  'is-ok': hasAdjuntos,
-                  'is-optional-empty': !hasAdjuntos,
-                }"
-                @click="goTo('sec-adjuntos')"
-              >
-                <div>
-                  <strong>
-                    Archivos PDF
-                  </strong>
-
-                  <span>
-                    {{
-                      hasAdjuntos
-                        ? `${form.archivos.length} archivo(s) adjunto(s)`
-                        : "Sin archivos adjuntos"
-                    }}
-                  </span>
-                </div>
-
-                <em>
-                  {{
-                    hasAdjuntos
-                      ? "Completo"
-                      : "Opcional"
-                  }}
-                </em>
+                Revisarlos
               </button>
             </div>
 
@@ -1158,7 +930,7 @@
               <button
                 class="sgpc-btn-primary sgpc-publication-submit"
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || !canSubmit"
                 :aria-busy="loading ? 'true' : 'false'"
               >
                 <span
@@ -1189,14 +961,17 @@
                 </span>
               </button>
 
+              <p class="sgpc-draft-note">
+                Los cambios se guardan automáticamente en este navegador.
+              </p>
+
               <button
-                class="sgpc-btn"
+                class="sgpc-btn sgpc-discard-draft-btn"
                 type="button"
                 :disabled="loading"
-                title="Elimina únicamente el borrador guardado en este navegador"
-                @click="clearDraft"
+                @click="requestDiscardDraft"
               >
-                Limpiar borrador
+                Descartar borrador
               </button>
             </div>
           </div>
@@ -1204,75 +979,64 @@
       </form>
 
       <div
-        v-if="showOptionalReviewDialog"
-        class="sgpc-review-modal"
+        v-if="showDiscardDraftDialog"
+        class="sgpc-review-modal sgpc-review-modal--discard"
         role="presentation"
-        @mousedown.self="closeOptionalReviewDialog"
+        @mousedown.self="cancelDiscardDraft"
       >
         <section
-          ref="optionalReviewDialog"
+          ref="discardDraftDialog"
           class="sgpc-review-modal__dialog"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="pn-optional-review-title"
-          aria-describedby="pn-optional-review-description"
+          aria-labelledby="pn-discard-draft-title"
+          aria-describedby="pn-discard-draft-description"
           tabindex="-1"
-          @keydown.esc="closeOptionalReviewDialog"
+          @keydown.esc="cancelDiscardDraft"
         >
-          <div class="sgpc-review-modal__icon" aria-hidden="true">!</div>
+          <div
+            class="sgpc-review-modal__icon"
+            aria-hidden="true"
+          >
+            !
+          </div>
 
           <div class="sgpc-review-modal__content">
-            <p class="sgpc-review-modal__kicker">Revisión final</p>
-
-            <h2 id="pn-optional-review-title">
-              La ponencia está lista para registrarse
+            <h2 id="pn-discard-draft-title">
+              ¿Descartar este borrador?
             </h2>
 
-            <p id="pn-optional-review-description">
-              Todos los campos obligatorios están completos, pero quedan
-              {{ optionalMissingCount }}
-              {{ optionalMissingCount === 1 ? "dato opcional vacío" : "datos opcionales vacíos" }}.
-              Esto no impide guardar el registro.
+            <p id="pn-discard-draft-description">
+              Se eliminarán los datos que ha ingresado en este formulario.
+              Esta acción no se puede deshacer.
             </p>
-
-            <ul class="sgpc-review-modal__list">
-              <li
-                v-for="item in optionalMissingItems"
-                :key="item.key"
-              >
-                <span>{{ item.label }}</span>
-                <small>{{ item.sectionLabel }}</small>
-              </li>
-            </ul>
 
             <div class="sgpc-review-modal__actions">
               <button
                 type="button"
-                class="sgpc-btn-primary"
-                @click="confirmOptionalRegistration"
-              >
-                Registrar de todas formas
-              </button>
-
-              <button
-                type="button"
                 class="sgpc-btn"
-                @click="reviewOptionalFields"
-              >
-                Revisar opcionales
-              </button>
-
-              <button
-                type="button"
-                class="sgpc-review-modal__cancel"
-                @click="closeOptionalReviewDialog"
+                @click="cancelDiscardDraft"
               >
                 Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="sgpc-btn-danger"
+                @click="confirmDiscardDraft"
+              >
+                Descartar borrador
               </button>
             </div>
           </div>
         </section>
       </div>
+
+      <NoticeDialog
+        :model-value="prevalidationNotice"
+        @close="closePrevalidationNotice"
+      />
+
     </div>
   </div>
 </template>
@@ -1281,8 +1045,12 @@
 import DatosGenerales from "../componentes/DatosGenerales.vue";
 import AutoresSelector from "../componentes/AutoresSelector.vue";
 import AdjuntosPdfUploader from "../componentes/AdjuntosPdfUploader.vue";
+import NoticeDialog from "../../inicio/ui/NoticeDialog.vue";
 
 import api from "../../scripts/api/axios";
+import {
+  prevalidarPublicacion,
+} from "../../scripts/api/publicacionesApi";
 
 import {
   appendArchivosToFormData,
@@ -1363,8 +1131,9 @@ const ERROR_KEY_ALIASES = Object.freeze({
 });
 
 const FIELD_LABELS = Object.freeze({
-  admin_context: "Contexto administrativo",
+  admin_context: "Usuario",
   general: "Validación general",
+  sede: "Sede",
   facultad: "Facultad",
   carrera: "Carrera",
   proyecto: "Proyecto de investigación",
@@ -1372,23 +1141,24 @@ const FIELD_LABELS = Object.freeze({
   subarea: "Subárea del conocimiento",
   pais: "País",
   ciudad: "Ciudad",
-  origen_tipo: "Origen de la publicación",
-  origen_grado: "Grado / programa u otro origen",
+  origen_tipo: "Origen académico",
+  origen_grado: "Carrera, programa u otro origen",
   nombre_evento: "Nombre del evento",
-  nombre_ponencia: "Nombre de la ponencia",
+  nombre_ponencia: "Título de la ponencia",
   anio_publicacion: "Año de presentación",
   mes_publicacion: "Mes de presentación",
-  codigo_issn_isbn: "Código ISSN / ISBN",
-  tipo_presentacion: "Tipo de presentación",
-  tipo_presentacion_otro: "Otro tipo de presentación",
-  link_evento: "Link del evento",
+  codigo_issn_isbn: "ISSN o ISBN de memorias o actas",
+  tipo_presentacion: "Modalidad de presentación",
+  tipo_presentacion_otro: "Otra modalidad de presentación",
+  link_evento: "Enlace del evento",
   autores: "Autores",
-  archivos: "Archivos PDF",
+  archivos: "Documentos",
 });
 
 const ERROR_FIELD_ORDER = Object.freeze([
   "admin_context",
   "general",
+  "sede",
   "facultad",
   "carrera",
   "proyecto",
@@ -1416,6 +1186,7 @@ const ERROR_FIELD_ORDER = Object.freeze([
 
 function createDefaultDatosGenerales() {
   return {
+    sede: null,
     facultad: null,
     carrera: null,
     proyecto: null,
@@ -1562,7 +1333,7 @@ function normalizeDrfErrors(data) {
       "Revise la sección de autores: debe existir al menos un autor y el orden debe ser válido.";
   } else if (fields.archivos) {
     message =
-      "Revise la sección de archivos PDF.";
+      "Revise la sección de Documentos.";
   } else if (
     first &&
     !(
@@ -1712,6 +1483,7 @@ export default {
     DatosGenerales,
     AutoresSelector,
     AdjuntosPdfUploader,
+    NoticeDialog,
   },
 
   data() {
@@ -1722,8 +1494,25 @@ export default {
       mensajeTipo: "",
 
       fieldErrors: {},
+
+      prevalidacionBloqueantes: [],
+      prevalidacionAdvertencias: [],
+      prevalidacionResumen: null,
+
+      prevalidationNotice: {
+        open: false,
+        title: "",
+        message: "",
+        details: null,
+        confirm: false,
+        confirmText: "Confirmar",
+        cancelText: "Cancelar",
+        onConfirm: null,
+        onCancel: null,
+      },
+      prevalidationDecisionResolver: null,
       draftInfo: "",
-      showOptionalReviewDialog: false,
+      showDiscardDraftDialog: false,
 
       draftTimer: null,
       draftSuspended: false,
@@ -1815,14 +1604,7 @@ export default {
 
     adminDisplayUsuario() {
       return (
-        this.adminContext
-          .usuarioNombre ||
-
-        `ID ${
-          this.adminContext
-            .usuarioId ||
-          "—"
-        }`
+        this.adminContext.usuarioNombre || "Usuario seleccionado"
       );
     },
 
@@ -1887,22 +1669,20 @@ export default {
 
     pageTitle() {
       return (
-        "Registrar Ponencia"
+        "Registrar ponencia"
       );
     },
 
     pageSubtitle() {
       return (
-        this.isAdminDelegado
-          ? "Registre la información del evento, ubicación, presentación, autores y adjuntos para el usuario seleccionado. Los campos marcados con * son obligatorios."
-          : "Registre la información del evento, ubicación, presentación, autores y adjuntos. Los campos marcados con * son obligatorios."
+        "Complete los datos de la publicación. Los campos con * son obligatorios."
       );
     },
 
     submitText() {
       return (
         this.isAdminDelegado
-          ? "Registrar ponencia para el usuario"
+          ? "Registrar ponencia"
           : "Registrar ponencia"
       );
     },
@@ -1910,7 +1690,7 @@ export default {
     submitLoadingText() {
       return (
         this.isAdminDelegado
-          ? "Guardando registro delegado..."
+          ? "Guardando..."
           : "Guardando..."
       );
     },
@@ -1922,6 +1702,7 @@ export default {
         {};
 
       return Boolean(
+        general.sede &&
         general.facultad &&
         general.carrera &&
         general.pais &&
@@ -2040,7 +1821,7 @@ export default {
           key: "proyecto",
           label: "Proyecto de investigación",
           section: "datos",
-          sectionLabel: "Datos generales",
+          sectionLabel: "Información académica y ubicación",
         });
       }
 
@@ -2049,14 +1830,14 @@ export default {
           key: "area",
           label: "Área del conocimiento (UNESCO)",
           section: "datos",
-          sectionLabel: "Datos generales",
+          sectionLabel: "Información académica y ubicación",
         });
       } else if (!hasValue(general.subarea)) {
         items.push({
           key: "subarea",
           label: "Subárea del conocimiento (UNESCO)",
           section: "datos",
-          sectionLabel: "Datos generales",
+          sectionLabel: "Información académica y ubicación",
         });
       }
 
@@ -2072,7 +1853,7 @@ export default {
       if (!hasValue(this.form.codigo_issn_isbn)) {
         items.push({
           key: "codigo_issn_isbn",
-          label: "Código ISSN / ISBN",
+          label: "ISSN o ISBN de memorias o actas",
           section: "evento",
           sectionLabel: "Evento y ponencia",
         });
@@ -2081,7 +1862,7 @@ export default {
       if (!hasValue(this.form.tipo_presentacion)) {
         items.push({
           key: "tipo_presentacion",
-          label: "Tipo de presentación",
+          label: "Modalidad de presentación",
           section: "evento",
           sectionLabel: "Evento y ponencia",
         });
@@ -2090,7 +1871,7 @@ export default {
       if (!hasValue(this.form.link_evento)) {
         items.push({
           key: "link_evento",
-          label: "Link del evento",
+          label: "Enlace del evento",
           section: "evento",
           sectionLabel: "Evento y ponencia",
         });
@@ -2099,9 +1880,9 @@ export default {
       if (!this.hasAdjuntos) {
         items.push({
           key: "archivos",
-          label: "Archivos PDF",
+          label: "Documentos",
           section: "adjuntos",
-          sectionLabel: "Archivos PDF",
+          sectionLabel: "Documentos",
         });
       }
 
@@ -2154,41 +1935,69 @@ export default {
       );
     },
 
-    requiredSections() {
+    summarySections() {
       const sections = [
         {
           key: "datos",
-          done:
-            this.hasRequiredContext,
+          target: "sec-datos-generales",
+          label: "Información académica y ubicación",
+          done: this.hasRequiredContext,
+          required: true,
+          detail:
+            this.hasRequiredContext
+              ? "Listo"
+              : "Complete la información académica, país y ciudad",
         },
 
         {
           key: "origen",
-          done:
-            this.hasRequiredOrigin,
+          target: "sec-origen",
+          label: "Origen académico",
+          done: this.hasRequiredOrigin,
+          required: true,
+          detail:
+            this.hasRequiredOrigin
+              ? "Listo"
+              : "Seleccione el origen",
         },
 
         {
           key: "evento",
-          done:
-            this.hasRequiredEvent,
+          target: "sec-evento",
+          label: "Evento y ponencia",
+          done: this.hasRequiredEvent,
+          required: true,
+          detail:
+            this.hasRequiredEvent
+              ? "Listo"
+              : "Complete evento, título y año de presentación",
         },
 
         {
           key: "autores",
-          done:
-            this.hasRequiredAuthors,
+          target: "sec-autores",
+          label: "Autores",
+          done: this.hasRequiredAuthors,
+          required: true,
+          detail:
+            this.hasRequiredAuthors
+              ? "Listo"
+              : "Agregue al menos un autor",
         },
       ];
 
-      if (
-        this.isAdminDelegado
-      ) {
+      if (this.isAdminDelegado) {
         return [
           {
             key: "admin",
-            done:
-              this.adminReady,
+            target: "sec-contexto-admin",
+            label: "Persona seleccionada",
+            done: this.adminReady,
+            required: true,
+            detail:
+              this.adminReady
+                ? "Listo"
+                : "Seleccione la persona",
           },
 
           ...sections,
@@ -2196,6 +2005,23 @@ export default {
       }
 
       return sections;
+    },
+
+    pendingRequiredSections() {
+      return this.summarySections
+        .filter(
+          (section) =>
+            section.required &&
+            !section.done
+        );
+    },
+
+    requiredSections() {
+      return this.summarySections
+        .filter(
+          (section) =>
+            section.required
+        );
     },
 
     completedRequiredCount() {
@@ -2243,6 +2069,8 @@ export default {
   },
 
   beforeUnmount() {
+    this.closePrevalidationNotice();
+
     clearTimeout(
       this.draftTimer
     );
@@ -2383,6 +2211,128 @@ export default {
   ========================================================== */
 
   methods: {
+
+    resetPrevalidationNotice() {
+      Object.assign(
+        this.prevalidationNotice,
+        {
+          open: false,
+          title: "",
+          message: "",
+          details: null,
+          confirm: false,
+          confirmText: "Confirmar",
+          cancelText: "Cancelar",
+          onConfirm: null,
+          onCancel: null,
+        }
+      );
+    },
+
+    resolvePrevalidationDecision(value) {
+      const resolver =
+        this.prevalidationDecisionResolver;
+
+      this.prevalidationDecisionResolver =
+        null;
+
+      if (
+        typeof resolver ===
+        "function"
+      ) {
+        resolver(
+          Boolean(value)
+        );
+      }
+    },
+
+    closePrevalidationNotice() {
+      this.resolvePrevalidationDecision(
+        false
+      );
+
+      this.resetPrevalidationNotice();
+    },
+
+    confirmarAdvertenciasPrevalidacion(
+      advertencias = []
+    ) {
+      const items =
+        Array.isArray(advertencias)
+          ? advertencias
+          : [];
+
+      if (!items.length) {
+        return Promise.resolve(true);
+      }
+
+      this.closePrevalidationNotice();
+
+      const visibles =
+        items.slice(0, 5);
+
+      const details = [
+        ...visibles.map(
+          (item) =>
+            `• ${String(
+              item?.mensaje ||
+              "Revise la información indicada."
+            ).trim()}`
+        ),
+        ...(
+          items.length > 5
+            ? [
+                `• Hay ${
+                  items.length - 5
+                } observación${
+                  items.length - 5 === 1
+                    ? ""
+                    : "es"
+                } adicional${
+                  items.length - 5 === 1
+                    ? ""
+                    : "es"
+                } en el formulario.`,
+              ]
+            : []
+        ),
+      ].join("\n");
+
+      return new Promise(
+        (resolve) => {
+          this.prevalidationDecisionResolver =
+            resolve;
+
+          Object.assign(
+            this.prevalidationNotice,
+            {
+              open: true,
+              title:
+                "Revise antes de registrar",
+              message:
+                "Hay información que requiere atención. Estas observaciones no impiden el registro, pero conviene verificarlas antes de continuar.",
+              details,
+              confirm: true,
+              confirmText:
+                "Continuar con el registro",
+              cancelText:
+                "Volver a revisar",
+              onConfirm: () => {
+                this.resolvePrevalidationDecision(
+                  true
+                );
+              },
+              onCancel: () => {
+                this.resolvePrevalidationDecision(
+                  false
+                );
+              },
+            }
+          );
+        }
+      );
+    },
+
     /* ========================================================
        CONTEXTO ADMINISTRATIVO
     ======================================================== */
@@ -2459,7 +2409,7 @@ export default {
           .usuarioId
       ) {
         return (
-          "Debe abrir este formulario desde la administración con un usuario objetivo válido."
+          "Seleccione nuevamente al usuario para continuar con el registro."
         );
       }
 
@@ -2551,24 +2501,8 @@ export default {
             ),
         };
 
-        if (
-          parsed?.updatedAt
-        ) {
-          const date =
-            new Date(
-              parsed.updatedAt
-            );
-
-          this.draftInfo =
-            Number.isNaN(
-              date.getTime()
-            )
-              ? "Se recuperó un borrador guardado."
-              : `Se recuperó un borrador guardado (${date.toLocaleString()}).`;
-        } else {
-          this.draftInfo =
-            "Se recuperó un borrador guardado.";
-        }
+        this.draftInfo =
+          "Borrador recuperado. Puede continuar donde lo dejó.";
       } catch (
         error
       ) {
@@ -2612,6 +2546,32 @@ export default {
       }
     },
 
+    requestDiscardDraft() {
+      if (this.loading) {
+        return;
+      }
+
+      this.showDiscardDraftDialog =
+        true;
+
+      this.$nextTick(() => {
+        this.$refs.discardDraftDialog
+          ?.focus?.();
+      });
+    },
+
+    cancelDiscardDraft() {
+      this.showDiscardDraftDialog =
+        false;
+    },
+
+    confirmDiscardDraft() {
+      this.showDiscardDraftDialog =
+        false;
+
+      this.clearDraft();
+    },
+
     clearDraft() {
       this.removeStoredDraft();
 
@@ -2620,7 +2580,7 @@ export default {
       this.resetForm();
 
       this.mensaje =
-        "Borrador eliminado.";
+        "Borrador descartado.";
 
       this.mensajeTipo =
         "info";
@@ -2644,36 +2604,20 @@ export default {
        RESUMEN / OPCIONALES
     ======================================================== */
 
-    sectionStatusText(optionalMissing = 0) {
-      if (optionalMissing > 0) {
-        return `${optionalMissing} ${
-          optionalMissing === 1
-            ? "opcional sin completar"
-            : "opcionales sin completar"
-        }`;
-      }
-
-      return "Información completa";
+    sectionStatusText() {
+      return "Listo";
     },
 
-    sectionStateLabel(requiredDone, optionalMissing = 0) {
-      if (!requiredDone) {
-        return "Pendiente";
-      }
-
-      return optionalMissing > 0
-        ? "Completo · revisar opcionales"
-        : "Completo";
+    sectionStateLabel(requiredDone) {
+      return requiredDone
+        ? "Listo"
+        : "Falta información";
     },
 
-    sectionStateClass(requiredDone, optionalMissing = 0) {
-      if (!requiredDone) {
-        return "is-pending";
-      }
-
-      return optionalMissing > 0
-        ? "is-complete has-optional-gap"
-        : "is-complete";
+    sectionStateClass(requiredDone) {
+      return requiredDone
+        ? "is-complete"
+        : "is-pending";
     },
 
     focusOptionalItem(item) {
@@ -2693,37 +2637,12 @@ export default {
       const first =
         this.optionalMissingItems[0];
 
-      this.closeOptionalReviewDialog();
-
       if (!first) {
         return;
       }
 
       this.$nextTick(() => {
         this.focusOptionalItem(first);
-      });
-    },
-
-    openOptionalReviewDialog() {
-      this.showOptionalReviewDialog =
-        true;
-
-      this.$nextTick(() => {
-        this.$refs.optionalReviewDialog
-          ?.focus?.();
-      });
-    },
-
-    closeOptionalReviewDialog() {
-      this.showOptionalReviewDialog =
-        false;
-    },
-
-    async confirmOptionalRegistration() {
-      this.closeOptionalReviewDialog();
-
-      await this.registrarPonencia({
-        skipFrontValidation: true,
       });
     },
 
@@ -2735,11 +2654,6 @@ export default {
       this.clearErrors();
 
       if (!this.validateFront()) {
-        return;
-      }
-
-      if (this.optionalMissingCount > 0) {
-        this.openOptionalReviewDialog();
         return;
       }
 
@@ -2945,6 +2859,182 @@ export default {
         );
     },
 
+    /* ========================================================
+       PREVALIDACIÓN BACKEND
+    ======================================================== */
+
+    clearPrevalidationState() {
+      this.prevalidacionBloqueantes = [];
+      this.prevalidacionAdvertencias = [];
+      this.prevalidacionResumen = null;
+    },
+
+    normalizePrevalidationIssues(items) {
+      return (Array.isArray(items) ? items : [])
+        .map((item, index) => {
+          if (typeof item === "string") {
+            return {
+              codigo: `validacion-${index}`,
+              nivel: "",
+              campo: null,
+              mensaje: item.trim(),
+              origen: "validacion",
+              metadata: {},
+            };
+          }
+
+          const mensaje = String(
+            item?.mensaje ?? item?.message ?? item?.detail ?? ""
+          ).trim();
+
+          if (!mensaje) {
+            return null;
+          }
+
+          return {
+            codigo: String(
+              item?.codigo ?? item?.code ?? `validacion-${index}`
+            ).trim(),
+            nivel: String(item?.nivel || "").trim(),
+            campo: item?.campo ? String(item.campo).trim() : null,
+            mensaje,
+            origen: String(item?.origen || "validacion").trim(),
+            metadata:
+              item?.metadata && typeof item.metadata === "object"
+                ? item.metadata
+                : {},
+          };
+        })
+        .filter(Boolean);
+    },
+
+    applyPrevalidationFieldErrors(items) {
+      const next = { ...this.fieldErrors };
+
+      this.normalizePrevalidationIssues(items).forEach((item) => {
+        const rawField = String(item.campo || "").trim();
+
+        if (!rawField) {
+          return;
+        }
+
+        const field = ERROR_KEY_ALIASES[rawField] || rawField;
+
+        if (!next[field]) {
+          next[field] = item.mensaje;
+        }
+      });
+
+      this.fieldErrors = next;
+    },
+
+    buildPrevalidationPayload(autoresPayload) {
+      const general = this.form.datos_generales || {};
+      const uploadItems = this.selectedUploadItems();
+
+      return {
+        tipo_codigo: "ponencia",
+        sede: general.sede || null,
+        carrera: general.carrera || null,
+        proyecto: general.proyecto || null,
+        area: general.area || null,
+        subarea: general.subarea || null,
+        pais: general.pais || null,
+        ciudad: general.ciudad || null,
+        origen_tipo: this.form.origen_tipo || "ninguno",
+        origen_grado: this.form.origen_grado || "",
+        nombre_evento: String(this.form.nombre_evento || "").trim(),
+        nombre_ponencia: String(this.form.nombre_ponencia || "").trim(),
+        anio_publicacion: this.form.anio_publicacion,
+        mes_publicacion: this.form.mes_publicacion || null,
+        codigo_issn_isbn: String(this.form.codigo_issn_isbn || "").trim(),
+        tipo_presentacion: String(this.form.tipo_presentacion || "").trim().toLowerCase(),
+        tipo_presentacion_otro: String(this.form.tipo_presentacion_otro || "").trim(),
+        link_evento: String(this.form.link_evento || "").trim(),
+        autores: autoresPayload,
+        archivo_pdf: uploadItems[0]?.file || null,
+        registrado_por_admin: this.isAdminDelegado,
+        usuario_objetivo_id: this.isAdminDelegado ? this.adminContext.usuarioId : null,
+        autor_objetivo_id: this.isAdminDelegado ? this.adminContext.autorId : null,
+      };
+    },
+
+    async ejecutarPrevalidacion(autoresPayload) {
+      this.clearPrevalidationState();
+
+      let response;
+
+      try {
+        response = await prevalidarPublicacion(
+          this.buildPrevalidationPayload(autoresPayload)
+        );
+      } catch (error) {
+        const normalized = normalizeDrfErrors(error?.response?.data);
+
+        this.fieldErrors = {
+          ...this.fieldErrors,
+          ...(normalized.fields || {}),
+        };
+
+        this.mensaje =
+          normalized.message ||
+          "No se pudo verificar la información antes del registro. Revise los datos e inténtelo nuevamente.";
+        this.mensajeTipo = "error";
+
+        const first = firstErrorField(this.fieldErrors);
+
+        if (first) {
+          this.$nextTick(() => this.focusField(first));
+        }
+
+        return false;
+      }
+
+      const bloqueantes = this.normalizePrevalidationIssues(
+        response?.bloqueantes
+      );
+      const advertencias = this.normalizePrevalidationIssues(
+        response?.advertencias
+      );
+
+      this.prevalidacionBloqueantes = bloqueantes;
+      this.prevalidacionAdvertencias = advertencias;
+      this.prevalidacionResumen = response?.resumen || null;
+
+      if (response?.puede_continuar === false || bloqueantes.length) {
+        this.applyPrevalidationFieldErrors(bloqueantes);
+        this.mensaje =
+          "Hay datos que deben corregirse antes de registrar la ponencia.";
+        this.mensajeTipo = "error";
+
+        const first = firstErrorField(this.fieldErrors);
+
+        if (first) {
+          this.$nextTick(() => this.focusField(first));
+        }
+
+        return false;
+      }
+
+      if (advertencias.length) {
+        const continuar =
+          await this.confirmarAdvertenciasPrevalidacion(
+            advertencias
+          );
+
+        if (!continuar) {
+          this.mensaje =
+            "Revise las observaciones antes de continuar con el registro.";
+          this.mensajeTipo =
+            "info";
+
+          return false;
+        }
+      }
+
+      return true;
+    },
+
     selectedUploadItems() {
       return (
         Array.isArray(
@@ -2979,7 +3069,15 @@ export default {
           .usuarioId
       ) {
         errors.admin_context =
-          "Debe abrir este formulario desde la administración con un usuario objetivo válido.";
+          "Seleccione nuevamente al usuario para continuar con el registro.";
+      }
+
+      if (
+        !general
+          .sede
+      ) {
+        errors.sede =
+          "Seleccione una sede.";
       }
 
       if (
@@ -3025,7 +3123,7 @@ if (
         ).trim()
       ) {
         errors.origen_tipo =
-          "Seleccione el origen de la publicación.";
+          "Seleccione el origen académico.";
       }
 
       if (
@@ -3052,7 +3150,7 @@ if (
         )
       ) {
         errors.origen_grado =
-          `El grado, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
+          `La carrera, programa u origen especificado no puede superar ${FIELD_LIMITS.origen_grado} caracteres.`;
       }
 
       /* ----------------------------------------------------
@@ -3100,13 +3198,17 @@ if (
         )
       ) {
         errors.nombre_ponencia =
-          `El nombre de la ponencia no puede superar ${FIELD_LIMITS.nombre_ponencia} caracteres.`;
+          `El título de la ponencia no puede superar ${FIELD_LIMITS.nombre_ponencia} caracteres.`;
       }
       const publicationYear = Number(this.form.anio_publicacion);
 
-      if (!Number.isInteger(publicationYear) || publicationYear <= 0) {
+      if (
+        !Number.isInteger(publicationYear) ||
+        publicationYear < 1900 ||
+        publicationYear > 2100
+      ) {
         errors.anio_publicacion =
-          "Ingrese un año válido.";
+          "Ingrese un año válido entre 1900 y 2100.";
       }
 
       if (this.form.mes_publicacion !== "") {
@@ -3131,7 +3233,7 @@ if (
         )
       ) {
         errors.codigo_issn_isbn =
-          `El código ISSN / ISBN no puede superar ${FIELD_LIMITS.codigo_issn_isbn} caracteres.`;
+          `El ISSN o ISBN no puede superar ${FIELD_LIMITS.codigo_issn_isbn} caracteres.`;
       }
 
       /* ----------------------------------------------------
@@ -3517,7 +3619,7 @@ if (
         )
       ) {
         throw new Error(
-          "El backend no devolvió un publicacion_id válido para asociar los adjuntos."
+          "No pudimos asociar los documentos a la publicación. Intente nuevamente."
         );
       }
 
@@ -3598,11 +3700,7 @@ if (
         {};
 
       this.mensaje =
-        `La ponencia fue registrada correctamente${
-          publicacionId
-            ? ` (publicación #${publicacionId})`
-            : ""
-        }, pero no se pudieron cargar los adjuntos complementarios. No vuelva a registrar la ponencia; agregue los adjuntos desde el detalle de la publicación.`;
+        "La ponencia fue guardada como Borrador, pero algunos documentos adicionales no pudieron cargarse. No vuelva a registrarla; agregue los documentos faltantes desde el detalle de la publicación antes de enviarla a revisión.";
 
       this.mensajeTipo =
         "error";
@@ -3628,6 +3726,8 @@ if (
 
       this.loading =
         true;
+
+      this.clearPrevalidationState();
 
       if (!skipFrontValidation) {
         this.clearErrors();
@@ -3711,7 +3811,20 @@ if (
         }
 
         /* --------------------------------------------------
-           4. FormData
+           4. Prevalidación backend: integridad, PDF y duplicados
+        -------------------------------------------------- */
+
+        const prevalidacionOk =
+          await this.ejecutarPrevalidacion(
+            autoresPayload
+          );
+
+        if (!prevalidacionOk) {
+          return;
+        }
+
+        /* --------------------------------------------------
+           5. FormData
         -------------------------------------------------- */
 
         const formData =
@@ -3781,8 +3894,8 @@ if (
 
         this.finalizeSuccess(
           this.isAdminDelegado
-            ? "Ponencia registrada correctamente para el usuario seleccionado."
-            : "Ponencia registrada correctamente."
+            ? "Ponencia guardada correctamente para el usuario seleccionado. La publicación quedó en estado Borrador y puede editarse o enviarse a revisión desde la gestión de publicaciones."
+            : "La publicación se guardó correctamente y quedó en estado Borrador. Revise la información y edítela si es necesario antes de enviarla a revisión. Una vez enviada, la edición quedará bloqueada hasta que el administrador apruebe, rechace o solicite correcciones."
         );
       } catch (
         error
@@ -3886,10 +3999,14 @@ if (
       this.fieldErrors =
         {};
 
+      this.prevalidacionBloqueantes = [];
+      this.prevalidacionAdvertencias = [];
+      this.prevalidacionResumen = null;
+
       this.draftInfo =
         "";
 
-      this.showOptionalReviewDialog =
+      this.showDiscardDraftDialog =
         false;
 
       this.form =

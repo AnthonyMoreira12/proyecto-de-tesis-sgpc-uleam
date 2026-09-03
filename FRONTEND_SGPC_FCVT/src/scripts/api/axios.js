@@ -5,7 +5,6 @@ import {
   getAccessToken,
   isAccessTokenExpired,
   setAccessToken,
-  setRefreshToken,
 } from "../utils/authStorage";
 
 /**
@@ -58,6 +57,7 @@ const refreshClient = axios.create({
 const AUTH_ROUTES = [
   "auth/login/",
   "auth/register/",
+  "auth/logout/",
   "auth/microsoft/login/",
   "auth/microsoft/callback/",
   "auth/microsoft/exchange/",
@@ -426,11 +426,6 @@ async function refreshAccessToken() {
     data?.access_token ||
     "";
 
-  const rotatedRefresh =
-    data?.refresh ||
-    data?.refresh_token ||
-    "";
-
   if (!newAccess) {
     throw new Error(
       "El servidor no devolvió un nuevo access token."
@@ -438,16 +433,6 @@ async function refreshAccessToken() {
   }
 
   setAccessToken(newAccess);
-
-  /*
-   * En modo HttpOnly no se persiste el refresh en JavaScript.
-   * Se conserva la llamada por compatibilidad.
-   */
-  if (rotatedRefresh) {
-    setRefreshToken(
-      rotatedRefresh
-    );
-  }
 
   return newAccess;
 }

@@ -2,7 +2,8 @@ import api from "./axios";
 
 /**
  * API administrativa de publicaciones.
- * Opera sobre /api/admin/publicaciones/ y sus acciones de creación delegada.
+ * Opera sobre /api/admin/publicaciones/, creación delegada,
+ * auditoría y decisiones del flujo formal de revisión.
  */
 
 const ADMIN_PUBLICACIONES_BASE = "admin/publicaciones/";
@@ -27,6 +28,109 @@ function normalizarBoolean(value) {
   if (["0", "false", "no", "n", "off"].includes(s)) return false;
 
   return undefined;
+}
+
+function normalizarId(value) {
+  if (esValorVacio(value)) {
+    return null;
+  }
+
+  if (
+    typeof value === "object" &&
+    !(value instanceof Date) &&
+    !(typeof File !== "undefined" && value instanceof File) &&
+    !(typeof Blob !== "undefined" && value instanceof Blob)
+  ) {
+    const candidate =
+      value.id ??
+      value.pk ??
+      value.value;
+
+    if (!esValorVacio(candidate)) {
+      return normalizarId(candidate);
+    }
+  }
+
+  const parsed = Number(value);
+
+  return (
+    Number.isInteger(parsed) &&
+    parsed > 0
+  )
+    ? parsed
+    : null;
+}
+
+function normalizarPeriodoPublicacion(
+  payload = {}
+) {
+  const output = {
+    ...(payload || {}),
+  };
+
+  let year =
+    output.anio_publicacion ??
+    output.anio ??
+    null;
+
+  let month =
+    output.mes_publicacion ??
+    output.mes ??
+    null;
+
+  const legacyDate = String(
+    output.fecha_publicacion || ""
+  ).trim();
+
+  if (legacyDate) {
+    const match = legacyDate.match(
+      /^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/
+    );
+
+    if (match) {
+      if (esValorVacio(year)) {
+        year = Number(match[1]);
+      }
+
+      if (esValorVacio(month)) {
+        month = Number(match[2]);
+      }
+    }
+  }
+
+  if (!esValorVacio(year)) {
+    const parsedYear = Number(year);
+    output.anio_publicacion =
+      Number.isInteger(parsedYear)
+        ? parsedYear
+        : year;
+  }
+
+  if (!esValorVacio(month)) {
+    const parsedMonth = Number(month);
+    output.mes_publicacion =
+      Number.isInteger(parsedMonth)
+        ? parsedMonth
+        : month;
+  }
+
+  delete output.fecha_publicacion;
+  delete output.anio;
+  delete output.mes;
+
+  return output;
+}
+
+function normalizarPublicacionId(value) {
+  const id = normalizarId(value);
+
+  if (!id) {
+    throw new Error(
+      "El identificador de la publicación no es válido."
+    );
+  }
+
+  return id;
 }
 
 function appendFormValue(formData, key, value) {
@@ -71,9 +175,15 @@ function buildParams(filters = {}) {
     "autor_objetivo_id",
     "autor_id",
     "admin_registrador_id",
+    "estado",
+    "estado_publicacion",
+    "status",
+    "sede_id",
+    "sede",
     "facultad_id",
     "carrera_id",
     "anio",
+    "mes",
     "solo_delegadas",
     "solo_con_pdf",
     "solo_con_adjuntos",
@@ -82,9 +192,31 @@ function buildParams(filters = {}) {
     "page_size",
   ];
 
+  const idFilterKeys = new Set([
+    "usuario_objetivo_id",
+    "usuario_id",
+    "autor_objetivo_id",
+    "autor_id",
+    "admin_registrador_id",
+    "sede_id",
+    "sede",
+    "facultad_id",
+    "carrera_id",
+  ]);
+
   allowedKeys.forEach((key) => {
     const value = filters[key];
     if (esValorVacio(value)) return;
+
+    if (idFilterKeys.has(key)) {
+      const id = normalizarId(value);
+
+      if (id) {
+        params[key] = id;
+      }
+
+      return;
+    }
 
     if (
       key === "solo_delegadas" ||
@@ -222,32 +354,54 @@ function normalizeMetaValue(metaValue, fallbackFiles = []) {
 }
 
 function buildAutoresJson(autores = []) {
-  if (!Array.isArray(autores)) return "[]";
+  if (!Array.isArray(autores)) {
+    return "[]";
+  }
 
   const normalized = autores
     .map((item, index) => {
-      const autorId = Number(item?.autor_id || item?.autor || item?.id || 0);
+      const autorId = normalizarId(
+        item?.autor_id ??
+        item?.autor ??
+        item?.id
+      );
 
-      if (!Number.isFinite(autorId) || autorId <= 0) {
+      if (!autorId) {
         return null;
       }
 
-      const orden = Number(item?.orden || index + 1);
-      const rol = String(item?.rol_autoria || "").trim().toLowerCase();
+      const rawOrder = Number(
+        item?.orden || index + 1
+      );
 
       return {
         autor_id: autorId,
-        orden: Number.isFinite(orden) && orden > 0 ? orden : index + 1,
-        ...(rol ? { rol_autoria: rol } : {}),
+        orden:
+          Number.isFinite(rawOrder) &&
+          rawOrder > 0
+            ? rawOrder
+            : index + 1,
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((left, right) =>
+      left.orden - right.orden
+    )
+    .map((item, index) => ({
+      autor_id: item.autor_id,
+      orden: index + 1,
+    }));
 
   return JSON.stringify(normalized);
 }
 
 function buildDelegatedCreateFormData(payload = {}) {
   const formData = new FormData();
+
+  const normalizedPayload =
+    normalizarPeriodoPublicacion(
+      payload
+    );
 
   const {
     autores,
@@ -257,9 +411,33 @@ function buildDelegatedCreateFormData(payload = {}) {
     meta,
     archivos_meta,
     ...rest
-  } = payload;
+  } = normalizedPayload;
+
+  const relationFields = new Set([
+    "sede",
+    "facultad",
+    "carrera",
+    "proyecto",
+    "area",
+    "subarea",
+    "pais",
+    "ciudad",
+    "usuario_objetivo_id",
+    "usuario_id",
+    "autor_objetivo_id",
+    "autor_id",
+  ]);
 
   Object.entries(rest).forEach(([key, value]) => {
+    if (relationFields.has(key)) {
+      appendFormValue(
+        formData,
+        key,
+        normalizarId(value)
+      );
+      return;
+    }
+
     appendFormValue(formData, key, value);
   });
 
@@ -285,29 +463,87 @@ function buildDelegatedCreateFormData(payload = {}) {
 }
 
 function buildUpdatePayload(payload = {}) {
-  const mustUseFormData = Object.values(payload).some((value) => {
-    if (value instanceof File || value instanceof Blob) return true;
+  const normalizedPayload =
+    normalizarPeriodoPublicacion(
+      payload
+    );
+
+  if (Array.isArray(normalizedPayload.autores)) {
+    normalizedPayload.autores = JSON.parse(
+      buildAutoresJson(
+        normalizedPayload.autores
+      )
+    );
+  }
+
+  const relationFields = [
+    "sede",
+    "facultad",
+    "carrera",
+    "proyecto",
+    "area",
+    "subarea",
+    "pais",
+    "ciudad",
+  ];
+
+  relationFields.forEach((key) => {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        normalizedPayload,
+        key
+      )
+    ) {
+      normalizedPayload[key] =
+        normalizarId(
+          normalizedPayload[key]
+        );
+    }
+  });
+
+  const mustUseFormData = Object.values(
+    normalizedPayload
+  ).some((value) => {
+    if (
+      (typeof File !== "undefined" && value instanceof File) ||
+      (typeof Blob !== "undefined" && value instanceof Blob)
+    ) {
+      return true;
+    }
 
     if (Array.isArray(value)) {
-      return value.some((item) => item instanceof File || item instanceof Blob);
+      return value.some(
+        (item) =>
+          (typeof File !== "undefined" && item instanceof File) ||
+          (typeof Blob !== "undefined" && item instanceof Blob)
+      );
     }
 
     return false;
   });
 
   if (!mustUseFormData) {
-    return payload;
+    return normalizedPayload;
   }
 
   const formData = new FormData();
 
-  Object.entries(payload).forEach(([key, value]) => {
+  Object.entries(
+    normalizedPayload
+  ).forEach(([key, value]) => {
     if (key === "autores") {
-      formData.append("autores", buildAutoresJson(value || []));
+      formData.append(
+        "autores",
+        buildAutoresJson(value || [])
+      );
       return;
     }
 
-    appendFormValue(formData, key, value);
+    appendFormValue(
+      formData,
+      key,
+      value
+    );
   });
 
   return formData;
@@ -322,8 +558,12 @@ export async function listarAdminPublicaciones(filters = {}) {
 }
 
 export async function obtenerAdminPublicacion(publicacionId) {
+  const id = normalizarPublicacionId(
+    publicacionId
+  );
+
   const { data } = await api.get(
-    `${ADMIN_PUBLICACIONES_BASE}${publicacionId}/`
+    `${ADMIN_PUBLICACIONES_BASE}${id}/`
   );
 
   return data;
@@ -334,6 +574,10 @@ export async function actualizarAdminPublicacion(
   payload = {},
   { partial = true } = {}
 ) {
+  const id = normalizarPublicacionId(
+    publicacionId
+  );
+
   const body = buildUpdatePayload(payload);
   const method = partial ? "patch" : "put";
 
@@ -347,7 +591,7 @@ export async function actualizarAdminPublicacion(
       : undefined;
 
   const { data } = await api[method](
-    `${ADMIN_PUBLICACIONES_BASE}${publicacionId}/`,
+    `${ADMIN_PUBLICACIONES_BASE}${id}/`,
     body,
     config
   );
@@ -356,11 +600,104 @@ export async function actualizarAdminPublicacion(
 }
 
 export async function eliminarAdminPublicacion(publicacionId) {
+  const id = normalizarPublicacionId(
+    publicacionId
+  );
+
   const { data } = await api.delete(
-    `${ADMIN_PUBLICACIONES_BASE}${publicacionId}/`
+    `${ADMIN_PUBLICACIONES_BASE}${id}/`
   );
 
   return data;
+}
+
+export async function obtenerAdminPublicacionHistorial(
+  publicacionId
+) {
+  const id = normalizarPublicacionId(
+    publicacionId
+  );
+
+  const { data } = await api.get(
+    `${ADMIN_PUBLICACIONES_BASE}${id}/historial/`
+  );
+
+  return data;
+}
+
+async function resolverDecisionAdmin(
+  publicacionId,
+  accion,
+  comentario = ""
+) {
+  const id = normalizarPublicacionId(
+    publicacionId
+  );
+
+  const normalizedAction = String(
+    accion || ""
+  ).trim().toLowerCase();
+
+  if (
+    ![
+      "aprobar",
+      "observar",
+      "rechazar",
+    ].includes(normalizedAction)
+  ) {
+    throw new Error(
+      "La decisión administrativa indicada no es válida."
+    );
+  }
+
+  const body = {};
+  const normalizedComment = String(
+    comentario || ""
+  ).trim();
+
+  if (normalizedComment) {
+    body.comentario = normalizedComment;
+  }
+
+  const { data } = await api.post(
+    `${ADMIN_PUBLICACIONES_BASE}${id}/${normalizedAction}/`,
+    body
+  );
+
+  return data;
+}
+
+export async function aprobarAdminPublicacion(
+  publicacionId,
+  comentario = ""
+) {
+  return resolverDecisionAdmin(
+    publicacionId,
+    "aprobar",
+    comentario
+  );
+}
+
+export async function observarAdminPublicacion(
+  publicacionId,
+  comentario
+) {
+  return resolverDecisionAdmin(
+    publicacionId,
+    "observar",
+    comentario
+  );
+}
+
+export async function rechazarAdminPublicacion(
+  publicacionId,
+  comentario
+) {
+  return resolverDecisionAdmin(
+    publicacionId,
+    "rechazar",
+    comentario
+  );
 }
 
 export async function crearAdminArticuloDelegado(payload = {}) {
@@ -465,8 +802,12 @@ export async function crearAdminPublicacionDelegada(tipo, payload = {}) {
 export default {
   listarAdminPublicaciones,
   obtenerAdminPublicacion,
+  obtenerAdminPublicacionHistorial,
   actualizarAdminPublicacion,
   eliminarAdminPublicacion,
+  aprobarAdminPublicacion,
+  observarAdminPublicacion,
+  rechazarAdminPublicacion,
   crearAdminArticuloDelegado,
   crearAdminLibroDelegado,
   crearAdminCapituloDelegado,

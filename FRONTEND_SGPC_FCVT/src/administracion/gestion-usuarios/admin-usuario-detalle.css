@@ -1,0 +1,318 @@
+/* ============================================================
+   SGPC ULEAM — HOST MODAL DE DETALLE DE USUARIO
+   La interfaz real la controla UsuarioModal.vue
+============================================================ */
+
+.admin-user-detail-route,
+.admin-user-detail-route *,
+.admin-user-detail-route *::before,
+.admin-user-detail-route *::after {
+  box-sizing: border-box;
+}
+
+.admin-user-detail-route {
+  width: 0;
+  height: 0;
+
+  overflow: hidden;
+}
+
+/* ============================================================
+   CARGA / ERROR DE LA RUTA
+============================================================ */
+
+.admin-user-route-overlay {
+  --aur-card:
+    var(
+      --adm-card,
+      var(--bg-card, #ffffff)
+    );
+
+  --aur-soft:
+    var(
+      --adm-soft,
+      var(--bg-elevated, #f5f7fb)
+    );
+
+  --aur-text:
+    var(
+      --adm-text,
+      var(--text-primary, #172033)
+    );
+
+  --aur-muted:
+    var(
+      --adm-muted,
+      var(--text-secondary, #667085)
+    );
+
+  --aur-line:
+    var(
+      --adm-line,
+      var(
+        --border-color,
+        rgba(23, 32, 51, 0.12)
+      )
+    );
+
+  --aur-primary:
+    var(
+      --adm-primary,
+      var(--color-primary, #315fcb)
+    );
+
+  --aur-danger:
+    var(
+      --adm-danger,
+      var(--danger, #b42318)
+    );
+
+  position: fixed;
+  inset: 0;
+
+  z-index:
+    var(--z-modal, 1150);
+
+  width: 100vw;
+  height: 100dvh;
+
+  display: grid;
+  place-items: center;
+
+  padding:
+    clamp(
+      14px,
+      2.2vw,
+      26px
+    );
+
+  background:
+    rgba(
+      15,
+      23,
+      42,
+      0.54
+    );
+}
+
+.admin-user-route-state {
+  width:
+    min(
+      520px,
+      100%
+    );
+
+  min-height:
+    130px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap:
+    11px;
+
+  padding:
+    20px;
+
+  border:
+    1px solid
+    var(--aur-line);
+
+  border-radius:
+    13px;
+
+  background:
+    var(--aur-card);
+
+  color:
+    var(--aur-text);
+
+  box-shadow:
+    0
+    18px
+    52px
+    rgba(
+      15,
+      23,
+      42,
+      0.17
+    );
+}
+
+.admin-user-route-state
+  > div {
+  min-width: 0;
+
+  display: grid;
+
+  gap:
+    4px;
+}
+
+.admin-user-route-state
+  strong {
+  font-size:
+    0.78rem;
+
+  font-weight:
+    730;
+}
+
+.admin-user-route-state
+  span:not(.admin-user-route-spinner) {
+  color:
+    var(--aur-muted);
+
+  font-size:
+    0.7rem;
+
+  line-height:
+    1.42;
+}
+
+.admin-user-route-state--error {
+  justify-content:
+    space-between;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--aur-danger) 26%,
+      var(--aur-line)
+    );
+}
+
+.admin-user-route-state__actions {
+  display: flex !important;
+
+  align-items:
+    center;
+
+  gap:
+    8px !important;
+}
+
+.admin-user-route-button {
+  appearance: none;
+
+  min-height:
+    42px;
+
+  display: inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    0
+    12px;
+
+  border:
+    1px solid
+    var(--aur-line);
+
+  border-radius:
+    9px;
+
+  background:
+    var(--aur-card);
+
+  color:
+    var(--aur-text);
+
+  font: inherit;
+
+  font-size:
+    0.7rem;
+
+  font-weight:
+    720;
+
+  cursor:
+    pointer;
+}
+
+.admin-user-route-button--primary {
+  border-color:
+    var(--aur-primary);
+
+  background:
+    var(--aur-primary);
+
+  color:
+    var(--adm-primary-contrast, #ffffff);
+}
+
+.admin-user-route-spinner {
+  width:
+    23px;
+
+  height:
+    23px;
+
+  flex:
+    0
+    0
+    23px;
+
+  border:
+    2px solid
+    color-mix(
+      in srgb,
+      var(--aur-primary) 18%,
+      transparent
+    );
+
+  border-top-color:
+    var(--aur-primary);
+
+  border-radius:
+    50%;
+
+  animation:
+    admin-user-route-spin
+    0.8s
+    linear
+    infinite;
+}
+
+@media (max-width: 520px) {
+  .admin-user-route-state--error {
+    align-items:
+      stretch;
+
+    flex-direction:
+      column;
+  }
+
+  .admin-user-route-state__actions {
+    display:
+      grid !important;
+
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .admin-user-route-button {
+    width:
+      100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-user-route-spinner {
+    animation:
+      none !important;
+  }
+}
+
+@keyframes admin-user-route-spin {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}

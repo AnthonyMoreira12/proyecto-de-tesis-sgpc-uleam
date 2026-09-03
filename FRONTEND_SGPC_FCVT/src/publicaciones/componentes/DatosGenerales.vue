@@ -21,8 +21,62 @@
         </div>
       </header>
 
-      <div class="dg-grid">
-        <!-- Facultad -->
+      <div class="dg-grid dg-grid--institutional">
+        <!-- Sede -->
+        <div class="dg-field">
+          <label
+            class="dg-label"
+            for="dg-sede"
+          >
+            Sede
+            <span class="req" aria-hidden="true">*</span>
+          </label>
+
+          <div class="dg-control dg-control--select">
+            <select
+              id="dg-sede"
+              class="dg-input"
+              :value="local.sede"
+              :aria-invalid="Boolean(props.errors?.sede)"
+              :aria-describedby="sedeDescriptionIds"
+              required
+              @change="setField('sede', $event.target.value)"
+            >
+              <option
+                value=""
+                disabled
+              >
+                Seleccione...
+              </option>
+
+              <option
+                v-for="sede in sedes"
+                :key="sede.id"
+                :value="String(sede.id)"
+              >
+                {{ sede.nombre }}
+              </option>
+            </select>
+
+            <p
+              id="dg-sede-help"
+              class="dg-hint"
+            >
+              La sede define las facultades y carreras disponibles para la publicación.
+            </p>
+
+            <p
+              v-if="props.errors?.sede"
+              id="dg-sede-error"
+              class="dg-hint dg-hint-err"
+              role="alert"
+            >
+              {{ props.errors.sede }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Facultad disponible en la sede -->
         <div class="dg-field">
           <label
             class="dg-label"
@@ -37,12 +91,10 @@
               id="dg-facultad"
               class="dg-input"
               :value="local.facultad"
+              :disabled="!local.sede || loadingFacultades"
+              :aria-busy="loadingFacultades ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.facultad)"
-              :aria-describedby="
-                props.errors?.facultad
-                  ? 'dg-facultad-error'
-                  : undefined
-              "
+              :aria-describedby="facultadDescriptionIds"
               required
               @change="setField('facultad', $event.target.value)"
             >
@@ -50,7 +102,15 @@
                 value=""
                 disabled
               >
-                Seleccione...
+                {{
+                  !local.sede
+                    ? "Seleccione sede..."
+                    : loadingFacultades
+                      ? "Cargando..."
+                      : facultades.length
+                        ? "Seleccione..."
+                        : "Sin facultades disponibles"
+                }}
               </option>
 
               <option
@@ -63,6 +123,33 @@
             </select>
 
             <p
+              v-if="!local.sede"
+              id="dg-facultad-help"
+              class="dg-hint"
+            >
+              Seleccione primero una sede para mostrar las facultades disponibles.
+            </p>
+
+            <p
+              v-else-if="
+                !loadingFacultades &&
+                facultades.length === 0
+              "
+              id="dg-facultad-empty"
+              class="dg-hint dg-hint-warn"
+            >
+              No hay facultades con carreras habilitadas en la sede seleccionada.
+            </p>
+
+            <p
+              v-else
+              id="dg-facultad-available"
+              class="dg-hint"
+            >
+              Solo se muestran facultades con carreras habilitadas en esta sede.
+            </p>
+
+            <p
               v-if="props.errors?.facultad"
               id="dg-facultad-error"
               class="dg-hint dg-hint-err"
@@ -73,7 +160,7 @@
           </div>
         </div>
 
-        <!-- Carrera -->
+        <!-- Carrera habilitada en sede + facultad -->
         <div class="dg-field">
           <label
             class="dg-label"
@@ -88,7 +175,7 @@
               id="dg-carrera"
               class="dg-input"
               :value="local.carrera"
-              :disabled="!local.facultad || loadingCarreras"
+              :disabled="!local.sede || !local.facultad || loadingCarreras"
               :aria-busy="loadingCarreras ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.carrera)"
               :aria-describedby="carreraDescriptionIds"
@@ -100,13 +187,15 @@
                 disabled
               >
                 {{
-                  !local.facultad
-                    ? "Seleccione facultad..."
-                    : loadingCarreras
-                      ? "Cargando..."
-                      : carreras.length
-                        ? "Seleccione..."
-                        : "Sin carreras disponibles"
+                  !local.sede
+                    ? "Seleccione sede..."
+                    : !local.facultad
+                      ? "Seleccione facultad..."
+                      : loadingCarreras
+                        ? "Cargando..."
+                        : carreras.length
+                          ? "Seleccione..."
+                          : "Sin carreras disponibles"
                 }}
               </option>
 
@@ -120,11 +209,11 @@
             </select>
 
             <p
-              v-if="!local.facultad"
+              v-if="!local.sede || !local.facultad"
               id="dg-carrera-help"
               class="dg-hint"
             >
-              Seleccione una facultad para habilitar las carreras.
+              Seleccione una sede y una facultad para habilitar sus carreras.
             </p>
 
             <p
@@ -135,7 +224,15 @@
               id="dg-carrera-empty"
               class="dg-hint dg-hint-warn"
             >
-              No hay carreras disponibles para esta facultad.
+              No hay carreras activas para la sede y facultad seleccionadas.
+            </p>
+
+            <p
+              v-else
+              id="dg-carrera-available"
+              class="dg-hint"
+            >
+              Solo se muestran carreras habilitadas en esta sede y facultad.
             </p>
 
             <p
@@ -150,7 +247,7 @@
         </div>
 
         <!-- Proyecto -->
-        <div class="dg-field dg-span-2">
+        <div class="dg-field">
           <label
             class="dg-label"
             for="dg-proyecto"
@@ -174,7 +271,7 @@
               id="dg-proyecto"
               class="dg-input"
               :value="local.proyecto"
-              :disabled="!local.carrera || loadingProyectos"
+              :disabled="!local.sede || !local.facultad || !local.carrera || loadingProyectos"
               :aria-busy="loadingProyectos ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.proyecto)"
               :aria-describedby="proyectoDescriptionIds"
@@ -186,11 +283,15 @@
                 disabled
               >
                 {{
-                  !local.carrera
-                    ? "Seleccione carrera..."
-                    : loadingProyectos
-                      ? "Cargando..."
-                      : "Seleccione..."
+                  !local.sede
+                    ? "Seleccione sede..."
+                    : !local.facultad
+                      ? "Seleccione facultad..."
+                      : !local.carrera
+                        ? "Seleccione carrera..."
+                        : loadingProyectos
+                          ? "Cargando..."
+                          : "Seleccione..."
                 }}
               </option>
 
@@ -211,11 +312,11 @@
             </select>
 
             <p
-              v-if="!local.carrera"
+              v-if="!local.sede || !local.facultad || !local.carrera"
               id="dg-proyecto-help"
               class="dg-hint"
             >
-              Seleccione una carrera para habilitar los proyectos.
+              Seleccione sede, facultad y carrera para habilitar los proyectos compatibles.
             </p>
 
             <p
@@ -390,15 +491,15 @@
       <header class="dg-section-head">
         <div>
           <p class="dg-kicker">
-            Ubicación
+            {{ props.ubicacionKicker }}
           </p>
 
           <h4 class="dg-section-title">
-            Contexto geográfico
+            {{ props.ubicacionTitulo }}
           </h4>
 
           <p class="dg-section-desc">
-            Seleccione el país y la ciudad relacionados con la publicación.
+            {{ props.ubicacionDescripcion }}
           </p>
         </div>
       </header>
@@ -410,7 +511,7 @@
             class="dg-label"
             for="dg-pais"
           >
-            País
+            {{ props.paisLabel }}
             <span class="req" aria-hidden="true">*</span>
           </label>
 
@@ -461,7 +562,7 @@
             class="dg-label"
             for="dg-ciudad"
           >
-            Ciudad
+            {{ props.ciudadLabel }}
             <span class="req" aria-hidden="true">*</span>
           </label>
 
@@ -596,6 +697,31 @@ const props = defineProps({
     type: String,
     default: "Subárea del conocimiento (UNESCO)",
   },
+
+  ubicacionKicker: {
+    type: String,
+    default: "Ubicación",
+  },
+
+  ubicacionTitulo: {
+    type: String,
+    default: "Contexto geográfico",
+  },
+
+  ubicacionDescripcion: {
+    type: String,
+    default: "Seleccione el país y la ciudad relacionados con la publicación.",
+  },
+
+  paisLabel: {
+    type: String,
+    default: "País",
+  },
+
+  ciudadLabel: {
+    type: String,
+    default: "Ciudad",
+  },
 });
 
 const emit = defineEmits([
@@ -694,6 +820,32 @@ const normalizeCatalogItem = (item) => ({
   ).trim(),
 });
 
+const normalizeCarrera = (item) => ({
+  ...normalizeCatalogItem(item),
+
+  facultad_id:
+    item?.facultad_id ??
+    item?.facultad?.id ??
+    item?.faculty_id ??
+    null,
+
+  facultad_nombre: String(
+    item?.facultad_nombre ||
+    (
+      typeof item?.facultad === "string"
+        ? item.facultad
+        : item?.facultad?.nombre
+    ) ||
+    item?.faculty_name ||
+    ""
+  ).trim(),
+
+  sede_id:
+    item?.sede_id ??
+    item?.sede?.id ??
+    null,
+});
+
 const normalizeProyecto = (item) => ({
   ...item,
 
@@ -707,7 +859,7 @@ const normalizeProyecto = (item) => ({
     item?.titulo ||
     item?.label ||
     item?.name ||
-    `Proyecto #${item?.id || ""}`
+    "Proyecto sin nombre"
   ).trim(),
 
   estado: String(
@@ -734,6 +886,33 @@ const sortByNombre = (list) => (
         }
       )
   ))
+);
+
+const sortPaises = (list) => (
+  [...list].sort((a, b) => {
+    const isoA = String(a?.iso2 || "")
+      .trim()
+      .toUpperCase();
+    const isoB = String(b?.iso2 || "")
+      .trim()
+      .toUpperCase();
+
+    const prioridadA = isoA === "EC" ? 0 : 1;
+    const prioridadB = isoB === "EC" ? 0 : 1;
+
+    if (prioridadA !== prioridadB) {
+      return prioridadA - prioridadB;
+    }
+
+    return String(a?.nombre || "")
+      .localeCompare(
+        String(b?.nombre || ""),
+        "es",
+        {
+          sensitivity: "base",
+        }
+      );
+  })
 );
 
 const sortByCodigo = (list) => (
@@ -814,6 +993,11 @@ const catalogErrorMessage = (
 ========================================================= */
 
 const local = reactive({
+  sede:
+    asStr(
+      props.modelValue?.sede
+    ),
+
   facultad:
     asStr(
       props.modelValue?.facultad
@@ -855,6 +1039,7 @@ const local = reactive({
         ),
 });
 
+const sedes = ref([]);
 const facultades = ref([]);
 const carreras = ref([]);
 const proyectos = ref([]);
@@ -863,6 +1048,7 @@ const subareas = ref([]);
 const paises = ref([]);
 const ciudades = ref([]);
 
+const loadingFacultades = ref(false);
 const loadingCarreras = ref(false);
 const loadingProyectos = ref(false);
 const loadingSubareas = ref(false);
@@ -877,12 +1063,19 @@ const error = ref("");
    cambia rápidamente un select dependiente.
 ========================================================= */
 
+let facultadesReq = 0;
 let carrerasReq = 0;
 let proyectosReq = 0;
 let subareasReq = 0;
 let ciudadesReq = 0;
 
 let destroyed = false;
+
+const invalidateFacultades = () => {
+  facultadesReq += 1;
+  loadingFacultades.value = false;
+  facultades.value = [];
+};
 
 const invalidateCarreras = () => {
   carrerasReq += 1;
@@ -933,19 +1126,57 @@ const subareaLabelComputed = computed(
   )
 );
 
+const sedeDescriptionIds = computed(() => {
+  const ids = ["dg-sede-help"];
+
+  if (props.errors?.sede) {
+    ids.push("dg-sede-error");
+  }
+
+  return ids.join(" ");
+});
+
+const carreraSeleccionada = computed(() => (
+  carreras.value.find(
+    (item) => String(item?.id) === String(local.carrera || "")
+  ) || null
+));
+
+const facultadDescriptionIds = computed(() => {
+  const ids = [];
+
+  if (!local.sede) {
+    ids.push("dg-facultad-help");
+  } else if (
+    !loadingFacultades.value &&
+    facultades.value.length === 0
+  ) {
+    ids.push("dg-facultad-empty");
+  } else {
+    ids.push("dg-facultad-available");
+  }
+
+  if (props.errors?.facultad) {
+    ids.push("dg-facultad-error");
+  }
+
+  return ids.length
+    ? ids.join(" ")
+    : undefined;
+});
+
 const carreraDescriptionIds = computed(() => {
   const ids = [];
 
-  if (!local.facultad) {
+  if (!local.sede || !local.facultad) {
     ids.push("dg-carrera-help");
-  }
-
-  if (
-    local.facultad &&
+  } else if (
     !loadingCarreras.value &&
     carreras.value.length === 0
   ) {
     ids.push("dg-carrera-empty");
+  } else {
+    ids.push("dg-carrera-available");
   }
 
   if (props.errors?.carrera) {
@@ -977,11 +1208,13 @@ const areaDescriptionIds = computed(() => {
 const proyectoDescriptionIds = computed(() => {
   const ids = [];
 
-  if (!local.carrera) {
+  if (!local.sede || !local.facultad || !local.carrera) {
     ids.push("dg-proyecto-help");
   }
 
   if (
+    local.sede &&
+    local.facultad &&
     local.carrera &&
     !loadingProyectos.value &&
     proyectosVisibles.value.length === 0
@@ -1153,7 +1386,7 @@ const proyectoOptionLabel = (
     String(
       proyecto?.nombre || ""
     ).trim() ||
-    `Proyecto #${proyecto?.id || ""}`;
+    "Proyecto sin nombre";
 
   const estadoLabel =
     String(
@@ -1171,14 +1404,42 @@ const proyectoOptionLabel = (
    SINCRONIZACIÓN DEL MODELO
 ========================================================= */
 
+const syncFacultadFromCarrera = () => {
+  if (!local.carrera) {
+    local.facultad = "";
+    return;
+  }
+
+  const carrera = carreras.value.find(
+    (item) => String(item?.id) === String(local.carrera)
+  );
+
+  local.facultad = carrera?.facultad_id
+    ? String(carrera.facultad_id)
+    : "";
+};
+
 const pushModel = () => {
   emit(
     "update:modelValue",
     {
+      sede:
+        toNumOrNull(
+          local.sede
+        ),
+
       /*
-       * Facultad se mantiene como contexto de selección y
-       * validación. El backend deriva la facultad real de
-       * carrera.facultad.
+       * Facultad forma parte del flujo de selección
+       * Sede -> Facultad -> Carrera.
+       *
+       * Debe emitirse aunque Carrera todavía no esté seleccionada;
+       * de lo contrario el componente padre recibe null y vuelve a
+       * limpiar el <select> de Facultad inmediatamente después del
+       * cambio.
+       *
+       * Cuando se selecciona Carrera, syncFacultadFromCarrera()
+       * vuelve a confirmar que esta Facultad corresponda realmente
+       * a la Carrera elegida.
        */
       facultad:
         toNumOrNull(
@@ -1242,18 +1503,30 @@ const setField = (
       : String(value);
 
   /*
-   * Facultad -> Carrera -> Proyecto
+   * Flujo institucional de selección:
+   * Sede -> Facultad -> Carrera -> Proyecto.
+   *
+   * La relación real sigue siendo Carrera -> Facultad y
+   * CarreraSede valida que la Carrera esté habilitada en la Sede.
    */
+  if (key === "sede") {
+    local.facultad = "";
+    local.carrera = "";
+    local.proyecto = "";
+  }
+
   if (key === "facultad") {
     local.carrera = "";
     local.proyecto = "";
   }
 
   /*
-   * Al cambiar Carrera, cualquier proyecto anterior deja
-   * de ser válido.
+   * Al cambiar Carrera se confirma la Facultad desde la propia
+   * Carrera y cualquier proyecto anterior deja de ser válido.
    */
   if (key === "carrera") {
+    syncFacultadFromCarrera();
+
     local.proyecto =
       props.proyectoOpcional
         ? "0"
@@ -1281,16 +1554,16 @@ const setField = (
    CATÁLOGOS BASE
 ========================================================= */
 
-const cargarFacultades = async () => {
+const cargarSedes = async () => {
   const response = await api.get(
-    "/selects/facultades/"
+    "/selects/sedes/"
   );
 
   if (destroyed) {
     return;
   }
 
-  facultades.value = sortByNombre(
+  sedes.value = sortByNombre(
     asArrayResponse(
       response.data
     )
@@ -1301,6 +1574,89 @@ const cargarFacultades = async () => {
         (item) => item.id
       )
   );
+
+  if (
+    local.sede &&
+    !hasItemId(
+      sedes.value,
+      local.sede
+    )
+  ) {
+    local.sede = "";
+    local.facultad = "";
+    local.carrera = "";
+    local.proyecto = "";
+    pushModel();
+  }
+};
+
+const cargarFacultades = async (
+  sedeId
+) => {
+  if (!sedeId) {
+    facultades.value = [];
+    return;
+  }
+
+  const requestId =
+    ++facultadesReq;
+
+  loadingFacultades.value = true;
+
+  try {
+    const response = await api.get(
+      "/selects/facultades/",
+      {
+        params: {
+          sede_id: sedeId,
+        },
+      }
+    );
+
+    if (
+      destroyed ||
+      requestId !== facultadesReq
+    ) {
+      return;
+    }
+
+    facultades.value = sortByNombre(
+      asArrayResponse(
+        response.data
+      )
+        .map(
+          normalizeCatalogItem
+        )
+        .filter(
+          (item) => item.id
+        )
+    );
+
+    if (
+      local.facultad &&
+      !hasItemId(
+        facultades.value,
+        local.facultad
+      )
+    ) {
+      local.facultad = "";
+      local.carrera = "";
+      local.proyecto =
+        props.proyectoOpcional
+          ? "0"
+          : "";
+
+      pushModel();
+    }
+
+    error.value = "";
+  } finally {
+    if (
+      requestId === facultadesReq
+    ) {
+      loadingFacultades.value = false;
+    }
+  }
 };
 
 const cargarAreas = async () => {
@@ -1334,7 +1690,7 @@ const cargarPaises = async () => {
     return;
   }
 
-  paises.value = sortByNombre(
+  paises.value = sortPaises(
     asArrayResponse(
       response.data
     )
@@ -1352,9 +1708,10 @@ const cargarPaises = async () => {
 ========================================================= */
 
 const cargarCarreras = async (
+  sedeId,
   facultadId
 ) => {
-  if (!facultadId) {
+  if (!sedeId || !facultadId) {
     carreras.value = [];
     return;
   }
@@ -1366,7 +1723,13 @@ const cargarCarreras = async (
 
   try {
     const response = await api.get(
-      `/selects/carreras/${facultadId}/`
+      "/selects/carreras/",
+      {
+        params: {
+          sede_id: sedeId,
+          facultad_id: facultadId,
+        },
+      }
     );
 
     if (
@@ -1381,7 +1744,7 @@ const cargarCarreras = async (
         response.data
       )
         .map(
-          normalizeCatalogItem
+          normalizeCarrera
         )
         .filter(
           (item) => item.id
@@ -1389,8 +1752,9 @@ const cargarCarreras = async (
     );
 
     /*
-     * Si existe una carrera restaurada desde un borrador
-     * pero ya no pertenece a esta facultad, se limpia.
+     * Una Carrera restaurada desde un borrador solo se conserva
+     * si continúa habilitada mediante CarreraSede en la Sede
+     * seleccionada.
      */
     if (
       local.carrera &&
@@ -1407,6 +1771,18 @@ const cargarCarreras = async (
           : "";
 
       pushModel();
+    } else if (local.carrera) {
+      const facultadAnterior =
+        local.facultad;
+
+      syncFacultadFromCarrera();
+
+      if (
+        local.facultad !==
+        facultadAnterior
+      ) {
+        pushModel();
+      }
     }
 
     error.value = "";
@@ -1434,6 +1810,10 @@ const cargarProyectos = async (
 
   try {
     const params = {};
+
+    if (local.sede) {
+      params.sede_id = local.sede;
+    }
 
     /*
      * El backend permite mantener un proyecto ya
@@ -1639,6 +2019,11 @@ watch(
   () => props.modelValue,
 
   (value) => {
+    const nextSede =
+      asStr(
+        value?.sede
+      );
+
     const nextFacultad =
       asStr(
         value?.facultad
@@ -1648,6 +2033,9 @@ watch(
       asStr(
         value?.carrera
       );
+
+    local.sede =
+      nextSede;
 
     local.facultad =
       nextFacultad;
@@ -1737,18 +2125,14 @@ watch(
 );
 
 /*
- * Facultad -> Carreras
+ * Sede -> Facultades disponibles
  */
 watch(
-  () => local.facultad,
+  () => local.sede,
 
   async (value) => {
+    invalidateFacultades();
     invalidateCarreras();
-
-    /*
-     * Un cambio de facultad invalida también cualquier
-     * solicitud anterior de proyectos.
-     */
     invalidateProyectos();
 
     if (!value) {
@@ -1756,19 +2140,60 @@ watch(
     }
 
     try {
-      await cargarCarreras(
+      await cargarFacultades(
         value
       );
+
+      if (local.facultad) {
+        await cargarCarreras(
+          value,
+          local.facultad
+        );
+      }
     } catch (catalogError) {
       console.warn(
-        "Error cargando carreras:",
+        "Error cargando facultades por sede:",
         catalogError
       );
 
       error.value =
         catalogErrorMessage(
           catalogError,
-          "No se pudieron cargar las carreras."
+          "No se pudieron cargar las facultades disponibles para la sede."
+        );
+    }
+  }
+);
+
+/*
+ * Facultad -> Carreras habilitadas en la Sede
+ */
+watch(
+  () => local.facultad,
+
+  async (value) => {
+    invalidateCarreras();
+    invalidateProyectos();
+
+    if (!value || !local.sede) {
+      return;
+    }
+
+    try {
+      await cargarCarreras(
+        local.sede,
+        value
+      );
+    } catch (catalogError) {
+      console.warn(
+        "Error cargando carreras por sede y facultad:",
+        catalogError
+      );
+
+      error.value =
+        catalogErrorMessage(
+          catalogError,
+          "No se pudieron cargar las carreras de la facultad seleccionada."
         );
     }
   }
@@ -1784,6 +2209,12 @@ watch(
     invalidateProyectos();
 
     if (!value) {
+      return;
+    }
+
+    syncFacultadFromCarrera();
+
+    if (!local.sede) {
       return;
     }
 
@@ -1882,7 +2313,7 @@ onMounted(async () => {
 
   try {
     const baseLoads = [
-      cargarFacultades(),
+      cargarSedes(),
       cargarAreas(),
     ];
 
@@ -1903,14 +2334,26 @@ onMounted(async () => {
      * formulario viene restaurado desde borrador o edición.
      */
     if (
+      local.sede
+    ) {
+      await cargarFacultades(
+        local.sede
+      );
+    }
+
+    if (
+      local.sede &&
       local.facultad
     ) {
       await cargarCarreras(
+        local.sede,
         local.facultad
       );
     }
 
     if (
+      local.sede &&
+      local.facultad &&
       local.carrera
     ) {
       await cargarProyectos(
@@ -1971,6 +2414,7 @@ onBeforeUnmount(() => {
   /*
    * Invalida cualquier respuesta asíncrona pendiente.
    */
+  facultadesReq += 1;
   carrerasReq += 1;
   proyectosReq += 1;
   subareasReq += 1;

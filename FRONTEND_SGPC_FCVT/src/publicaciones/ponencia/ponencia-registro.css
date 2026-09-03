@@ -1,9 +1,0 @@
-/* ============================================================
-   SGPC ULEAM
-   Registro de Ponencia
-   Ajustes exclusivos del formulario PON
-============================================================ */
-
-.sgpc-form-page--ponencia {
-  --sgpc-primary: var(--color-primary, #315fcb);
-}

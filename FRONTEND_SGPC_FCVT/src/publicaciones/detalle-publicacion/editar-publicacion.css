@@ -1486,3 +1486,767 @@
     transform: none;
   }
 }
+
+
+/* ============================================================
+   CIERRE VISUAL POST-HISTORIAL
+   Contexto del flujo y observaciones de revisión.
+============================================================ */
+
+.pedit-workflowContext {
+  --pe-state-color: var(--pe-info);
+
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--pe-state-color) 22%, var(--pe-line));
+  border-radius: var(--pe-radius-xl);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pe-state-color) 5%, var(--pe-card)),
+      var(--pe-card) 64%
+    );
+  box-shadow: var(--pe-shadow-soft);
+}
+
+.pedit-workflowContext[data-state="borrador"] {
+  --pe-state-color: var(--pe-info);
+}
+
+.pedit-workflowContext[data-state="en_revision"] {
+  --pe-state-color: var(--pe-warning);
+}
+
+.pedit-workflowContext[data-state="observada"] {
+  --pe-state-color: var(--pe-warning);
+}
+
+.pedit-workflowContext[data-state="aprobada"] {
+  --pe-state-color: var(--pe-success);
+}
+
+.pedit-workflowContext[data-state="rechazada"] {
+  --pe-state-color: var(--pe-danger);
+}
+
+.pedit-workflowContext__main {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 2px;
+}
+
+.pedit-workflowContext__eyebrow,
+.pedit-observation__label {
+  color: color-mix(in srgb, var(--pe-state-color) 82%, var(--pe-muted));
+  font-size: 0.63rem;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pedit-workflowContext__titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.pedit-workflowContext__title {
+  margin: 0;
+  color: var(--pe-text);
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  line-height: 1.2;
+  font-weight: 740;
+  letter-spacing: -0.02em;
+}
+
+.pedit-workflowContext__text {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--pe-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  font-weight: 520;
+}
+
+.pedit-workflowState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 29px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--pe-state-color) 26%, var(--pe-line));
+  border-radius: var(--pe-radius-pill);
+  background: color-mix(in srgb, var(--pe-state-color) 8%, var(--pe-card));
+  color: color-mix(in srgb, var(--pe-state-color) 86%, var(--pe-text));
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.pedit-observation {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--pe-warning) 25%, var(--pe-line));
+  border-radius: var(--pe-radius-lg);
+  background: color-mix(in srgb, var(--pe-warning) 7%, var(--pe-card));
+}
+
+.pedit-observation__label {
+  color: color-mix(in srgb, var(--pe-warning) 86%, var(--pe-text));
+}
+
+.pedit-observation__text {
+  margin: 0;
+  color: var(--pe-text);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  font-weight: 560;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.pedit-observation__reviewer {
+  margin: 0;
+  color: var(--pe-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.pedit-observation__reviewer strong {
+  color: var(--pe-text);
+  font-weight: 720;
+}
+
+@media (max-width: 860px) {
+  .pedit-workflowContext {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .pedit-workflowContext {
+    padding: 12px;
+    border-radius: var(--pe-radius-lg);
+  }
+
+  .pedit-workflowContext__titleRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pedit-workflowState {
+    white-space: normal;
+  }
+}
+
+
+/* ============================================================
+   D8 — DEPURACIÓN VISUAL / EDICIÓN DE PUBLICACIÓN
+============================================================ */
+
+.pedit-section,
+.pedit-workflowContext,
+.pedit-filePanel,
+.pedit-footer {
+  box-shadow: none;
+}
+
+.pedit-section {
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--pe-card);
+}
+
+.pedit-section::before {
+  display: none;
+}
+
+.pedit-section__head {
+  align-items: start;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--pe-line);
+}
+
+.pedit-section__meta {
+  gap: 8px;
+}
+
+.pedit-chip {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--pe-muted);
+}
+
+.pedit-workflowContext {
+  padding: 12px 14px;
+  border: 1px solid var(--pe-line);
+  border-left: 3px solid var(--pe-primary);
+  border-radius: 8px;
+  background: var(--pe-card);
+}
+
+.pedit-workflowContext__titleRow {
+  display: block;
+}
+
+.pedit-workflowContext__title {
+  margin: 0;
+}
+
+.pedit-workflowContext__text {
+  margin-top: 4px;
+}
+
+.pedit-observation {
+  padding: 10px 0 0 12px;
+  border: 0;
+  border-left: 3px solid var(--pe-warning);
+  border-radius: 0;
+  background: transparent;
+}
+
+.pedit-filePanel {
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--pe-line);
+  border-bottom: 1px solid var(--pe-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.pedit-filePanel__text:empty {
+  display: none;
+}
+
+.pedit-footer {
+  justify-content: flex-end;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--pe-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.pedit-footer__actions {
+  margin-left: auto;
+}
+
+.pedit-btn {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.pedit-btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.pedit-modalOverlay {
+  backdrop-filter: none;
+}
+
+.pedit-modal {
+  border-radius: 12px;
+}
+
+.pedit-modal__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   V9 — REDISEÑO EDITORIAL / EDICIÓN DE PUBLICACIÓN
+   Flujo por secciones, jerarquía y acciones persistentes.
+============================================================ */
+
+.pedit {
+  --pe-surface-soft:
+    color-mix(
+      in srgb,
+      var(--pe-card) 94%,
+      var(--pe-bg)
+    );
+
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  counter-reset: pedit-section;
+}
+
+.pedit > .pedit-msg,
+.pedit > .pedit-workflowContext,
+.pedit > .pedit-section--general,
+.pedit > .pedit-section--publication,
+.pedit > .pedit-section--authors,
+.pedit > .pedit-section--pdf,
+.pedit > .pedit-footer {
+  grid-column: 1 / -1;
+}
+
+.pedit > .pedit-section--origin {
+  grid-column: 1 / span 6;
+}
+
+.pedit > .pedit-section--period {
+  grid-column: 7 / -1;
+}
+
+/* Contexto del workflow: primera lectura antes de editar. */
+.pedit-workflowContext {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--pe-line);
+  border-left: 4px solid var(--workflow-accent, var(--pe-primary));
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--pe-card),
+      color-mix(in srgb, var(--workflow-accent, var(--pe-primary)) 3%, var(--pe-card))
+    );
+  box-shadow: none;
+}
+
+.pedit-workflowContext__main {
+  gap: 5px;
+}
+
+.pedit-workflowContext__title {
+  font-size: 1.05rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.pedit-workflowContext__text {
+  max-width: 72ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.pedit-observation {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--pe-warning) 24%, var(--pe-line));
+  border-left: 3px solid var(--pe-warning);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--pe-warning) 6%, var(--pe-card));
+}
+
+.pedit-observation__label {
+  font-size: 0.64rem;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+/* Secciones: una sola superficie limpia y numerada. */
+.pedit-section {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--pe-line);
+  border-radius: 14px;
+  background: var(--pe-card);
+  box-shadow: none;
+  overflow: visible;
+}
+
+.pedit-section::before {
+  display: none;
+}
+
+.pedit-section__head {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--pe-line);
+}
+
+.pedit-section__head::before {
+  counter-increment: pedit-section;
+  content: counter(pedit-section);
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--pe-primary-line);
+  border-radius: 9px;
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+  font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.pedit-section__copy {
+  min-width: 0;
+  gap: 4px;
+}
+
+.pedit-section__title {
+  font-size: 1.02rem;
+  line-height: 1.2;
+  font-weight: 760;
+}
+
+.pedit-section__text {
+  max-width: 78ch;
+  font-size: 0.78rem;
+  line-height: 1.48;
+}
+
+.pedit-section__meta {
+  align-self: start;
+}
+
+.pedit-chip {
+  min-height: 27px;
+  padding: 0 9px;
+  border: 1px solid var(--pe-line);
+  border-radius: 999px;
+  background: var(--pe-surface-soft);
+  color: var(--pe-muted);
+}
+
+.pedit-chip--type,
+.pedit-chip--permission,
+.pedit-chip--available {
+  border-color: var(--pe-primary-line);
+  background: var(--pe-primary-soft);
+  color: var(--pe-primary);
+}
+
+/* Origen y período como dos módulos hermanos. */
+.pedit-section--origin,
+.pedit-section--period {
+  height: 100%;
+}
+
+.pedit-section--origin .pedit-formGrid,
+.pedit-section--period .pedit-formGrid {
+  grid-template-columns: 1fr;
+}
+
+.pedit-section--origin .pedit-field,
+.pedit-section--period .pedit-field {
+  grid-column: auto;
+}
+
+.pedit-field--period {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Formularios y controles. */
+.pedit-formGrid {
+  gap: 14px 16px;
+}
+
+.pedit-field {
+  gap: 7px;
+}
+
+.pedit-label {
+  color: var(--pe-text);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.pedit-input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--pe-line) !important;
+  border-radius: 10px !important;
+  background: var(--pe-input) !important;
+  font-size: 0.84rem;
+  font-weight: 580;
+}
+
+textarea.pedit-input {
+  padding-block: 11px;
+  line-height: 1.5;
+}
+
+.pedit-input:hover:not(:disabled) {
+  border-color: var(--pe-line-strong) !important;
+}
+
+.pedit-input:focus {
+  border-color: var(--pe-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pe-primary) 13%, transparent) !important;
+}
+
+.pedit-help {
+  font-size: 0.69rem;
+  line-height: 1.4;
+}
+
+/* Componentes embebidos: evitar sensación de tarjeta dentro de tarjeta. */
+.pedit-embed--general,
+.pedit-embed--authors,
+.pedit-uploader {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* PDF actual: banda compacta. */
+.pedit-filePanel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--pe-line);
+  border-radius: 12px;
+  background: var(--pe-surface-soft);
+}
+
+.pedit-filePanel__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--pe-danger) 9%, var(--pe-card));
+  color: var(--pe-danger);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pedit-filePanel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pedit-uploader {
+  margin-top: 2px;
+}
+
+/* Botones y jerarquía de acciones. */
+.pedit-btn {
+  min-height: 40px;
+  padding-inline: 14px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.pedit-btn--primary {
+  background: var(--pe-primary);
+  color: var(--button-text, #ffffff);
+}
+
+.pedit-btn--ghost {
+  background: var(--pe-card);
+  border-color: var(--pe-line);
+}
+
+.pedit-btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Barra de guardado persistente. */
+.pedit-footer {
+  position: sticky;
+  bottom: 12px;
+  z-index: 30;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--pe-line);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--pe-card) 94%, transparent);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pedit-footer__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Modal de eliminación más limpio. */
+.pedit-modalOverlay {
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.pedit-modal {
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.pedit-modal__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+}
+
+/* Responsive */
+@media (max-width: 1040px) {
+  .pedit > .pedit-section--origin,
+  .pedit > .pedit-section--period {
+    grid-column: 1 / -1;
+  }
+
+  .pedit-workflowContext {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .pedit {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .pedit > .pedit-msg,
+  .pedit > .pedit-workflowContext,
+  .pedit > .pedit-section,
+  .pedit > .pedit-footer {
+    grid-column: 1;
+  }
+
+  .pedit-section {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .pedit-section__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pedit-section__meta {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .pedit-formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pedit-field,
+  .pedit-field--full {
+    grid-column: auto;
+  }
+
+  .pedit-filePanel {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pedit-filePanel__actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pedit-filePanel__actions .pedit-btn {
+    width: 100%;
+  }
+
+  .pedit-footer {
+    bottom: 8px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .pedit-workflowContext,
+  .pedit-section {
+    padding: 14px;
+  }
+
+  .pedit-filePanel__actions,
+  .pedit-footer__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .pedit-footer__actions .pedit-btn,
+  .pedit-filePanel__actions .pedit-btn {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   ALINEACIÓN FINAL — DOCUMENTO PDF / NOMBRE ORIGINAL
+   Mantiene estable la banda del documento cuando el nombre
+   original es largo y evita que invada botones o cargador.
+============================================================ */
+
+.pedit-section--pdf,
+.pedit-uploader {
+  min-width: 0;
+}
+
+.pedit-filePanel {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+}
+
+.pedit-filePanel__meta {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pedit-filePanel__name {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pedit-filePanel__actions {
+  min-width: max-content;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .pedit-filePanel {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .pedit-filePanel__actions {
+    min-width: 0;
+  }
+}

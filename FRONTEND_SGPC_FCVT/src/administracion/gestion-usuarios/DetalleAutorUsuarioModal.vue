@@ -1,33 +1,57 @@
 <template>
-  <div
-    class="sgpc-admin-modal modal-overlay"
-    @click.self="requestClose"
-  >
+  <Teleport to="body" :disabled="embedded">
     <div
-      ref="dialogRef"
-      class="modal modal--author-detail"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="author-detail-dialog-title"
-      aria-describedby="author-detail-dialog-description"
-      tabindex="-1"
-      @keydown="handleDialogKeydown"
+      :class="
+        embedded
+          ? 'authordetail-embedded'
+          : 'sgpc-admin-modal modal-overlay'
+      "
+      @click.self="handleBackdropClick"
     >
-      <!-- =====================================================
-           ENCABEZADO
-      ====================================================== -->
-      <header class="modal__header authordetail-header">
-        <div
-          class="authordetail-avatar"
-          aria-hidden="true"
-        >
-          {{ initials }}
-        </div>
+      <div
+        ref="dialogRef"
+        :class="[
+          'modal',
+          'modal--author-detail',
+          {
+            'modal--author-detail-embedded': embedded,
+          },
+        ]"
+        :role="embedded ? 'region' : 'dialog'"
+        :aria-modal="embedded ? undefined : 'true'"
+        aria-labelledby="author-detail-dialog-title"
+        tabindex="-1"
+        @keydown="handleDialogKeydown"
+      >
+        <!-- =====================================================
+             ENCABEZADO
+        ====================================================== -->
+        <header class="modal__header authordetail-header">
+          <div
+            class="authordetail-avatar"
+            aria-hidden="true"
+          >
+            {{ initials }}
+          </div>
 
-        <div class="authordetail-headcopy">
-          <div class="authordetail-topline">
-            <span class="authordetail-kicker">
-              Detalle de usuario
+          <div class="authordetail-headcopy">
+            <h2
+              id="author-detail-dialog-title"
+              class="modal__title authordetail-title"
+            >
+              {{ fullName }}
+            </h2>
+
+          </div>
+
+          <div
+            class="authordetail-headmeta"
+            aria-label="Clasificación y estado de la cuenta"
+          >
+            <span
+              class="authordetail-badge authordetail-badge--type"
+            >
+              {{ tipoLabel }}
             </span>
 
             <span
@@ -38,375 +62,326 @@
             </span>
 
             <span
-              class="authordetail-badge authordetail-badge--type"
-            >
-              {{ tipoLabel }}
-            </span>
-
-            <span
               v-if="isAdmin"
               class="authordetail-badge authordetail-badge--admin"
             >
               Administrador
             </span>
-
-            <span
-              v-if="usuario?.creado_desde_selector"
-              class="authordetail-badge authordetail-badge--neutral"
-            >
-              Creado desde selector
-            </span>
           </div>
 
-          <h2
-            id="author-detail-dialog-title"
-            class="modal__title authordetail-title"
+          <button
+            v-if="!embedded"
+            type="button"
+            class="btn-cerrar modal__close authordetail-close"
+            aria-label="Cerrar detalle del usuario"
+            title="Cerrar"
+            @click="requestClose"
           >
-            {{ fullName }}
-          </h2>
+            <span aria-hidden="true">✕</span>
+          </button>
+        </header>
 
-          <p
-            id="author-detail-dialog-description"
-            class="authordetail-subtitle"
+        <!-- =====================================================
+             CONTENIDO
+        ====================================================== -->
+        <div class="modal__body authordetail-body">
+          <!-- ===================================================
+               DATOS DE LA CUENTA
+          ==================================================== -->
+          <section
+            class="authordetail-section"
+            aria-labelledby="author-detail-account-title"
           >
-            Información de la cuenta, autor vinculado y producción
-            científica relacionada.
-          </p>
-        </div>
+            <div class="authordetail-sectionrow">
+              <div>
+                <h3
+                  id="author-detail-account-title"
+                  class="authordetail-sectiontitle"
+                >
+                  Cuenta
+                </h3>
+              </div>
+            </div>
 
-        <button
-          type="button"
-          class="btn-cerrar modal__close authordetail-close"
-          aria-label="Cerrar detalle del usuario"
-          title="Cerrar"
-          @click="requestClose"
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-      </header>
-
-      <!-- =====================================================
-           CONTENIDO
-      ====================================================== -->
-      <div class="modal__body authordetail-body">
-        <!-- ===================================================
-             INFORMACIÓN DE LA CUENTA
-        ==================================================== -->
-        <section
-          class="authordetail-section"
-          aria-labelledby="author-detail-account-title"
-        >
-          <div class="authordetail-sectionrow">
-            <div>
-              <h3
-                id="author-detail-account-title"
-                class="authordetail-sectiontitle"
+            <dl class="authordetail-summary">
+              <div
+                class="authordetail-item authordetail-item--span-2"
               >
-                Información de la cuenta
-              </h3>
-
-              <p class="authordetail-sectionsub">
-                Datos de identificación, acceso y clasificación
-                del usuario.
-              </p>
-            </div>
-          </div>
-
-          <dl class="authordetail-summary">
-            <div
-              class="authordetail-item authordetail-item--wide"
-            >
-              <dt>Correo electrónico</dt>
-
-              <dd>
-                {{
-                  usuario?.email ||
-                  "No registrado"
-                }}
-              </dd>
-            </div>
-
-            <div class="authordetail-item">
-              <dt>Número de cédula</dt>
-
-              <dd>
-                {{
-                  usuario?.identificacion ||
-                  "No registrada"
-                }}
-              </dd>
-            </div>
-
-            <div class="authordetail-item">
-              <dt>Tipo de cuenta</dt>
-
-              <dd>{{ tipoLabel }}</dd>
-            </div>
-
-            <div class="authordetail-item">
-              <dt>Estado</dt>
-
-              <dd>{{ estadoLabel }}</dd>
-            </div>
-
-            <div class="authordetail-item">
-              <dt>Autenticación</dt>
-
-              <dd>{{ authSourceLabel }}</dd>
-            </div>
-
-            <div class="authordetail-item">
-              <dt>Perfil completo</dt>
-
-              <dd>
-                {{
-                  perfilCompleto
-                    ? "Sí"
-                    : "No"
-                }}
-              </dd>
-            </div>
-
-            <div
-              class="authordetail-item authordetail-item--wide"
-            >
-              <dt>Facultad</dt>
-
-              <dd>
-                {{ facultadLabel }}
-              </dd>
-            </div>
-
-            <div
-              class="authordetail-item authordetail-item--wide"
-            >
-              <dt>Carrera</dt>
-
-              <dd>
-                {{ carreraLabel }}
-              </dd>
-            </div>
-          </dl>
-
-          <p
-            v-if="isExterno"
-            class="authordetail-sectionsub"
-          >
-            Las cuentas externas no registran Facultad ni Carrera.
-          </p>
-
-          <p
-            v-else-if="!isInstitucional"
-            class="authordetail-sectionsub"
-          >
-            La combinación actual de rol y autenticación no
-            corresponde a una cuenta institucional ni externa.
-          </p>
-        </section>
-
-        <!-- ===================================================
-             RELACIÓN CON AUTOR
-        ==================================================== -->
-        <section
-          class="authordetail-section"
-          aria-labelledby="author-detail-author-title"
-        >
-          <div class="authordetail-sectionrow">
-            <div>
-              <h3
-                id="author-detail-author-title"
-                class="authordetail-sectiontitle"
-              >
-                Autor vinculado
-              </h3>
-
-              <p class="authordetail-sectionsub">
-                Relación utilizada para asociar la producción
-                científica con esta cuenta.
-              </p>
-            </div>
-
-            <span
-              class="authordetail-count"
-              :class="{
-                'authordetail-count--muted':
-                  !hasLinkedAuthor,
-              }"
-            >
-              {{
-                hasLinkedAuthor
-                  ? "Vinculado"
-                  : "Sin vínculo"
-              }}
-            </span>
-          </div>
-
-          <div class="authordetail-author-card">
-            <div
-              class="authordetail-author-icon"
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
-                />
-              </svg>
-            </div>
-
-            <div class="authordetail-author-copy">
-              <span>Nombre del autor</span>
-
-              <strong>
-                {{
-                  usuario?.autor_nombre ||
-                  "Sin autor vinculado"
-                }}
-              </strong>
-            </div>
-
-            <div class="authordetail-author-total">
-              <span>Publicaciones</span>
-
-              <strong>
-                {{ totalPublicaciones }}
-              </strong>
-            </div>
-          </div>
-        </section>
-
-        <!-- ===================================================
-             PUBLICACIONES
-        ==================================================== -->
-        <section
-          class="authordetail-section"
-          aria-labelledby="author-detail-publications-title"
-        >
-          <div class="authordetail-sectionrow">
-            <div>
-              <h3
-                id="author-detail-publications-title"
-                class="authordetail-sectiontitle"
-              >
-                Publicaciones relacionadas
-              </h3>
-
-              <p class="authordetail-sectionsub">
-                Registros donde el autor participa, respetando
-                su orden bibliográfico en cada publicación.
-              </p>
-            </div>
-
-            <span
-              class="authordetail-count"
-              aria-live="polite"
-            >
-              {{ publicationCountLabel }}
-            </span>
-          </div>
-
-          <!-- SIN PUBLICACIONES -->
-          <div
-            v-if="!publicaciones.length"
-            class="authordetail-empty"
-          >
-            <div
-              class="authordetail-empty__icon"
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2v5h5M8 13h8M8 17h8"
-                />
-              </svg>
-            </div>
-
-            <div>
-              <strong>
-                Sin publicaciones relacionadas
-              </strong>
-
-              <p>
-                El autor vinculado todavía no participa en
-                publicaciones registradas en el sistema.
-              </p>
-            </div>
-          </div>
-
-          <!-- LISTADO DE PUBLICACIONES -->
-          <div
-            v-else
-            class="authordetail-pubs"
-            role="list"
-            aria-label="Publicaciones relacionadas"
-          >
-            <article
-              v-for="(publication, index) in publicaciones"
-              :key="publicationKey(publication, index)"
-              class="authordetail-pub"
-              role="listitem"
-            >
-              <div class="authordetail-pubindex">
-                {{ index + 1 }}
+                <dt>Correo electrónico</dt>
+                <dd>
+                  {{
+                    usuario?.email ||
+                    "No registrado"
+                  }}
+                </dd>
               </div>
 
-              <div class="authordetail-pubmain">
-                <strong class="authordetail-pubtitle">
-                  {{ publicationTitle(publication) }}
-                </strong>
+              <div class="authordetail-item">
+                <dt>Cédula</dt>
+                <dd>
+                  {{
+                    usuario?.identificacion ||
+                    "No registrada"
+                  }}
+                </dd>
+              </div>
 
-                <div class="authordetail-pubmeta">
-                  <span>
-                    {{ publicationType(publication) }}
-                  </span>
+              <div class="authordetail-item">
+                <dt>Inicio de sesión</dt>
+                <dd>{{ authSourceLabel }}</dd>
+              </div>
 
-                  <span aria-hidden="true">·</span>
+              <div class="authordetail-item">
+                <dt>Tipo</dt>
+                <dd>{{ tipoLabel }}</dd>
+              </div>
 
-                  <span>
-                    Período:
-                    {{ publicationPeriod(publication) }}
-                  </span>
+              <div class="authordetail-item">
+                <dt>Estado</dt>
+                <dd>{{ estadoLabel }}</dd>
+              </div>
 
-                  <template
-                    v-if="publication.numero"
-                  >
-                    <span aria-hidden="true">·</span>
+              <div class="authordetail-item">
+                <dt>Perfil</dt>
+                <dd>
+                  {{
+                    perfilCompleto
+                      ? "Completo"
+                      : "Incompleto"
+                  }}
+                </dd>
+              </div>
 
-                    <span>
-                      N.º {{ publication.numero }}
-                    </span>
-                  </template>
+              <div class="authordetail-item">
+                <dt>Acceso</dt>
+                <dd>
+                  {{
+                    isAdmin
+                      ? "Administrador"
+                      : "Usuario"
+                  }}
+                </dd>
+              </div>
+            </dl>
+
+            <div
+              v-if="isInstitucional"
+              class="authordetail-academic"
+            >
+              <div class="authordetail-subsectionhead">
+                <strong>Información académica</strong>
+              </div>
+
+              <dl class="authordetail-academic-grid">
+                <div class="authordetail-item">
+                  <dt>Sede</dt>
+                  <dd>{{ sedeLabel }}</dd>
                 </div>
+
+                <div class="authordetail-item">
+                  <dt>Facultad</dt>
+                  <dd>{{ facultadLabel }}</dd>
+                </div>
+
+                <div
+                  class="authordetail-item authordetail-item--span-2"
+                >
+                  <dt>Carrera</dt>
+                  <dd>{{ carreraLabel }}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div
+              v-else-if="isExterno"
+              class="authordetail-inline-note"
+            >
+              <strong>Información académica</strong>
+              <span>No aplica para usuarios externos.</span>
+            </div>
+
+            <div
+              v-else
+              class="authordetail-inline-note authordetail-inline-note--warn"
+            >
+              <strong>Información académica</strong>
+              <span>Sin información disponible.</span>
+            </div>
+          </section>
+
+          <!-- ===================================================
+               PRODUCCIÓN CIENTÍFICA + PUBLICACIONES
+          ==================================================== -->
+          <section
+            class="authordetail-section"
+            aria-labelledby="author-detail-production-title"
+          >
+            <div class="authordetail-sectionrow">
+              <div>
+                <h3
+                  id="author-detail-production-title"
+                  class="authordetail-sectiontitle"
+                >
+                  Producción científica
+                </h3>
               </div>
 
               <span
-                v-if="publicationOrder(publication)"
-                class="authordetail-pill"
+                class="authordetail-count"
+                aria-live="polite"
               >
-                Orden bibliográfico
-                {{ publicationOrder(publication) }}
+                {{ publicationCountLabel }}
               </span>
-            </article>
-          </div>
-        </section>
-      </div>
+            </div>
 
-      <!-- =====================================================
-           PIE
-      ====================================================== -->
-      <footer class="modal__footer authordetail-footer">
-        <button
-          ref="closeButtonRef"
-          type="button"
-          class="btn-cerrar authordetail-btn"
-          @click="requestClose"
+            <div class="authordetail-production-summary">
+              <div class="authordetail-author-identity">
+                <div
+                  class="authordetail-author-icon"
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
+                    />
+                  </svg>
+                </div>
+
+                <div class="authordetail-author-copy">
+                  <span>Autor</span>
+                  <strong>
+                    {{
+                      usuario?.autor_nombre ||
+                      "Sin información de autor"
+                    }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="authordetail-production-stat">
+                <span>Publicaciones</span>
+                <strong>{{ totalPublicaciones }}</strong>
+              </div>
+            </div>
+
+            <div class="authordetail-publications-head">
+              <strong>Publicaciones</strong>
+            </div>
+
+            <!-- SIN PUBLICACIONES -->
+            <div
+              v-if="!publicaciones.length"
+              class="authordetail-empty"
+            >
+              <div
+                class="authordetail-empty__icon"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2v5h5M8 13h8M8 17h8"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <strong>Sin publicaciones</strong>
+              </div>
+            </div>
+
+            <!-- LISTADO DE PUBLICACIONES -->
+            <div
+              v-else
+              class="authordetail-pubs"
+              role="list"
+              aria-label="Publicaciones"
+            >
+              <div
+                class="authordetail-pubs-header"
+                aria-hidden="true"
+              >
+                <span>Publicación</span>
+                <span>Período</span>
+                <span>Participación</span>
+              </div>
+
+              <article
+                v-for="(publication, index) in publicaciones"
+                :key="publicationKey(publication, index)"
+                class="authordetail-pub"
+                role="listitem"
+              >
+                <div class="authordetail-pubmain">
+                  <strong class="authordetail-pubtitle">
+                    {{ publicationTitle(publication) }}
+                  </strong>
+
+                  <div class="authordetail-pubmeta">
+                    <span>
+                      {{ publicationType(publication) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="authordetail-pubperiod">
+                  <span>Período</span>
+                  <strong>
+                    {{ publicationPeriod(publication) }}
+                  </strong>
+                </div>
+
+                <div class="authordetail-pubposition">
+                  <span>Participación</span>
+                  <strong>
+                    {{
+                      publicationOrder(publication)
+                        ? `Autor ${publicationOrder(publication)}`
+                        : "—"
+                    }}
+                  </strong>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <!-- =====================================================
+             PIE
+        ====================================================== -->
+        <footer
+          v-if="!embedded"
+          class="modal__footer authordetail-footer"
         >
-          Cerrar
-        </button>
-      </footer>
+          <button
+            v-if="showEditAction"
+            type="button"
+            class="
+              authordetail-btn
+              authordetail-btn--primary
+            "
+            @click="emit('edit')"
+          >
+            Editar usuario
+          </button>
+
+          <button
+            ref="closeButtonRef"
+            type="button"
+            class="
+              btn-cerrar
+              authordetail-btn
+              authordetail-btn--secondary
+            "
+            @click="requestClose"
+          >
+            Cerrar
+          </button>
+        </footer>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -433,11 +408,26 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
+
+  showEditAction: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const embedded = computed(() =>
+  Boolean(props.embedded)
+);
 
 
 const emit = defineEmits([
   "close",
+  "edit",
 ]);
 
 
@@ -613,6 +603,24 @@ const statusBadgeClass = computed(() => {
    RELACIÓN ACADÉMICA
 ============================================================ */
 
+const sedeLabel = computed(() => {
+  if (!isInstitucional.value) {
+    return "No aplica";
+  }
+
+  return (
+    props.usuario?.sede_nombre ||
+    (
+      typeof props.usuario?.sede ===
+      "object"
+        ? props.usuario.sede?.nombre
+        : props.usuario?.sede
+    ) ||
+    "Sin asignar"
+  );
+});
+
+
 const facultadLabel = computed(() => {
   if (!isInstitucional.value) {
     return "No aplica";
@@ -647,15 +655,6 @@ const carreraLabel = computed(() => {
 /* ============================================================
    AUTOR VINCULADO
 ============================================================ */
-
-const hasLinkedAuthor = computed(() => {
-  return Boolean(
-    props.usuario?.tiene_autor ||
-    props.usuario?.autor_id ||
-    props.usuario?.autor_nombre
-  );
-});
-
 
 /* ============================================================
    PUBLICACIONES
@@ -710,17 +709,7 @@ const publicationTitle = (publication) => {
     publication
   );
 
-  const number = publication?.numero;
-
-  if (
-    number !== null &&
-    number !== undefined &&
-    number !== ""
-  ) {
-    return `${type} N.º ${number}`;
-  }
-
-  return "Publicación sin título";
+  return type || "Publicación sin título";
 };
 
 
@@ -845,6 +834,13 @@ const publicationKey = (
    ACCESIBILIDAD DEL MODAL
 ============================================================ */
 
+const handleBackdropClick = () => {
+  if (!embedded.value) {
+    requestClose();
+  }
+};
+
+
 const requestClose = () => {
   emit("close");
 };
@@ -895,6 +891,10 @@ const focusInitialControl = async () => {
 
 
 const handleDialogKeydown = (event) => {
+  if (embedded.value) {
+    return;
+  }
+
   if (event.key === "Escape") {
     event.preventDefault();
     requestClose();
@@ -952,6 +952,10 @@ const handleDialogKeydown = (event) => {
 ============================================================ */
 
 onMounted(() => {
+  if (embedded.value) {
+    return;
+  }
+
   previouslyFocusedElement =
     document.activeElement;
 
@@ -966,6 +970,10 @@ onMounted(() => {
 
 
 onBeforeUnmount(() => {
+  if (embedded.value) {
+    return;
+  }
+
   document.body.style.overflow =
     previousBodyOverflow;
 

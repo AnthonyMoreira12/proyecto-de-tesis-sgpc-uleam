@@ -1521,3 +1521,396 @@ body.pav-scroll-lock {
     padding-right: 16px;
   }
 }
+
+
+/* =========================================================
+   NORMALIZACIÓN UX — FOTOGRAFÍA DE PERFIL
+========================================================= */
+
+.pav-modal {
+  width:
+    min(
+      780px,
+      100%
+    );
+
+  border-radius: 18px;
+}
+
+.pav-head {
+  align-items: center;
+
+  padding:
+    15px
+    17px;
+}
+
+.pav-kicker {
+  display: none;
+}
+
+.pav-title {
+  font-size: 1.18rem;
+  letter-spacing: -0.025em;
+}
+
+.pav-subtitle {
+  margin-top: 2px;
+  font-size: 0.72rem;
+}
+
+.pav-icon-btn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.pav-body {
+  gap: 12px;
+  padding: 14px;
+}
+
+.pav-preview-card,
+.pav-upload-card {
+  gap: 12px;
+  padding: 13px;
+  border-radius: 14px;
+}
+
+.pav-section-title {
+  font-size: 0.9rem;
+}
+
+.pav-section-text {
+  margin-top: 4px;
+  font-size: 0.7rem;
+}
+
+.pav-state-pill {
+  min-height: 24px;
+  padding-inline: 8px;
+  font-size: 0.6rem;
+}
+
+.pav-footer {
+  padding:
+    12px
+    15px;
+}
+
+@media (max-width: 700px) {
+  .pav-modal {
+    border-radius: 16px;
+  }
+
+  .pav-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   CIERRE VISUAL POST-HISTORIAL
+========================================================= */
+
+.pav-close {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+@media (max-width: 560px) {
+  .pav-close {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+  }
+}
+
+/* ==========================================================
+   D11 · MODAL DE FOTOGRAFÍA — MISMA LÍNEA DE "MI CUENTA"
+========================================================== */
+
+.pav-overlay {
+  padding: clamp(14px, 2vw, 24px) !important;
+
+  background:
+    rgba(15, 23, 42, 0.46) !important;
+
+  backdrop-filter: blur(3px);
+}
+
+.pav-modal {
+  width: min(840px, 100%) !important;
+  max-height: min(90dvh, 760px) !important;
+
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+
+  background: var(--bg-card) !important;
+
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.22) !important;
+}
+
+.pav-head {
+  align-items: center !important;
+
+  gap: 18px !important;
+
+  padding: 17px 20px !important;
+
+  background: var(--bg-card) !important;
+}
+
+.pav-head__copy {
+  gap: 4px !important;
+}
+
+.pav-kicker {
+  display: block !important;
+
+  color: var(--color-primary) !important;
+
+  font-size: 0.63rem !important;
+  font-weight: 780 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.pav-title {
+  font-size: 1.18rem !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.pav-subtitle {
+  max-width: 560px !important;
+
+  margin-top: 1px !important;
+
+  font-size: 0.73rem !important;
+  line-height: 1.45 !important;
+}
+
+.pav-icon-btn {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+
+  border-radius: 9px !important;
+
+  box-shadow: none !important;
+}
+
+.pav-body {
+  grid-template-columns:
+    minmax(260px, 0.88fr)
+    minmax(0, 1.12fr) !important;
+
+  gap: 14px !important;
+
+  padding: 16px !important;
+
+  background: var(--bg-main) !important;
+}
+
+.pav-preview-card,
+.pav-upload-card {
+  gap: 13px !important;
+
+  padding: 15px !important;
+
+  border: 1px solid var(--border-color) !important;
+  border-radius: 13px !important;
+
+  background: var(--bg-card) !important;
+
+  box-shadow: none !important;
+}
+
+.pav-preview-head {
+  gap: 10px !important;
+}
+
+.pav-section-title {
+  font-size: 0.92rem !important;
+}
+
+.pav-section-text {
+  margin-top: 4px !important;
+
+  font-size: 0.7rem !important;
+  line-height: 1.43 !important;
+}
+
+.pav-state-pill {
+  min-height: 25px !important;
+
+  padding-inline: 8px !important;
+
+  font-size: 0.59rem !important;
+}
+
+/* La vista previa reproduce la forma del avatar de la pantalla. */
+.pav-preview-area {
+  min-height: 226px !important;
+
+  padding: 18px !important;
+
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+
+  background: var(--bg-elevated) !important;
+}
+
+.pav-preview-frame {
+  width: clamp(150px, 18vw, 184px) !important;
+
+  padding: 5px !important;
+
+  border: 1px solid var(--primary-line) !important;
+  border-radius: 30px !important;
+
+  background: var(--primary-soft) !important;
+
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.12) !important;
+}
+
+.pav-preview-img,
+.pav-preview-placeholder {
+  border-radius: 25px !important;
+}
+
+.pav-filemeta {
+  gap: 0 !important;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px !important;
+
+  background: var(--bg-elevated) !important;
+}
+
+.pav-filemeta-row {
+  padding: 9px 10px !important;
+
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.pav-filemeta-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.pav-dropzone {
+  min-height: 142px !important;
+
+  gap: 12px !important;
+
+  padding: 16px !important;
+
+  border-radius: 12px !important;
+
+  background: var(--bg-elevated) !important;
+}
+
+.pav-dropzone__icon {
+  width: 42px !important;
+  height: 42px !important;
+
+  border-radius: 10px !important;
+
+  background: var(--bg-card) !important;
+}
+
+.pav-dropzone__copy strong {
+  font-size: 0.8rem !important;
+}
+
+.pav-dropzone__copy span {
+  font-size: 0.68rem !important;
+}
+
+.pav-rules {
+  gap: 6px !important;
+}
+
+.pav-rules span {
+  min-height: 26px !important;
+
+  padding-inline: 8px !important;
+
+  font-size: 0.6rem !important;
+}
+
+.pav-footer {
+  gap: 8px !important;
+
+  padding: 13px 16px !important;
+
+  background: var(--bg-card) !important;
+}
+
+.pav-btn {
+  min-height: 38px !important;
+
+  padding-inline: 12px !important;
+
+  border-radius: 9px !important;
+
+  font-size: 0.72rem !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.pav-btn--danger {
+  margin-right: auto;
+}
+
+@media (max-width: 760px) {
+  .pav-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pav-preview-area {
+    min-height: 210px !important;
+  }
+
+  .pav-btn--danger {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .pav-overlay {
+    padding: 8px !important;
+  }
+
+  .pav-modal {
+    max-height: 94dvh !important;
+    border-radius: 14px !important;
+  }
+
+  .pav-head,
+  .pav-body,
+  .pav-footer {
+    padding-left: 13px !important;
+    padding-right: 13px !important;
+  }
+
+  .pav-footer {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pav-footer .pav-btn {
+    width: 100% !important;
+  }
+
+  .pav-btn--danger,
+  .pav-btn--primary {
+    grid-column: 1 / -1;
+  }
+}

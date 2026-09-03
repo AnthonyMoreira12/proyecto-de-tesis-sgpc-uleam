@@ -6,10 +6,9 @@
       aria-label="Cargando perfil"
       aria-busy="true"
     >
-      <section class="perfil-hero perfil-hero--loading">
-        <div class="perfil-skeleton sk-line sk-line--small"></div>
-        <div class="perfil-skeleton sk-line sk-line--title"></div>
+      <section class="perfil-context perfil-context--loading">
         <div class="perfil-skeleton sk-line sk-line--text"></div>
+        <div class="perfil-skeleton sk-line sk-line--small"></div>
       </section>
 
       <div class="perfil-layout">
@@ -39,121 +38,71 @@
       class="perfil-shell"
     >
       <header
-        class="perfil-hero page-stage page-stage-1"
-        aria-labelledby="perfil-title"
+        class="perfil-context page-stage page-stage-1"
+        aria-label="Acciones del perfil"
       >
-        <div class="perfil-hero__copy">
-          <span class="perfil-kicker">
-            {{ accountTypeLabel }}
-          </span>
+        <h1 class="perfil-context__title">
+          Perfil
+        </h1>
 
-          <h1 id="perfil-title" class="perfil-title">
-            Mi perfil
-          </h1>
-
-          <p class="perfil-subtitle">
-            Consulte y mantenga actualizada la información asociada a su cuenta
-            en SGPC ULEAM.
-          </p>
-        </div>
-
-        <div class="perfil-hero__actions">
-          <span
-            class="perfil-status-badge"
-            :class="{
-              'is-complete': perfilCompletoCalculado,
-              'is-pending': !perfilCompletoCalculado,
-            }"
+        <button
+          class="perfil-primary-button perfil-context__action"
+          :class="{
+            'is-request': !canEditProfile,
+          }"
+          type="button"
+          :title="
+            canEditProfile
+              ? 'Editar información del perfil'
+              : 'Solicitar más tiempo para editar el perfil'
+          "
+          @click="handleEditAction"
+        >
+          <svg
+            v-if="canEditProfile"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                v-if="perfilCompletoCalculado"
-                d="m5 10 3 3 7-7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <path
+              d="m12.7 4.2 3.1 3.1M4 16l2.8-.6 8.4-8.4a1.6 1.6 0 0 0 0-2.3 1.6 1.6 0 0 0-2.3 0L4.6 13.2 4 16Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
 
-              <path
-                v-else
-                d="M10 5.7v4.8M10 14.2h.01"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
+          <svg
+            v-else
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path
+              d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 15 16H5a1.5 1.5 0 0 1-1.5-1.5v-9Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
 
-            <span>
-              {{
-                perfilCompletoCalculado
-                  ? "Perfil completo"
-                  : `${profileCompletion}% completado`
-              }}
-            </span>
-          </span>
+            <path
+              d="m4 6 6 4.5L16 6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
 
-          <button
-            class="perfil-primary-button"
-            :class="{
-              'is-request': !canEditProfile,
-            }"
-            type="button"
-            :title="
+          <span>
+            {{
               canEditProfile
-                ? 'Editar información del perfil'
-                : 'Solicitar al administrador una extensión del plazo de edición'
-            "
-            @click="handleEditAction"
-          >
-            <svg
-              v-if="canEditProfile"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path
-                d="m12.7 4.2 3.1 3.1M4 16l2.8-.6 8.4-8.4a1.6 1.6 0 0 0 0-2.3 1.6 1.6 0 0 0-2.3 0L4.6 13.2 4 16Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-
-            <svg
-              v-else
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path
-                d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 15 16H5a1.5 1.5 0 0 1-1.5-1.5v-9Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-
-              <path
-                d="m4 6 6 4.5L16 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-
-            <span>
-              {{
-                canEditProfile
-                  ? "Editar perfil"
-                  : "Solicitar extensión"
-              }}
-            </span>
-          </button>
-        </div>
+                ? "Editar perfil"
+                : "Solicitar más tiempo"
+            }}
+          </span>
+        </button>
       </header>
 
       <div class="perfil-layout page-stage page-stage-2">
@@ -219,86 +168,113 @@
               </p>
             </div>
 
-            <div class="perfil-tags">
-              <span class="perfil-tag">
-                {{
-                  user.auth_source === "microsoft"
-                    ? "Microsoft 365"
-                    : "Cuenta local"
-                }}
-              </span>
-
-              <span
-                v-if="isAdmin"
-                class="perfil-tag is-admin"
-              >
-                Administrador
-              </span>
-            </div>
-
-            <div class="perfil-completion">
-              <div class="perfil-completion__top">
-                <span>Completitud</span>
-                <strong>{{ profileCompletion }}%</strong>
-              </div>
-
-              <div
-                class="perfil-progress"
-                role="progressbar"
-                aria-label="Completitud del perfil"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                :aria-valuenow="profileCompletion"
-              >
-                <span
-                  :style="{
-                    width: `${profileCompletion}%`,
-                  }"
-                ></span>
-              </div>
-
-              <p>
-                {{
-                  perfilCompletoCalculado
-                    ? "La información requerida está registrada."
-                    : profilePendingMessage
-                }}
-              </p>
-            </div>
-
-            <button
-              class="perfil-photo-button"
-              type="button"
-              @click="openAvatarFlow"
-            >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path
-                  d="M4 6.5A2.5 2.5 0 0 1 6.5 4H8l1-1.3h2L12 4h1.5A2.5 2.5 0 0 1 16 6.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 13.5v-7Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="2.4"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-
-              <span>
-                {{ hasAvatar ? "Actualizar foto" : "Agregar foto" }}
-              </span>
-            </button>
+            
+            
 
             <div class="perfil-sidebar-divider"></div>
 
             <nav
-              class="perfil-quick-actions"
-              aria-label="Accesos de cuenta"
+              class="perfil-sidebar-nav"
+              aria-label="Accesos personales"
+            >
+              <button
+                type="button"
+                @click="irPerfilAcademico"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <circle
+                    cx="10"
+                    cy="6"
+                    r="3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+
+                  <path
+                    d="M4 17c.5-3.4 2.6-5.2 6-5.2s5.5 1.8 6 5.2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>Perfil académico</span>
+              </button>
+
+              <button
+                type="button"
+                @click="irMisPublicaciones"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="M5 2.8h7.2L15.5 6v11.2H5V2.8Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+
+                  <path
+                    d="M12 3v3.2h3.2M7.7 9h5M7.7 12h5M7.7 15h3.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>Mis publicaciones</span>
+              </button>
+
+              <button
+                type="button"
+                @click="irMisReportes"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="M3.5 16.5h13M5.2 14V9.8M9.1 14V5.8M13 14V8M16.8 14V3.8"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>Mi producción científica</span>
+              </button>
+
+              <button
+                type="button"
+                @click="irPreferencias"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="M10 7.2A2.8 2.8 0 1 0 10 12.8 2.8 2.8 0 0 0 10 7.2Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+
+                  <path
+                    d="m10 2 .9 1.8 2-.1.6 1.9 1.8.9-.7 1.9 1.3 1.5-1.3 1.5.7 1.9-1.8.9-.6 1.9-2-.1L10 18l-.9-1.8-2 .1-.6-1.9-1.8-.9.7-1.9L4.1 10l1.3-1.5-.7-1.9 1.8-.9.6-1.9 2 .1L10 2Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <span>Preferencias</span>
+              </button>
+            </nav>
+
+            <div class="perfil-sidebar-spacer"></div>
+
+            <nav
+              class="perfil-sidebar-account"
+              aria-label="Cuenta y administración"
             >
               <button
                 v-if="isAdmin"
@@ -315,7 +291,7 @@
                   />
                 </svg>
 
-                <span>Panel administrativo</span>
+                <span>Administración</span>
               </button>
 
               <button
@@ -368,10 +344,6 @@
             <div class="perfil-notice__content">
               <h2>Información pendiente</h2>
 
-              <p>
-                {{ incompleteProfileMessage }}
-              </p>
-
               <div class="perfil-notice__details">
                 <span v-if="missingFields.length">
                   Pendiente:
@@ -379,7 +351,7 @@
                 </span>
 
                 <span v-if="tiempoRestante">
-                  Tiempo disponible:
+                  Disponible:
                   <strong>
                     {{ tiempoRestante.horas }}h
                     {{ tiempoRestante.minutos }}m
@@ -402,7 +374,7 @@
                 class="perfil-notice__secondary"
                 @click="dismissIncompleteBanner"
               >
-                Recordar después
+                Ocultar
               </button>
             </div>
           </section>
@@ -413,18 +385,10 @@
           >
             <header class="perfil-card__head">
               <div>
-                <span class="perfil-section-label">
-                  Cuenta
-                </span>
-
                 <h2 id="account-summary-title">
-                  Estado de la cuenta
+                  Cuenta
                 </h2>
 
-                <p>
-                  Información de autenticación, permisos y disponibilidad de
-                  edición.
-                </p>
               </div>
             </header>
 
@@ -443,54 +407,21 @@
 
                 <div>
                   <span class="perfil-summary-item__label">
-                    Autenticación
+                    Inicio de sesión
                   </span>
 
                   <strong>
                     {{
                       user.auth_source === "microsoft"
                         ? "Microsoft 365"
-                        : "Cuenta local"
+                        : "Correo y contraseña"
                     }}
                   </strong>
 
-                  <p>{{ authSourceNote }}</p>
                 </div>
               </article>
 
-              <article class="perfil-summary-item">
-                <span class="perfil-summary-item__icon">
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <circle
-                      cx="10"
-                      cy="6.5"
-                      r="3"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-
-                    <path
-                      d="M4.5 16c.5-3 2.6-4.5 5.5-4.5s5 1.5 5.5 4.5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </span>
-
-                <div>
-                  <span class="perfil-summary-item__label">
-                    Tipo de usuario
-                  </span>
-
-                  <strong>{{ roleLabel }}</strong>
-
-                  <p>{{ accountTypeDescription }}</p>
-                </div>
-              </article>
-
+              
               <article class="perfil-summary-item">
                 <span class="perfil-summary-item__icon">
                   <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -530,13 +461,6 @@
                     </template>
                   </strong>
 
-                  <p>
-                    {{
-                      canEditProfile
-                        ? "Puede modificar los datos habilitados."
-                        : "Los cambios requieren intervención administrativa."
-                    }}
-                  </p>
                 </div>
               </article>
             </div>
@@ -547,6 +471,8 @@
               class="perfil-extension-request"
               :class="{
                 'is-expanded': extensionRequestExpanded,
+                'is-pending': extensionRequestPending,
+                'is-rejected': extensionRequestRejected,
               }"
             >
               <div class="perfil-extension-request__summary">
@@ -574,23 +500,34 @@
                 </span>
 
                 <div class="perfil-extension-request__content">
-                  <span class="perfil-extension-request__eyebrow">
-                    Plazo finalizado
-                  </span>
+                  <h3>
+                    {{
+                      extensionRequestPending
+                        ? "Solicitud pendiente"
+                        : extensionRequestRejected
+                          ? "Solicitud rechazada"
+                          : "Solicitar más tiempo"
+                    }}
+                  </h3>
 
-                  <h3>Solicite una extensión de edición</h3>
-
-                  <p v-if="extensionRequestExpanded">
-                    Explique por qué necesita ampliar el plazo. SGPC enviará la
-                    solicitud directamente al correo del administrador.
+                  <p v-if="extensionRequestPending">
+                    {{ extensionRequestStatus.horas_solicitadas }} horas solicitadas · Pendiente de revisión.
                   </p>
 
-                  <p v-else>
-                    Abra el formulario solo cuando necesite enviar una solicitud.
+                  <p v-else-if="extensionRequestRejected">
+                    {{
+                      extensionRequestStatus?.motivo_resolucion ||
+                      "La solicitud no fue aprobada. Puede enviar una nueva solicitud si aún necesita más tiempo."
+                    }}
+                  </p>
+
+                  <p v-else-if="extensionRequestExpanded">
+                    Indique brevemente el motivo.
                   </p>
                 </div>
 
                 <button
+                  v-if="!extensionRequestPending"
                   class="perfil-extension-request__toggle"
                   type="button"
                   :disabled="sendingExtensionRequest"
@@ -601,8 +538,10 @@
                   <span>
                     {{
                       extensionRequestExpanded
-                        ? "Ocultar formulario"
-                        : "Abrir solicitud"
+                        ? "Cerrar"
+                        : extensionRequestRejected
+                          ? "Solicitar nuevamente"
+                          : "Solicitar"
                     }}
                   </span>
 
@@ -624,13 +563,13 @@
 
               <Transition name="perfil-extension-collapse">
                 <form
-                  v-if="extensionRequestExpanded"
+                  v-if="extensionRequestExpanded && !extensionRequestPending"
                   id="perfil-extension-form"
                   class="perfil-extension-request__form"
                   @submit.prevent="requestEditExtension"
                 >
                   <label class="perfil-extension-request__field">
-                    <span>Tiempo solicitado</span>
+                    <span>Tiempo adicional</span>
 
                     <select
                       v-model.number="extensionRequestHours"
@@ -643,7 +582,7 @@
                   </label>
 
                   <label class="perfil-extension-request__field is-wide">
-                    <span>Motivo de la solicitud</span>
+                    <span>Motivo</span>
 
                     <textarea
                       ref="extensionReasonInputRef"
@@ -652,7 +591,7 @@
                       minlength="20"
                       maxlength="1000"
                       :disabled="sendingExtensionRequest"
-                      placeholder="Explique brevemente por qué necesita ampliar el plazo de edición."
+                      placeholder="Explique brevemente por qué necesita más tiempo para editar su perfil."
                     ></textarea>
                   </label>
 
@@ -662,14 +601,6 @@
                     </small>
 
                     <div class="perfil-extension-request__footer-actions">
-                      <button
-                        class="perfil-extension-request__secondary"
-                        type="button"
-                        :disabled="sendingExtensionRequest"
-                        @click="closeExtensionRequest"
-                      >
-                        Ocultar
-                      </button>
 
                       <button
                         class="perfil-extension-request__submit"
@@ -728,33 +659,13 @@
           >
             <header class="perfil-card__head">
               <div>
-                <span class="perfil-section-label">
-                  Información
-                </span>
-
                 <h2 id="account-data-title">
                   {{ profileDataTitle }}
                 </h2>
 
-                <p>
-                  Datos principales asociados a su cuenta en el sistema.
-                </p>
               </div>
 
-              <span
-                class="perfil-card__status"
-                :class="{
-                  'is-complete': perfilCompletoCalculado,
-                  'is-pending': !perfilCompletoCalculado,
-                }"
-              >
-                {{
-                  perfilCompletoCalculado
-                    ? "Completo"
-                    : "Pendiente"
-                }}
-              </span>
-            </header>
+                          </header>
 
             <dl class="perfil-fields">
               <div class="perfil-field perfil-field--wide">
@@ -844,6 +755,24 @@
                 v-if="isInstitutionalUser"
                 class="perfil-field"
               >
+                <dt>Sede</dt>
+
+                <dd>
+                  <span
+                    class="perfil-field__value"
+                    :class="{
+                      'is-empty': !sedeLabel,
+                    }"
+                  >
+                    {{ sedeLabel || "Pendiente" }}
+                  </span>
+                </dd>
+              </div>
+
+              <div
+                v-if="isInstitutionalUser"
+                class="perfil-field"
+              >
                 <dt>Facultad</dt>
 
                 <dd>
@@ -890,23 +819,7 @@
                 </dd>
               </div>
 
-              <div
-                v-if="user.auth_source === 'microsoft'"
-                class="perfil-field perfil-field--wide"
-              >
-                <dt>Última sincronización</dt>
-
-                <dd>
-                  <span class="perfil-field__value">
-                    {{
-                      user.ms_last_sync
-                        ? formatFechaTime(user.ms_last_sync)
-                        : "Sin sincronización registrada"
-                    }}
-                  </span>
-                </dd>
-              </div>
-            </dl>
+                          </dl>
           </section>
         </div>
       </div>
@@ -942,7 +855,7 @@
         <h1>No se pudo cargar el perfil</h1>
 
         <p>
-          Compruebe su conexión e intente cargar nuevamente la información.
+          Intente nuevamente en unos momentos.
         </p>
 
         <button
@@ -1030,15 +943,10 @@
                 </span>
 
                 <div>
-                  <span>Información de cuenta</span>
-
                   <h2 id="edit-profile-title">
-                    Actualizar perfil
+                    Editar perfil
                   </h2>
 
-                  <p>
-                    Modifique únicamente los datos habilitados para su cuenta.
-                  </p>
                 </div>
               </div>
 
@@ -1087,7 +995,7 @@
                 </svg>
 
                 <span>
-                  Edición disponible durante
+                  Disponible:
                   <strong>
                     {{ tiempoRestante.horas }}h
                     {{ tiempoRestante.minutos }}m
@@ -1118,9 +1026,6 @@
                       :disabled="!canEditProfile || savingProfile"
                     />
 
-                    <small>
-                      Puede corregir espacios, tildes, guiones y apóstrofes.
-                    </small>
                   </label>
 
                   <label class="perfil-form-field">
@@ -1138,7 +1043,7 @@
                     />
 
                     <small>
-                      Los cambios también se sincronizarán con su registro de autor.
+                      Este cambio también se reflejará en sus publicaciones.
                     </small>
                   </label>
                 </div>
@@ -1160,13 +1065,35 @@
                     @input="onCedulaInput"
                   />
 
-                  <small>
-                    Debe contener exactamente 10 dígitos numéricos.
-                  </small>
                 </label>
 
                 <template v-if="isInstitutionalUser">
                   <div class="perfil-edit-form__grid">
+                    <label class="perfil-form-field">
+                      <span class="perfil-form-field__label">
+                        Sede
+                      </span>
+
+                      <select
+                        v-model="form.sede_id"
+                        :disabled="!canEditProfile || savingProfile || loadingSedes"
+                        @change="onSedeChange"
+                      >
+                        <option value="">
+                          {{ loadingSedes ? "Cargando sedes..." : "Seleccione una sede" }}
+                        </option>
+
+                        <option
+                          v-for="sede in sedes"
+                          :key="sede.id"
+                          :value="sede.id"
+                        >
+                          {{ sede.nombre }}
+                        </option>
+                      </select>
+
+                    </label>
+
                     <label class="perfil-form-field">
                       <span class="perfil-form-field__label">
                         Facultad
@@ -1174,7 +1101,7 @@
 
                       <select
                         v-model="form.facultad_id"
-                        :disabled="!canEditProfile || savingProfile"
+                        :disabled="!canEditProfile || savingProfile || !form.sede_id"
                         @change="onFacultadChange"
                       >
                         <option value="">
@@ -1202,6 +1129,7 @@
                           !canEditProfile ||
                           savingProfile ||
                           loadingCarreras ||
+                          !form.sede_id ||
                           !form.facultad_id
                         "
                       >
@@ -1229,7 +1157,7 @@
                           !carreras.length
                         "
                       >
-                        No existen carreras registradas para esta facultad.
+                        No hay carreras disponibles para esta selección.
                       </small>
                     </label>
                   </div>
@@ -1346,6 +1274,10 @@ const savingProfile = ref(false);
 const editError = ref("");
 
 const sendingExtensionRequest = ref(false);
+const extensionRequestStatus = ref(null);
+const extensionRequestStatusReady = ref(false);
+const extensionRequestStatusError = ref("");
+const extensionRequestSyncing = ref(false);
 const extensionRequestExpanded = ref(false);
 const extensionRequestReason = ref("");
 const extensionRequestHours = ref(48);
@@ -1356,13 +1288,16 @@ const identificationInputRef = ref(null);
 const extensionRequestSectionRef = ref(null);
 const extensionReasonInputRef = ref(null);
 
+const sedes = ref([]);
 const facultades = ref([]);
 const carreras = ref([]);
+const loadingSedes = ref(false);
 const loadingCarreras = ref(false);
 
 const avatarBroken = ref(false);
 
 let clockId = null;
+let profileRefreshPromise = null;
 
 const toast = ref({
   show: false,
@@ -1375,6 +1310,7 @@ const form = ref({
   nombres: "",
   apellidos: "",
   identificacion: "",
+  sede_id: "",
   facultad_id: "",
   carrera_id: "",
 });
@@ -1428,6 +1364,23 @@ const firstFilled = (...values) => {
   );
 };
 
+const getUserSedeId = (currentUser) => {
+  return (
+    currentUser?.sede_id ||
+    currentUser?.sede?.id ||
+    ""
+  );
+};
+
+const getUserSedeLabel = (currentUser) => {
+  return firstFilled(
+    currentUser?.sede_nombre,
+    typeof currentUser?.sede === "object"
+      ? currentUser.sede?.nombre
+      : currentUser?.sede
+  );
+};
+
 const getUserFacultadId = (currentUser) => {
   return (
     currentUser?.facultad_id ||
@@ -1465,6 +1418,10 @@ const getUserCarreraLabel = (currentUser) => {
       : ""
   );
 };
+
+const sedeLabel = computed(() => {
+  return getUserSedeLabel(user.value);
+});
 
 const facultadLabel = computed(() => {
   return getUserFacultadLabel(user.value);
@@ -1607,14 +1564,14 @@ const accountTypeLabel = computed(() => {
 
 const accountTypeDescription = computed(() => {
   if (isExternalAuthor.value) {
-    return "Cuenta registrada como autor externo.";
+    return "Usuario externo registrado en el sistema.";
   }
 
   if (isInstitutionalUser.value) {
-    return "Cuenta vinculada a la institución mediante Microsoft 365.";
+    return "Usuario institucional.";
   }
 
-  return "La clasificación de esta cuenta requiere revisión administrativa.";
+  return "Revise la información de su cuenta.";
 });
 
 const profileDataTitle = computed(() => {
@@ -1632,7 +1589,7 @@ const profilePendingMessage = computed(() => {
     return "Existen datos de la cuenta pendientes.";
   }
 
-  return "La clasificación de la cuenta requiere revisión administrativa.";
+  return "Revise la información pendiente de su cuenta.";
 });
 
 const incompleteProfileMessage = computed(() => {
@@ -1695,6 +1652,12 @@ const perfilCompletoCalculado = computed(() => {
     return false;
   }
 
+  const sedeCompleta =
+    Boolean(
+      getUserSedeId(currentUser) ||
+      getUserSedeLabel(currentUser)
+    );
+
   const facultadCompleta =
     Boolean(
       getUserFacultadId(currentUser) ||
@@ -1709,6 +1672,7 @@ const perfilCompletoCalculado = computed(() => {
 
   return (
     cedulaCompleta &&
+    sedeCompleta &&
     facultadCompleta &&
     carreraCompleta
   );
@@ -1890,6 +1854,13 @@ const missingFields = computed(() => {
 
   if (isInstitutionalUser.value) {
     if (
+      !getUserSedeId(currentUser) &&
+      !getUserSedeLabel(currentUser)
+    ) {
+      missing.push("Sede");
+    }
+
+    if (
       !getUserFacultadId(currentUser) &&
       !getUserFacultadLabel(currentUser)
     ) {
@@ -1937,6 +1908,13 @@ const profileCompletion = computed(() => {
   }
 
   if (
+    getUserSedeId(currentUser) ||
+    getUserSedeLabel(currentUser)
+  ) {
+    completed += 1;
+  }
+
+  if (
     getUserFacultadId(currentUser) ||
     getUserFacultadLabel(currentUser)
   ) {
@@ -1951,7 +1929,7 @@ const profileCompletion = computed(() => {
   }
 
   return Math.round(
-    (completed / 3) * 100
+    (completed / 4) * 100
   );
 });
 
@@ -1959,10 +1937,10 @@ const authSourceNote = computed(() => {
   if (
     user.value?.auth_source === "microsoft"
   ) {
-    return "La cuenta utiliza el acceso institucional de Microsoft 365.";
+    return "Ingrese con su cuenta institucional de Microsoft 365.";
   }
 
-  return "El acceso se administra directamente desde SGPC ULEAM.";
+  return "Ingrese con su correo y contraseña registrados.";
 });
 
 const safeReadStoredUser = () => {
@@ -2016,6 +1994,11 @@ const resetEditForm = () => {
 
     identificacion:
       user.value?.identificacion || "",
+
+    sede_id:
+      isInstitutionalUser.value
+        ? getUserSedeId(user.value)
+        : "",
 
     facultad_id:
       isInstitutionalUser.value
@@ -2180,6 +2163,22 @@ const cerrarSesion = async () => {
   await router.replace("/login");
 };
 
+const irPerfilAcademico = () => {
+  router.push("/perfil-academico/me");
+};
+
+const irMisPublicaciones = () => {
+  router.push("/mis-publicaciones");
+};
+
+const irMisReportes = () => {
+  router.push("/mis-reportes");
+};
+
+const irPreferencias = () => {
+  router.push("/preferencias");
+};
+
 const irAPanelAdmin = () => {
   router.push("/admin/panel");
 };
@@ -2202,25 +2201,113 @@ const closeEditModal = () => {
   editError.value = "";
 };
 
+const extensionRequestPending = computed(
+  () =>
+    extensionRequestStatus.value?.estado ===
+    "pendiente"
+);
+
+const extensionRequestRejected = computed(
+  () =>
+    extensionRequestStatus.value?.estado ===
+    "rechazada"
+);
+
+const loadExtensionRequestStatus = async (
+  { silent = false } = {}
+) => {
+  try {
+    const response = await api.get(
+      "auth/profile/solicitar-extension/"
+    );
+
+    extensionRequestStatus.value =
+      response?.data?.solicitud || null;
+
+    extensionRequestStatusReady.value = true;
+    extensionRequestStatusError.value = "";
+
+    return true;
+  } catch (error) {
+    console.warn(
+      "No se pudo consultar el estado de la solicitud de extensión.",
+      error
+    );
+
+    extensionRequestStatusReady.value = false;
+    extensionRequestStatusError.value =
+      resolveApiErrorMessage(
+        error,
+        "No pudimos verificar el estado de su solicitud. Intente nuevamente."
+      );
+
+    if (!silent) {
+      showToast(
+        "error",
+        extensionRequestStatusError.value,
+        5200
+      );
+    }
+
+    return false;
+  }
+};
+
+const technicalErrorPattern = /\b(api|backend|endpoint|serializer|queryset|jwt|token|sql|postgres(?:ql)?|database|constraint|traceback|exception|integrityerror|typeerror|valueerror|http\s*\d{3}|request|response)\b/i;
+
+const safeUserMessage = (value, fallback) => {
+  const message = String(value || "").trim();
+
+  if (!message || technicalErrorPattern.test(message)) {
+    return fallback;
+  }
+
+  return message;
+};
+
 const resolveApiErrorMessage = (error, fallback) => {
   const data = error?.response?.data;
 
-  if (typeof data?.detail === "string" && data.detail) {
-    return data.detail;
+  if (typeof data?.detail === "string") {
+    return safeUserMessage(data.detail, fallback);
   }
 
-  if (Array.isArray(data?.motivo) && data.motivo[0]) {
-    return String(data.motivo[0]);
-  }
+  const motivo = Array.isArray(data?.motivo)
+    ? data.motivo[0]
+    : data?.motivo;
 
-  if (typeof data?.motivo === "string" && data.motivo) {
-    return data.motivo;
-  }
-
-  return fallback;
+  return safeUserMessage(motivo, fallback);
 };
 
 const openExtensionRequest = async () => {
+  if (extensionRequestPending.value) {
+    return;
+  }
+
+  if (
+    !extensionRequestStatusReady.value ||
+    extensionRequestStatusError.value
+  ) {
+    const loaded =
+      await loadExtensionRequestStatus({
+        silent: true,
+      });
+
+    if (!loaded) {
+      showToast(
+        "error",
+        extensionRequestStatusError.value ||
+          "No pudimos verificar si ya existe una solicitud pendiente.",
+        5200
+      );
+      return;
+    }
+
+    if (extensionRequestPending.value) {
+      return;
+    }
+  }
+
   extensionRequestExpanded.value = true;
 
   await nextTick();
@@ -2259,6 +2346,35 @@ const focusExtensionRequest = async () => {
 };
 
 const requestEditExtension = async () => {
+  if (
+    !extensionRequestStatusReady.value ||
+    extensionRequestStatusError.value
+  ) {
+    const loaded =
+      await loadExtensionRequestStatus({
+        silent: true,
+      });
+
+    if (!loaded) {
+      showToast(
+        "error",
+        extensionRequestStatusError.value ||
+          "No pudimos verificar si ya existe una solicitud pendiente.",
+        5200
+      );
+      return;
+    }
+  }
+
+  if (extensionRequestPending.value) {
+    showToast(
+      "info",
+      "Ya tiene una solicitud pendiente de revisión administrativa.",
+      4200
+    );
+    return;
+  }
+
   if (sendingExtensionRequest.value) {
     return;
   }
@@ -2290,23 +2406,35 @@ const requestEditExtension = async () => {
       }
     );
 
+    extensionRequestStatus.value =
+      response?.data?.solicitud || null;
+    extensionRequestStatusReady.value = true;
+    extensionRequestStatusError.value = "";
     extensionRequestReason.value = "";
     extensionRequestExpanded.value = false;
 
     showToast(
       "success",
       response?.data?.detail ||
-        "La solicitud fue enviada correctamente al administrador.",
+        "La solicitud fue enviada correctamente.",
       5200
     );
   } catch (error) {
     console.error(error);
 
+    if (error?.response?.data?.solicitud) {
+      extensionRequestStatus.value =
+        error.response.data.solicitud;
+      extensionRequestStatusReady.value = true;
+      extensionRequestStatusError.value = "";
+      extensionRequestExpanded.value = false;
+    }
+
     showToast(
       "error",
       resolveApiErrorMessage(
         error,
-        "No se pudo enviar la solicitud al administrador."
+        "No pudimos enviar la solicitud. Intente nuevamente."
       ),
       5200
     );
@@ -2322,6 +2450,27 @@ const handleEditAction = async () => {
   }
 
   await openEditProfileModal();
+};
+
+const loadSedes = async () => {
+  if (!isInstitutionalUser.value) {
+    sedes.value = [];
+    return;
+  }
+
+  loadingSedes.value = true;
+
+  try {
+    const response =
+      await api.get(
+        "selects/sedes/"
+      );
+
+    sedes.value =
+      asArray(response.data);
+  } finally {
+    loadingSedes.value = false;
+  }
 };
 
 const loadFacultades = async () => {
@@ -2340,9 +2489,10 @@ const loadFacultades = async () => {
 };
 
 const loadCarreras = async (
-  facultadId
+  facultadId,
+  sedeId = form.value.sede_id
 ) => {
-  if (!facultadId) {
+  if (!facultadId || !sedeId) {
     carreras.value = [];
     return;
   }
@@ -2352,7 +2502,13 @@ const loadCarreras = async (
   try {
     const response =
       await api.get(
-        `selects/carreras/${facultadId}/`
+        "selects/carreras/",
+        {
+          params: {
+            sede_id: sedeId,
+            facultad_id: facultadId,
+          },
+        }
       );
 
     carreras.value =
@@ -2362,11 +2518,18 @@ const loadCarreras = async (
   }
 };
 
+const onSedeChange = async () => {
+  form.value.facultad_id = "";
+  form.value.carrera_id = "";
+  carreras.value = [];
+};
+
 const onFacultadChange = async () => {
   form.value.carrera_id = "";
 
   await loadCarreras(
-    form.value.facultad_id
+    form.value.facultad_id,
+    form.value.sede_id
   );
 };
 
@@ -2391,17 +2554,22 @@ const openEditProfileModal = async () => {
     !canEditProfile.value ||
     !isInstitutionalUser.value
   ) {
+    sedes.value = [];
     facultades.value = [];
     carreras.value = [];
     return;
   }
 
   try {
-    await loadFacultades();
+    await Promise.all([
+      loadSedes(),
+      loadFacultades(),
+    ]);
 
-    if (form.value.facultad_id) {
+    if (form.value.sede_id && form.value.facultad_id) {
       await loadCarreras(
-        form.value.facultad_id
+        form.value.facultad_id,
+        form.value.sede_id
       );
 
       const exists =
@@ -2422,7 +2590,7 @@ const openEditProfileModal = async () => {
     console.error(error);
 
     editError.value =
-      "No se pudieron cargar las facultades y carreras.";
+      "No se pudieron cargar las sedes, facultades y carreras.";
   }
 };
 
@@ -2434,24 +2602,20 @@ const resolveProfileError = (
     return fallback;
   }
 
-  if (
-    typeof data.detail === "string" &&
-    data.detail
-  ) {
-    return data.detail;
+  if (typeof data.detail === "string") {
+    return safeUserMessage(data.detail, fallback);
   }
 
-  if (
-    typeof data.error === "string" &&
-    data.error
-  ) {
-    return data.error;
+  if (typeof data.error === "string") {
+    return safeUserMessage(data.error, fallback);
   }
 
   const keys = [
     "nombres",
     "apellidos",
     "identificacion",
+    "sede_set",
+    "sede",
     "facultad_set",
     "carrera_set",
     "carrera",
@@ -2465,14 +2629,14 @@ const resolveProfileError = (
       Array.isArray(value) &&
       value[0]
     ) {
-      return String(value[0]);
+      return safeUserMessage(value[0], fallback);
     }
 
     if (
       typeof value === "string" &&
       value
     ) {
-      return value;
+      return safeUserMessage(value, fallback);
     }
   }
 
@@ -2568,10 +2732,16 @@ const saveProfile = async () => {
     return;
   }
 
+  let sedeId = null;
   let facultadId = null;
   let carreraId = null;
 
   if (isInstitutionalUser.value) {
+    sedeId =
+      normalizeNullableId(
+        form.value.sede_id
+      );
+
     facultadId =
       normalizeNullableId(
         form.value.facultad_id
@@ -2583,11 +2753,12 @@ const saveProfile = async () => {
       );
 
     if (
-      Boolean(facultadId) !==
-        Boolean(carreraId)
+      !sedeId ||
+      !facultadId ||
+      !carreraId
     ) {
       editError.value =
-        "Seleccione la facultad y la carrera correspondientes.";
+        "Seleccione la sede, la facultad y la carrera correspondientes.";
 
       return;
     }
@@ -2607,6 +2778,9 @@ const saveProfile = async () => {
     }
 
     if (isInstitutionalUser.value) {
+      payload.sede_set =
+        sedeId;
+
       payload.facultad_set =
         facultadId;
 
@@ -2695,8 +2869,12 @@ const dismissIncompleteBanner = async () => {
   }
 };
 
-const reloadProfile = async () => {
-  loading.value = true;
+const reloadProfile = async (
+  { silent = false } = {}
+) => {
+  if (!silent) {
+    loading.value = true;
+  }
 
   try {
     const response =
@@ -2706,19 +2884,73 @@ const reloadProfile = async () => {
 
     syncUserState(response.data);
     avatarBroken.value = false;
+
+    return true;
   } catch (error) {
     console.error(error);
 
-    const cached =
-      safeReadStoredUser();
+    if (!silent) {
+      const cached =
+        safeReadStoredUser();
 
-    if (cached) {
-      syncUserState(cached);
-    } else {
-      user.value = null;
+      if (cached) {
+        syncUserState(cached);
+      } else {
+        user.value = null;
+      }
     }
+
+    return false;
   } finally {
-    loading.value = false;
+    if (!silent) {
+      loading.value = false;
+    }
+  }
+};
+
+const refreshProfileExtensionState = async (
+  { silent = true } = {}
+) => {
+  if (extensionRequestSyncing.value) {
+    return profileRefreshPromise;
+  }
+
+  extensionRequestSyncing.value = true;
+
+  profileRefreshPromise = Promise.all([
+    reloadProfile({ silent }),
+    loadExtensionRequestStatus({ silent: true }),
+  ])
+    .then(([profileLoaded, requestLoaded]) => {
+      now.value = Date.now();
+
+      return Boolean(
+        profileLoaded &&
+        requestLoaded
+      );
+    })
+    .finally(() => {
+      extensionRequestSyncing.value = false;
+      profileRefreshPromise = null;
+    });
+
+  return profileRefreshPromise;
+};
+
+const handleWindowFocus = () => {
+  refreshProfileExtensionState({
+    silent: true,
+  });
+};
+
+const handleVisibilityChange = () => {
+  if (
+    document.visibilityState ===
+    "visible"
+  ) {
+    refreshProfileExtensionState({
+      silent: true,
+    });
   }
 };
 
@@ -2777,6 +3009,16 @@ onMounted(async () => {
     onKeyDown
   );
 
+  window.addEventListener(
+    "focus",
+    handleWindowFocus
+  );
+
+  document.addEventListener(
+    "visibilitychange",
+    handleVisibilityChange
+  );
+
   clockId = window.setInterval(
     () => {
       now.value = Date.now();
@@ -2803,13 +3045,38 @@ onMounted(async () => {
     syncUserState(cached);
   }
 
-  await reloadProfile();
+  const [, requestLoaded] =
+    await Promise.all([
+      reloadProfile(),
+      loadExtensionRequestStatus({
+        silent: true,
+      }),
+    ]);
+
+  if (!requestLoaded) {
+    showToast(
+      "error",
+      extensionRequestStatusError.value ||
+        "No pudimos verificar el estado de su solicitud de extensión.",
+      5200
+    );
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(
     "keydown",
     onKeyDown
+  );
+
+  window.removeEventListener(
+    "focus",
+    handleWindowFocus
+  );
+
+  document.removeEventListener(
+    "visibilitychange",
+    handleVisibilityChange
   );
 
   document.documentElement.classList.remove(

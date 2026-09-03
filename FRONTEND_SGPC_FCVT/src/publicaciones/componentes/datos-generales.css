@@ -2,124 +2,70 @@
    SGPC ULEAM
    Componente: DatosGenerales
 
-   Diseño integrado con sgpc-fcvt.css.
-   Este componente no crea tarjetas adicionales: se muestra
-   como contenido interno de la sección "Datos generales".
-========================================================= */
-
-/* =========================================================
-   1. VARIABLES Y BASE
+   Este archivo conserva únicamente el diseño propio del
+   componente. Los colores, tipografías, controles y estados
+   globales se heredan desde sgpc-fcvt.css.
 ========================================================= */
 
 .dg {
-  --dg-primary: var(
-    --sgpc-primary,
-    var(--color-primary, #315fcb)
+  --dg-primary: var(--sgpc-primary, var(--color-primary, #315fcb));
+  --dg-success: var(--sgpc-success, var(--success, #2f7d57));
+  --dg-warning: var(--sgpc-warning, var(--warning, #a66a18));
+  --dg-danger: var(--sgpc-danger, var(--danger, #b54747));
+
+  --dg-bg-card: var(--sgpc-surface, var(--bg-card, #ffffff));
+  --dg-bg-elev: var(--sgpc-surface-2, var(--bg-elevated, #f8fafc));
+  --dg-bg-soft: color-mix(
+    in srgb,
+    var(--dg-bg-card) 92%,
+    var(--sgpc-bg, var(--bg-main, #f3f6fb))
   );
 
-  --dg-success: var(
-    --sgpc-success,
-    var(--success, #2f7d57)
-  );
-
-  --dg-warning: var(
-    --sgpc-warning,
-    var(--warning, #a66a18)
-  );
-
-  --dg-danger: var(
-    --sgpc-danger,
-    var(--danger, #b54747)
-  );
-
-  --dg-surface: var(
-    --sgpc-surface,
-    var(--bg-card, #ffffff)
-  );
-
-  --dg-surface-soft: var(
-    --sgpc-surface-2,
-    var(--bg-elevated, #f8fafc)
-  );
-
-  --dg-input-bg: var(
-    --sgpc-input-bg,
-    var(--bg-input, #ffffff)
-  );
-
-  --dg-text: var(
-    --sgpc-text,
-    var(--text-primary, #172033)
-  );
-
-  --dg-text-soft: var(
-    --sgpc-text-soft,
-    var(--text-secondary, #667085)
-  );
-
-  --dg-text-disabled: var(
+  --dg-text: var(--sgpc-text, var(--text-primary, #172033));
+  --dg-muted: var(--sgpc-text-soft, var(--text-secondary, #667085));
+  --dg-disabled: var(
     --sgpc-text-disabled,
-    rgba(23, 32, 51, 0.46)
+    var(--text-disabled, rgba(23, 32, 51, 0.46))
   );
 
-  --dg-line: var(
+  --dg-border: var(
     --sgpc-line,
-    rgba(23, 32, 51, 0.1)
+    var(--border-color, rgba(23, 32, 51, 0.1))
   );
-
-  --dg-line-strong: var(
+  --dg-border-strong: var(
     --sgpc-line-strong,
-    rgba(23, 32, 51, 0.16)
+    var(--border-strong, rgba(23, 32, 51, 0.16))
   );
 
-  --dg-focus: var(
+  --dg-ring: var(
     --sgpc-focus,
-    0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--dg-primary) 20%,
-        transparent
-      )
+    0 0 0 3px color-mix(in srgb, var(--dg-primary) 18%, transparent)
   );
-
-  --dg-control-height: var(
-    --sgpc-control-height,
-    46px
-  );
-
-  --dg-control-radius: var(
-    --sgpc-control-radius,
-    11px
-  );
-
-  --dg-radius: var(
-    --sgpc-radius-md,
-    12px
-  );
-
+  --dg-control-height: var(--sgpc-control-height, 46px);
+  --dg-radius-section: var(--sgpc-radius-lg, 16px);
+  --dg-radius-control: var(--sgpc-radius-control, 12px);
   --dg-font-body: var(
     --sgpc-font-body,
-    Inter,
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif
+    var(
+      --font-ui,
+      Inter,
+      "Segoe UI",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif
+    )
   );
-
-  --dg-font-title: var(
-    --sgpc-font-title,
-    var(--dg-font-body)
+  --dg-font-heading: var(
+    --sgpc-font-heading,
+    var(--font-heading, var(--dg-font-body))
   );
 
   display: grid;
-
   min-width: 0;
-
-  gap: 18px;
+  gap: 14px;
 
   color: var(--dg-text);
-
   font-family: var(--dg-font-body);
 }
 
@@ -130,109 +76,76 @@
   box-sizing: border-box;
 }
 
-.dg button,
-.dg input,
-.dg select,
-.dg textarea {
-  font: inherit;
+.dg :where(label, input, select, option, p, h4, span, div, section, header) {
+  font-family: inherit;
 }
 
 .dg [id^="dg-"] {
-  scroll-margin-top:
-    var(--sgpc-scroll-offset, 96px);
+  scroll-margin-top: var(--sgpc-scroll-offset, 96px);
 }
 
 /* =========================================================
-   2. SUBSECCIONES INTERNAS
+   SUBSECCIONES
 ========================================================= */
 
 .dg-section {
   position: relative;
 
   display: grid;
+  gap: 14px;
 
-  min-width: 0;
+  padding: 16px;
+  overflow: hidden;
 
-  gap: 13px;
+  border: 1px solid color-mix(in srgb, var(--dg-border) 72%, transparent);
+  border-radius: var(--dg-radius-section);
 
-  /*
-   * La tarjeta principal ya existe en el formulario.
-   * Por eso esta subsección no repite borde, fondo ni sombra.
-   */
-  padding: 0;
-
-  overflow: visible;
-
-  border: 0;
-  border-radius: 0;
-
-  background: transparent;
+  background: color-mix(
+    in srgb,
+    var(--dg-bg-card) 96%,
+    var(--sgpc-bg, var(--bg-main, #f3f6fb))
+  );
 
   box-shadow: none;
+
+  transition:
+    border-color var(--t-med, 280ms ease),
+    background var(--t-med, 280ms ease);
 }
 
-/*
- * Cuando también se muestra ubicación, ambas subsecciones
- * se separan mediante una línea sencilla.
- */
-.dg-section + .dg-section {
-  margin-top: 1px;
+.dg-section::before {
+  content: "";
 
-  padding-top: 18px;
+  position: absolute;
+  inset: 0 auto auto 0;
 
-  border-top: 1px solid var(--dg-line);
+  width: 100%;
+  height: 2px;
+
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--dg-primary) 16%, transparent),
+    transparent 46%
+  );
 }
 
 .dg-section-head {
   display: grid;
+  gap: 4px;
 
-  min-width: 0;
-
-  gap: 3px;
-
-  padding: 0 0 9px;
-
-  border: 0;
-
-  background: transparent;
-}
-
-.dg-section-head > div {
-  min-width: 0;
+  margin-bottom: 2px;
 }
 
 .dg-kicker {
-  display: inline-flex;
-  align-items: center;
-
-  gap: 6px;
-
-  width: fit-content;
-
-  margin: 0 0 2px;
+  margin: 0;
 
   color: var(--dg-primary);
 
-  font-size: 0.66rem;
-  font-weight: 750;
-  line-height: 1;
-
-  letter-spacing: 0.075em;
-
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.dg-kicker::before {
-  content: "";
-
-  flex: 0 0 auto;
-
-  width: 5px;
-  height: 5px;
-
-  border-radius: 50%;
-
-  background: var(--dg-primary);
 }
 
 .dg-section-title {
@@ -240,64 +153,72 @@
 
   color: var(--dg-text);
 
-  font-family: var(--dg-font-title);
-
-  font-size: 0.93rem;
-  font-weight: 710;
-  line-height: 1.35;
-
-  letter-spacing: -0.014em;
+  font-family: var(--dg-font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .dg-section-desc {
-  max-width: 760px;
-
   margin: 0;
 
-  color: var(--dg-text-soft);
+  color: var(--dg-muted);
 
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: 0.86rem;
+  line-height: 1.58;
 }
 
 /* =========================================================
-   3. DISTRIBUCIÓN DE CAMPOS
+   DISTRIBUCIÓN DE CAMPOS
 ========================================================= */
 
 .dg-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(12, minmax(0, 1fr));
-
-  min-width: 0;
-
-  gap: 15px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .dg-field {
   grid-column: span 6;
 
   display: grid;
-
-  align-content: start;
-
   min-width: 0;
-
   gap: 7px;
 }
 
-/*
- * Proyecto utiliza todo el ancho porque sus nombres pueden
- * ser extensos.
- */
 .dg-field.dg-span-2,
 .dg-span-2 {
   grid-column: span 12;
 }
 
+
 /* =========================================================
-   4. ETIQUETAS
+   FLUJO INSTITUCIONAL DEPENDIENTE
+========================================================= */
+
+.dg-grid--institutional {
+  align-items: start;
+}
+
+.dg-grid--institutional .dg-field {
+  align-content: start;
+}
+
+.dg-grid--institutional .dg-control {
+  min-height: 0;
+}
+
+.dg-grid--institutional .dg-hint {
+  min-height: 1.15em;
+}
+
+.dg-grid--institutional .dg-input:disabled {
+  border-style: dashed;
+}
+
+/* =========================================================
+   ETIQUETAS Y CONTROLES
 ========================================================= */
 
 .dg-label {
@@ -305,193 +226,126 @@
 
   color: var(--dg-text);
 
-  font-family: var(--dg-font-body);
-
-  font-size: 0.78rem;
-  font-weight: 680;
+  font-size: 0.74rem;
+  font-weight: 700;
   line-height: 1.4;
-
-  letter-spacing: normal;
-
-  text-transform: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .dg .req {
-  margin-left: 2px;
-
   color: var(--dg-danger);
-
-  font-weight: 760;
+  font-weight: 900;
 }
-
-/* =========================================================
-   5. CONTENEDORES DE CONTROLES
-========================================================= */
 
 .dg-control {
   display: grid;
-
-  align-content: start;
-
   min-width: 0;
-
-  gap: 6px;
+  gap: 7px;
 }
 
 .dg-control--select {
   position: relative;
 }
 
-/*
- * Flecha propia del select.
- */
 .dg-control--select::after {
   content: "";
 
   position: absolute;
-
-  z-index: 2;
-
-  top:
-    calc(
-      var(--dg-control-height) / 2 - 3px
-    );
-
+  top: calc(var(--dg-control-height) / 2 - 1px);
   right: 16px;
 
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 
-  border-right:
-    1.6px solid
-    color-mix(
-      in srgb,
-      var(--dg-text-soft) 88%,
-      transparent
-    );
+  border-right: 1.75px solid
+    color-mix(in srgb, var(--dg-muted) 88%, transparent);
+  border-bottom: 1.75px solid
+    color-mix(in srgb, var(--dg-muted) 88%, transparent);
 
-  border-bottom:
-    1.6px solid
-    color-mix(
-      in srgb,
-      var(--dg-text-soft) 88%,
-      transparent
-    );
+  opacity: 0.88;
 
   pointer-events: none;
 
-  transform: rotate(45deg);
-
-  transition:
-    border-color 150ms ease,
-    opacity 150ms ease;
+  transform: translateY(-60%) rotate(45deg);
+  transition: opacity var(--t-fast, 180ms ease);
 }
 
-@supports selector(.dg-control:has(.dg-input:disabled)) {
+@supports selector(.dg-control--select:has(.dg-input:disabled)) {
   .dg-control--select:has(.dg-input:disabled)::after {
-    opacity: 0.42;
-  }
-
-  .dg-control--select:has(.dg-input:focus)::after {
-    border-color: var(--dg-primary);
+    opacity: 0.45;
   }
 }
-
-/* =========================================================
-   6. SELECTS
-========================================================= */
 
 .dg-input {
-  appearance: none;
+  width: 100%;
+  min-height: var(--dg-control-height);
 
+  padding: 11px 42px 11px 13px;
+
+  appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
 
-  width: 100%;
-
-  min-height: var(--dg-control-height);
-
-  padding:
-    10px
-    42px
-    10px
-    12px;
-
   outline: none;
 
-  border:
-    1px solid
-    var(--dg-line-strong);
+  border: 1px solid var(--dg-border-strong);
+  border-radius: var(--dg-radius-control);
 
-  border-radius: var(--dg-control-radius);
-
-  background-color: var(--dg-input-bg);
-
+  background-color: var(--sgpc-input-bg, var(--dg-bg-card));
   background-image: none;
 
   color: var(--dg-text);
 
-  font-family: var(--dg-font-body);
-
-  font-size: 0.87rem;
+  font-size: 0.9rem;
   font-weight: 450;
   line-height: 1.45;
 
   box-shadow: none;
 
-  cursor: pointer;
-
   transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
+    border-color var(--t-fast, 180ms ease),
+    box-shadow var(--t-fast, 180ms ease),
+    background-color var(--t-fast, 180ms ease),
+    color var(--t-fast, 180ms ease);
 }
 
 .dg-input:hover:not(:disabled) {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--dg-primary) 26%,
-      var(--dg-line)
-    );
+  border-color: color-mix(
+    in srgb,
+    var(--dg-primary) 24%,
+    var(--dg-border)
+  );
 }
 
 .dg-input:focus,
 .dg-input:focus-visible {
-  outline: none;
-
   border-color: var(--dg-primary);
-
-  background-color: var(--dg-surface);
-
-  box-shadow: var(--dg-focus);
+  background-color: var(--dg-bg-card);
+  box-shadow: var(--dg-ring);
 }
 
 .dg-input:focus:not(:focus-visible) {
-  box-shadow: var(--dg-focus);
+  box-shadow: none;
 }
 
 .dg-input:disabled {
   opacity: 1;
-
   cursor: not-allowed;
 
-  border-color: var(--dg-line);
+  border-color: var(--dg-border);
 
-  background-color:
-    color-mix(
-      in srgb,
-      var(--sgpc-bg, #f3f6fb) 74%,
-      var(--dg-surface)
-    );
+  background-color: color-mix(
+    in srgb,
+    var(--sgpc-bg, var(--bg-main, #f3f6fb)) 70%,
+    var(--dg-bg-card)
+  );
 
-  color: var(--dg-text-disabled);
+  color: var(--dg-disabled);
 }
 
 .dg-input option {
-  background: var(--dg-surface);
-
+  background: var(--dg-bg-elev);
   color: var(--dg-text);
 }
 
@@ -500,142 +354,85 @@
 }
 
 /* =========================================================
-   7. ESTADOS DE CARGA
-========================================================= */
-
-.dg-input[aria-busy="true"] {
-  cursor: progress;
-
-  background-color:
-    color-mix(
-      in srgb,
-      var(--dg-primary) 4%,
-      var(--dg-input-bg)
-    );
-}
-
-/* =========================================================
-   8. AYUDAS Y MENSAJES
+   AYUDAS, ERRORES Y ALERTAS
 ========================================================= */
 
 .dg-hint {
   margin: 0;
 
-  color: var(--dg-text-soft);
+  color: var(--dg-muted);
 
-  font-size: 0.73rem;
-  font-weight: 450;
-  line-height: 1.47;
+  font-size: 0.77rem;
+  line-height: 1.5;
 }
 
 .dg-hint-err {
   color: var(--dg-danger);
-
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .dg-hint-warn {
   color: var(--dg-warning);
-
-  font-weight: 620;
+  font-weight: 700;
 }
 
-/*
- * El borde del campo cambia cuando existe un error.
- */
 @supports selector(.dg-control:has(.dg-hint-err)) {
-  .dg-control:has(.dg-hint-err)
-    .dg-input {
-    border-color:
-      color-mix(
-        in srgb,
-        var(--dg-danger) 58%,
-        var(--dg-line)
-      );
-  }
-
-  .dg-control:has(.dg-hint-err)
-    .dg-input:focus {
-    border-color: var(--dg-danger);
-
-    box-shadow:
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--dg-danger) 18%,
-        transparent
-      );
+  .dg-control:has(.dg-hint-err) .dg-input {
+    border-color: color-mix(
+      in srgb,
+      var(--dg-danger) 58%,
+      var(--dg-border)
+    );
   }
 }
-
-/* =========================================================
-   9. ALERTA GENERAL
-========================================================= */
 
 .dg-alert {
-  display: block;
-
-  width: 100%;
-
-  margin: 0;
-
-  padding: 11px 13px;
+  margin: 2px 0 0;
+  padding: 12px 13px;
 
   border: 1px solid transparent;
+  border-radius: var(--dg-radius-control);
 
-  border-radius: var(--dg-control-radius);
-
-  font-size: 0.78rem;
-  font-weight: 620;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.52;
 }
 
 .dg-alert-error {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--dg-danger) 24%,
-      var(--dg-line)
-    );
+  border-color: color-mix(
+    in srgb,
+    var(--dg-danger) 22%,
+    var(--dg-border)
+  );
 
-  background:
-    color-mix(
-      in srgb,
-      var(--dg-danger) 7%,
-      var(--dg-surface)
-    );
+  background: color-mix(
+    in srgb,
+    var(--dg-danger) 8%,
+    var(--dg-bg-card)
+  );
 
   color: var(--dg-danger);
 }
 
 /* =========================================================
-   10. MODO OSCURO
+   INTERACCIÓN
 ========================================================= */
 
-html.dark .dg,
-body.dark .dg,
-.dark .dg,
-[data-theme="dark"] .dg {
-  color-scheme: dark;
-}
-
-html.dark .dg-input:disabled,
-body.dark .dg-input:disabled,
-.dark .dg-input:disabled,
-[data-theme="dark"] .dg-input:disabled {
-  background-color:
-    color-mix(
+@media (hover: hover) {
+  .dg-section:hover {
+    border-color: color-mix(
       in srgb,
-      var(--sgpc-bg, #0d1526) 58%,
-      var(--dg-surface)
+      var(--dg-border) 74%,
+      var(--dg-primary)
     );
+  }
 }
 
 /* =========================================================
-   11. RESPONSIVE
+   RESPONSIVE
 ========================================================= */
 
-@media (max-width: 920px) {
+@media (max-width: 900px) {
   .dg-grid {
     grid-template-columns: 1fr;
   }
@@ -647,65 +444,24 @@ body.dark .dg-input:disabled,
   }
 }
 
-@media (max-width: 620px) {
-  .dg {
-    gap: 15px;
-  }
-
+@media (max-width: 560px) {
   .dg-section {
-    gap: 11px;
-  }
-
-  .dg-section + .dg-section {
-    padding-top: 15px;
-  }
-
-  .dg-section-head {
-    padding-bottom: 7px;
-  }
-
-  .dg-grid {
     gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
-  .dg-section-desc {
-    font-size: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
   .dg-grid {
     gap: 11px;
-  }
-
-  .dg-label {
-    font-size: 0.76rem;
-  }
-
-  .dg-input {
-    padding:
-      10px
-      39px
-      10px
-      11px;
-
-    font-size: 0.84rem;
-  }
-
-  .dg-control--select::after {
-    right: 14px;
-  }
-
-  .dg-hint {
-    font-size: 0.7rem;
   }
 }
 
 /* =========================================================
-   12. MOVIMIENTO REDUCIDO
+   MOVIMIENTO REDUCIDO
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+  .dg-section,
   .dg-input,
   .dg-control--select::after {
     transition: none !important;

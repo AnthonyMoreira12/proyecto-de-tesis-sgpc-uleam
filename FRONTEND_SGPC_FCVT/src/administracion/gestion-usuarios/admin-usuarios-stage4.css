@@ -1,0 +1,72 @@
+/* SGPC ULEAM · Administración · Etapa 4
+   Ajustes no destructivos sobre admin-usuarios.css. */
+
+.users-admin__action-feedback,
+.users-admin__inline-loader {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.users-admin__action-feedback {
+  margin-top: -2px;
+}
+
+.users-admin__tablecard {
+  position: relative;
+}
+
+.users-admin__inline-loader {
+  margin: 0 0 12px;
+}
+
+.users-admin__cell-affiliation {
+  min-width: 200px;
+}
+
+.users-affiliation {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.users-affiliation strong,
+.users-affiliation span,
+.users-affiliation small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-affiliation strong {
+  color: var(--adm-text, var(--text-primary));
+  font-size: 0.74rem;
+  font-weight: 720;
+}
+
+.users-affiliation span {
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.68rem;
+}
+
+.users-affiliation small {
+  color: var(--adm-muted, var(--text-secondary));
+  font-size: 0.64rem;
+}
+
+.users-admin__table th,
+.users-admin__table td {
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .users-admin__cell-affiliation {
+    min-width: 0;
+  }
+
+  .users-affiliation strong,
+  .users-affiliation span,
+  .users-affiliation small {
+    white-space: normal;
+  }
+}
