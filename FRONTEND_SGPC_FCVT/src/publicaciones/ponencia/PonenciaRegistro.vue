@@ -1119,6 +1119,8 @@ const ERROR_KEY_ALIASES = Object.freeze({
   autor_id: "admin_context",
   usuario_creador: "admin_context",
 
+  ciudad_manual: "ciudad",
+
   meta: "archivos",
   archivos_meta: "archivos",
   files: "archivos",
@@ -1194,6 +1196,7 @@ function createDefaultDatosGenerales() {
     subarea: null,
     pais: null,
     ciudad: null,
+    ciudad_manual: "",
   };
 }
 
@@ -1701,12 +1704,22 @@ export default {
           .datos_generales ||
         {};
 
+      const hasCiudad =
+        Boolean(
+          general.ciudad ||
+          String(
+            general
+              .ciudad_manual ||
+            ""
+          ).trim()
+        );
+
       return Boolean(
         general.sede &&
         general.facultad &&
         general.carrera &&
         general.pais &&
-        general.ciudad
+        hasCiudad
       );
     },
 
@@ -2941,6 +2954,13 @@ export default {
         subarea: general.subarea || null,
         pais: general.pais || null,
         ciudad: general.ciudad || null,
+        ciudad_manual:
+          String(
+            general
+              .ciudad_manual ||
+            ""
+          ).trim() ||
+          null,
         origen_tipo: this.form.origen_tipo || "ninguno",
         origen_grado: this.form.origen_grado || "",
         nombre_evento: String(this.form.nombre_evento || "").trim(),
@@ -3103,12 +3123,26 @@ if (
           "Seleccione un país.";
       }
 
+      const ciudadManual =
+        String(
+          general
+            .ciudad_manual ||
+          ""
+        ).trim();
+
       if (
         !general
-          .ciudad
+          .ciudad &&
+        !ciudadManual
       ) {
         errors.ciudad =
-          "Seleccione una ciudad.";
+          "Seleccione o escriba una ciudad.";
+      } else if (
+        ciudadManual.length >
+        100
+      ) {
+        errors.ciudad =
+          "La ciudad no puede superar 100 caracteres.";
       }
 
       /* ----------------------------------------------------

@@ -52,6 +52,72 @@ def _none_if_blank(value):
     return value or None
 
 
+def _normalize_city_name(value):
+    return " ".join(
+        str(
+            value or ""
+        ).split()
+    )
+
+
+def _resolve_city_for_create(
+    *,
+    pais,
+    ciudad=None,
+    ciudad_manual=None,
+):
+    """
+    Devuelve una ciudad existente o crea la escrita manualmente.
+
+    El bloqueo del país serializa las altas manuales del mismo
+    catálogo y evita duplicados cuando dos solicitudes intentan
+    crear simultáneamente la misma ciudad.
+    """
+    if ciudad is not None:
+        return ciudad
+
+    nombre = _normalize_city_name(
+        ciudad_manual
+    )
+
+    if not nombre:
+        raise ValidationError(
+            {
+                "ciudad": [
+                    "Debe seleccionar o escribir una ciudad."
+                ]
+            }
+        )
+
+    pais_locked = (
+        Pais.objects
+        .select_for_update()
+        .get(
+            pk=pais.pk
+        )
+    )
+
+    existente = (
+        Ciudad.objects
+        .filter(
+            pais=pais_locked,
+            nombre__iexact=nombre,
+        )
+        .order_by(
+            "id"
+        )
+        .first()
+    )
+
+    if existente is not None:
+        return existente
+
+    return Ciudad.objects.create(
+        pais=pais_locked,
+        nombre=nombre,
+    )
+
+
 def _read_header(
     uploaded_file,
     max_bytes=1024,
@@ -481,7 +547,17 @@ class PonenciaRegistroSerializer(
         queryset=Ciudad.objects.select_related(
             "pais"
         ).all(),
-        required=True,
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+
+    ciudad_manual = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        trim_whitespace=True,
         write_only=True,
     )
 
@@ -529,6 +605,7 @@ class PonenciaRegistroSerializer(
             "subarea",
             "pais",
             "ciudad",
+            "ciudad_manual",
             "origen_tipo",
             "origen_grado",
             "anio_publicacion",
@@ -664,6 +741,14 @@ class PonenciaRegistroSerializer(
             "ciudad"
         )
 
+        ciudad_manual = (
+            _normalize_city_name(
+                attrs.get(
+                    "ciudad_manual"
+                )
+            )
+        )
+
         if not pais:
             raise ValidationError(
                 {
@@ -673,17 +758,21 @@ class PonenciaRegistroSerializer(
                 }
             )
 
-        if not ciudad:
+        if (
+            not ciudad
+            and not ciudad_manual
+        ):
             raise ValidationError(
                 {
                     "ciudad": [
-                        "Debe seleccionar una ciudad."
+                        "Debe seleccionar o escribir una ciudad."
                     ]
                 }
             )
 
         if (
-            ciudad.pais_id
+            ciudad is not None
+            and ciudad.pais_id
             != pais.id
         ):
             raise ValidationError(
@@ -694,6 +783,13 @@ class PonenciaRegistroSerializer(
                     ]
                 }
             )
+
+        if ciudad is not None:
+            ciudad_manual = ""
+
+        attrs[
+            "ciudad_manual"
+        ] = ciudad_manual
 
         area = attrs.get(
             "area"
@@ -919,7 +1015,21 @@ class PonenciaRegistroSerializer(
         )
 
         ciudad = validated_data.pop(
-            "ciudad"
+            "ciudad",
+            None,
+        )
+
+        ciudad_manual = (
+            validated_data.pop(
+                "ciudad_manual",
+                None,
+            )
+        )
+
+        ciudad = _resolve_city_for_create(
+            pais=pais,
+            ciudad=ciudad,
+            ciudad_manual=ciudad_manual,
         )
 
         origen_tipo = (

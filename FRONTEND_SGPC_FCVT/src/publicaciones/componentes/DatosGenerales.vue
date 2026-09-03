@@ -519,15 +519,14 @@
             <select
               id="dg-pais"
               class="dg-input"
-              :value="local.pais"
-              :aria-invalid="Boolean(props.errors?.pais)"
-              :aria-describedby="
-                props.errors?.pais
-                  ? 'dg-pais-error'
-                  : undefined
+              :value="paisSelectorValue"
+              :aria-invalid="
+                Boolean(props.errors?.pais) ||
+                paisOtroInvalido
               "
+              :aria-describedby="paisDescriptionIds"
               required
-              @change="setField('pais', $event.target.value)"
+              @change="setPaisPrincipal($event.target.value)"
             >
               <option
                 value=""
@@ -537,13 +536,71 @@
               </option>
 
               <option
-                v-for="pais in paises"
+                v-for="pais in paisesFrecuentes"
                 :key="pais.id"
                 :value="String(pais.id)"
               >
                 {{ pais.nombre }}
               </option>
+
+              <option
+                v-if="
+                  paisSeleccionado &&
+                  !paisSeleccionadoEsFrecuente
+                "
+                :value="String(paisSeleccionado.id)"
+              >
+                {{ paisSeleccionado.nombre }}
+              </option>
+
+              <option :value="OTHER_COUNTRY_VALUE">
+                Buscar otro país...
+              </option>
             </select>
+
+            <template v-if="paisOtroActivo">
+              <input
+                id="dg-pais-otro"
+                class="dg-input"
+                type="text"
+                list="dg-paises-otros"
+                :value="paisOtroTexto"
+                :aria-invalid="
+                  Boolean(props.errors?.pais) ||
+                  paisOtroInvalido
+                "
+                :aria-describedby="paisDescriptionIds"
+                autocomplete="off"
+                aria-label="Buscar otro país"
+                placeholder="Escriba el nombre del país"
+                required
+                @input="setPaisOtro($event.target.value)"
+              />
+
+              <datalist id="dg-paises-otros">
+                <option
+                  v-for="pais in paisesOtros"
+                  :key="pais.id"
+                  :value="pais.nombre"
+                />
+              </datalist>
+
+              <p
+                v-if="paisOtroInvalido"
+                id="dg-pais-otro-help"
+                class="dg-hint dg-hint-warn"
+              >
+                Seleccione un país válido de las sugerencias.
+              </p>
+
+              <p
+                v-else
+                id="dg-pais-otro-help"
+                class="dg-hint"
+              >
+                Escriba y seleccione un país del catálogo completo.
+              </p>
+            </template>
 
             <p
               v-if="props.errors?.pais"
@@ -560,14 +617,26 @@
         <div class="dg-field">
           <label
             class="dg-label"
-            for="dg-ciudad"
+            :for="
+              usaCiudadManual &&
+              !mostrarSelectorCiudad
+                ? 'dg-ciudad-manual'
+                : 'dg-ciudad'
+            "
           >
             {{ props.ciudadLabel }}
             <span class="req" aria-hidden="true">*</span>
           </label>
 
-          <div class="dg-control dg-control--select">
+          <div
+            class="dg-control"
+            :class="{
+              'dg-control--select':
+                mostrarSelectorCiudad,
+            }"
+          >
             <select
+              v-if="mostrarSelectorCiudad"
               id="dg-ciudad"
               class="dg-input"
               :value="local.ciudad"
@@ -575,8 +644,8 @@
               :aria-busy="loadingCiudades ? 'true' : 'false'"
               :aria-invalid="Boolean(props.errors?.ciudad)"
               :aria-describedby="ciudadDescriptionIds"
-              required
-              @change="setField('ciudad', $event.target.value)"
+              :required="!usaCiudadManual"
+              @change="setCiudadSeleccion($event.target.value)"
             >
               <option
                 value=""
@@ -587,9 +656,7 @@
                     ? "Seleccione país..."
                     : loadingCiudades
                       ? "Cargando..."
-                      : ciudades.length
-                        ? "Seleccione..."
-                        : "Sin ciudades disponibles"
+                      : "Seleccione..."
                 }}
               </option>
 
@@ -600,25 +667,57 @@
               >
                 {{ ciudad.nombre }}
               </option>
+
+              <option
+                v-if="ciudades.length"
+                :value="OTHER_CITY_VALUE"
+              >
+                Otra ciudad...
+              </option>
             </select>
+
+            <input
+              v-if="usaCiudadManual"
+              id="dg-ciudad-manual"
+              class="dg-input"
+              type="text"
+              maxlength="100"
+              :value="local.ciudad_manual"
+              :aria-invalid="Boolean(props.errors?.ciudad)"
+              :aria-describedby="ciudadDescriptionIds"
+              autocomplete="off"
+              :aria-label="
+                ciudades.length
+                  ? 'Otra ciudad'
+                  : props.ciudadLabel
+              "
+              :placeholder="
+                ciudades.length
+                  ? 'Escriba otra ciudad'
+                  : 'Escriba la ciudad del evento'
+              "
+              required
+              @input="setCiudadManual($event.target.value)"
+            />
 
             <p
               v-if="!local.pais"
               id="dg-ciudad-help"
               class="dg-hint"
             >
-              Seleccione un país para habilitar las ciudades.
+              Seleccione un país para indicar la ciudad.
             </p>
 
             <p
-              v-else-if="
-                !loadingCiudades &&
-                ciudades.length === 0
-              "
-              id="dg-ciudad-empty"
-              class="dg-hint dg-hint-warn"
+              v-else-if="usaCiudadManual"
+              id="dg-ciudad-manual-help"
+              class="dg-hint"
             >
-              No hay ciudades disponibles para este país.
+              {{
+                ciudades.length
+                  ? "Escriba la ciudad si no aparece en el listado."
+                  : "Este país aún no tiene ciudades registradas. Escriba la ciudad y se añadirá al catálogo al guardar."
+              }}
             </p>
 
             <p
@@ -731,6 +830,46 @@ const emit = defineEmits([
 /* =========================================================
    HELPERS
 ========================================================= */
+
+const OTHER_COUNTRY_VALUE =
+  "__otro_pais__";
+
+const OTHER_CITY_VALUE =
+  "__otra_ciudad__";
+
+const FREQUENT_COUNTRY_ISO2 =
+  Object.freeze([
+    "EC",
+    "CO",
+    "PE",
+    "CL",
+    "AR",
+    "BR",
+    "MX",
+    "PA",
+    "CR",
+    "US",
+    "CA",
+    "ES",
+    "PT",
+    "FR",
+    "DE",
+    "IT",
+    "GB",
+    "NL",
+    "CH",
+    "AU",
+  ]);
+
+const normalizeComparableText = (
+  value
+) => (
+  String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es")
+);
 
 const asStr = (value) => {
   if (
@@ -1034,8 +1173,24 @@ const local = reactive({
   ciudad:
     props.hideUbicacion
       ? ""
+      : (
+          asStr(
+            props.modelValue?.ciudad
+          ) ||
+          (
+            asStr(
+              props.modelValue?.ciudad_manual
+            )
+              ? OTHER_CITY_VALUE
+              : ""
+          )
+        ),
+
+  ciudad_manual:
+    props.hideUbicacion
+      ? ""
       : asStr(
-          props.modelValue?.ciudad
+          props.modelValue?.ciudad_manual
         ),
 });
 
@@ -1047,6 +1202,9 @@ const areas = ref([]);
 const subareas = ref([]);
 const paises = ref([]);
 const ciudades = ref([]);
+
+const paisOtroActivo = ref(false);
+const paisOtroTexto = ref("");
 
 const loadingFacultades = ref(false);
 const loadingCarreras = ref(false);
@@ -1263,6 +1421,134 @@ const subareaDescriptionIds = computed(() => {
     : undefined;
 });
 
+const countryPriority = (
+  item
+) => {
+  const iso2 = String(
+    item?.iso2 || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  return FREQUENT_COUNTRY_ISO2
+    .indexOf(
+      iso2
+    );
+};
+
+const paisesFrecuentes = computed(() => (
+  paises.value
+    .filter(
+      (pais) => (
+        countryPriority(
+          pais
+        ) >= 0
+      )
+    )
+    .sort(
+      (a, b) => (
+        countryPriority(a) -
+        countryPriority(b)
+      )
+    )
+));
+
+const paisesOtros = computed(() => (
+  sortByNombre(
+    paises.value.filter(
+      (pais) => (
+        countryPriority(
+          pais
+        ) < 0
+      )
+    )
+  )
+));
+
+const paisSeleccionado = computed(() => (
+  paises.value.find(
+    (pais) => (
+      String(pais?.id) ===
+      String(local.pais || "")
+    )
+  ) || null
+));
+
+const paisSeleccionadoEsFrecuente =
+  computed(() => (
+    Boolean(
+      paisSeleccionado.value
+    ) &&
+    countryPriority(
+      paisSeleccionado.value
+    ) >= 0
+  ));
+
+const paisSelectorValue = computed(() => {
+  if (local.pais) {
+    return String(
+      local.pais
+    );
+  }
+
+  return paisOtroActivo.value
+    ? OTHER_COUNTRY_VALUE
+    : "";
+});
+
+const paisOtroInvalido =
+  computed(() => (
+    paisOtroActivo.value &&
+    Boolean(
+      String(
+        paisOtroTexto.value ||
+        ""
+      ).trim()
+    ) &&
+    !local.pais
+  ));
+
+const paisDescriptionIds =
+  computed(() => {
+    const ids = [];
+
+    if (paisOtroActivo.value) {
+      ids.push(
+        "dg-pais-otro-help"
+      );
+    }
+
+    if (props.errors?.pais) {
+      ids.push(
+        "dg-pais-error"
+      );
+    }
+
+    return ids.length
+      ? ids.join(" ")
+      : undefined;
+  });
+
+const mostrarSelectorCiudad =
+  computed(() => (
+    !local.pais ||
+    loadingCiudades.value ||
+    ciudades.value.length > 0
+  ));
+
+const usaCiudadManual =
+  computed(() => (
+    Boolean(local.pais) &&
+    (
+      local.ciudad ===
+        OTHER_CITY_VALUE ||
+      (
+        !loadingCiudades.value &&
+        ciudades.value.length === 0
+      )
+    )
+  ));
+
 const ciudadDescriptionIds = computed(() => {
   const ids = [];
 
@@ -1270,12 +1556,10 @@ const ciudadDescriptionIds = computed(() => {
     ids.push("dg-ciudad-help");
   }
 
-  if (
-    local.pais &&
-    !loadingCiudades.value &&
-    ciudades.value.length === 0
-  ) {
-    ids.push("dg-ciudad-empty");
+  if (usaCiudadManual.value) {
+    ids.push(
+      "dg-ciudad-manual-help"
+    );
   }
 
   if (props.errors?.ciudad) {
@@ -1486,6 +1770,18 @@ const pushModel = () => {
           : toNumOrNull(
               local.ciudad
             ),
+
+      ciudad_manual:
+        props.hideUbicacion ||
+        !usaCiudadManual.value
+          ? null
+          : (
+              String(
+                local.ciudad_manual ||
+                ""
+              ).trim() ||
+              null
+            ),
     }
   );
 };
@@ -1545,7 +1841,153 @@ const setField = (
    */
   if (key === "pais") {
     local.ciudad = "";
+    local.ciudad_manual = "";
   }
+
+  pushModel();
+};
+
+const syncPaisOtroDesdeSeleccion = () => {
+  const seleccionado =
+    paises.value.find(
+      (pais) => (
+        String(pais?.id) ===
+        String(local.pais || "")
+      )
+    );
+
+  if (!seleccionado) {
+    return;
+  }
+
+  const frecuente =
+    countryPriority(
+      seleccionado
+    ) >= 0;
+
+  paisOtroActivo.value =
+    !frecuente;
+
+  paisOtroTexto.value =
+    frecuente
+      ? ""
+      : seleccionado.nombre;
+};
+
+const setPaisPrincipal = (
+  value
+) => {
+  error.value = "";
+
+  if (
+    value ===
+    OTHER_COUNTRY_VALUE
+  ) {
+    paisOtroActivo.value = true;
+    paisOtroTexto.value = "";
+
+    local.pais = "";
+    local.ciudad = "";
+    local.ciudad_manual = "";
+
+    pushModel();
+    return;
+  }
+
+  const seleccionado =
+    paises.value.find(
+      (pais) => (
+        String(pais?.id) ===
+        String(value || "")
+      )
+    );
+
+  paisOtroActivo.value =
+    Boolean(
+      seleccionado &&
+      countryPriority(
+        seleccionado
+      ) < 0
+    );
+
+  paisOtroTexto.value =
+    paisOtroActivo.value
+      ? seleccionado?.nombre || ""
+      : "";
+
+  setField(
+    "pais",
+    value
+  );
+};
+
+const setPaisOtro = (
+  value
+) => {
+  error.value = "";
+
+  paisOtroActivo.value = true;
+  paisOtroTexto.value =
+    String(value || "");
+
+  const normalized =
+    normalizeComparableText(
+      paisOtroTexto.value
+    );
+
+  const seleccionado =
+    paisesOtros.value.find(
+      (pais) => (
+        normalizeComparableText(
+          pais?.nombre
+        ) === normalized
+      )
+    ) || null;
+
+  const nextPais =
+    seleccionado
+      ? String(
+          seleccionado.id
+        )
+      : "";
+
+  if (
+    String(local.pais || "") !==
+    nextPais
+  ) {
+    local.pais =
+      nextPais;
+
+    local.ciudad = "";
+    local.ciudad_manual = "";
+
+    pushModel();
+  }
+};
+
+const setCiudadSeleccion = (
+  value
+) => {
+  error.value = "";
+
+  local.ciudad =
+    String(value || "");
+
+  local.ciudad_manual = "";
+
+  pushModel();
+};
+
+const setCiudadManual = (
+  value
+) => {
+  error.value = "";
+
+  local.ciudad =
+    OTHER_CITY_VALUE;
+
+  local.ciudad_manual =
+    String(value || "");
 
   pushModel();
 };
@@ -1701,6 +2143,8 @@ const cargarPaises = async () => {
         (item) => item.id
       )
   );
+
+  syncPaisOtroDesdeSeleccion();
 };
 
 /* =========================================================
@@ -1987,13 +2431,24 @@ const cargarCiudades = async (
 
     if (
       local.ciudad &&
+      local.ciudad !==
+        OTHER_CITY_VALUE &&
       !hasItemId(
         ciudades.value,
         local.ciudad
       )
     ) {
       local.ciudad = "";
+      local.ciudad_manual = "";
       pushModel();
+    }
+
+    if (
+      local.ciudad_manual &&
+      !local.ciudad
+    ) {
+      local.ciudad =
+        OTHER_CITY_VALUE;
     }
 
     error.value = "";
@@ -2064,16 +2519,39 @@ watch(
     ) {
       local.pais = "";
       local.ciudad = "";
+      local.ciudad_manual = "";
     } else {
       local.pais =
         asStr(
           value?.pais
         );
 
+      local.ciudad_manual =
+        asStr(
+          value?.ciudad_manual
+        );
+
+      const mantenerModoManual =
+        local.ciudad ===
+          OTHER_CITY_VALUE &&
+        Boolean(
+          local.pais
+        );
+
       local.ciudad =
         asStr(
           value?.ciudad
+        ) ||
+        (
+          local.ciudad_manual ||
+          mantenerModoManual
+            ? OTHER_CITY_VALUE
+            : ""
         );
+
+      if (paises.value.length) {
+        syncPaisOtroDesdeSeleccion();
+      }
     }
   },
 
@@ -2094,6 +2572,10 @@ watch(
     if (hidden) {
       local.pais = "";
       local.ciudad = "";
+      local.ciudad_manual = "";
+
+      paisOtroActivo.value = false;
+      paisOtroTexto.value = "";
 
       invalidateCiudades();
 
